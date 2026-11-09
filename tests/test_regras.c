@@ -126,7 +126,7 @@ static void testa_colecao_rachaduras(void) {
 static void testa_colecao_paredes(void) {
     ColParedes c = {0};
     CHECK(!col_paredes_colide(&c, (Vector3){0, 0, 0}, 0.3f, 1.8f)); // sem paredes
-    col_paredes_adiciona(&c, (Parede){{2, 0, -1}, {4, 3, 1}, false, false});
+    col_paredes_adiciona(&c, (Parede){{2, 0, -1}, {4, 3, 1}, PAREDE_MURO});
     CHECK(!col_paredes_colide(&c, (Vector3){0, 0, 0}, 0.3f, 1.8f));
     CHECK(col_paredes_colide(&c, (Vector3){1.8f, 0, 0}, 0.3f, 1.8f));
     CHECK(perto(col_paredes_distancia_raio(&c, (Vector3){0, 1, 0}, (Vector3){1, 0, 0}, 14.0f), 2.0f));

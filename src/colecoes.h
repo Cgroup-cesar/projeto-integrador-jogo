@@ -85,11 +85,17 @@ typedef struct {
 } ColInterativos;
 
 // ------------------------------------------------------------------ paredes (geradas do mapa)
+typedef enum {
+    PAREDE_MURO,  // corrida de '#' do mapa
+    PAREDE_VIDRO, // o vidro da contenção: sólido, mas transparente
+    PAREDE_PORTA, // a porta trancada da sala de observação (só nas fases de sala)
+    PAREDE_MOVEL  // console, painéis, mesa do diário, armários
+} TipoParede;
+
 typedef struct {
     Vector3 min;
     Vector3 max;
-    bool vidro; // o vidro da contenção: sólido, mas transparente
-    bool porta; // a porta trancada da sala de observação
+    TipoParede tipo;
 } Parede;
 
 typedef struct {

@@ -20,3 +20,15 @@ Registro das escolhas feitas onde a especificação deixava espaço ou onde o am
 11. **Interativos filtrados na entrada de cada fase.** A coleção é recriada a partir do mapa ao entrar numa fase e o filter (compactação) deixa só os ativos nela (`regras_interativo_ativo`). Assim o filter faz trabalho real sem apagar nada que a fase precise.
 12. **Danos das rachaduras somam 1 por erro.** Cada erro cria de 1 a 3 rachaduras e divide 1 vida entre elas; o fold soma os danos e `regras_integridade_vidro` devolve as vidas.
 13. **Placar por fase:** `regras_placar_da_fase` copia os eventos para um vetor local, filtra por compactação e reaproveita o fold de `regras_placar`.
+
+## Fatia vertical
+
+14. **Armários dos corredores encostados na parede.** A legenda diz que o `L` "ocupa a célula", mas vários `L` ficam no meio do loop de corredores (por exemplo, `(12,5)` e `(8,8)`). Se ocupassem a célula inteira, o loop ficaria bloqueado. O armário fica encostado na primeira parede vizinha, com 0,75 m de profundidade; o corredor continua passável e o A* trata a célula como piso.
+15. **Entrada num struct (`Entrada`).** O `main.c` lê teclado e mouse uma vez por quadro; os módulos só leem `e->in`. Isso deixa o loop no formato entrada → atualiza → desenha e permite que o piloto do `--smoke` jogue com as mesmas teclas do jogador.
+16. **Pedidos de troca de fase em `e->evento`.** O módulo de cada fase só pede (por exemplo, `EV_RODADA_CONCLUIDA`); no fim do `jogo_atualiza`, `jogo_aplica_evento` consulta `regras_proxima_fase` (pura) e prepara a fase nova.
+17. **O `--smoke` joga de verdade.** O piloto usa as teclas do terminal, do painel e do compositor; só nas saídas ele se teletransporta até o painel e de volta à sala. A cada troca de fase confere a sequência contra `regras_roteiro_partida`, o mesmo roteiro do test_fluxo, e na primeira saída anda até o vidro para conferir a colisão. Ele roda com passo fixo de 0,05 s e sem limite de FPS (velocidade acelerada).
+18. **Luzes por quadro.** O shader aceita 4 luzes. Nas fases de sala: a lâmpada da sala, as luzes A e B da cela e o brilho do console. Nas saídas: as 3 lâmpadas mais próximas do jogador (vermelhas e fracas até a energia voltar) e uma luz bem fraca no próprio jogador.
+19. **A porta da sala trancada vira uma parede** (`PAREDE_PORTA`) nas fases de sala e some nas saídas.
+20. **Ruídos só nas saídas.** Passos, corrida, portas e painéis só entram na coleção de ruídos quando a criatura pode estar nos corredores.
+21. **`--fase <NOME>`** (debug) começa direto numa fase, por exemplo `bin/precursor --fase S2`.
+22. **Sem monitor, sem travar.** Se a janela não abrir, o jogo avisa e sai com código 1.

@@ -90,7 +90,7 @@
 #define MAX_CAMINHO 128
 
 // ---------------------------------------------------------------- luz e névoa
-#define LUZ_AMBIENTE 0.035f
+#define LUZ_AMBIENTE 0.06f
 #define NEVOA_DENSIDADE 0.085f
 
 // ---------------------------------------------------------------- paleta (só use onde a raylib já foi incluída)
