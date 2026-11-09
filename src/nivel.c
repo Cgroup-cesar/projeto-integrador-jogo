@@ -25,7 +25,7 @@ static const char *const MAPA[MAPA_ALTURA] = {
 
 // Lâmpadas dos corredores e das salas (coluna, linha). Edite à vontade.
 static const int LAMPADAS[][2] = {
-    {10, 5}, {16, 5}, {21, 8}, {8, 7}, {11, 11}, {18, 11}, {19, 2}, {4, 11}, {3, 5},
+    {10, 5}, {15, 5}, {20, 5}, {21, 8}, {8, 7}, {8, 10}, {11, 11}, {16, 11}, {20, 11}, {19, 2}, {4, 11}, {3, 5},
 };
 
 // ================================================================== coordenadas
@@ -228,10 +228,10 @@ static int luzes_saida(const Estado *e, Vector3 *pos, Vector3 *cor) {
         candidatos[melhor] = troca;
         pos[k] = candidatos[k];
         bool diario = candidatos[k].x == n->diario.x && candidatos[k].z == n->diario.z;
-        cor[k] = diario ? cor_luz(COR_LAMPADA, 1.3f * corte) : energia ? cor_luz(COR_LAMPADA, 1.4f) : cor_luz(COR_ALARME, 1.25f * corte);
+        cor[k] = diario ? cor_luz(COR_LAMPADA, 1.4f * corte) : energia ? cor_luz(COR_LAMPADA, 1.5f) : cor_luz(COR_ALARME, 1.7f * corte);
     }
     pos[3] = (Vector3){e->jog.pos.x, ALTURA_OLHOS + 0.3f, e->jog.pos.z};
-    cor[3] = cor_luz(COR_LAMPADA, 0.22f);
+    cor[3] = cor_luz(COR_LAMPADA, 0.32f);
     return 4;
 }
 
@@ -242,8 +242,13 @@ int nivel_luzes(const Estado *e, Vector3 *posicoes, Vector3 *cores) {
 
 // ================================================================== atualiza
 // Cruzar uma porta faz barulho (nas saídas, a criatura pode ouvir).
-// Poeira caindo do teto durante o apagão.
+// Poeira: caindo do teto no apagão e, no resto do tempo, flutuando devagar na luz perto do jogador.
 static void solta_poeira(Estado *e) {
+    if (e->apagao_t <= 0.0f && e->particulas.n < 60 && GetRandomValue(0, 100) < 12) {
+        Vector3 p = {e->jog.pos.x + GetRandomValue(-250, 250) / 100.0f, GetRandomValue(30, 270) / 100.0f, e->jog.pos.z + GetRandomValue(-250, 250) / 100.0f};
+        Vector3 v = {GetRandomValue(-5, 5) / 100.0f, GetRandomValue(-3, 3) / 100.0f, GetRandomValue(-5, 5) / 100.0f};
+        col_particulas_adiciona(&e->particulas, (Particula){p, v, 6.0f, 6.0f, PARTICULA_POEIRA});
+    }
     if (e->apagao_t <= 0.0f || GetRandomValue(0, 100) > 40) return;
     Vector3 p = {e->jog.pos.x + GetRandomValue(-300, 300) / 100.0f, PE_DIREITO - 0.05f, e->jog.pos.z + GetRandomValue(-300, 300) / 100.0f};
     Vector3 v = {GetRandomValue(-10, 10) / 100.0f, -GetRandomValue(20, 60) / 100.0f, GetRandomValue(-10, 10) / 100.0f};
@@ -327,8 +332,13 @@ void nivel_desenha(const Estado *e) {
     DrawCubeV((Vector3){largura * 0.5f, PE_DIREITO + 0.05f, profundidade * 0.5f}, (Vector3){largura, 0.1f, profundidade}, (Color){0x18, 0x1c, 0x19, 255});
     for (int i = 0; i < e->paredes.n; i++) {
         const Parede *p = &e->paredes.itens[i];
-        if (p->tipo == PAREDE_MURO) DrawCubeV(centro_de(p), tamanho_de(p), COR_CONCRETO);
         if (p->tipo == PAREDE_PORTA) DrawCubeV(centro_de(p), tamanho_de(p), (Color){0x35, 0x38, 0x2a, 255});
+        if (p->tipo != PAREDE_MURO) continue;
+        Vector3 c = centro_de(p), t = tamanho_de(p);
+        DrawCubeV(c, t, COR_CONCRETO);
+        // Rodapé escuro e a faixa de tinta oliva a 1,1 m: dão escala e leitura às paredes no escuro.
+        DrawCubeV((Vector3){c.x, 0.08f, c.z}, (Vector3){t.x + 0.02f, 0.16f, t.z + 0.02f}, (Color){0x16, 0x1c, 0x18, 255});
+        DrawCubeV((Vector3){c.x, 1.15f, c.z}, (Vector3){t.x + 0.02f, 0.12f, t.z + 0.02f}, COR_OLIVA);
     }
     float meio_x = (n->vidro_x0 + n->vidro_x1) * 0.5f, vl = n->vidro_x1 - n->vidro_x0;
     DrawCubeV((Vector3){meio_x, 0.45f, n->vidro_z}, (Vector3){vl, 0.9f, 0.4f}, COR_CONCRETO); // mureta
@@ -349,8 +359,10 @@ static void desenha_particulas(const Estado *e) {
     for (int i = 0; i < e->particulas.n; i++) {
         const Particula *p = &e->particulas.itens[i];
         float vida = p->vida / p->vida_max;
-        Color cor = p->tipo == PARTICULA_FAGULHA ? Fade(COR_FOSFORO, vida) : p->tipo == PARTICULA_POEIRA ? Fade((Color){150, 150, 140, 255}, 0.5f * vida) : Fade(COR_PELE, vida);
-        DrawCubeV(p->pos, (Vector3){0.025f, 0.025f, 0.025f}, cor);
+        float brilho = fminf(1.0f, vida * 4.0f) * fminf(1.0f, (1.0f - vida) * 6.0f); // aparece e some suave
+        Color cor = p->tipo == PARTICULA_FAGULHA ? Fade(COR_FOSFORO, vida) : p->tipo == PARTICULA_POEIRA ? Fade((Color){170, 160, 140, 255}, 0.35f * brilho) : Fade(COR_PELE, vida);
+        float lado = p->tipo == PARTICULA_POEIRA ? 0.012f : 0.025f;
+        DrawCubeV(p->pos, (Vector3){lado, lado, lado}, cor);
     }
 }
 

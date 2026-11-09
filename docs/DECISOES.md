@@ -63,3 +63,9 @@ Registro das escolhas feitas onde a especificação deixava espaço ou onde o am
 39. **Bônus de tempo nos dois finais.** O bônus (meio ponto por segundo abaixo de 8 min) entra no placar do final, vitória ou derrota; o +200 só no final bom.
 40. **ENTER acelera as cinemáticas** (pula 3 s por toque), para a fila da feira andar.
 41. **"OBRIGADO, PROFESSOR."** é desenhado na posição da tela correspondente ao vidro, sobre a cabeça dele (`GetWorldToScreen`), em vez de glifos 3D: fica legível com ou sem a fonte externa.
+
+## Áudio e atmosfera
+
+42. **Nomes dos sons substituíveis:** `zumbido_lampada`, `voz_precursor`, `verdadeiro`, `falso`, `bip_interfone`, `maquina_escrever`, `interruptor`, `passo`, `passo_criatura`, `vidro_estalo`, `estrondo`, `alarme`, `respiracao`, `ambiente_sala`, `ambiente_saida`, `papel`, `energia`, `distorcao` (todos `.ogg`, em `assets/audio/`).
+43. **Smoke calado.** O `--smoke` zera o volume; `--mudo` faz o mesmo no jogo normal.
+44. **Paredes com rodapé e faixa de tinta.** Em vez de textura (nenhum asset é obrigatório), duas faixas finas (rodapé escuro e tinta oliva a 1,1 m) dão escala e leitura no escuro.

@@ -88,7 +88,7 @@ static void resolve(Estado *e) {
 
 // Apagões curtos enquanto a energia não volta (uns 4% de chance por segundo).
 static void apagoes(Estado *e, float dt) {
-    if (e->painel.resolvido || e->apagao_t > 0.0f) return;
+    if (e->painel.resolvido || e->apagao_t > 0.0f || e->tempo_fase < 4.0f) return; // nada de apagão logo de cara
     if (GetRandomValue(0, 10000) < (int)(dt * 400.0f)) e->apagao_t = 0.35f + GetRandomValue(0, 30) / 100.0f;
 }
 

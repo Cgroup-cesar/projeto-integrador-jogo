@@ -20,6 +20,7 @@ static const char *arquivo_captura = NULL; // --captura <arquivo.png>: salva um 
 static float captura_em = 0.8f;            // --captura-em <segundos>
 static Fase fase_inicial = FASE_MENU;      // --fase <NOME> (debug): começa direto numa fase
 static Fase fase_captura = FASE_TOTAL;     // --captura-fase <NOME>: a captura espera essa fase
+static bool mudo = false;                  // --mudo: sem som
 
 // ================================================================== entrada
 static void le_entrada(Entrada *in) {
@@ -294,6 +295,7 @@ static void le_argumentos(Estado *e, int argc, char **argv) {
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--smoke") == 0) e->modo_smoke = true;
         if (strcmp(argv[i], "--feira") == 0) e->modo_feira = true;
+        if (strcmp(argv[i], "--mudo") == 0) mudo = true;
         if (strcmp(argv[i], "--captura") == 0 && i + 1 < argc) arquivo_captura = argv[++i];
         if (strcmp(argv[i], "--captura-em") == 0 && i + 1 < argc) sscanf(argv[++i], "%f", &captura_em);
         bool fase = strcmp(argv[i], "--fase") == 0, captura = strcmp(argv[i], "--captura-fase") == 0;
@@ -337,6 +339,10 @@ static void quadro(Estado *e) {
 }
 
 int main(int argc, char **argv) {
+    if (argc == 3 && strcmp(argv[1], "--exporta-sons") == 0) { // não abre janela: só grava os .wav
+        audio_exporta(argv[2]);
+        return 0;
+    }
     le_argumentos(&estado, argc, argv);
     abre_janela();
     if (!IsWindowReady()) { // sem monitor (tela dormindo, sessão remota): sai com uma mensagem, sem travar
@@ -350,8 +356,10 @@ int main(int argc, char **argv) {
     ui_carrega_fonte(&estado.rec);
     audio_inicia(&estado.rec);
     criatura_carrega_modelo(&estado.rec);
+    if (mudo) SetMasterVolume(0.0f);
     if (estado.modo_smoke) {
-        SetRandomSeed(1985); // o smoke é determinístico: mesmo resultado em toda execução
+        SetMasterVolume(0.0f); // o smoke roda calado
+        SetRandomSeed(1985);   // o smoke é determinístico: mesmo resultado em toda execução
         piloto_comeca_partida();
     }
     jogo_inicia(&estado);

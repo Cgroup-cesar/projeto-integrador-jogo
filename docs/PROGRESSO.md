@@ -11,8 +11,8 @@ Arquivo de retomada: se a sessão cair, leia este arquivo e o `git log` antes de
 | M4 — Saídas completas | ✅ pronto | `feat: saídas completas com painéis de circuito e diário (M4)` |
 | M5 — Precursor | ✅ pronto | `feat: o Precursor nos corredores com IA, A* e captura (M5)` |
 | M6 — Final | ✅ pronto | `feat: resposta final por fichas e os dois finais (M6)` |
-| M7 — Áudio e atmosfera | ⏳ próximo | |
-| M8 — Polimento e auditoria | | |
+| M7 — Áudio e atmosfera | ✅ pronto | `feat: áudio procedural e atmosfera (M7)` |
+| M8 — Polimento e auditoria | ⏳ próximo | |
 | M9 — README | | |
 
 ## M0 — Fundação
@@ -68,3 +68,9 @@ Arquivo de retomada: se a sessão cair, leia este arquivo e o `git log` antes de
 **Pronto:** `src/compositor.c` com o compositor de fichas no terminal (RESPONDA.): `[VOCÊ FALAR]` (P), `[PORTA ABRIR]` (Q), `[NÃO]`, `[E]`, `[OU]`, `[SE…ENTÃO]`, `[APAGAR]` e `[TRANSMITIR]`, em grade com destaque, no máximo 7 fichas; a frase aparece em fichas e, quando fecha, em notação lógica (por `logica_para_texto`). TRANSMITIR passa por `regras_avalia_transmissao`: inválida → SINTAXE INVÁLIDA com a explicação do parser, sem penalidade; contradição → FIM BOM; satisfazível → FIM RUIM. Final ruim: TRANSMISSÃO ACEITA → "OBRIGADO, PROFESSOR." sobre ele → o vidro se dissolve e as luzes morrem → a silhueta a 1 m → jumpscare → tela preta com o texto. Final bom: os glifos viram fragmentos, ele convulsiona e congela, 2 s de silêncio, as falas do Varela e do Elias, tela preta com o texto. ENTER acelera as cinemáticas. A tela de fim mostra VITÓRIA/DERROTA, placar total, placar por fase (filter + fold), tempo total, erros, "Pressione ENTER" e volta sozinha ao menu em 20 s.
 
 **Verificado:** `make` sem avisos; `make test` 100%; `make smoke` passa (na 1ª partida o piloto transmite primeiro uma frase inválida, apaga e transmite P SE…ENTÃO Q → final ruim; na 2ª, P E NÃO P → final bom). Capturas conferidas: compositor com SINTAXE INVÁLIDA e a anotação no canto, "OBRIGADO, PROFESSOR.", tela preta do final ruim, fragmentos no final bom e a tela de placar.
+
+## M7 — Áudio e atmosfera
+
+**Pronto:** `src/audio_sintese.c` gera em código (22050 Hz, mono, 16 bits) os 18 sons: zumbido de lâmpada, voz do Precursor (3 osciladores FM com formantes variando), VERDADEIRO (acorde grave consonante, 0,6 s), FALSO (guincho dissonante subindo, 0,5 s), bip do interfone, máquina de escrever, interruptor, passos (os da criatura mais graves e lentos), estalo de vidro, estrondo do susto, alarme, respiração no armário, ambiência em laço da sala e das saídas, papel, a energia voltando e a distorção. Um `assets/audio/<nome>.ogg` substitui o som sintetizado; sem placa de som, o jogo segue em silêncio. Laços por fase (ambiência, zumbido quando a lâmpada está acesa, alarme, respiração), silêncio total antes do estrondo e no final bom. `--exporta-sons <pasta>` grava os sons em WAV; `--mudo` tira o som. Atmosfera: 12 lâmpadas (mais nos corredores), lâmpadas vermelhas mais fortes nas saídas, rodapé escuro e faixa de tinta oliva nas paredes, poeira flutuando perto do jogador (além da poeira do apagão, das fagulhas e dos fragmentos), sem apagão nos 4 primeiros segundos de uma saída.
+
+**Verificado:** `make` sem avisos; `make test` 100%; `make smoke` passa (mudo); os 18 sons exportados e medidos (duração certa, pico ≤ 0,8, sem saturação); capturas conferidas da sala e do corredor.

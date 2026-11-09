@@ -69,7 +69,9 @@ void criatura_inicia_saida(Estado *e) {
 void criatura_puxa_para_contencao(Estado *e) {
     Criatura *c = &e->cri;
     c->tempo_para_surgir = 1e9f;
-    if (c->ativo) c->distorcao = 0.001f;
+    if (!c->ativo) return;
+    c->distorcao = 0.001f;
+    audio_toca(e, SOM_DISTORCAO, 0.9f, 1.0f);
 }
 
 // ================================================================== susto (jumpscare)

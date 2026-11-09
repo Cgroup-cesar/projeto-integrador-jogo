@@ -244,6 +244,7 @@ static void atualiza_temporizadores(Estado *e, float dt) {
     if (jogando(e) && e->fase != FASE_INTRO) e->tempo_partida += dt;
     e->apagao_t = e->apagao_t > 0.0f ? e->apagao_t - dt : 0.0f;
     e->falha_luz_t = e->falha_luz_t > 0.0f ? e->falha_luz_t - dt : 0.0f;
+    e->alarme_t = e->alarme_t > 0.0f ? e->alarme_t - dt : 0.0f;
 }
 
 void jogo_atualiza(Estado *e, float dt) {
