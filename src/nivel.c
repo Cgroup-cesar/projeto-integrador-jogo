@@ -376,5 +376,6 @@ void nivel_desenha_vidro(const Estado *e) {
     const Nivel *n = &e->nivel;
     float meio_x = (n->vidro_x0 + n->vidro_x1) * 0.5f, vl = n->vidro_x1 - n->vidro_x0;
     float opacidade = 0.09f + (VIDAS_VIDRO - e->vidas) * 0.05f;
+    if (e->fase == FASE_FIM_RUIM) opacidade *= fmaxf(0.0f, 1.0f - (e->fim.tempo - 4.5f) / 1.5f); // o vidro se dissolve
     DrawCubeV((Vector3){meio_x, 1.95f, n->vidro_z}, (Vector3){vl, 2.1f, 0.05f}, Fade(COR_VIDRO, opacidade));
 }

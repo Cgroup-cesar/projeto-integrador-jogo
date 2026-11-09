@@ -10,8 +10,8 @@ Arquivo de retomada: se a sessão cair, leia este arquivo e o `git log` antes de
 | M3 — Rodadas completas | ✅ pronto | `feat: rodadas completas com tabela-verdade ao vivo (M3)` |
 | M4 — Saídas completas | ✅ pronto | `feat: saídas completas com painéis de circuito e diário (M4)` |
 | M5 — Precursor | ✅ pronto | `feat: o Precursor nos corredores com IA, A* e captura (M5)` |
-| M6 — Final | ⏳ próximo | |
-| M7 — Áudio e atmosfera | | |
+| M6 — Final | ✅ pronto | `feat: resposta final por fichas e os dois finais (M6)` |
+| M7 — Áudio e atmosfera | ⏳ próximo | |
 | M8 — Polimento e auditoria | | |
 | M9 — README | | |
 
@@ -62,3 +62,9 @@ Arquivo de retomada: se a sessão cair, leia este arquivo e o `git log` antes de
 **Pronto:** em `src/criatura.c`, a IA dos corredores. Ele sobe pelo duto `V` 15 s depois do início de cada saída; a cada quadro percebe (visão: raycast contra as paredes com `GetRayCollisionBox` + `regras_criatura_ve_jogador`, cone de 70° e 14 m, invisível no armário; audição: fold `col_ruidos_mais_forte` sobre a coleção de ruídos) e `regras_proximo_estado_criatura` decide PATRULHA (cantos do loop, gerador, Arquivo; 1,6 m/s) → INVESTIGA (vai ao ruído mais forte) → PERSEGUE (3,6 m/s; direto quando a linha de visão está livre) → PROCURA (6 s em volta da última posição vista). O caminho sai de um A* na grade do mapa, com vizinhança de 4 (andando de centro a centro de células vizinhas ele nunca corta a quina de uma parede). Movimento com pausas e trancos, passos graves. Captura com `CheckCollisionSpheres` (duas esferas de 0,5 m → distância < 1 m): susto (0,2 s de silêncio + rosto com a fenda, ≤ 1,2 s) e a saída recomeça do início (checkpoint), com a fala do Varela; entrar no armário a menos de 2 m enquanto ele vê também é captura. Com o painel resolvido ele some numa distorção. F3 mostra o estado e o caminho do A*. Modelo opcional `assets/modelos/precursor.glb` (escalado para 2,6 m, com o shader de luz); sem ele, o placeholder procedural, sem erro para o jogador. O rosto do susto ganhou sombreado e a fenda com borda viva.
 
 **Verificado:** `make` sem avisos; `make test` 100%; `make smoke` passa e agora, na 1ª partida, fica parado no corredor da S2 fazendo barulho: a criatura precisa passar por INVESTIGA e PERSEGUE e pegar o jogador (a saída recomeça); na 2ª partida entra e sai de um armário. O smoke usa semente fixa (`SetRandomSeed(1985)`) e é determinístico (rodado 3 vezes seguidas). Capturas conferidas: a criatura surgindo do duto e perseguindo no corredor vermelho.
+
+## M6 — Final
+
+**Pronto:** `src/compositor.c` com o compositor de fichas no terminal (RESPONDA.): `[VOCÊ FALAR]` (P), `[PORTA ABRIR]` (Q), `[NÃO]`, `[E]`, `[OU]`, `[SE…ENTÃO]`, `[APAGAR]` e `[TRANSMITIR]`, em grade com destaque, no máximo 7 fichas; a frase aparece em fichas e, quando fecha, em notação lógica (por `logica_para_texto`). TRANSMITIR passa por `regras_avalia_transmissao`: inválida → SINTAXE INVÁLIDA com a explicação do parser, sem penalidade; contradição → FIM BOM; satisfazível → FIM RUIM. Final ruim: TRANSMISSÃO ACEITA → "OBRIGADO, PROFESSOR." sobre ele → o vidro se dissolve e as luzes morrem → a silhueta a 1 m → jumpscare → tela preta com o texto. Final bom: os glifos viram fragmentos, ele convulsiona e congela, 2 s de silêncio, as falas do Varela e do Elias, tela preta com o texto. ENTER acelera as cinemáticas. A tela de fim mostra VITÓRIA/DERROTA, placar total, placar por fase (filter + fold), tempo total, erros, "Pressione ENTER" e volta sozinha ao menu em 20 s.
+
+**Verificado:** `make` sem avisos; `make test` 100%; `make smoke` passa (na 1ª partida o piloto transmite primeiro uma frase inválida, apaga e transmite P SE…ENTÃO Q → final ruim; na 2ª, P E NÃO P → final bom). Capturas conferidas: compositor com SINTAXE INVÁLIDA e a anotação no canto, "OBRIGADO, PROFESSOR.", tela preta do final ruim, fragmentos no final bom e a tela de placar.

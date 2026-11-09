@@ -56,3 +56,10 @@ Registro das escolhas feitas onde a especificação deixava espaço ou onde o am
 35. **Móveis bloqueiam a visão** (o raycast usa a coleção de paredes, que inclui armários, console e painéis): dá para se esconder atrás de um armário, não só dentro.
 36. **Checkpoint = início da saída atual.** Ser pego recomeça a saída com a porta abrindo e a criatura de novo no duto (15 s); o diário lido continua valendo.
 37. **Smoke determinístico.** Com `--smoke`, a semente do sorteio é fixa (1985); o jogo normal continua aleatório.
+
+## Final
+
+38. **Prévia em notação lógica.** Enquanto monta a frase, o jogador vê a mesma frase em P, Q, ¬, ∧, ∨, → (legenda P = VOCÊ FALAR, Q = PORTA ABRIR). Isso liga a resposta final ao conteúdo de Lógica para Computação sem entregar a solução.
+39. **Bônus de tempo nos dois finais.** O bônus (meio ponto por segundo abaixo de 8 min) entra no placar do final, vitória ou derrota; o +200 só no final bom.
+40. **ENTER acelera as cinemáticas** (pula 3 s por toque), para a fila da feira andar.
+41. **"OBRIGADO, PROFESSOR."** é desenhado na posição da tela correspondente ao vidro, sobre a cabeça dele (`GetWorldToScreen`), em vez de glifos 3D: fica legível com ou sem a fonte externa.

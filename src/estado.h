@@ -144,6 +144,7 @@ typedef struct {
     Ficha fichas[MAX_FICHAS_FRASE];
     int n;
     int cursor;
+    int acoes; // quantas fichas já foram usadas (o piloto do smoke segue um roteiro por aqui)
     const char *mensagem;
     char detalhe[128];
     float mensagem_t;
@@ -175,9 +176,10 @@ typedef struct {
 } Intro;
 
 typedef struct {
-    float tempo;
+    float tempo;     // tempo da cinemática
     int etapa;
     bool tela_final; // a cinemática acabou: mostra o placar
+    float tempo_tela; // tempo na tela de placar (volta ao menu em 20 s)
 } Fim;
 
 typedef struct {

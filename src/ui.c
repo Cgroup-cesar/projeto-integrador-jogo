@@ -225,8 +225,8 @@ static void atualiza_menu(Estado *e) {
 
 static void atualiza_tela_final(Estado *e, float dt) {
     if (!e->fim.tela_final) return;
-    e->fim.tempo += dt;
-    if (e->in.confirmar || e->fim.tempo >= FIM_VOLTA_MENU_S) e->evento = EV_VOLTAR_MENU;
+    e->fim.tempo_tela += dt;
+    if (e->in.confirmar || e->fim.tempo_tela >= FIM_VOLTA_MENU_S) e->evento = EV_VOLTAR_MENU;
 }
 
 void ui_atualiza(Estado *e, float dt) {
@@ -392,16 +392,19 @@ static void desenha_tela_final(const Estado *e) {
     ui_texto_centro(e, texto, 190 * s, 30 * s, COR_FOSFORO);
     float y = 250 * s;
     const Fase fases[] = {FASE_R1, FASE_S1, FASE_R2, FASE_S2, FASE_R3, FASE_RESPOSTA_FINAL, vitoria ? FASE_FIM_BOM : FASE_FIM_RUIM};
-    for (int i = 0; i < 7; i++) {
+    float meio = GetScreenWidth() * 0.5f;
+    for (int i = 0; i < 7; i++) { // duas colunas: o nome alinhado à direita, os pontos à esquerda
         int pontos = regras_placar_da_fase(e->eventos.itens, e->eventos.n, fases[i]);
-        snprintf(texto, sizeof(texto), "%-16s %+5d", dialogo_nome_fase(fases[i]), pontos);
-        ui_texto_centro(e, texto, y, 20 * s, Fade(COR_FOSFORO, 0.8f));
+        const char *nome = dialogo_nome_fase(fases[i]);
+        ui_texto(e, nome, (Vector2){meio - 24 * s - ui_mede(e, nome, 20 * s).x, y}, 20 * s, Fade(COR_FOSFORO, 0.75f));
+        snprintf(texto, sizeof(texto), "%+d", pontos);
+        ui_texto(e, texto, (Vector2){meio + 24 * s, y}, 20 * s, pontos < 0 ? COR_ALARME : COR_FOSFORO);
         y += 26 * s;
     }
     int seg = (int)e->tempo_partida;
     snprintf(texto, sizeof(texto), "%s %02d:%02d   ·   %s %d", dialogo_texto(TXT_FIM_TEMPO), seg / 60, seg % 60, dialogo_texto(TXT_FIM_ERROS), e->erros_totais);
     ui_texto_centro(e, texto, y + 16 * s, 22 * s, COR_VIDRO);
-    snprintf(texto, sizeof(texto), "%s  (%d)", dialogo_texto(TXT_FIM_ENTER), (int)(FIM_VOLTA_MENU_S - e->fim.tempo + 0.99f));
+    snprintf(texto, sizeof(texto), "%s  (%d)", dialogo_texto(TXT_FIM_ENTER), (int)(FIM_VOLTA_MENU_S - e->fim.tempo_tela + 0.99f));
     ui_texto_centro(e, texto, GetScreenHeight() - 110 * s, 24 * s, COR_AMBAR);
     ui_texto_centro(e, dialogo_texto(TXT_FIM_RODAPE), GetScreenHeight() - 50 * s, 16 * s, Fade(COR_FOSFORO, 0.45f));
 }

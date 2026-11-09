@@ -409,7 +409,7 @@ void criatura_desenha(const Estado *e) {
     if (!c->contido && !c->ativo) return;
     float t = e->tempo_total;
     float jitter = (fmodf(t * 0.9f, 1.0f) > 0.9f) ? sinf(t * 55.0f) * 4.0f : sinf(t * 0.8f) * 1.5f;
-    if (c->congelado_t > 0.0f) jitter = 0.0f;
+    if (e->fase == FASE_FIM_BOM) jitter = c->congelado_t > 0.0f ? 0.0f : sinf(t * 80.0f) * 22.0f; // convulsiona e congela
     Color pele = escurece(COR_PELE, visibilidade(e));
     rlPushMatrix();
     float subida = c->contido ? 0.0f : (c->surgindo - 1.0f) * 2.7f; // sobe pelo duto

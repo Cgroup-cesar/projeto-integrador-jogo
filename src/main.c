@@ -223,7 +223,7 @@ static void piloto_age(Estado *e, Entrada *in) {
     case FASE_S2: piloto_saida(e, in); break;
     case FASE_RESPOSTA_FINAL: compositor_piloto(e, in, piloto.partida == 1); break;
     case FASE_FIM_RUIM:
-    case FASE_FIM_BOM: in->confirmar = e->fim.tela_final && e->fim.tempo > 0.5f; break;
+    case FASE_FIM_BOM: in->confirmar = e->fim.tela_final && e->fim.tempo_tela > 0.5f; break;
     default: break;
     }
 }
