@@ -32,3 +32,11 @@ Registro das escolhas feitas onde a especificação deixava espaço ou onde o am
 20. **Ruídos só nas saídas.** Passos, corrida, portas e painéis só entram na coleção de ruídos quando a criatura pode estar nos corredores.
 21. **`--fase <NOME>`** (debug) começa direto numa fase, por exemplo `bin/precursor --fase S2`.
 22. **Sem monitor, sem travar.** Se a janela não abrir, o jogo avisa e sai com código 1.
+
+## Rodadas
+
+23. **Léxico no terminal.** Para a tradução ter solução, o analisador mostra embaixo de cada glifo o que ele significa (NÓS, PERIGO, VOCÊ, FALAR, PORTA, ABRIR). O conectivo só aparece com nome depois de decifrado; antes, "?".
+24. **Ordem das opções de tradução embaralhada.** A especificação lista a certa primeiro; no jogo ela fica na 2ª posição na R1, na 3ª na R2 e na 1ª na R3, para não ser sempre a primeira.
+25. **Só combinações novas fazem ele responder**, como pede a especificação. Ao entrar no terminal, a combinação atual (luzes apagadas) já conta como nova.
+26. **Placar "rodada sem erro"** considera todos os erros da rodada, inclusive os de tentativas que terminaram com o vidro rompido.
+27. **`--captura-fase <NOME>` com `--captura-em <s>`** fotografa um momento de uma fase (o tempo conta a partir da entrada na fase); com `--smoke`, dá para registrar qualquer etapa sem ninguém jogar.

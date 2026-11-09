@@ -241,8 +241,17 @@ int nivel_luzes(const Estado *e, Vector3 *posicoes, Vector3 *cores) {
 
 // ================================================================== atualiza
 // Cruzar uma porta faz barulho (nas saídas, a criatura pode ouvir).
+// Poeira caindo do teto durante o apagão.
+static void solta_poeira(Estado *e) {
+    if (e->apagao_t <= 0.0f || GetRandomValue(0, 100) > 40) return;
+    Vector3 p = {e->jog.pos.x + GetRandomValue(-300, 300) / 100.0f, PE_DIREITO - 0.05f, e->jog.pos.z + GetRandomValue(-300, 300) / 100.0f};
+    Vector3 v = {GetRandomValue(-10, 10) / 100.0f, -GetRandomValue(20, 60) / 100.0f, GetRandomValue(-10, 10) / 100.0f};
+    col_particulas_adiciona(&e->particulas, (Particula){p, v, 4.0f, 4.0f, PARTICULA_POEIRA});
+}
+
 void nivel_atualiza(Estado *e, float dt) {
     (void)dt;
+    solta_poeira(e);
     int c, l;
     if (!nivel_celula_de(e->jog.pos, &c, &l)) return;
     int celula = l * MAPA_LARGURA + c;
@@ -325,8 +334,19 @@ static Color cor_lampada(const Estado *e) {
     return COR_LAMPADA;
 }
 
+// Fagulhas dos glifos e poeira do apagão (a coleção de partículas).
+static void desenha_particulas(const Estado *e) {
+    for (int i = 0; i < e->particulas.n; i++) {
+        const Particula *p = &e->particulas.itens[i];
+        float vida = p->vida / p->vida_max;
+        Color cor = p->tipo == PARTICULA_FAGULHA ? Fade(COR_FOSFORO, vida) : p->tipo == PARTICULA_POEIRA ? Fade((Color){150, 150, 140, 255}, 0.5f * vida) : Fade(COR_PELE, vida);
+        DrawCubeV(p->pos, (Vector3){0.025f, 0.025f, 0.025f}, cor);
+    }
+}
+
 void nivel_desenha_emissivos(const Estado *e) {
     const Nivel *n = &e->nivel;
+    desenha_particulas(e);
     bool saida = regras_fase_eh_saida(e->fase);
     Color lamp = cor_lampada(e);
     if (saida) {

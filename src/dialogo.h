@@ -68,6 +68,11 @@ typedef enum {
     TXT_TERMINAL_SINTAXE_INVALIDA,
     TXT_TERMINAL_TRANSMITINDO,
     TXT_TERMINAL_FRASE,
+    TXT_TERMINAL_FRASE_OBSERVADA,
+    TXT_TERMINAL_LUZ_ACESA,
+    TXT_TERMINAL_LUZ_APAGADA,
+    TXT_TERMINAL_TABELA,
+    TXT_TERMINAL_QUAL_FRASE,
     TXT_VERDADEIRO,
     TXT_FALSO,
     TXT_PAINEL1_TITULO,
@@ -102,6 +107,9 @@ const char *dialogo_nome_fase(int fase);
 #define CONECTIVOS_ESCOLHA 4
 const char *dialogo_conectivo(int indice); // NÃO, E, OU, SE…ENTÃO
 const char *dialogo_opcao_traducao(int rodada, int opcao);
+
+// Léxico do analisador: o que cada glifo de palavra significa (conectivos: só depois de decifrados).
+const char *dialogo_significado_glifo(int glifo);
 
 // Fichas da resposta final.
 const char *dialogo_ficha(int indice);

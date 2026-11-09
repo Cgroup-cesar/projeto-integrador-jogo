@@ -156,6 +156,25 @@ void ui_painel(Rectangle r, Color borda) {
     DrawRectangleLinesEx(r, 1.5f, Fade(borda, 0.65f));
 }
 
+void ui_opcao(const Estado *e, const char *texto, Vector2 pos, float largura, float tamanho, bool ativa, Color cor) {
+    float s = ui_escala();
+    Rectangle r = {pos.x - 10 * s, pos.y - 4 * s, largura, tamanho + 8 * s};
+    if (ativa) {
+        DrawRectangleRounded(r, 0.25f, 6, Fade(cor, 0.16f));
+        DrawRectangle((int)r.x, (int)r.y, (int)(3 * s), (int)r.height, cor);
+    }
+    ui_texto(e, texto, (Vector2){pos.x + 6 * s, pos.y}, tamanho, ativa ? cor : Fade(cor, 0.55f));
+}
+
+float ui_quadrados_vidro(int vidas, Vector2 pos, float lado, Color cor) {
+    for (int i = 0; i < VIDAS_VIDRO; i++) {
+        Rectangle r = {pos.x + i * lado * 1.6f, pos.y, lado, lado};
+        if (i < vidas) DrawRectangleRec(r, cor);
+        else DrawRectangleLinesEx(r, lado * 0.12f, cor);
+    }
+    return VIDAS_VIDRO * lado * 1.6f;
+}
+
 // ------------------------------------------------------------------ legendas
 void ui_fala(Estado *e, BlocoFalas bloco) {
     int n = 0;
@@ -284,11 +303,7 @@ static void desenha_vidas(const Estado *e, Vector2 pos) {
     Color cor = e->vidas <= 1 ? COR_ALARME : COR_VIDRO;
     ui_texto(e, dialogo_texto(TXT_HUD_VIDRO), pos, 20 * s, cor);
     float x = pos.x + ui_mede(e, dialogo_texto(TXT_HUD_VIDRO), 20 * s).x + 12 * s;
-    for (int i = 0; i < VIDAS_VIDRO; i++) {
-        Rectangle r = {x + i * 22 * s, pos.y + 2 * s, 14 * s, 14 * s};
-        if (i < e->vidas) DrawRectangleRec(r, cor);
-        else DrawRectangleLinesEx(r, 1.5f * s, cor);
-    }
+    ui_quadrados_vidro(e->vidas, (Vector2){x, pos.y + 2 * s}, 14 * s, cor);
 }
 
 static void desenha_vidro_e_placar(const Estado *e) {
@@ -335,7 +350,7 @@ static void desenha_hud(const Estado *e) {
     float s = ui_escala();
     if (e->jog.modo == MODO_ANDANDO || e->jog.modo == MODO_ARMARIO)
         ui_texto(e, dialogo_texto(objetivo(e)), (Vector2){24 * s, 20 * s}, 18 * s, Fade(COR_FOSFORO, 0.7f));
-    desenha_vidro_e_placar(e);
+    if (e->jog.modo != MODO_TERMINAL && e->jog.modo != MODO_PAINEL) desenha_vidro_e_placar(e); // o terminal já mostra
     desenha_folego(e);
     desenha_mira(e);
 }

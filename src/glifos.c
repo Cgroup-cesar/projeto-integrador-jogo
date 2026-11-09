@@ -84,15 +84,21 @@ void glifos_atualiza(Estado *e, float dt) {
     col_particulas_adiciona(&e->particulas, (Particula){pos, vel, 0.6f + dt, 0.6f, PARTICULA_FAGULHA});
 }
 
+// Enquanto ele "fala", a frase aparece no vidro, tremendo levemente (até duas frases, uma por linha).
 void glifos_desenha(const Estado *e) {
-    FraseGlifos frase;
-    if (e->cri.fala_t <= 0.0f || !rodadas_frase_atual(e, &frase)) return;
+    FraseGlifos frases[2];
+    int n_frases = e->cri.fala_t > 0.0f ? rodadas_frases_atuais(e, frases, 2) : 0;
     const Nivel *n = &e->nivel;
-    float tamanho = 0.42f, largura = frase.n * tamanho * 1.45f - tamanho * 0.45f;
-    float x0 = (n->vidro_x0 + n->vidro_x1) * 0.5f - largura * 0.5f;
-    for (int i = 0; i < frase.n; i++) {
-        float tremor = sinf(e->tempo_total * 23.0f + i * 1.7f) * 0.012f;
-        Vector3 canto = {x0 + i * tamanho * 1.45f, 2.55f + tremor, n->vidro_z - 0.06f};
-        glifo_no_vidro(frase.glifos[i], canto, tamanho, glifo_cor(e, frase.glifos[i]), tremor);
+    float tamanho = 0.36f;
+    for (int f = 0; f < n_frases; f++) {
+        const FraseGlifos *frase = &frases[f];
+        float largura = frase->n * tamanho * 1.45f - tamanho * 0.45f;
+        float x0 = (n->vidro_x0 + n->vidro_x1) * 0.5f - largura * 0.5f;
+        float topo = (n_frases > 1 ? 2.75f : 2.55f) - f * 0.62f;
+        for (int i = 0; i < frase->n; i++) {
+            float tremor = sinf(e->tempo_total * 23.0f + i * 1.7f + f) * 0.012f;
+            Vector3 canto = {x0 + i * tamanho * 1.45f, topo + tremor, n->vidro_z - 0.06f};
+            glifo_no_vidro(frase->glifos[i], canto, tamanho, glifo_cor(e, frase->glifos[i]), tremor);
+        }
     }
 }

@@ -33,6 +33,7 @@ void audio_finaliza(Recursos *rec);
 // Toca um som curto. volume 0..1; tom 1 = normal.
 void audio_toca(const Estado *e, IdSom som, float volume, float tom);
 void audio_para(const Estado *e, IdSom som);
+void audio_silencia(const Estado *e); // para tudo (os 0,2 s de silêncio antes do jumpscare)
 
 // Laços de ambiência por fase, zumbido de lâmpada, alarme e respiração no armário.
 void audio_atualiza(Estado *e, float dt);

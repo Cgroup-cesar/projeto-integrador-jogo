@@ -21,6 +21,10 @@ void audio_para(const Estado *e, IdSom som) {
     (void)som;
 }
 
+void audio_silencia(const Estado *e) {
+    (void)e;
+}
+
 void audio_atualiza(Estado *e, float dt) {
     (void)e;
     (void)dt;

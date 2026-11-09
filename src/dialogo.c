@@ -126,6 +126,11 @@ static const char *const TEXTOS[TXT_TOTAL] = {
     [TXT_TERMINAL_SINTAXE_INVALIDA] = "SINTAXE INVÁLIDA",
     [TXT_TERMINAL_TRANSMITINDO] = "TRANSMITINDO...",
     [TXT_TERMINAL_FRASE] = "FRASE:",
+    [TXT_TERMINAL_FRASE_OBSERVADA] = "FRASE OBSERVADA",
+    [TXT_TERMINAL_LUZ_ACESA] = "ACESA",
+    [TXT_TERMINAL_LUZ_APAGADA] = "APAGADA",
+    [TXT_TERMINAL_TABELA] = "TABELA-VERDADE",
+    [TXT_TERMINAL_QUAL_FRASE] = "Frase %d de %d",
     [TXT_VERDADEIRO] = "VERDADEIRO",
     [TXT_FALSO] = "FALSO",
     [TXT_PAINEL1_TITULO] = "PAINEL 1 — GERADOR AUXILIAR",
@@ -181,6 +186,16 @@ static const char *const TRADUCOES[3][3] = {
 const char *dialogo_opcao_traducao(int rodada, int opcao) {
     if (rodada < 1 || rodada > 3 || opcao < 0 || opcao > 2) return "";
     return TRADUCOES[rodada - 1][opcao];
+}
+
+// ================================================================== léxico (ordem dos glifos em glifos.h)
+static const char *const SIGNIFICADOS[] = {
+    "NÃO", "E", "OU", "SE…ENTÃO", "SE E SÓ SE", "LUZ A", "LUZ B", "NÓS", "VOCÊ", "PERIGO", "FALAR", "PORTA", "ABRIR",
+};
+
+const char *dialogo_significado_glifo(int glifo) {
+    int n = (int)(sizeof(SIGNIFICADOS) / sizeof(SIGNIFICADOS[0]));
+    return (glifo >= 0 && glifo < n) ? SIGNIFICADOS[glifo] : "?";
 }
 
 // ================================================================== fichas da resposta final

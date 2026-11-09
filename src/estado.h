@@ -118,6 +118,7 @@ typedef struct {
     int cursor;
     float resposta_t;   // > 0 enquanto o Precursor "responde" à combinação de luzes
     int resposta_linha;
+    int resposta_coluna; // na R2 ele responde às duas frases, uma depois da outra
     bool resposta_valor;
     float aviso_t;
     const char *aviso;
@@ -225,6 +226,7 @@ typedef struct Estado {
     float jumpscare_t;  // > 0 durante o jumpscare
     float silencio_t;   // os 0,2 s de silêncio antes do estrondo
     float retorno_t;    // saída: tempo desde que o painel foi resolvido
+    EventoFase evento_pos_susto; // o que acontece quando o jumpscare termina
 } Estado;
 
 #endif

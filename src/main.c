@@ -16,6 +16,7 @@ static Estado estado; // o estado inteiro do jogo (estático: nada de malloc por
 static const char *arquivo_captura = NULL; // --captura <arquivo.png>: salva um quadro e segue
 static float captura_em = 0.8f;            // --captura-em <segundos>
 static Fase fase_inicial = FASE_MENU;      // --fase <NOME> (debug): começa direto numa fase
+static Fase fase_captura = FASE_TOTAL;     // --captura-fase <NOME>: a captura espera essa fase
 
 // ================================================================== entrada
 static void le_entrada(Entrada *in) {
@@ -57,6 +58,7 @@ typedef struct {
     float espera;
     EventoFase roteiro[16];
     int roteiro_n, roteiro_i;
+    float tempo_fase_anterior;
     float andando_t;        // teste de colisão: anda de verdade até o vidro na primeira saída
     bool colisao_conferida;
     int codigo_saida;       // −1 = ainda jogando; 0 = ok; 1 = falhou
@@ -129,6 +131,14 @@ static void piloto_saida(Estado *e, Entrada *in) {
     in->interagir = true;
 }
 
+// Para o smoke passar também pelos caminhos de erro: na 1ª partida o vidro rompe uma vez na R3
+// (3 erros, jumpscare e recomeço); na 2ª, a R2 tem um erro.
+static int piloto_erros_desejados(const Estado *e) {
+    if (piloto.partida == 0 && e->fase == FASE_R3) return VIDAS_VIDRO;
+    if (piloto.partida == 1 && e->fase == FASE_R2) return 1;
+    return 0;
+}
+
 static void piloto_age(Estado *e, Entrada *in) {
     switch (e->fase) {
     case FASE_MENU:
@@ -140,7 +150,7 @@ static void piloto_age(Estado *e, Entrada *in) {
     case FASE_R2:
     case FASE_R3:
         if (e->jog.modo == MODO_TERMINAL) {
-            rodadas_piloto(e, in);
+            rodadas_piloto(e, in, piloto_erros_desejados(e));
         } else if (e->jog.modo == MODO_ANDANDO) {
             jogador_vai_ao_console(e);
             in->interagir = true;
@@ -161,7 +171,11 @@ static void piloto_entrada(Estado *e, Entrada *in, float dt) {
         piloto_confere_troca(piloto.fase_vista, e->fase);
         piloto.fase_vista = e->fase;
         piloto.tempo_na_fase = 0.0f;
+        piloto.tempo_fase_anterior = 0.0f;
     }
+    if (e->tempo_fase + 0.001f < piloto.tempo_fase_anterior)
+        printf("SMOKE  partida %d: %s recomeçou (%d erro(s) na fase)\n", piloto.partida + 1, regras_nome_fase(e->fase), e->erros_na_fase);
+    piloto.tempo_fase_anterior = e->tempo_fase;
     if (e->fase == FASE_S1 && piloto_confere_colisao(e, in, dt)) return;
     piloto.tempo_na_fase += dt;
     if (piloto.tempo_na_fase > SMOKE_LIMITE_FASE_S) {
@@ -218,10 +232,14 @@ static void le_argumentos(Estado *e, int argc, char **argv) {
         if (strcmp(argv[i], "--feira") == 0) e->modo_feira = true;
         if (strcmp(argv[i], "--captura") == 0 && i + 1 < argc) arquivo_captura = argv[++i];
         if (strcmp(argv[i], "--captura-em") == 0 && i + 1 < argc) sscanf(argv[++i], "%f", &captura_em);
-        if (strcmp(argv[i], "--fase") == 0 && i + 1 < argc) {
+        bool fase = strcmp(argv[i], "--fase") == 0, captura = strcmp(argv[i], "--captura-fase") == 0;
+        if ((fase || captura) && i + 1 < argc) {
             const char *nome = argv[++i];
-            for (int f = 0; f < FASE_TOTAL; f++)
-                if (strcmp(nome, regras_nome_fase((Fase)f)) == 0) fase_inicial = (Fase)f;
+            for (int f = 0; f < FASE_TOTAL; f++) {
+                if (strcmp(nome, regras_nome_fase((Fase)f)) != 0) continue;
+                if (fase) fase_inicial = (Fase)f;
+                else fase_captura = (Fase)f;
+            }
         }
     }
 }
@@ -243,7 +261,8 @@ static void quadro(Estado *e) {
     else le_entrada(&e->in);
     atualiza(e, dt);
     desenha(e);
-    if (arquivo_captura != NULL && e->tempo_total > captura_em) {
+    bool na_hora = fase_captura == FASE_TOTAL ? e->tempo_total > captura_em : (e->fase == fase_captura && e->tempo_fase > captura_em);
+    if (arquivo_captura != NULL && na_hora) {
         salva_captura(arquivo_captura);
         arquivo_captura = NULL;
     }

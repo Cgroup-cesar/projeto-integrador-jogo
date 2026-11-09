@@ -79,7 +79,6 @@ static void entra_fase(Estado *e, Fase fase, bool reinicio) {
         e->pegos_na_fase = 0;
     }
     prepara_mundo(e, fase);
-    e->vidas = regras_integridade_vidro(e->rachaduras.itens, e->rachaduras.n, VIDAS_VIDRO);
     switch (fase) {
     case FASE_MENU:
         limpa_partida(e);
@@ -99,6 +98,7 @@ static void entra_fase(Estado *e, Fase fase, bool reinicio) {
     case FASE_RESPOSTA_FINAL:
         compositor_inicia(e);
         criatura_contem(e);
+        e->rod.luz_a = e->rod.luz_b = true; // as duas luzes da cela acesas: ele está ali, encostado no vidro
         e->cri.avanco_vidro = 1.0f;
         e->cri.mao_no_vidro = true;
         jogador_vai_ao_console(e);
@@ -108,6 +108,8 @@ static void entra_fase(Estado *e, Fase fase, bool reinicio) {
     case FASE_FIM_BOM: compositor_inicia_fim(e); break;
     default: break;
     }
+    // Os caches dos dois folds (vidas e placar) são recalculados depois que a fase limpou o que precisava.
+    e->vidas = regras_integridade_vidro(e->rachaduras.itens, e->rachaduras.n, VIDAS_VIDRO);
     e->placar = regras_placar(e->eventos.itens, e->eventos.n);
     TraceLog(LOG_INFO, "PRECURSOR: fase %s%s", regras_nome_fase(fase), reinicio ? " (recomeço)" : "");
 }
@@ -226,10 +228,7 @@ static void atualiza_fase(Estado *e, float dt) {
         terminal_atualiza(e, dt);
         break;
     case FASE_S1:
-    case FASE_S2:
-        circuito_atualiza(e, dt);
-        criatura_atualiza(e, dt);
-        break;
+    case FASE_S2: circuito_atualiza(e, dt); break;
     case FASE_RESPOSTA_FINAL: compositor_atualiza(e, dt); break;
     case FASE_FIM_RUIM:
     case FASE_FIM_BOM: compositor_atualiza_fim(e, dt); break;
@@ -260,10 +259,15 @@ void jogo_atualiza(Estado *e, float dt) {
     }
     atualiza_temporizadores(e, dt);
     atualiza_feira(e, dt);
-    if (anda_livre) jogador_atualiza(e, dt);
+    criatura_atualiza_susto(e, dt);
+    if (anda_livre && !criatura_em_susto(e)) jogador_atualiza(e, dt);
     nivel_atualiza(e, dt);
     atualiza_fase(e, dt);
+    criatura_atualiza(e, dt);
+    glifos_atualiza(e, dt);
     col_ruidos_atualiza(&e->ruidos, dt);
+    col_particulas_atualiza(&e->particulas, dt, (Vector3){0, -0.5f, 0},
+                            (Vector3){MAPA_LARGURA * TAMANHO_CELULA, PE_DIREITO, MAPA_ALTURA * TAMANHO_CELULA});
     ui_atualiza(e, dt);
     jogador_atualiza_camera(e);
     EventoFase ev = e->evento;
@@ -283,7 +287,6 @@ static void desenha_mundo_3d(const Estado *e) {
     posfx_termina_luz(e);
     nivel_desenha_emissivos(e);
     circuito_desenha_3d(e);
-    rodadas_desenha(e);
     glifos_desenha(e);
     nivel_desenha_vidro(e);
     EndMode3D();
@@ -293,7 +296,7 @@ void jogo_desenha_cena(const Estado *e) {
     ClearBackground(BLACK);
     bool tela_preta = e->fase == FASE_INTRO && !e->intro.interfone;
     if (!tela_preta) desenha_mundo_3d(e);
-    if (regras_fase_eh_rodada(e->fase) || e->fase == FASE_RESPOSTA_FINAL) rodadas_desenha_rachaduras(e);
+    if (regras_fase_eh_rodada(e->fase) || e->fase == FASE_RESPOSTA_FINAL) rodadas_desenha(e);
     jogador_desenha(e);
     criatura_desenha_jumpscare(e);
     if (e->fase == FASE_FIM_BOM || e->fase == FASE_FIM_RUIM) compositor_desenha_fim(e);
