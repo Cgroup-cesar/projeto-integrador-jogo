@@ -5,8 +5,8 @@ Arquivo de retomada: se a sessão cair, leia este arquivo e o `git log` antes de
 | Marco | Situação | Commit |
 | :---- | :---- | :---- |
 | M0 — Fundação | ✅ pronto | `feat: fundação do projeto (M0)` |
-| M1 — Núcleo puro | ⏳ próximo | |
-| M2 — Fatia vertical | | |
+| M1 — Núcleo puro | ✅ pronto | `feat: núcleo puro de lógica e regras com testes (M1)` |
+| M2 — Fatia vertical | ⏳ próximo | |
 | M3 — Rodadas completas | | |
 | M4 — Saídas completas | | |
 | M5 — Precursor | | |
@@ -24,3 +24,11 @@ Arquivo de retomada: se a sessão cair, leia este arquivo e o `git log` antes de
 **Falta:** tudo a partir do M1.
 
 **Observação do ambiente:** neste Mac, a raylib só abre janela com a tela acordada (com a tela dormindo, o GLFW não acha o monitor). Para testes automáticos, acorde a tela antes (`caffeinate -u -t 5`).
+
+## M1 — Núcleo puro
+
+**Pronto:** `src/logica.c` (árvore num pool estático; `logica_avalia`, `logica_tabela_verdade`, tautologia/contradição/satisfazível, `logica_para_texto` com ¬ ∧ ∨ → ↔ e parênteses mínimos, `logica_parse_fichas` com precedência ¬ > ∧ > ∨ > → > ↔, → à direita e mensagens de erro amigáveis); `src/regras.c` (máquina de fases `regras_proxima_fase`, roteiro da partida usado pelo test_fluxo e pelo smoke, `regras_avalia_transmissao`, movimento, visão da criatura, ruído percebido, estados da criatura, placar e placar por fase, bônus de tempo, integridade do vidro, interativos por fase, circuitos dos painéis avaliados porta a porta com a semântica de `logica_aplica`); `src/funcional.h` (`fx_map`, `fx_filter_inplace`, `fx_fold`); `src/colecoes.c` (as 6 coleções, com vetor cheio tratado por `TraceLog`).
+
+**Verificado:** `make` sem avisos; `make test`: test_logica 35/35, test_regras 54/54, test_fluxo 36/36; CTest 3/3.
+
+**Decisões:** ver itens 9 a 12 de `docs/DECISOES.md`.
