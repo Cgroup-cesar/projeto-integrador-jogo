@@ -10,6 +10,7 @@ static bool perto(float a, float b) {
     return fabsf(a - b) < 0.001f;
 }
 
+// [REQ:PURA-regras_nova_posicao] testa a posição nova: frente, parado, diagonal e proporcional ao dt
 static void testa_movimento(void) {
     Vector3 origem = {0, 0, 0};
     Vector3 frente = regras_nova_posicao(origem, 0.0f, (Vector2){0, 1}, 2.5f, 0.1f);
@@ -22,6 +23,7 @@ static void testa_movimento(void) {
     CHECK(perto(meio_dt.z, 0.125f)); // movimento proporcional ao dt
 }
 
+// [REQ:PURA-regras_criatura_ve_jogador] testa o cone, a distância, a parede no meio e o esconderijo
 static void testa_visao(void) {
     Vector3 olho = {0, 1.6f, 0}, frente = {0, 0, 1};
     CHECK(regras_criatura_ve_jogador(olho, frente, (Vector3){0, 1.6f, 5}, true, false));
@@ -33,6 +35,7 @@ static void testa_visao(void) {
     CHECK(regras_criatura_ve_jogador(olho, frente, (Vector3){2, 1.6f, 5}, true, false));   // dentro dos 35°
 }
 
+// [REQ:PURA-regras_ruido_percebido] testa a atenuação pela distância e o ruído esgotado
 static void testa_ruido_percebido(void) {
     Ruido r = {{0, 0, 0}, 10.0f, 1.0f, RUIDO_CORRIDA};
     CHECK(perto(regras_ruido_percebido(r, (Vector3){0, 0, 0}), 1.0f));
@@ -42,6 +45,7 @@ static void testa_ruido_percebido(void) {
     CHECK(perto(regras_ruido_percebido(r, (Vector3){1, 0, 0}), 0.0f)); // esgotado
 }
 
+// [REQ:PURA-regras_proximo_estado_criatura] testa as transições PATRULHA, INVESTIGA, PERSEGUE e PROCURA
 static void testa_estados_criatura(void) {
     PercepcaoCriatura nada = {0};
     PercepcaoCriatura viu = {.ve_jogador = true};
@@ -58,6 +62,7 @@ static void testa_estados_criatura(void) {
     CHECK(regras_proximo_estado_criatura(CRIATURA_PROCURA, ouviu) == CRIATURA_INVESTIGA);
 }
 
+// [REQ:PURA-regras_placar] testa o placar sem eventos, o total e o placar por fase
 static void testa_placar(void) {
     CHECK(regras_placar(NULL, 0) == 0); // placar sem eventos
     EventoPlacar ev[] = {
@@ -72,12 +77,14 @@ static void testa_placar(void) {
     CHECK(regras_bonus_tempo(TEMPO_ALVO_PARTIDA_S - 100) == 50);
 }
 
+// [REQ:PURA-regras_evento_do_erro] testa que só o 3º erro rompe o vidro
 static void testa_evento_do_erro(void) {
     CHECK(regras_evento_do_erro(2) == EV_NENHUM);
     CHECK(regras_evento_do_erro(1) == EV_NENHUM);
     CHECK(regras_evento_do_erro(0) == EV_VIDRO_ROMPEU);
 }
 
+// [REQ:PURA-regras_integridade_vidro] testa as vidas depois de 0, 1, 2 e 3 erros
 static void testa_vidro(void) {
     CHECK(regras_integridade_vidro(NULL, 0, VIDAS_VIDRO) == 3); // sem rachaduras
     Rachadura r[6] = {0};

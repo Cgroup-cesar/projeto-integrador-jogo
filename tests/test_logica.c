@@ -21,6 +21,7 @@ static void confere_tabela(OpLogico op, bool l00, bool l01, bool l10, bool l11) 
     CHECK(t[0] == l00 && t[1] == l01 && t[2] == l10 && t[3] == l11);
 }
 
+// [REQ:PURA-logica_avalia] testa as tabelas-verdade dos 5 conectivos
 static void testa_conectivos(void) {
     PoolLogico pool;
     logica_pool_limpa(&pool);
@@ -33,6 +34,7 @@ static void testa_conectivos(void) {
     confere_tabela(OP_SSE, true, false, false, true);
 }
 
+// [REQ:PURA-logica_eh_contradicao] testa contradição, tautologia e satisfazível
 static void testa_classificacoes(void) {
     PoolLogico pool;
     logica_pool_limpa(&pool);
@@ -60,6 +62,7 @@ static int analisa(PoolLogico *pool, const Ficha *f, int n, ErroLogica *erro) {
     return logica_parse_fichas(pool, f, n, erro);
 }
 
+// [REQ:PURA-logica_parse_fichas] testa a precedência e a associatividade
 static void testa_parser_precedencia(void) {
     PoolLogico pool;
     ErroLogica erro;
@@ -115,6 +118,7 @@ static void testa_parser_erros(void) {
 }
 
 // Painel 2: (A [?1] B) [?2] (¬A) com alvo 00→1, 01→1, 10→0, 11→1. Há exatamente duas soluções.
+// [REQ:PURA-regras_avaliar_circuito] testa as duas soluções do Painel 2
 static void testa_painel2(void) {
     const bool alvo[4] = {true, true, false, true};
     int solucoes = 0;

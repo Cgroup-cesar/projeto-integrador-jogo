@@ -78,3 +78,9 @@ Registro das escolhas feitas onde a especificação deixava espaço ou onde o am
 48. **Folds recalculados a cada quadro.** `e->vidas` e `e->placar` são caches; recalcular os dois folds por quadro (dezenas de itens) é barato e evita placar desatualizado.
 49. **Terminal × rodada.** `terminal_atualiza` cuida da navegação (setas e Esc); `rodadas_atualiza` decide o que o ENTER faz. A resposta final tem a navegação própria no compositor.
 50. **Sorteios por segundo.** Tudo que é aleatório no tempo (fagulhas, poeira, apagões) usa `col_sorteia_por_segundo(taxa, dt)`, para a frequência não mudar com o FPS.
+
+## README
+
+51. **README gerado a partir das âncoras.** Os números de linha e os trechos de código do README saem de um `grep` das âncoras `[REQ:…]` e são copiados do arquivo, nunca digitados. Se o código mudar, o `make readme-check` acusa o link ou o trecho desatualizado.
+52. **Âncoras também nos testes.** Cada função de teste que prova uma função pura leva a mesma âncora `[REQ:PURA-<função>]`, para a tabela "Funções puras" apontar a linha exata do teste.
+53. **Só o macOS foi testado.** A v0 foi compilada e jogada no macOS (raylib 6.2). O `Makefile` e o CMake têm os caminhos de Windows e Linux pedidos pela especificação, mas o README diz com franqueza que eles ainda precisam ser testados pela equipe.

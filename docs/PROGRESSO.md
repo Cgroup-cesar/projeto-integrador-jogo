@@ -13,7 +13,7 @@ Arquivo de retomada: se a sessão cair, leia este arquivo e o `git log` antes de
 | M6 — Final | ✅ pronto | `feat: resposta final por fichas e os dois finais (M6)` |
 | M7 — Áudio e atmosfera | ✅ pronto | `feat: áudio procedural e atmosfera (M7)` |
 | M8 — Polimento e auditoria | ✅ pronto | `feat: polimento, auditoria e CLAUDE.md (M8)` |
-| M9 — README | ⏳ próximo | |
+| M9 — README | ✅ pronto | `docs: README com mapa de requisitos` |
 
 ## M0 — Fundação
 
@@ -96,3 +96,11 @@ Arquivo de retomada: se a sessão cair, leia este arquivo e o `git log` antes de
 Não aplicado: "commits pequenos" (a especificação manda um commit por marco na v0; ver decisão 45) e o README (é o M9).
 
 **Verificado:** `make` sem avisos; `make test`: test_logica 37/37, test_regras 61/61, test_fluxo 46/46; CTest 3/3; `make smoke` passa (colisão, vidro rompido, captura, armário, dois finais).
+
+## M9 — README
+
+**Pronto:** `README.md` com as 12 seções da especificação, na ordem: título com o aviso de nome provisório, pitch e a captura `docs/img/precursor_rodada2.png` (tirada no modo smoke, na R2); contexto acadêmico com a justificativa do 3D; conceito com o twist e a solução dentro de `<details>`; como jogar (controles, teclas de debug e como desligá-las, opções de linha de comando); como compilar e rodar (Windows passo a passo, Linux, macOS, CMake, testes, fonte, problemas comuns); estrutura; arquitetura em Mermaid com o parágrafo puro × impuro; o mapa de requisitos (RF1–RF6, os 12 usos de map/filter/fold, as 13 funções puras com o teste de cada uma, RNF1–RNF6 e os 6 critérios apontando para as tabelas); 9 trechos copiados do código final; lógica proposicional (conceito → mecânica); testes com a saída real; metodologia; créditos. As funções de teste ganharam âncoras `[REQ:PURA-…]`, para o link do teste cair na linha certa. `tools/check_readme_refs.sh` confere também se cada trecho de código do README é cópia exata das linhas citadas.
+
+**Verificado:** `make readme-check`: 43 linhas de tabela, 9 trechos, 0 erro; `make` sem avisos; `make test` 100%; `make smoke` passa; CTest 3/3.
+
+**Falta (fora da v0, para a equipe):** compilar e jogar no Windows (w64devkit) e no Linux, que não foram testados aqui; rodar `tools/baixa_fonte` para ver os acentos (sem a fonte, o texto sai transliterado); preencher os nomes da equipe nos créditos; publicar a `develop` (`git push`), que ficou só local; trocar o nome provisório quando o título for decidido.

@@ -22,6 +22,7 @@ static void testa_partidas_completas(void) {
     CHECK(final == FASE_FIM_RUIM);
 }
 
+// [REQ:PURA-regras_proxima_fase] testa a ordem das fases da partida
 static void testa_ordem_das_fases(void) {
     Fase f = regras_proxima_fase(FASE_MENU, EV_INICIAR);
     CHECK(f == FASE_INTRO);
@@ -40,6 +41,7 @@ static void testa_ordem_das_fases(void) {
 }
 
 // Transmitir uma contradição chega ao FIM_BOM; uma frase satisfazível, ao FIM_RUIM; inválida, a nada.
+// [REQ:PURA-regras_avalia_transmissao] testa contradição, satisfazível e frase inválida
 static void testa_transmissoes(void) {
     const Ficha P = {FICHA_ATOMO, ATOMO_P}, Q = {FICHA_ATOMO, ATOMO_Q};
     const Ficha NAO = {FICHA_NAO, 0}, E = {FICHA_E, 0}, OU = {FICHA_OU, 0}, SE = {FICHA_SE_ENTAO, 0};
