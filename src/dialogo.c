@@ -135,10 +135,13 @@ static const char *const TEXTOS[TXT_TOTAL] = {
     [TXT_FALSO] = "FALSO",
     [TXT_PAINEL1_TITULO] = "PAINEL 1 — GERADOR AUXILIAR",
     [TXT_PAINEL2_TITULO] = "PAINEL 2 — CONTENÇÃO (ARQUIVO)",
-    [TXT_PAINEL_INSTRUCOES1] = "[1] [2] [3] chaves A, B, C · Esc fecha",
-    [TXT_PAINEL_INSTRUCOES2] = "Setas escolhem o encaixe e a porta · Esc fecha",
+    [TXT_PAINEL_INSTRUCOES1] = "[1] [2] [3] ligam e desligam as chaves A, B, C · Esc fecha",
+    [TXT_PAINEL_INSTRUCOES2] = "← → escolhem o encaixe · ↑ ↓ trocam a porta · Esc fecha",
     [TXT_PAINEL_RESOLVIDO] = "SAÍDA ACESA — ENERGIA RESTABELECIDA",
     [TXT_PAINEL_ALVO] = "ALVO",
+    [TXT_PAINEL_SAIDA] = "SAÍDA",
+    [TXT_PAINEL_CHAVE_LIGADA] = "LIGADA",
+    [TXT_PAINEL_CHAVE_DESLIGADA] = "DESLIGADA",
     [TXT_DIARIO] = "02/03/85 — Cada frase que traduzimos, ele repete melhor. Não é diálogo: é aula, e nós somos os "
                    "professores. Ele só consegue agir sobre aquilo que PODE ser verdade. Se um dia for preciso calá-lo, "
                    "dê a ele uma frase que nunca possa ser verdadeira. P E NÃO P. O Varela não pode saber disso. — I.S.",
@@ -196,6 +199,13 @@ static const char *const SIGNIFICADOS[] = {
 const char *dialogo_significado_glifo(int glifo) {
     int n = (int)(sizeof(SIGNIFICADOS) / sizeof(SIGNIFICADOS[0]));
     return (glifo >= 0 && glifo < n) ? SIGNIFICADOS[glifo] : "?";
+}
+
+// ================================================================== portas lógicas dos painéis
+static const char *const PORTAS[] = {"E", "OU", "OU-EXCLUSIVO", "NÃO-E", "NÃO"};
+
+const char *dialogo_porta(int tipo) {
+    return (tipo >= 0 && tipo < 5) ? PORTAS[tipo] : "?";
 }
 
 // ================================================================== fichas da resposta final

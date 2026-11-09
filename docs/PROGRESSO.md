@@ -8,8 +8,8 @@ Arquivo de retomada: se a sessão cair, leia este arquivo e o `git log` antes de
 | M1 — Núcleo puro | ✅ pronto | `feat: núcleo puro de lógica e regras com testes (M1)` |
 | M2 — Fatia vertical | ✅ pronto | `feat: fatia vertical jogável de ponta a ponta (M2)` |
 | M3 — Rodadas completas | ✅ pronto | `feat: rodadas completas com tabela-verdade ao vivo (M3)` |
-| M4 — Saídas completas | ⏳ próximo | |
-| M5 — Precursor | | |
+| M4 — Saídas completas | ✅ pronto | `feat: saídas completas com painéis de circuito e diário (M4)` |
+| M5 — Precursor | ⏳ próximo | |
 | M6 — Final | | |
 | M7 — Áudio e atmosfera | | |
 | M8 — Polimento e auditoria | | |
@@ -48,3 +48,11 @@ Arquivo de retomada: se a sessão cair, leia este arquivo e o `git log` antes de
 **Verificado:** `make` sem avisos; `make test` 100%; `make smoke` passa e agora atravessa o caminho do erro (na 1ª partida o vidro rompe na R3 e ela recomeça; na 2ª a R2 tem um erro). Capturas conferidas: tabela se preenchendo na R2, glifos no vidro, R3 com RESPONDA, rachaduras e o susto.
 
 **Bug corrigido no caminho:** as vidas eram recalculadas antes de a rodada limpar as rachaduras, e o recomeço mostrava o vidro zerado.
+
+## M4 — Saídas completas
+
+**Pronto:** `src/circuito.c` com os dois painéis. Painel 1 (gerador): chaves A, B, C (teclas 1/2/3 ou setas + ENTER), diagrama com as portas NÃO, E, E, um LED com a saída ao vivo em cada porta e a lâmpada de saída; resolve quando a lâmpada acende, avaliando `regras_avaliar_circuito`. Painel 2 (Arquivo): os dois encaixes escolhem E / OU / OU-EXCLUSIVO / NÃO-E (← → encaixe, ↑ ↓ porta), os LEDs percorrem as 4 linhas e a tabela mostra saída × alvo; resolve quando `regras_circuito_confere_tabela` bate com o alvo (as duas soluções valem). Mexer no painel faz barulho (raio 6 m). LEDs e lâmpada também no gabinete 3D. Resolvido: a energia volta (lâmpadas quentes), fala do Varela, a criatura é puxada pela contenção e o jogador precisa voltar à sala (objetivo no HUD); entrar na sala conclui a saída. A porta da sala desliza para dentro da parede no início de cada saída (com barulho); enquanto a energia não volta há apagões curtos aleatórios. O diário (luz de destaque) abre a folha datilografada e acende a anotação no canto do terminal.
+
+**Verificado:** `make` sem avisos; `make test` 100%; `make smoke` passa (o piloto resolve os painéis testando combinações pelo circuito e lê o diário na S2). Capturas conferidas: painel 1 resolvido, painel 2 com a tabela, diário.
+
+**Ajustes de interface:** a legenda do interfone vai para a esquerda quando o terminal está aberto; painéis e folha do diário ficam acima da legenda; setas (← ↑ → ↓) transliteradas sem a fonte externa.

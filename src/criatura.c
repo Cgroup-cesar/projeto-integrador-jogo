@@ -21,6 +21,13 @@ void criatura_inicia_saida(Estado *e) {
     c->tempo_para_surgir = CRIATURA_SURGE_S;
 }
 
+// A energia voltou: o campo de contenção "puxa" a criatura (ela some numa distorção) e ela não volta.
+void criatura_puxa_para_contencao(Estado *e) {
+    Criatura *c = &e->cri;
+    c->tempo_para_surgir = 1e9f;
+    if (c->ativo) c->distorcao = 0.001f;
+}
+
 // ================================================================== susto (jumpscare)
 void criatura_susto(Estado *e, EventoFase depois) {
     if (criatura_em_susto(e)) return;

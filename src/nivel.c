@@ -218,6 +218,7 @@ static int luzes_saida(const Estado *e, Vector3 *pos, Vector3 *cor) {
     for (int i = 0; i < n->n_lampadas; i++) candidatos[total++] = n->lampadas[i];
     candidatos[total++] = (Vector3){n->diario.x, PE_DIREITO - 0.3f, n->diario.z};
     bool energia = e->painel.resolvido;
+    float corte = e->apagao_t > 0.0f ? 0.08f : 1.0f; // apagão: as lâmpadas quase somem
     for (int k = 0; k < 3; k++) {
         int melhor = k;
         for (int i = k + 1; i < total; i++)
@@ -227,7 +228,7 @@ static int luzes_saida(const Estado *e, Vector3 *pos, Vector3 *cor) {
         candidatos[melhor] = troca;
         pos[k] = candidatos[k];
         bool diario = candidatos[k].x == n->diario.x && candidatos[k].z == n->diario.z;
-        cor[k] = diario ? cor_luz(COR_LAMPADA, 1.3f) : energia ? cor_luz(COR_LAMPADA, 1.4f) : cor_luz(COR_ALARME, 1.25f);
+        cor[k] = diario ? cor_luz(COR_LAMPADA, 1.3f * corte) : energia ? cor_luz(COR_LAMPADA, 1.4f) : cor_luz(COR_ALARME, 1.25f * corte);
     }
     pos[3] = (Vector3){e->jog.pos.x, ALTURA_OLHOS + 0.3f, e->jog.pos.z};
     cor[3] = cor_luz(COR_LAMPADA, 0.22f);
@@ -297,6 +298,14 @@ static void desenha_moveis(const Nivel *n) {
     }
 }
 
+// Nas saídas, a porta da sala de observação desliza para dentro da parede no primeiro segundo.
+static void desenha_porta_da_sala(const Estado *e) {
+    if (!regras_fase_eh_saida(e->fase)) return;
+    float abre = fminf(1.0f, e->tempo_fase / 1.2f);
+    Vector3 p = e->nivel.porta_sala;
+    DrawCubeV((Vector3){p.x, 1.1f, p.z + 2.0f * abre}, (Vector3){0.16f, 2.2f, 2.0f}, (Color){0x35, 0x38, 0x2a, 255});
+}
+
 static void desenha_portas_e_duto(const Nivel *n) {
     for (int l = 0; l < MAPA_ALTURA; l++) {
         for (int c = 0; c < MAPA_LARGURA; c++) {
@@ -327,6 +336,7 @@ void nivel_desenha(const Estado *e) {
         DrawCubeV((Vector3){n->vidro_x0 + i * vl / 3.0f, 1.95f, n->vidro_z}, (Vector3){0.12f, 2.1f, 0.14f}, (Color){0x1c, 0x20, 0x1e, 255});
     desenha_moveis(n);
     desenha_portas_e_duto(n);
+    desenha_porta_da_sala(e);
 }
 
 static Color cor_lampada(const Estado *e) {

@@ -114,8 +114,23 @@ static bool piloto_confere_colisao(Estado *e, Entrada *in, float dt) {
     return true;
 }
 
+// Na S2 ele lê o diário antes do painel (o terminal passa a mostrar a anotação recuperada).
+static bool piloto_le_diario(Estado *e, Entrada *in) {
+    if (e->fase != FASE_S2) return false;
+    if (e->jog.modo == MODO_DIARIO) {
+        in->interagir = true; // fecha a folha
+        return true;
+    }
+    if (e->diario_lido || e->jog.modo != MODO_ANDANDO) return false;
+    Vector3 d = e->nivel.diario;
+    jogador_teleporta(e, (Vector3){d.x + 1.2f, 0.0f, d.z}, -PI * 0.5f);
+    in->interagir = true;
+    return true;
+}
+
 static void piloto_saida(Estado *e, Entrada *in) {
     bool painel1 = e->fase == FASE_S1;
+    if (piloto_le_diario(e, in)) return;
     if (e->painel.resolvido) {
         jogador_teleporta(e, e->nivel.inicio, PI); // volta para a sala de observação
         return;

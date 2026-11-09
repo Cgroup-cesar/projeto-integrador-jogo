@@ -40,3 +40,10 @@ Registro das escolhas feitas onde a especificação deixava espaço ou onde o am
 25. **Só combinações novas fazem ele responder**, como pede a especificação. Ao entrar no terminal, a combinação atual (luzes apagadas) já conta como nova.
 26. **Placar "rodada sem erro"** considera todos os erros da rodada, inclusive os de tentativas que terminaram com o vidro rompido.
 27. **`--captura-fase <NOME>` com `--captura-em <s>`** fotografa um momento de uma fase (o tempo conta a partir da entrada na fase); com `--smoke`, dá para registrar qualquer etapa sem ninguém jogar.
+
+## Saídas
+
+28. **Painel 2 sem chaves de entrada.** A especificação diz que o painel mostra "as 4 linhas"; por isso as entradas A e B não são chaves: a tabela mostra as 4 linhas de uma vez e os LEDs das portas percorrem as linhas (uma a cada 0,9 s), sempre avaliando o circuito.
+29. **Painel 2 começa com (OU, E)**, que não resolve, para o jogador ter que mexer.
+30. **Voltar à sala é andando.** Depois do painel, a energia volta e a criatura some; a saída só termina quando o jogador entra de novo na sala de observação (o Varela pede: "Volte para a sala").
+31. **Apagões nas saídas:** enquanto a energia não volta, há uma chance de ~4% por segundo de um apagão de 0,35 a 0,65 s (as lâmpadas caem a 8%).

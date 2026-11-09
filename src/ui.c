@@ -11,7 +11,7 @@ static const char *const FONTES_CANDIDATAS[] = {
 };
 
 // Símbolos além do Latin-1 que o jogo usa (setas, conectivos lógicos, quadradinhos do HUD).
-static const int SIMBOLOS_EXTRAS[] = {0x2192, 0x2194, 0x2227, 0x2228, 0x25A0, 0x25A1, 0x2014, 0x2026, 0x2713, 0x2714};
+static const int SIMBOLOS_EXTRAS[] = {0x2190, 0x2191, 0x2192, 0x2193, 0x2194, 0x2227, 0x2228, 0x25A0, 0x25A1, 0x2014, 0x2026, 0x2713, 0x2714};
 
 bool ui_caminho_asset(const char *relativo, char *saida, size_t tamanho) {
     snprintf(saida, tamanho, "assets/%s", relativo);
@@ -63,7 +63,7 @@ static const Troca TROCAS[] = {
     {0xD4, "O"}, {0xD5, "O"}, {0xD6, "O"}, {0xFA, "u"}, {0xF9, "u"}, {0xFB, "u"}, {0xFC, "u"}, {0xDA, "U"},
     {0xD9, "U"}, {0xDB, "U"}, {0xDC, "U"}, {0xE7, "c"}, {0xC7, "C"}, {0xF1, "n"}, {0xD1, "N"}, {0xBA, "o"},
     {0xAA, "a"}, {0xB7, "|"}, {0xAC, "~"}, {0xAB, "\""}, {0xBB, "\""}, {0xB0, "o"}, {0x2014, "-"}, {0x2013, "-"},
-    {0x2026, "..."}, {0x2192, "->"}, {0x2194, "<->"}, {0x2227, "^"}, {0x2228, "v"}, {0x25A0, "#"},
+    {0x2026, "..."}, {0x2190, "<-"}, {0x2191, "^"}, {0x2193, "v"}, {0x2192, "->"}, {0x2194, "<->"}, {0x2227, "^"}, {0x2228, "v"}, {0x25A0, "#"},
     {0x25A1, "o"}, {0x201C, "\""}, {0x201D, "\""}, {0x2018, "'"}, {0x2019, "'"}, {0x2713, "*"}, {0x2714, "*"},
 };
 
@@ -361,6 +361,10 @@ static void desenha_legenda(const Estado *e) {
     const Legenda *l = &e->legendas.fila[0];
     float largura = 900 * s;
     float x = (GetScreenWidth() - largura) * 0.5f, y = GetScreenHeight() - 150 * s;
+    if (e->jog.modo == MODO_TERMINAL) { // o terminal ocupa a direita: a legenda vai para a esquerda
+        largura = GetScreenWidth() - 680 * s;
+        x = 24 * s;
+    }
     const char *quem = l->falante == FALANTE_VARELA ? "CEL. VARELA (interfone)" : l->falante == FALANTE_ELIAS ? "PROF. ELIAS" : "";
     ui_painel((Rectangle){x - 16 * s, y - 34 * s, largura + 32 * s, 104 * s}, COR_AMBAR);
     ui_texto(e, quem, (Vector2){x, y - 26 * s}, 16 * s, COR_AMBAR);
@@ -370,7 +374,7 @@ static void desenha_legenda(const Estado *e) {
 static void desenha_diario(const Estado *e) {
     if (e->jog.modo != MODO_DIARIO) return;
     float s = ui_escala();
-    Rectangle folha = {GetScreenWidth() * 0.5f - 330 * s, 90 * s, 660 * s, 520 * s};
+    Rectangle folha = {GetScreenWidth() * 0.5f - 330 * s, 60 * s, 660 * s, 440 * s}; // acima da legenda
     DrawRectangleRec(folha, (Color){0xd8, 0xd0, 0xb8, 245});
     DrawRectangleLinesEx(folha, 2, (Color){0x6a, 0x5a, 0x40, 255});
     ui_texto_quebrado(e, dialogo_texto(TXT_DIARIO), (Vector2){folha.x + 40 * s, folha.y + 50 * s}, folha.width - 80 * s, 22 * s, (Color){0x20, 0x1a, 0x14, 255});

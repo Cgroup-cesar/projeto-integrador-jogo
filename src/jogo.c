@@ -69,6 +69,9 @@ static void entra_saida(Estado *e, Fase fase, bool reinicio) {
     criatura_inicia_saida(e);
     jogador_teleporta(e, e->nivel.inicio, PI * 0.5f); // olhando para a porta da sala, a leste (+x)
     ui_fala(e, reinicio ? FALAS_PEGO : fase == FASE_S1 ? FALAS_INICIO_S1 : FALAS_INICIO_S2);
+    // A porta da sala abre (e faz barulho); as luzes ficam vermelhas e fracas até a energia voltar.
+    col_ruidos_adiciona(&e->ruidos, (Ruido){e->nivel.porta_sala, RUIDO_RAIO_PORTA, 1.0f, RUIDO_PORTA});
+    audio_toca(e, SOM_INTERRUPTOR, 1.0f, 0.5f);
 }
 
 static void entra_fase(Estado *e, Fase fase, bool reinicio) {

@@ -81,6 +81,9 @@ typedef enum {
     TXT_PAINEL_INSTRUCOES2,
     TXT_PAINEL_RESOLVIDO,
     TXT_PAINEL_ALVO,
+    TXT_PAINEL_SAIDA,
+    TXT_PAINEL_CHAVE_LIGADA,
+    TXT_PAINEL_CHAVE_DESLIGADA,
     TXT_DIARIO,
     TXT_DIARIO_FECHAR,
     TXT_FIM_RUIM_ACEITA,
@@ -110,6 +113,9 @@ const char *dialogo_opcao_traducao(int rodada, int opcao);
 
 // Léxico do analisador: o que cada glifo de palavra significa (conectivos: só depois de decifrados).
 const char *dialogo_significado_glifo(int glifo);
+
+// Nome de cada porta lógica dos painéis (ordem de TipoPorta em regras.h).
+const char *dialogo_porta(int tipo);
 
 // Fichas da resposta final.
 const char *dialogo_ficha(int indice);
