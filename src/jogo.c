@@ -30,14 +30,23 @@ static void pontua(Estado *e, TipoPonto tipo, int pontos, Fase fase) {
 
 // Pontos que dependem de como a fase terminou (o placar em si é um fold dos eventos).
 static void pontua_evento(Estado *e, Fase fase, EventoFase ev) {
-    if (ev == EV_RODADA_CONCLUIDA && e->erros_na_fase == 0) pontua(e, PONTO_RODADA_SEM_ERRO, PONTOS_RODADA_SEM_ERRO, fase);
-    if (ev == EV_SAIDA_CONCLUIDA && e->pegos_na_fase == 0) pontua(e, PONTO_SAIDA_LIMPA, PONTOS_SAIDA_SEM_SER_PEGO, fase);
+    if (ev == EV_RODADA_CONCLUIDA && e->erros_na_fase == 0)
+        pontua(e, PONTO_RODADA_SEM_ERRO, PONTOS_RODADA_SEM_ERRO, fase);
+    if (ev == EV_SAIDA_CONCLUIDA && e->pegos_na_fase == 0)
+        pontua(e, PONTO_SAIDA_LIMPA, PONTOS_SAIDA_SEM_SER_PEGO, fase);
     bool final = ev == EV_TRANSMITIU_CONTRADICAO || ev == EV_TRANSMITIU_SATISFAZIVEL;
     if (!final) return;
     Fase destino = regras_proxima_fase(fase, ev);
     if (ev == EV_TRANSMITIU_CONTRADICAO) pontua(e, PONTO_FINAL_BOM, PONTOS_FINAL_BOM, destino);
     int bonus = regras_bonus_tempo(e->tempo_partida);
     if (bonus > 0) pontua(e, PONTO_BONUS_TEMPO, bonus, destino);
+}
+
+// [REQ:RF5] placar = fold dos eventos; vidas = integridade do vidro (fold das rachaduras).
+// Recalculados a cada quadro, para o HUD e o terminal mostrarem o erro na hora.
+static void atualiza_folds(Estado *e) {
+    e->vidas = regras_integridade_vidro(e->rachaduras.itens, e->rachaduras.n, VIDAS_VIDRO);
+    e->placar = regras_placar(e->eventos.itens, e->eventos.n);
 }
 
 // ================================================================== entrada nas fases
@@ -74,6 +83,23 @@ static void entra_saida(Estado *e, Fase fase, bool reinicio) {
     audio_toca(e, SOM_INTERRUPTOR, 1.0f, 0.5f);
 }
 
+static void entra_menu(Estado *e) {
+    limpa_partida(e);
+    criatura_contem(e);
+    jogador_teleporta(e, e->nivel.inicio, PI);
+    e->menu.cursor = 0;
+}
+
+static void entra_resposta_final(Estado *e) {
+    compositor_inicia(e);
+    criatura_contem(e);
+    e->rod.luz_a = e->rod.luz_b = true; // as duas luzes da cela acesas: ele está ali, encostado no vidro
+    e->cri.avanco_vidro = 1.0f;
+    e->cri.mao_no_vidro = true;
+    jogador_vai_ao_console(e);
+    e->jog.modo = MODO_TERMINAL;
+}
+
 static void entra_fase(Estado *e, Fase fase, bool reinicio) {
     e->fase = fase;
     e->tempo_fase = 0.0f;
@@ -84,10 +110,7 @@ static void entra_fase(Estado *e, Fase fase, bool reinicio) {
     prepara_mundo(e, fase);
     switch (fase) {
     case FASE_MENU:
-        limpa_partida(e);
-        criatura_contem(e);
-        jogador_teleporta(e, e->nivel.inicio, PI);
-        e->menu.cursor = 0;
+        entra_menu(e);
         break;
     case FASE_INTRO:
         memset(&e->intro, 0, sizeof(e->intro));
@@ -95,25 +118,24 @@ static void entra_fase(Estado *e, Fase fase, bool reinicio) {
         break;
     case FASE_R1:
     case FASE_R2:
-    case FASE_R3: entra_rodada(e, fase, reinicio); break;
+    case FASE_R3:
+        entra_rodada(e, fase, reinicio);
+        break;
     case FASE_S1:
-    case FASE_S2: entra_saida(e, fase, reinicio); break;
+    case FASE_S2:
+        entra_saida(e, fase, reinicio);
+        break;
     case FASE_RESPOSTA_FINAL:
-        compositor_inicia(e);
-        criatura_contem(e);
-        e->rod.luz_a = e->rod.luz_b = true; // as duas luzes da cela acesas: ele está ali, encostado no vidro
-        e->cri.avanco_vidro = 1.0f;
-        e->cri.mao_no_vidro = true;
-        jogador_vai_ao_console(e);
-        e->jog.modo = MODO_TERMINAL;
+        entra_resposta_final(e);
         break;
     case FASE_FIM_RUIM:
-    case FASE_FIM_BOM: compositor_inicia_fim(e); break;
-    default: break;
+    case FASE_FIM_BOM:
+        compositor_inicia_fim(e);
+        break;
+    default:
+        break;
     }
-    // Os caches dos dois folds (vidas e placar) são recalculados depois que a fase limpou o que precisava.
-    e->vidas = regras_integridade_vidro(e->rachaduras.itens, e->rachaduras.n, VIDAS_VIDRO);
-    e->placar = regras_placar(e->eventos.itens, e->eventos.n);
+    atualiza_folds(e); // depois que a fase limpou o que precisava (o vidro restaurado volta a 3 vidas)
     TraceLog(LOG_INFO, "PRECURSOR: fase %s%s", regras_nome_fase(fase), reinicio ? " (recomeço)" : "");
 }
 
@@ -124,7 +146,7 @@ void jogo_aplica_evento(Estado *e, EventoFase evento) {
     Fase proxima = regras_proxima_fase(atual, evento);
     bool reinicia = regras_reinicia_fase(atual, evento);
     if (proxima != atual || reinicia) entra_fase(e, proxima, reinicia);
-    e->placar = regras_placar(e->eventos.itens, e->eventos.n);
+    atualiza_folds(e);
 }
 
 void jogo_reinicia_fase(Estado *e) {
@@ -139,10 +161,6 @@ void jogo_inicia(Estado *e) {
     nivel_carrega(&e->nivel);
     e->jog.ultima_celula = -1;
     entra_fase(e, FASE_MENU, false);
-}
-
-void jogo_finaliza(Estado *e) {
-    (void)e;
 }
 
 // ================================================================== intro
@@ -165,7 +183,8 @@ static void atualiza_intro(Estado *e, float dt) {
     float total = (float)conta_letras(linha);
     float antes = it->letras;
     it->letras += dt * 30.0f;
-    if ((int)it->letras != (int)antes && it->letras < total) audio_toca(e, SOM_MAQUINA_ESCREVER, 0.5f, 0.9f + GetRandomValue(0, 20) / 100.0f);
+    if ((int)it->letras != (int)antes && it->letras < total)
+        audio_toca(e, SOM_MAQUINA_ESCREVER, 0.5f, 0.9f + GetRandomValue(0, 20) / 100.0f);
     if (e->in.confirmar) it->letras = it->letras < total ? total : total + 99.0f;
     if (it->letras >= total) it->espera += dt;
     if (it->espera < 1.1f && it->letras < total + 99.0f) return;
@@ -185,7 +204,8 @@ static bool jogando(const Estado *e) {
 
 static void atualiza_pausa(Estado *e) {
     if (e->in.cima || e->in.baixo) e->menu.cursor = 1 - e->menu.cursor;
-    if (e->in.voltar || (e->in.confirmar && e->menu.cursor == 0)) e->pausado = false;
+    if (e->in.voltar || (e->in.confirmar && e->menu.cursor == 0))
+        e->pausado = false;
     else if (e->in.confirmar && e->menu.cursor == 1) {
         e->pausado = false;
         entra_fase(e, FASE_MENU, false);
@@ -223,19 +243,28 @@ static void atualiza_cursor(const Estado *e) {
 // ================================================================== atualiza
 static void atualiza_fase(Estado *e, float dt) {
     switch (e->fase) {
-    case FASE_INTRO: atualiza_intro(e, dt); break;
+    case FASE_INTRO:
+        atualiza_intro(e, dt);
+        break;
     case FASE_R1:
     case FASE_R2:
     case FASE_R3:
+        terminal_atualiza(e, dt); // navegação primeiro; depois a rodada decide o ENTER
         rodadas_atualiza(e, dt);
-        terminal_atualiza(e, dt);
         break;
     case FASE_S1:
-    case FASE_S2: circuito_atualiza(e, dt); break;
-    case FASE_RESPOSTA_FINAL: compositor_atualiza(e, dt); break;
+    case FASE_S2:
+        circuito_atualiza(e, dt);
+        break;
+    case FASE_RESPOSTA_FINAL:
+        compositor_atualiza(e, dt);
+        break;
     case FASE_FIM_RUIM:
-    case FASE_FIM_BOM: compositor_atualiza_fim(e, dt); break;
-    default: break;
+    case FASE_FIM_BOM:
+        compositor_atualiza_fim(e, dt);
+        break;
+    default:
+        break;
     }
 }
 
@@ -270,10 +299,12 @@ void jogo_atualiza(Estado *e, float dt) {
     criatura_atualiza(e, dt);
     glifos_atualiza(e, dt);
     col_ruidos_atualiza(&e->ruidos, dt);
-    col_particulas_atualiza(&e->particulas, dt, (Vector3){0, -0.5f, 0},
-                            (Vector3){MAPA_LARGURA * TAMANHO_CELULA, PE_DIREITO, MAPA_ALTURA * TAMANHO_CELULA});
+    col_particulas_atualiza(
+        &e->particulas, dt, (Vector3){0, -0.5f, 0},
+        (Vector3){MAPA_LARGURA * TAMANHO_CELULA, PE_DIREITO, MAPA_ALTURA * TAMANHO_CELULA});
     ui_atualiza(e, dt);
     jogador_atualiza_camera(e);
+    atualiza_folds(e);
     EventoFase ev = e->evento;
     e->evento = EV_NENHUM;
     jogo_aplica_evento(e, ev);

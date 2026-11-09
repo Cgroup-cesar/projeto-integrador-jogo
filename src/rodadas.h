@@ -11,10 +11,10 @@
 typedef struct {
     FraseGlifos teste[MAX_COLUNAS]; // frase(s) observadas (a R2 tem duas, em duas colunas)
     int n_colunas;
-    int n_luzes;                    // a R1 usa só a luz A
+    int n_luzes; // a R1 usa só a luz A
     int conectivo_certo[MAX_COLUNAS];
-    FraseGlifos traducao;           // o que ele "diz" na etapa de traduzir
-    int traducao_certa;             // índice da opção certa (ordem de dialogo.c)
+    FraseGlifos traducao; // o que ele "diz" na etapa de traduzir
+    int traducao_certa;   // índice da opção certa (ordem de dialogo.c)
 } DadosRodada;
 
 const DadosRodada *rodadas_dados(int numero);

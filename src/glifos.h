@@ -29,7 +29,8 @@ typedef struct {
 } FraseGlifos;
 
 void desenha_glifo(IdGlifo id, Vector2 pos, float tamanho, Color cor, float espessura);
-void desenha_frase_glifos(const Estado *e, const FraseGlifos *frase, Vector2 pos, float tamanho, float espessura);
+void desenha_frase_glifos(const Estado *e, const FraseGlifos *frase, Vector2 pos, float tamanho,
+                          float espessura);
 
 // Conectivos ainda desconhecidos em âmbar; decifrados (e palavras) em verde-fósforo.
 int glifo_conectivo(IdGlifo id); // 0 NÃO, 1 E, 2 OU, 3 SE…ENTÃO; −1 se não for conectivo

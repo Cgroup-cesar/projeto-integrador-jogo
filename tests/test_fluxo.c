@@ -85,6 +85,42 @@ static void testa_reinicios(void) {
     CHECK(!regras_reinicia_fase(FASE_R1, EV_PEGO));
 }
 
+// Uma partida com tropeços no meio: o vidro rompe na R2 (3 erros) e o jogador é pego na S1, e ainda assim
+// a partida chega ao FIM_BOM. Os eventos de erro saem das regras puras, como no jogo.
+static Fase aplica(Fase f, EventoFase ev, int *recomecos) {
+    if (regras_reinicia_fase(f, ev)) (*recomecos)++;
+    return regras_proxima_fase(f, ev);
+}
+
+static void testa_partida_com_recomecos(void) {
+    int recomecos = 0;
+    Fase f = FASE_MENU;
+    f = aplica(f, EV_INICIAR, &recomecos);
+    f = aplica(f, EV_INTRO_TERMINOU, &recomecos);
+    f = aplica(f, EV_RODADA_CONCLUIDA, &recomecos);
+    CHECK(f == FASE_S1);
+    f = aplica(f, EV_PEGO, &recomecos); // pego: a saída recomeça
+    CHECK(f == FASE_S1 && recomecos == 1);
+    f = aplica(f, EV_SAIDA_CONCLUIDA, &recomecos);
+    CHECK(f == FASE_R2);
+    Rachadura r[3] = {{.dano = 1}, {.dano = 1}, {.dano = 1}};
+    for (int erros = 1; erros <= 3; erros++) {
+        EventoFase ev = regras_evento_do_erro(regras_integridade_vidro(r, erros, VIDAS_VIDRO));
+        CHECK(ev == (erros < 3 ? EV_NENHUM : EV_VIDRO_ROMPEU)); // só o 3º erro rompe o vidro
+        f = aplica(f, ev, &recomecos);
+    }
+    CHECK(f == FASE_R2 && recomecos == 2);
+    f = aplica(f, EV_RODADA_CONCLUIDA, &recomecos);
+    f = aplica(f, EV_SAIDA_CONCLUIDA, &recomecos);
+    f = aplica(f, EV_RODADA_CONCLUIDA, &recomecos);
+    CHECK(f == FASE_RESPOSTA_FINAL);
+    const Ficha frase[] = {{FICHA_ATOMO, ATOMO_P}, {FICHA_E, 0}, {FICHA_NAO, 0}, {FICHA_ATOMO, ATOMO_P}};
+    ErroLogica erro;
+    f = aplica(f, regras_avalia_transmissao(frase, 4, &erro), &recomecos);
+    CHECK(f == FASE_FIM_BOM);
+    CHECK(aplica(f, EV_VOLTAR_MENU, &recomecos) == FASE_MENU);
+}
+
 // Eventos fora de hora são ignorados (nenhum softlock nem pulo indevido).
 static void testa_eventos_ignorados(void) {
     CHECK(regras_proxima_fase(FASE_MENU, EV_PEGO) == FASE_MENU);
@@ -106,6 +142,7 @@ int main(void) {
     testa_ordem_das_fases();
     testa_transmissoes();
     testa_reinicios();
+    testa_partida_com_recomecos();
     testa_eventos_ignorados();
     testa_debug();
     return resultado_final("test_fluxo");

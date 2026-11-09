@@ -14,9 +14,18 @@ const char *regras_nome_fase(Fase fase) {
 
 const char *regras_nome_evento(EventoFase evento) {
     static const char *const nomes[EV_TOTAL] = {
-        "NENHUM",       "INICIAR",         "INTRO_TERMINOU", "RODADA_CONCLUIDA",        "VIDRO_ROMPEU",
-        "SAIDA_CONCLUIDA", "PEGO",         "TRANSMITIU_CONTRADICAO", "TRANSMITIU_SATISFAZIVEL",
-        "VOLTAR_MENU",  "PULAR_FASE",      "IR_RESPOSTA_FINAL",
+        "NENHUM",
+        "INICIAR",
+        "INTRO_TERMINOU",
+        "RODADA_CONCLUIDA",
+        "VIDRO_ROMPEU",
+        "SAIDA_CONCLUIDA",
+        "PEGO",
+        "TRANSMITIU_CONTRADICAO",
+        "TRANSMITIU_SATISFAZIVEL",
+        "VOLTAR_MENU",
+        "PULAR_FASE",
+        "IR_RESPOSTA_FINAL",
     };
     if (evento < 0 || evento >= EV_TOTAL) return "?";
     return nomes[evento];
@@ -37,10 +46,13 @@ int regras_numero_rodada(Fase fase) {
 // Debug (F2): a fase seguinte na ordem da partida, sem precisar resolver nada.
 static Fase fase_seguinte(Fase fase) {
     switch (fase) {
-    case FASE_RESPOSTA_FINAL: return FASE_FIM_BOM;
+    case FASE_RESPOSTA_FINAL:
+        return FASE_FIM_BOM;
     case FASE_FIM_RUIM:
-    case FASE_FIM_BOM: return FASE_MENU;
-    default: return (Fase)(fase + 1);
+    case FASE_FIM_BOM:
+        return FASE_MENU;
+    default:
+        return (Fase)(fase + 1);
     }
 }
 
@@ -50,20 +62,29 @@ Fase regras_proxima_fase(Fase fase, EventoFase evento) {
     if (evento == EV_PULAR_FASE) return fase_seguinte(fase);
     if (evento == EV_IR_RESPOSTA_FINAL && fase >= FASE_INTRO && fase <= FASE_R3) return FASE_RESPOSTA_FINAL;
     switch (fase) {
-    case FASE_MENU: return evento == EV_INICIAR ? FASE_INTRO : fase;
-    case FASE_INTRO: return evento == EV_INTRO_TERMINOU ? FASE_R1 : fase;
-    case FASE_R1: return evento == EV_RODADA_CONCLUIDA ? FASE_S1 : fase;
-    case FASE_S1: return evento == EV_SAIDA_CONCLUIDA ? FASE_R2 : fase;
-    case FASE_R2: return evento == EV_RODADA_CONCLUIDA ? FASE_S2 : fase;
-    case FASE_S2: return evento == EV_SAIDA_CONCLUIDA ? FASE_R3 : fase;
-    case FASE_R3: return evento == EV_RODADA_CONCLUIDA ? FASE_RESPOSTA_FINAL : fase;
+    case FASE_MENU:
+        return evento == EV_INICIAR ? FASE_INTRO : fase;
+    case FASE_INTRO:
+        return evento == EV_INTRO_TERMINOU ? FASE_R1 : fase;
+    case FASE_R1:
+        return evento == EV_RODADA_CONCLUIDA ? FASE_S1 : fase;
+    case FASE_S1:
+        return evento == EV_SAIDA_CONCLUIDA ? FASE_R2 : fase;
+    case FASE_R2:
+        return evento == EV_RODADA_CONCLUIDA ? FASE_S2 : fase;
+    case FASE_S2:
+        return evento == EV_SAIDA_CONCLUIDA ? FASE_R3 : fase;
+    case FASE_R3:
+        return evento == EV_RODADA_CONCLUIDA ? FASE_RESPOSTA_FINAL : fase;
     case FASE_RESPOSTA_FINAL:
         if (evento == EV_TRANSMITIU_CONTRADICAO) return FASE_FIM_BOM;
         if (evento == EV_TRANSMITIU_SATISFAZIVEL) return FASE_FIM_RUIM;
         return fase;
     case FASE_FIM_RUIM:
-    case FASE_FIM_BOM: return evento == EV_VOLTAR_MENU ? FASE_MENU : fase;
-    default: return FASE_MENU;
+    case FASE_FIM_BOM:
+        return evento == EV_VOLTAR_MENU ? FASE_MENU : fase;
+    default:
+        return FASE_MENU;
     }
 }
 
@@ -74,14 +95,16 @@ bool regras_reinicia_fase(Fase fase, EventoFase evento) {
 
 int regras_roteiro_partida(bool final_bom, EventoFase *saida, int maximo) {
     const EventoFase roteiro[] = {
-        EV_INICIAR,          EV_INTRO_TERMINOU,   EV_RODADA_CONCLUIDA,
-        EV_SAIDA_CONCLUIDA,  EV_RODADA_CONCLUIDA, EV_SAIDA_CONCLUIDA,
+        EV_INICIAR,          EV_INTRO_TERMINOU,
+        EV_RODADA_CONCLUIDA, EV_SAIDA_CONCLUIDA,
+        EV_RODADA_CONCLUIDA, EV_SAIDA_CONCLUIDA,
         EV_RODADA_CONCLUIDA, final_bom ? EV_TRANSMITIU_CONTRADICAO : EV_TRANSMITIU_SATISFAZIVEL,
         EV_VOLTAR_MENU,
     };
     int n = (int)(sizeof(roteiro) / sizeof(roteiro[0]));
     if (n > maximo) n = maximo;
-    for (int i = 0; i < n; i++) saida[i] = roteiro[i];
+    for (int i = 0; i < n; i++)
+        saida[i] = roteiro[i];
     return n;
 }
 
@@ -91,7 +114,8 @@ EventoFase regras_avalia_transmissao(const Ficha *fichas, int n, ErroLogica *err
     PoolLogico pool;
     logica_pool_limpa(&pool);
     if (n > MAX_FICHAS_FRASE) {
-        *erro = (ErroLogica){.ok = false, .posicao = MAX_FICHAS_FRASE, .mensagem = "No máximo 7 fichas por frase."};
+        *erro = (ErroLogica){
+            .ok = false, .posicao = MAX_FICHAS_FRASE, .mensagem = "No máximo 7 fichas por frase."};
         return EV_NENHUM;
     }
     int raiz = logica_parse_fichas(&pool, fichas, n, erro);
@@ -117,7 +141,8 @@ Vector3 regras_nova_posicao(Vector3 pos, float yaw, Vector2 mover, float velocid
 }
 
 // [REQ:PURA-regras_criatura_ve_jogador] cone de 70° e 14 m; o raycast contra as paredes chega pronto
-bool regras_criatura_ve_jogador(Vector3 olho, Vector3 frente, Vector3 alvo, bool caminho_livre, bool escondido) {
+bool regras_criatura_ve_jogador(Vector3 olho, Vector3 frente, Vector3 alvo, bool caminho_livre,
+                                bool escondido) {
     if (escondido || !caminho_livre) return false;
     Vector3 para_alvo = Vector3Subtract(alvo, olho);
     float distancia = Vector3Length(para_alvo);
@@ -139,9 +164,12 @@ float regras_ruido_percebido(Ruido ruido, Vector3 ouvinte) {
 EstadoCriatura regras_proximo_estado_criatura(EstadoCriatura atual, PercepcaoCriatura p) {
     if (p.ve_jogador) return CRIATURA_PERSEGUE;
     switch (atual) {
-    case CRIATURA_PERSEGUE: return CRIATURA_PROCURA; // perdeu de vista: procura onde viu por último
-    case CRIATURA_PATRULHA: return p.ouviu_ruido ? CRIATURA_INVESTIGA : CRIATURA_PATRULHA;
-    case CRIATURA_INVESTIGA: return p.chegou_ao_destino ? CRIATURA_PROCURA : CRIATURA_INVESTIGA;
+    case CRIATURA_PERSEGUE:
+        return CRIATURA_PROCURA; // perdeu de vista: procura onde viu por último
+    case CRIATURA_PATRULHA:
+        return p.ouviu_ruido ? CRIATURA_INVESTIGA : CRIATURA_PATRULHA;
+    case CRIATURA_INVESTIGA:
+        return p.chegou_ao_destino ? CRIATURA_PROCURA : CRIATURA_INVESTIGA;
     case CRIATURA_PROCURA:
         if (p.ouviu_ruido) return CRIATURA_INVESTIGA;
         return p.tempo_no_estado >= CRIATURA_PROCURA_S ? CRIATURA_PATRULHA : CRIATURA_PROCURA;
@@ -160,7 +188,8 @@ const char *regras_nome_estado_criatura(EstadoCriatura estado) {
 int regras_placar(const EventoPlacar *eventos, int n) {
     int total = 0;
     // padrão FOLD
-    for (int i = 0; i < n; i++) total += eventos[i].pontos;
+    for (int i = 0; i < n; i++)
+        total += eventos[i].pontos;
     return total;
 }
 
@@ -181,26 +210,39 @@ int regras_bonus_tempo(float tempo_total) {
     return sobra > 0.0f ? (int)(sobra * 0.5f) : 0;
 }
 
-// [REQ:FOLD-rachaduras] [REQ:PURA-regras_integridade_vidro] vidas = máximo − soma (fold) do dano das rachaduras
+// [REQ:FOLD-rachaduras] [REQ:PURA-regras_integridade_vidro] vidas = máximo − soma (fold) do dano das
+// rachaduras
 int regras_integridade_vidro(const Rachadura *rachaduras, int n, int vidas_max) {
     float dano = 0.0f;
     // padrão FOLD
-    for (int i = 0; i < n; i++) dano += rachaduras[i].dano;
+    for (int i = 0; i < n; i++)
+        dano += rachaduras[i].dano;
     int vidas = vidas_max - (int)floorf(dano + 0.01f);
     if (vidas < 0) return 0;
     return vidas > vidas_max ? vidas_max : vidas;
+}
+
+// [REQ:PURA-regras_evento_do_erro] o 3º erro (vidas = 0) rompe o vidro e recomeça a rodada
+EventoFase regras_evento_do_erro(int vidas_restantes) {
+    return vidas_restantes <= 0 ? EV_VIDRO_ROMPEU : EV_NENHUM;
 }
 
 bool regras_interativo_ativo(TipoInterativo tipo, int fase) {
     bool rodada = regras_fase_eh_rodada((Fase)fase) || fase == FASE_RESPOSTA_FINAL;
     bool saida = regras_fase_eh_saida((Fase)fase);
     switch (tipo) {
-    case INTER_CONSOLE: return rodada;
-    case INTER_PORTA: return rodada; // a porta da sala fica trancada nas fases de sala
-    case INTER_PAINEL1: return fase == FASE_S1;
-    case INTER_PAINEL2: return fase == FASE_S2;
-    case INTER_DIARIO: return saida;
-    case INTER_ARMARIO: return saida;
+    case INTER_CONSOLE:
+        return rodada;
+    case INTER_PORTA:
+        return rodada; // a porta da sala fica trancada nas fases de sala
+    case INTER_PAINEL1:
+        return fase == FASE_S1;
+    case INTER_PAINEL2:
+        return fase == FASE_S2;
+    case INTER_DIARIO:
+        return saida;
+    case INTER_ARMARIO:
+        return saida;
     }
     return false;
 }
@@ -208,27 +250,33 @@ bool regras_interativo_ativo(TipoInterativo tipo, int fase) {
 // ================================================================== circuitos dos painéis
 void regras_circuito_painel1(Circuito *c) {
     *c = (Circuito){.n_entradas = 3, .n_portas = 3};
-    c->portas[0] = (Porta){PORTA_NAO, 1, 0};                       // ¬B
-    c->portas[1] = (Porta){PORTA_E, 0, REF_PORTA(0)};              // A ∧ ¬B
-    c->portas[2] = (Porta){PORTA_E, REF_PORTA(1), 2};              // (A ∧ ¬B) ∧ C
+    c->portas[0] = (Porta){PORTA_NAO, 1, 0};          // ¬B
+    c->portas[1] = (Porta){PORTA_E, 0, REF_PORTA(0)}; // A ∧ ¬B
+    c->portas[2] = (Porta){PORTA_E, REF_PORTA(1), 2}; // (A ∧ ¬B) ∧ C
 }
 
 void regras_circuito_painel2(Circuito *c, TipoPorta p1, TipoPorta p2) {
     *c = (Circuito){.n_entradas = 2, .n_portas = 3};
-    c->portas[0] = (Porta){p1, 0, 1};                              // A [?1] B
-    c->portas[1] = (Porta){PORTA_NAO, 0, 0};                       // ¬A
-    c->portas[2] = (Porta){p2, REF_PORTA(0), REF_PORTA(1)};        // (...) [?2] (¬A)
+    c->portas[0] = (Porta){p1, 0, 1};                       // A [?1] B
+    c->portas[1] = (Porta){PORTA_NAO, 0, 0};                // ¬A
+    c->portas[2] = (Porta){p2, REF_PORTA(0), REF_PORTA(1)}; // (...) [?2] (¬A)
 }
 
 // As portas do painel usam a mesma semântica do motor de lógica (OU-EXCLUSIVO = ¬(A ↔ B), NÃO-E = ¬(A ∧ B)).
 static bool aplica_porta(TipoPorta tipo, bool a, bool b) {
     switch (tipo) {
-    case PORTA_E: return logica_aplica(OP_E, a, b);
-    case PORTA_OU: return logica_aplica(OP_OU, a, b);
-    case PORTA_XOU: return !logica_aplica(OP_SSE, a, b);
-    case PORTA_NE: return !logica_aplica(OP_E, a, b);
-    case PORTA_NAO: return logica_aplica(OP_NAO, a, false);
-    default: return false;
+    case PORTA_E:
+        return logica_aplica(OP_E, a, b);
+    case PORTA_OU:
+        return logica_aplica(OP_OU, a, b);
+    case PORTA_XOU:
+        return !logica_aplica(OP_SSE, a, b);
+    case PORTA_NE:
+        return !logica_aplica(OP_E, a, b);
+    case PORTA_NAO:
+        return logica_aplica(OP_NAO, a, false);
+    default:
+        return false;
     }
 }
 
@@ -241,6 +289,7 @@ static bool valor_da_referencia(int ref, const bool *entradas, const bool *porta
 // [REQ:PURA-regras_avaliar_circuito] avalia porta a porta (cada LED) e devolve a lâmpada de saída
 bool regras_avaliar_circuito(const Circuito *c, const bool *entradas, bool *leds) {
     bool portas[MAX_PORTAS] = {false};
+    // padrão FOLD: as portas são avaliadas em ordem, acumulando as saídas (cada uma alimenta as seguintes)
     for (int i = 0; i < c->n_portas && i < MAX_PORTAS; i++) {
         bool a = valor_da_referencia(c->portas[i].a, entradas, portas, i);
         bool b = valor_da_referencia(c->portas[i].b, entradas, portas, i);

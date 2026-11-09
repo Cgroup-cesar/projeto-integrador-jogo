@@ -5,7 +5,6 @@
 #include "estado.h"
 
 void jogo_inicia(Estado *e);
-void jogo_finaliza(Estado *e);
 
 // Aplica um evento: a decisão é de regras_proxima_fase (pura); aqui só se prepara a fase nova.
 void jogo_aplica_evento(Estado *e, EventoFase evento);

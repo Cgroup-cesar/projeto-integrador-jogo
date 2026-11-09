@@ -24,10 +24,12 @@ void ui_texto(const Estado *e, const char *texto, Vector2 pos, float tamanho, Co
 void ui_texto_centro(const Estado *e, const char *texto, float y, float tamanho, Color cor);
 Vector2 ui_mede(const Estado *e, const char *texto, float tamanho);
 // Quebra o texto em linhas de até `largura` px; devolve a altura usada.
-float ui_texto_quebrado(const Estado *e, const char *texto, Vector2 pos, float largura, float tamanho, Color cor);
+float ui_texto_quebrado(const Estado *e, const char *texto, Vector2 pos, float largura, float tamanho,
+                        Color cor);
 void ui_painel(Rectangle r, Color borda); // fundo escuro translúcido com borda fina
 // Item de lista escolhível: o ativo ganha fundo mais claro, cantos arredondados e barra na lateral.
-void ui_opcao(const Estado *e, const char *texto, Vector2 pos, float largura, float tamanho, bool ativa, Color cor);
+void ui_opcao(const Estado *e, const char *texto, Vector2 pos, float largura, float tamanho, bool ativa,
+              Color cor);
 // Quadradinhos de integridade do vidro (desenhados; não dependem da fonte). Devolve a largura usada.
 float ui_quadrados_vidro(int vidas, Vector2 pos, float lado, Color cor);
 

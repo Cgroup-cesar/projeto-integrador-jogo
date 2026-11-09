@@ -10,7 +10,9 @@ static const Legenda INTRO_INTERFONE[] = {
     {"Boa noite, professor. Coronel Varela. Não encoste no vidro.", 4.0f, V},
     {"Nós o chamamos de Precursor. Está conosco desde 77. Não fala como nós. Não pensa como nós.", 5.5f, V},
     {"A Dra. Sampaio concluiu que a língua dele não tem palavras. Só estrutura. Verdadeiro. Falso.", 5.5f, V},
-    {"Os interruptores à sua frente controlam as luzes da cela. Ele responde ao que vê. Descubra o que ele diz.", 6.0f, V},
+    {"Os interruptores à sua frente controlam as luzes da cela. Ele responde ao que vê. Descubra o que ele "
+     "diz.",
+     6.0f, V},
 };
 static const Legenda APOS_R1[] = {
     {"'Nós não somos perigo.' ...Anotado.", 3.5f, V},
@@ -59,8 +61,8 @@ typedef struct {
 #define BLOCO(vetor) {vetor, (int)(sizeof(vetor) / sizeof(vetor[0]))}
 
 static const Bloco BLOCOS[FALAS_TOTAL] = {
-    BLOCO(INTRO_INTERFONE), BLOCO(APOS_R1),        BLOCO(INICIO_S1),      BLOCO(FIM_S1),
-    BLOCO(APOS_R2),         BLOCO(INICIO_S2),      BLOCO(FIM_S2),         BLOCO(APOS_R3),
+    BLOCO(INTRO_INTERFONE), BLOCO(APOS_R1),        BLOCO(INICIO_S1),       BLOCO(FIM_S1),
+    BLOCO(APOS_R2),         BLOCO(INICIO_S2),      BLOCO(FIM_S2),          BLOCO(APOS_R3),
     BLOCO(FIM_BOM_FALAS),   BLOCO(PORTA_TRANCADA), BLOCO(RODADA_RECOMECA), BLOCO(PEGO_FALAS),
 };
 
@@ -107,13 +109,12 @@ static const char *const TEXTOS[TXT_TOTAL] = {
     [TXT_ARMARIO_SAIR] = "E — sair do armário",
     [TXT_OBJETIVO_SALA] = "Vá ao console (E) e descubra o que ele diz.",
     [TXT_OBJETIVO_S1] = "Religue o gerador: painel 1, no fim do corredor (ao norte).",
-    [TXT_OBJETIVO_S2] = "Religue a contenção: painel 2, no Arquivo (sudoeste).",
+    [TXT_OBJETIVO_S2] = "Religue a contenção: painel 2, no Arquivo, ao sul da sala.",
     [TXT_OBJETIVO_VOLTAR] = "Volte para a sala de observação.",
     [TXT_OBJETIVO_RESPOSTA] = "Responda pelo console.",
     [TXT_TERMINAL_TITULO] = "ANALISADOR SEMÂNTICO SNI-85",
     [TXT_TERMINAL_DICA_R1_1] = "Tabela-verdade: para cada combinação das luzes, ele diz VERDADEIRO ou FALSO.",
     [TXT_TERMINAL_DICA_R1_2] = "Teste todas as combinações; o padrão das respostas revela o conectivo.",
-    [TXT_TERMINAL_LUZES] = "[1] LUZ A   [2] LUZ B",
     [TXT_TERMINAL_OBSERVE] = "Mude as luzes e ouça a resposta. A tabela se preenche sozinha.",
     [TXT_TERMINAL_ESCOLHA_CONECTIVO] = "O que significa o glifo âmbar?  (setas + ENTER)",
     [TXT_TERMINAL_TRADUZA] = "Ele está falando. Qual é a tradução?  (setas + ENTER)",
@@ -135,8 +136,15 @@ static const char *const TEXTOS[TXT_TOTAL] = {
     [TXT_TERMINAL_LUZ_APAGADA] = "APAGADA",
     [TXT_TERMINAL_TABELA] = "TABELA-VERDADE",
     [TXT_TERMINAL_QUAL_FRASE] = "Frase %d de %d",
-    [TXT_VERDADEIRO] = "VERDADEIRO",
-    [TXT_FALSO] = "FALSO",
+    [TXT_TERMINAL_CABECALHO] = "RODADA %d/3 · VIDRO:",
+    [TXT_TERMINAL_PLACAR] = "· PLACAR: %03d",
+    [TXT_TERMINAL_LUZ_UMA] = "LUZ A: %s      [1] alterna",
+    [TXT_TERMINAL_LUZ_DUAS] = "LUZ A: %s   LUZ B: %s      [1] [2] alternam",
+    [TXT_TERMINAL_COLUNA] = "frase %d",
+    [TXT_TERMINAL_COLUNA_UNICA] = "frase",
+    [TXT_PAINEL_CHAVE] = "[%d] %s  %s",
+    [TXT_FALANTE_VARELA] = "CEL. VARELA (interfone)",
+    [TXT_FALANTE_ELIAS] = "PROF. ELIAS",
     [TXT_PAINEL1_TITULO] = "PAINEL 1 — GERADOR AUXILIAR",
     [TXT_PAINEL2_TITULO] = "PAINEL 2 — CONTENÇÃO (ARQUIVO)",
     [TXT_PAINEL_INSTRUCOES1] = "[1] [2] [3] ligam e desligam as chaves A, B, C · Esc fecha",
@@ -146,15 +154,16 @@ static const char *const TEXTOS[TXT_TOTAL] = {
     [TXT_PAINEL_SAIDA] = "SAÍDA",
     [TXT_PAINEL_CHAVE_LIGADA] = "LIGADA",
     [TXT_PAINEL_CHAVE_DESLIGADA] = "DESLIGADA",
-    [TXT_DIARIO] = "02/03/85 — Cada frase que traduzimos, ele repete melhor. Não é diálogo: é aula, e nós somos os "
-                   "professores. Ele só consegue agir sobre aquilo que PODE ser verdade. Se um dia for preciso calá-lo, "
-                   "dê a ele uma frase que nunca possa ser verdadeira. P E NÃO P. O Varela não pode saber disso. — I.S.",
+    [TXT_DIARIO] =
+        "02/03/85 — Cada frase que traduzimos, ele repete melhor. Não é diálogo: é aula, e nós somos os "
+        "professores. Ele só consegue agir sobre aquilo que PODE ser verdade. Se um dia for preciso calá-lo, "
+        "dê a ele uma frase que nunca possa ser verdadeira. P E NÃO P. O Varela não pode saber disso. — I.S.",
     [TXT_DIARIO_FECHAR] = "E ou Esc — fechar",
     [TXT_FIM_RUIM_ACEITA] = "TRANSMISSÃO ACEITA.",
     [TXT_FIM_RUIM_OBRIGADO] = "OBRIGADO, PROFESSOR.",
     [TXT_FIM_RUIM_TELA] = "FIM — 1/2. A contenção do Posto 7 nunca foi restabelecida.",
-    [TXT_FIM_BOM_ELIAS] = "Nada que pudesse ser verdade.",
-    [TXT_FIM_BOM_TELA] = "FIM — 2/2. O Posto 7 foi lacrado em 15 de março de 1985. Oficialmente, ele nunca existiu.",
+    [TXT_FIM_BOM_TELA] =
+        "FIM — 2/2. O Posto 7 foi lacrado em 15 de março de 1985. Oficialmente, ele nunca existiu.",
     [TXT_FIM_VITORIA] = "VITÓRIA",
     [TXT_FIM_DERROTA] = "DERROTA",
     [TXT_FIM_PLACAR] = "PLACAR TOTAL",
@@ -171,7 +180,8 @@ const char *dialogo_texto(TextoId id) {
 
 const char *dialogo_nome_fase(int fase) {
     static const char *const nomes[FASE_TOTAL] = {
-        "", "Intro", "Rodada 1", "Saída 1", "Rodada 2", "Saída 2", "Rodada 3", "Resposta final", "Final", "Final",
+        "",        "Intro",    "Rodada 1",       "Saída 1", "Rodada 2",
+        "Saída 2", "Rodada 3", "Resposta final", "Final",   "Final",
     };
     return (fase >= 0 && fase < FASE_TOTAL) ? nomes[fase] : "";
 }
@@ -187,7 +197,8 @@ const char *dialogo_conectivo(int indice) {
 static const char *const TRADUCOES[3][3] = {
     {"\"Nós somos perigo.\"", "\"Nós não somos perigo.\"", "\"Não há nós sem perigo.\""},
     {"\"Você ou nós falamos.\"", "\"Se você fala, nós falamos.\"", "\"Você e nós falamos.\""},
-    {"\"Se você falar, então a porta abre.\"", "\"A porta abre e você fala.\"", "\"Se a porta abrir, você fala.\""},
+    {"\"Se você falar, então a porta abre.\"", "\"A porta abre e você fala.\"",
+     "\"Se a porta abrir, você fala.\""},
 };
 
 const char *dialogo_opcao_traducao(int rodada, int opcao) {
@@ -197,7 +208,8 @@ const char *dialogo_opcao_traducao(int rodada, int opcao) {
 
 // ================================================================== léxico (ordem dos glifos em glifos.h)
 static const char *const SIGNIFICADOS[] = {
-    "NÃO", "E", "OU", "SE…ENTÃO", "SE E SÓ SE", "LUZ A", "LUZ B", "NÓS", "VOCÊ", "PERIGO", "FALAR", "PORTA", "ABRIR",
+    "NÃO", "E",    "OU",     "SE…ENTÃO", "SE E SÓ SE", "LUZ A", "LUZ B",
+    "NÓS", "VOCÊ", "PERIGO", "FALAR",    "PORTA",      "ABRIR",
 };
 
 const char *dialogo_significado_glifo(int glifo) {

@@ -41,7 +41,8 @@ static void testa_classificacoes(void) {
     CHECK(logica_eh_contradicao(&pool, contradicao, 1));
     CHECK(!logica_eh_satisfazivel(&pool, contradicao, 1));
 
-    int tautologia = logica_binaria(&pool, OP_OU, logica_atomo(&pool, 0), logica_nao(&pool, logica_atomo(&pool, 0)));
+    int tautologia =
+        logica_binaria(&pool, OP_OU, logica_atomo(&pool, 0), logica_nao(&pool, logica_atomo(&pool, 0)));
     CHECK(logica_eh_tautologia(&pool, tautologia, 1));
 
     int implica = logica_binaria(&pool, OP_IMPLICA, logica_atomo(&pool, 0), logica_atomo(&pool, 1));
@@ -80,6 +81,15 @@ static void testa_parser_precedencia(void) {
     Ficha f4[] = {P, E, Q, OU, P}; // (P ∧ Q) ∨ P: à esquerda
     int r4 = analisa(&pool, f4, 5, &erro);
     CHECK(erro.ok && pool.nos[r4].op == OP_OU && pool.nos[pool.nos[r4].esq].op == OP_E);
+
+    const Ficha SSE = {FICHA_SSE, 0};
+    Ficha f6[] = {P, OU, Q, SE, P}; // (P ∨ Q) → P: o OU pesa mais que o SE…ENTÃO
+    int r6 = analisa(&pool, f6, 5, &erro);
+    CHECK(erro.ok && pool.nos[r6].op == OP_IMPLICA && pool.nos[pool.nos[r6].esq].op == OP_OU);
+
+    Ficha f7[] = {P, SE, Q, SSE, Q}; // (P → Q) ↔ Q: o SE…ENTÃO pesa mais que o SE E SÓ SE
+    int r7 = analisa(&pool, f7, 5, &erro);
+    CHECK(erro.ok && pool.nos[r7].op == OP_SSE && pool.nos[pool.nos[r7].esq].op == OP_IMPLICA);
 
     Ficha f5[] = {P, E, NAO, P}; // a resposta do final bom
     int r5 = analisa(&pool, f5, 4, &erro);
@@ -144,7 +154,8 @@ static void testa_pool_cheio(void) {
     PoolLogico pool;
     logica_pool_limpa(&pool);
     int ultimo = 0;
-    for (int i = 0; i < MAX_NOS_LOGICA + 5; i++) ultimo = logica_atomo(&pool, 0);
+    for (int i = 0; i < MAX_NOS_LOGICA + 5; i++)
+        ultimo = logica_atomo(&pool, 0);
     CHECK(ultimo == -1);
     CHECK(pool.usados == MAX_NOS_LOGICA);
     CHECK(logica_nao(&pool, -1) == -1);

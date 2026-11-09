@@ -16,7 +16,8 @@ typedef void (*FxFoldFn)(void *acumulador, const void *elemento, void *contexto)
 static inline void fx_map(void *vetor, int n, size_t tamanho, FxMapFn f, void *contexto) {
     unsigned char *base = (unsigned char *)vetor;
     // padrão MAP
-    for (int i = 0; i < n; i++) f(base + (size_t)i * tamanho, contexto);
+    for (int i = 0; i < n; i++)
+        f(base + (size_t)i * tamanho, contexto);
 }
 
 // Mantém só os elementos em que `manter` devolve true, compactando no próprio vetor (v[j++] = v[i]).
@@ -35,10 +36,12 @@ static inline int fx_filter_inplace(void *vetor, int n, size_t tamanho, FxFiltro
 }
 
 // Reduz o vetor a um valor: `f` combina o acumulador com cada elemento.
-static inline void fx_fold(const void *vetor, int n, size_t tamanho, void *acumulador, FxFoldFn f, void *contexto) {
+static inline void fx_fold(const void *vetor, int n, size_t tamanho, void *acumulador, FxFoldFn f,
+                           void *contexto) {
     const unsigned char *base = (const unsigned char *)vetor;
     // padrão FOLD
-    for (int i = 0; i < n; i++) f(acumulador, base + (size_t)i * tamanho, contexto);
+    for (int i = 0; i < n; i++)
+        f(acumulador, base + (size_t)i * tamanho, contexto);
 }
 
 #endif

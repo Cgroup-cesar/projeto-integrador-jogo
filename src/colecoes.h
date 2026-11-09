@@ -1,5 +1,4 @@
 // colecoes.h — as coleções do jogo: struct por objeto, vetor de capacidade fixa e contador.
-// [REQ:RF3] seis coleções de múltiplos objetos, sem malloc por quadro
 // Este cabeçalho não inclui raylib.h (usa só os tipos do raymath.h), para as regras puras poderem usá-lo.
 #ifndef COLECOES_H
 #define COLECOES_H
@@ -8,7 +7,8 @@
 #include "config.h"
 #include "raymath.h"
 
-// ------------------------------------------------------------------ ruídos (passos, corrida, portas, painéis)
+// ------------------------------------------------------------------ ruídos (passos, corrida, portas,
+// painéis)
 typedef enum { RUIDO_PASSO, RUIDO_CORRIDA, RUIDO_PORTA, RUIDO_INTERRUPTOR, RUIDO_PAINEL } TipoRuido;
 
 typedef struct {
@@ -23,13 +23,14 @@ typedef struct {
     int n;
 } ColRuidos;
 
-// ------------------------------------------------------------------ partículas (faíscas dos glifos, poeira, fragmentos)
+// ------------------------------------------------------------------ partículas (faíscas dos glifos, poeira,
+// fragmentos)
 typedef enum { PARTICULA_FAGULHA, PARTICULA_POEIRA, PARTICULA_FRAGMENTO } TipoParticula;
 
 typedef struct {
     Vector3 pos;
     Vector3 vel;
-    float vida;     // segundos restantes
+    float vida; // segundos restantes
     float vida_max;
     TipoParticula tipo;
 } Particula;
@@ -39,7 +40,8 @@ typedef struct {
     int n;
 } ColParticulas;
 
-// ------------------------------------------------------------------ rachaduras no vidro (cada erro cria de 1 a 3)
+// ------------------------------------------------------------------ rachaduras no vidro (cada erro cria de 1
+// a 3)
 typedef struct {
     Vector2 origem;         // em coordenadas da tela, de 0 a 1
     float angulo;           // radianos
@@ -56,7 +58,13 @@ typedef struct {
 } ColRachaduras;
 
 // ------------------------------------------------------------------ eventos do placar
-typedef enum { PONTO_RODADA_SEM_ERRO, PONTO_ERRO, PONTO_SAIDA_LIMPA, PONTO_BONUS_TEMPO, PONTO_FINAL_BOM } TipoPonto;
+typedef enum {
+    PONTO_RODADA_SEM_ERRO,
+    PONTO_ERRO,
+    PONTO_SAIDA_LIMPA,
+    PONTO_BONUS_TEMPO,
+    PONTO_FINAL_BOM
+} TipoPonto;
 
 typedef struct {
     TipoPonto tipo;
@@ -69,8 +77,16 @@ typedef struct {
     int n;
 } ColEventos;
 
-// ------------------------------------------------------------------ interativos (console, painéis, diário, armários, portas)
-typedef enum { INTER_CONSOLE, INTER_PAINEL1, INTER_PAINEL2, INTER_DIARIO, INTER_ARMARIO, INTER_PORTA } TipoInterativo;
+// ------------------------------------------------------------------ interativos (console, painéis, diário,
+// armários, portas)
+typedef enum {
+    INTER_CONSOLE,
+    INTER_PAINEL1,
+    INTER_PAINEL2,
+    INTER_DIARIO,
+    INTER_ARMARIO,
+    INTER_PORTA
+} TipoInterativo;
 
 typedef struct {
     TipoInterativo tipo;
@@ -110,12 +126,16 @@ void col_ruidos_atualiza(ColRuidos *c, float dt);
 int col_ruidos_mais_forte(const ColRuidos *c, Vector3 ouvinte, float *intensidade);
 
 bool col_particulas_adiciona(ColParticulas *c, Particula p);
+// Sorteio proporcional ao tempo: "taxa" eventos por segundo, em média, qualquer que seja o FPS.
+bool col_sorteia_por_segundo(float taxa, float dt);
 void col_particulas_atualiza(ColParticulas *c, float dt, Vector3 limite_min, Vector3 limite_max);
 
 bool col_rachaduras_adiciona(ColRachaduras *c, Rachadura r);
 void col_rachaduras_atualiza(ColRachaduras *c, float dt);
 
 bool col_eventos_adiciona(ColEventos *c, EventoPlacar ev);
+// Soma no último evento se ele for do mesmo tipo e da mesma fase (os erros de uma fase viram um evento só).
+bool col_eventos_acumula(ColEventos *c, EventoPlacar ev);
 
 bool col_interativos_adiciona(ColInterativos *c, Interativo it);
 void col_interativos_filtra_fase(ColInterativos *c, int fase);

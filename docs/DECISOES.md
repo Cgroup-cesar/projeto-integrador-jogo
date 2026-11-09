@@ -69,3 +69,12 @@ Registro das escolhas feitas onde a especificação deixava espaço ou onde o am
 42. **Nomes dos sons substituíveis:** `zumbido_lampada`, `voz_precursor`, `verdadeiro`, `falso`, `bip_interfone`, `maquina_escrever`, `interruptor`, `passo`, `passo_criatura`, `vidro_estalo`, `estrondo`, `alarme`, `respiracao`, `ambiente_sala`, `ambiente_saida`, `papel`, `energia`, `distorcao` (todos `.ogg`, em `assets/audio/`).
 43. **Smoke calado.** O `--smoke` zera o volume; `--mudo` faz o mesmo no jogo normal.
 44. **Paredes com rodapé e faixa de tinta.** Em vez de textura (nenhum asset é obrigatório), duas faixas finas (rodapé escuro e tinta oliva a 1,1 m) dão escala e leitura no escuro.
+
+## Polimento e auditoria
+
+45. **Um commit por marco na v0.** A especificação manda "um commit por marco"; RNF6 pede commits pequenos. Na v0, gerada de uma vez, valeu a primeira regra (10 commits, um por marco, cada um verificado). Daqui em diante vale o fluxo do `CLAUDE.md`: branch por card, commits pequenos `tipo: descrição`, PR revisado.
+46. **FILTER-eventos numa cópia.** `regras_placar_da_fase` compacta uma cópia local dos eventos (não o vetor do `Estado`), para continuar pura: o placar por fase não pode apagar os eventos da partida.
+47. **Erros somados por fase.** Cada erro vale −25, mas os erros consecutivos da mesma fase viram um evento só no placar. O fold dá o mesmo total e o vetor nunca enche numa partida longa.
+48. **Folds recalculados a cada quadro.** `e->vidas` e `e->placar` são caches; recalcular os dois folds por quadro (dezenas de itens) é barato e evita placar desatualizado.
+49. **Terminal × rodada.** `terminal_atualiza` cuida da navegação (setas e Esc); `rodadas_atualiza` decide o que o ENTER faz. A resposta final tem a navegação própria no compositor.
+50. **Sorteios por segundo.** Tudo que é aleatório no tempo (fagulhas, poeira, apagões) usa `col_sorteia_por_segundo(taxa, dt)`, para a frequência não mudar com o FPS.

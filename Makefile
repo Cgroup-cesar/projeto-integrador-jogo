@@ -1,3 +1,4 @@
+# [REQ:RNF6] Makefile como build principal (Windows/w64devkit, Linux e macOS)
 # Makefile do PROJETO PRECURSOR (build principal)
 #
 #   make              compila o jogo em bin/

@@ -49,7 +49,7 @@ typedef struct {
 
 // ------------------------------------------------------------------ nível (gerado do mapa ASCII)
 #define MAPA_LARGURA 24
-#define MAPA_ALTURA 14
+#define MAPA_ALTURA  14
 #define MAX_ARMARIOS 8
 
 typedef struct {
@@ -60,7 +60,7 @@ typedef struct {
     Vector3 armarios[MAX_ARMARIOS];      // centro do armário
     Vector3 armario_saida[MAX_ARMARIOS]; // onde o jogador fica ao sair
     int n_armarios;
-    float vidro_z;                       // plano do vidro da contenção
+    float vidro_z; // plano do vidro da contenção
     float vidro_x0, vidro_x1;
 } Nivel;
 
@@ -77,16 +77,16 @@ typedef struct {
     int armario; // índice em Nivel.armarios quando escondido
     int mira;    // índice do interativo na mira (−1 = nenhum)
     float tempo_passo;
-    float balanco;       // balanço da câmera ao andar
-    int ultima_celula;   // para notar quando ele cruza uma porta
+    float balanco;     // balanço da câmera ao andar
+    int ultima_celula; // para notar quando ele cruza uma porta
 } Jogador;
 
 // ------------------------------------------------------------------ o Precursor
 typedef struct {
     Vector3 pos;
     float yaw;
-    bool ativo;         // nos corredores (saídas)
-    bool contido;       // na cela (fases de sala)
+    bool ativo;   // nos corredores (saídas)
+    bool contido; // na cela (fases de sala)
     EstadoCriatura estado;
     float tempo_estado;
     float tempo_para_surgir;
@@ -97,15 +97,15 @@ typedef struct {
     float tempo_replanejar;
     int patrulha_i;
     bool ve_jogador;
-    float distorcao;    // 0..1 ao ser "puxado" pela contenção
+    float distorcao; // 0..1 ao ser "puxado" pela contenção
     float passo_t;
     float fala_t;       // > 0 enquanto ele "fala" (fenda aberta)
     float avanco_vidro; // 0..1: o passo em direção ao vidro depois da R1
     bool mao_no_vidro;
-    float congelado_t;  // final bom
-    float surgindo;     // 0..1 enquanto sobe pelo duto
+    float congelado_t; // final bom
+    float surgindo;    // 0..1 enquanto sobe pelo duto
     float som_passo_t;
-    float procura_t;    // na PROCURA: troca de ponto a cada pouco
+    float procura_t; // na PROCURA: troca de ponto a cada pouco
 } Criatura;
 
 // ------------------------------------------------------------------ rodadas (sala de observação)
@@ -117,16 +117,16 @@ typedef struct {
     bool luz_a, luz_b;
     bool linha_vista[2][4];
     bool linha_valor[2][4];
-    int coluna;   // na R2 há duas frases: o jogador identifica uma de cada vez
+    int coluna; // na R2 há duas frases: o jogador identifica uma de cada vez
     int cursor;
-    float resposta_t;   // > 0 enquanto o Precursor "responde" à combinação de luzes
+    float resposta_t; // > 0 enquanto o Precursor "responde" à combinação de luzes
     int resposta_linha;
     int resposta_coluna; // na R2 ele responde às duas frases, uma depois da outra
     bool resposta_valor;
     float aviso_t;
     const char *aviso;
     float concluida_t;
-    bool rompendo;      // 3º erro: jumpscare e recomeço
+    bool rompendo; // 3º erro: jumpscare e recomeço
 } Rodada;
 
 // ------------------------------------------------------------------ painéis de circuito (saídas)
@@ -176,9 +176,9 @@ typedef struct {
 } Intro;
 
 typedef struct {
-    float tempo;     // tempo da cinemática
+    float tempo; // tempo da cinemática
     int etapa;
-    bool tela_final; // a cinemática acabou: mostra o placar
+    bool tela_final;  // a cinemática acabou: mostra o placar
     float tempo_tela; // tempo na tela de placar (volta ao menu em 20 s)
 } Fim;
 
@@ -187,6 +187,7 @@ typedef struct {
 } Menu;
 
 // ------------------------------------------------------------------ o estado inteiro
+// [REQ:RNF2] uma struct por objeto (Jogador, Criatura, Rodada, Painel...) e um módulo .c por sistema
 typedef struct Estado {
     Fase fase;
     float tempo_fase;
@@ -211,7 +212,8 @@ typedef struct Estado {
     Fim fim;
     Menu menu;
 
-    // As seis coleções do jogo
+    // [REQ:RF3] as seis coleções: struct por objeto, vetor de capacidade fixa e contador (sem malloc por
+    // quadro)
     ColRuidos ruidos;
     ColParticulas particulas;
     ColRachaduras rachaduras;
@@ -221,16 +223,16 @@ typedef struct Estado {
 
     bool conectivo_decifrado[4]; // NÃO, E, OU, SE…ENTÃO
     bool diario_lido;
-    int vidas;          // cache do fold das rachaduras
-    int placar;         // cache do fold dos eventos
+    int vidas;  // cache do fold das rachaduras
+    int placar; // cache do fold dos eventos
     int erros_na_fase, erros_totais;
     int pegos_na_fase;
-    float apagao_t;     // > 0 durante um apagão
-    float falha_luz_t;  // luzes piscando depois de um erro
+    float apagao_t;    // > 0 durante um apagão
+    float falha_luz_t; // luzes piscando depois de um erro
     float alarme_t;
-    float jumpscare_t;  // > 0 durante o jumpscare
-    float silencio_t;   // os 0,2 s de silêncio antes do estrondo
-    float retorno_t;    // saída: tempo desde que o painel foi resolvido
+    float jumpscare_t;           // > 0 durante o jumpscare
+    float silencio_t;            // os 0,2 s de silêncio antes do estrondo
+    float retorno_t;             // saída: tempo desde que o painel foi resolvido
     EventoFase evento_pos_susto; // o que acontece quando o jumpscare termina
 } Estado;
 

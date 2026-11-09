@@ -42,11 +42,16 @@ void desenha_glifo(IdGlifo id, Vector2 pos, float tamanho, Color cor, float espe
 
 int glifo_conectivo(IdGlifo id) {
     switch (id) {
-    case GLIFO_NAO: return 0;
-    case GLIFO_E: return 1;
-    case GLIFO_OU: return 2;
-    case GLIFO_SE_ENTAO: return 3;
-    default: return -1;
+    case GLIFO_NAO:
+        return 0;
+    case GLIFO_E:
+        return 1;
+    case GLIFO_OU:
+        return 2;
+    case GLIFO_SE_ENTAO:
+        return 3;
+    default:
+        return -1;
     }
 }
 
@@ -56,7 +61,8 @@ Color glifo_cor(const Estado *e, IdGlifo id) {
     return COR_FOSFORO;
 }
 
-void desenha_frase_glifos(const Estado *e, const FraseGlifos *frase, Vector2 pos, float tamanho, float espessura) {
+void desenha_frase_glifos(const Estado *e, const FraseGlifos *frase, Vector2 pos, float tamanho,
+                          float espessura) {
     for (int i = 0; i < frase->n; i++) {
         Vector2 p = {pos.x + i * tamanho * 1.45f, pos.y};
         desenha_glifo(frase->glifos[i], p, tamanho, glifo_cor(e, frase->glifos[i]), espessura);
@@ -76,12 +82,13 @@ static void glifo_no_vidro(IdGlifo id, Vector3 canto, float tamanho, Color cor, 
 }
 
 void glifos_atualiza(Estado *e, float dt) {
-    if (e->cri.fala_t <= 0.0f || GetRandomValue(0, 100) > 35) return;
+    if (e->cri.fala_t <= 0.0f || !col_sorteia_por_segundo(20.0f, dt)) return; // ~20 fagulhas por segundo
     const Nivel *n = &e->nivel;
     float x = n->vidro_x0 + 3.0f + GetRandomValue(0, 600) / 100.0f;
     Vector3 pos = {x, 1.6f + GetRandomValue(0, 100) / 100.0f, n->vidro_z - 0.05f};
-    Vector3 vel = {GetRandomValue(-50, 50) / 100.0f, GetRandomValue(0, 80) / 100.0f, GetRandomValue(10, 60) / 100.0f};
-    col_particulas_adiciona(&e->particulas, (Particula){pos, vel, 0.6f + dt, 0.6f, PARTICULA_FAGULHA});
+    Vector3 vel = {GetRandomValue(-50, 50) / 100.0f, GetRandomValue(0, 80) / 100.0f,
+                   GetRandomValue(10, 60) / 100.0f};
+    col_particulas_adiciona(&e->particulas, (Particula){pos, vel, 0.6f, 0.6f, PARTICULA_FAGULHA});
 }
 
 // Enquanto ele "fala", a frase aparece no vidro, tremendo levemente (até duas frases, uma por linha).

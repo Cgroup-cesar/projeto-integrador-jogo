@@ -10,20 +10,32 @@
 
 // ================================================================== dados das rodadas
 static const DadosRodada RODADAS[3] = {
-    { // R1 (tutorial; só a luz A; 2 linhas)
+    {
+        // R1 (tutorial; só a luz A; 2 linhas)
         .teste = {{{GLIFO_NAO, GLIFO_LUZ_A}, 2}},
-        .n_colunas = 1, .n_luzes = 1, .conectivo_certo = {0},
-        .traducao = {{GLIFO_NAO, GLIFO_NOS, GLIFO_PERIGO}, 3}, .traducao_certa = 1,
+        .n_colunas = 1,
+        .n_luzes = 1,
+        .conectivo_certo = {0},
+        .traducao = {{GLIFO_NAO, GLIFO_NOS, GLIFO_PERIGO}, 3},
+        .traducao_certa = 1,
     },
-    { // R2 (luzes A e B; duas frases observadas ao mesmo tempo)
+    {
+        // R2 (luzes A e B; duas frases observadas ao mesmo tempo)
         .teste = {{{GLIFO_LUZ_A, GLIFO_E, GLIFO_LUZ_B}, 3}, {{GLIFO_LUZ_A, GLIFO_OU, GLIFO_LUZ_B}, 3}},
-        .n_colunas = 2, .n_luzes = 2, .conectivo_certo = {1, 2},
-        .traducao = {{GLIFO_VOCE, GLIFO_E, GLIFO_NOS, GLIFO_FALAR}, 4}, .traducao_certa = 2,
+        .n_colunas = 2,
+        .n_luzes = 2,
+        .conectivo_certo = {1, 2},
+        .traducao = {{GLIFO_VOCE, GLIFO_E, GLIFO_NOS, GLIFO_FALAR}, 4},
+        .traducao_certa = 2,
     },
-    { // R3
+    {
+        // R3
         .teste = {{{GLIFO_LUZ_A, GLIFO_SE_ENTAO, GLIFO_LUZ_B}, 3}},
-        .n_colunas = 1, .n_luzes = 2, .conectivo_certo = {3},
-        .traducao = {{GLIFO_VOCE, GLIFO_FALAR, GLIFO_SE_ENTAO, GLIFO_PORTA, GLIFO_ABRIR}, 5}, .traducao_certa = 0,
+        .n_colunas = 1,
+        .n_luzes = 2,
+        .conectivo_certo = {3},
+        .traducao = {{GLIFO_VOCE, GLIFO_FALAR, GLIFO_SE_ENTAO, GLIFO_PORTA, GLIFO_ABRIR}, 5},
+        .traducao_certa = 0,
     },
 };
 
@@ -44,14 +56,29 @@ int rodadas_linha_atual(const Estado *e) {
 // ================================================================== avaliação pelo motor de lógica
 static bool glifo_para_ficha(IdGlifo g, Ficha *f) {
     switch (g) {
-    case GLIFO_LUZ_A: *f = (Ficha){FICHA_ATOMO, 0}; return true;
-    case GLIFO_LUZ_B: *f = (Ficha){FICHA_ATOMO, 1}; return true;
-    case GLIFO_NAO: *f = (Ficha){FICHA_NAO, 0}; return true;
-    case GLIFO_E: *f = (Ficha){FICHA_E, 0}; return true;
-    case GLIFO_OU: *f = (Ficha){FICHA_OU, 0}; return true;
-    case GLIFO_SE_ENTAO: *f = (Ficha){FICHA_SE_ENTAO, 0}; return true;
-    case GLIFO_SSE: *f = (Ficha){FICHA_SSE, 0}; return true;
-    default: return false;
+    case GLIFO_LUZ_A:
+        *f = (Ficha){FICHA_ATOMO, 0};
+        return true;
+    case GLIFO_LUZ_B:
+        *f = (Ficha){FICHA_ATOMO, 1};
+        return true;
+    case GLIFO_NAO:
+        *f = (Ficha){FICHA_NAO, 0};
+        return true;
+    case GLIFO_E:
+        *f = (Ficha){FICHA_E, 0};
+        return true;
+    case GLIFO_OU:
+        *f = (Ficha){FICHA_OU, 0};
+        return true;
+    case GLIFO_SE_ENTAO:
+        *f = (Ficha){FICHA_SE_ENTAO, 0};
+        return true;
+    case GLIFO_SSE:
+        *f = (Ficha){FICHA_SSE, 0};
+        return true;
+    default:
+        return false;
     }
 }
 
@@ -59,6 +86,7 @@ static bool glifo_para_ficha(IdGlifo g, Ficha *f) {
 static bool avalia_frase(const FraseGlifos *frase, bool luz_a, bool luz_b) {
     Ficha fichas[MAX_GLIFOS_FRASE];
     int n = 0;
+    // padrão MAP + FILTER: cada glifo vira uma ficha; palavras que não são lógica ficam de fora
     for (int i = 0; i < frase->n; i++)
         if (glifo_para_ficha(frase->glifos[i], &fichas[n])) n++;
     PoolLogico pool;
@@ -110,16 +138,18 @@ static void cria_rachaduras(Estado *e) {
 static void registra_erro(Estado *e) {
     e->erros_na_fase++;
     e->erros_totais++;
-    col_eventos_adiciona(&e->eventos, (EventoPlacar){PONTO_ERRO, PONTOS_ERRO, e->fase});
+    col_eventos_acumula(
+        &e->eventos, (EventoPlacar){PONTO_ERRO, PONTOS_ERRO, e->fase}); // os erros da fase somam num evento
     cria_rachaduras(e);
     e->vidas = regras_integridade_vidro(e->rachaduras.itens, e->rachaduras.n, VIDAS_VIDRO);
     e->falha_luz_t = 0.9f;
     avisa(&e->rod, TXT_TERMINAL_ERRO);
     audio_toca(e, SOM_VIDRO_ESTALO, 1.0f, 0.9f + GetRandomValue(0, 20) / 100.0f);
-    if (e->vidas > 0) return;
+    EventoFase depois = regras_evento_do_erro(e->vidas);
+    if (depois == EV_NENHUM) return;
     // 3º erro: o vidro rompe, vem o jumpscare e a rodada recomeça com o vidro restaurado.
     e->rod.rompendo = true;
-    criatura_susto(e, EV_VIDRO_ROMPEU);
+    criatura_susto(e, depois);
 }
 
 // ================================================================== decifrar
@@ -174,16 +204,11 @@ static void atualiza_decifrar(Estado *e, float dt) {
 }
 
 // ================================================================== escolher o conectivo e traduzir
-static bool move_cursor(Rodada *r, const Entrada *in, int opcoes) {
-    if (in->cima) r->cursor = (r->cursor + opcoes - 1) % opcoes;
-    if (in->baixo) r->cursor = (r->cursor + 1) % opcoes;
-    return in->confirmar;
-}
-
+// (as setas são do terminal_atualiza; aqui só o ENTER decide)
 static void atualiza_escolha_conectivo(Estado *e) {
     Rodada *r = &e->rod;
     const DadosRodada *d = rodadas_dados(r->numero);
-    if (!move_cursor(r, &e->in, CONECTIVOS_ESCOLHA)) return;
+    if (!e->in.confirmar) return;
     if (r->cursor != d->conectivo_certo[r->coluna]) {
         registra_erro(e);
         return;
@@ -200,7 +225,7 @@ static void atualiza_escolha_conectivo(Estado *e) {
 static void atualiza_traducao(Estado *e) {
     Rodada *r = &e->rod;
     e->cri.fala_t = fmaxf(e->cri.fala_t, 0.5f); // enquanto espera a tradução, ele continua "dizendo" a frase
-    if (!move_cursor(r, &e->in, 3)) return;
+    if (!e->in.confirmar) return;
     if (r->cursor != rodadas_dados(r->numero)->traducao_certa) {
         registra_erro(e);
         return;
@@ -216,9 +241,9 @@ static void atualiza_traducao(Estado *e) {
     }
 }
 
-// ================================================================== depois de concluir: a cena entre as fases
-// R1: ele dá um passo em direção ao vidro, as luzes piscam e vem o apagão. R2: apagão maior.
-// R3: alarme, ele encosta a mão no vidro e o terminal mostra RESPONDA.
+// ================================================================== depois de concluir: a cena entre as
+// fases R1: ele dá um passo em direção ao vidro, as luzes piscam e vem o apagão. R2: apagão maior. R3:
+// alarme, ele encosta a mão no vidro e o terminal mostra RESPONDA.
 static void atualiza_conclusao(Estado *e, float dt) {
     Rodada *r = &e->rod;
     float antes = r->concluida_t;
@@ -245,16 +270,19 @@ void rodadas_atualiza(Estado *e, float dt) {
         atualiza_conclusao(e, dt);
         return;
     }
-    if (e->jog.modo != MODO_TERMINAL) return;
-    if (e->in.voltar) {
-        e->jog.modo = MODO_ANDANDO;
-        return;
-    }
+    if (e->jog.modo != MODO_TERMINAL) return; // o Esc do terminal é tratado em terminal_atualiza
     switch (r->etapa) {
-    case ETAPA_DECIFRAR: atualiza_decifrar(e, dt); break;
-    case ETAPA_ESCOLHER_CONECTIVO: atualiza_escolha_conectivo(e); break;
-    case ETAPA_TRADUZIR: atualiza_traducao(e); break;
-    default: break;
+    case ETAPA_DECIFRAR:
+        atualiza_decifrar(e, dt);
+        break;
+    case ETAPA_ESCOLHER_CONECTIVO:
+        atualiza_escolha_conectivo(e);
+        break;
+    case ETAPA_TRADUZIR:
+        atualiza_traducao(e);
+        break;
+    default:
+        break;
     }
 }
 
@@ -269,7 +297,8 @@ int rodadas_frases_atuais(const Estado *e, FraseGlifos *frases, int maximo) {
     }
     if (r->etapa == ETAPA_CONCLUIDA) return 0;
     int n = d->n_colunas < maximo ? d->n_colunas : maximo;
-    for (int i = 0; i < n; i++) frases[i] = d->teste[i];
+    for (int i = 0; i < n; i++)
+        frases[i] = d->teste[i];
     return n;
 }
 
@@ -280,7 +309,8 @@ static unsigned proximo(unsigned *semente) {
 }
 
 // Um galho é uma linha quebrada; os pontos saem de uma semente fixa, então ele não "pisca".
-static void desenha_galho(Vector2 inicio, float angulo, float comprimento, unsigned semente, float esp, Color cor) {
+static void desenha_galho(Vector2 inicio, float angulo, float comprimento, unsigned semente, float esp,
+                          Color cor) {
     Vector2 p = inicio;
     int passos = 6;
     for (int i = 0; i < passos; i++) {
@@ -294,6 +324,7 @@ static void desenha_galho(Vector2 inicio, float angulo, float comprimento, unsig
 void rodadas_desenha(const Estado *e) {
     float w = (float)e->rec.alvo_largura, h = (float)e->rec.alvo_altura;
     Color cor = Fade((Color){0xd8, 0xee, 0xff, 255}, 0.75f);
+    // laço de desenho: só percorre a coleção para desenhar (não é map/filter/fold)
     for (int i = 0; i < e->rachaduras.n; i++) {
         const Rachadura *r = &e->rachaduras.itens[i];
         Vector2 origem = {r->origem.x * w, r->origem.y * h};
@@ -316,16 +347,21 @@ static void piloto_decifrar(const Estado *e, Entrada *in) {
         if (r->linha_vista[0][l]) continue;
         bool a = d->n_luzes == 1 ? (l & 1) != 0 : (l & 2) != 0;
         bool b = d->n_luzes == 2 && (l & 1) != 0;
-        if (r->luz_a != a) in->tecla1 = true;
-        else if (r->luz_b != b) in->tecla2 = true;
+        if (r->luz_a != a)
+            in->tecla1 = true;
+        else if (r->luz_b != b)
+            in->tecla2 = true;
         return;
     }
 }
 
 static void piloto_escolhe(const Rodada *r, Entrada *in, int alvo) {
-    if (r->cursor < alvo) in->baixo = true;
-    else if (r->cursor > alvo) in->cima = true;
-    else in->confirmar = true;
+    if (r->cursor < alvo)
+        in->baixo = true;
+    else if (r->cursor > alvo)
+        in->cima = true;
+    else
+        in->confirmar = true;
 }
 
 void rodadas_piloto(const Estado *e, Entrada *in, int erros_desejados) {
@@ -333,13 +369,18 @@ void rodadas_piloto(const Estado *e, Entrada *in, int erros_desejados) {
     const DadosRodada *d = rodadas_dados(r->numero);
     bool errar = e->erros_na_fase < erros_desejados;
     switch (r->etapa) {
-    case ETAPA_DECIFRAR: piloto_decifrar(e, in); break;
+    case ETAPA_DECIFRAR:
+        piloto_decifrar(e, in);
+        break;
     case ETAPA_ESCOLHER_CONECTIVO: {
         int certo = d->conectivo_certo[r->coluna];
         piloto_escolhe(r, in, errar ? (certo + 1) % CONECTIVOS_ESCOLHA : certo);
         break;
     }
-    case ETAPA_TRADUZIR: piloto_escolhe(r, in, errar ? (d->traducao_certa + 1) % 3 : d->traducao_certa); break;
-    default: break;
+    case ETAPA_TRADUZIR:
+        piloto_escolhe(r, in, errar ? (d->traducao_certa + 1) % 3 : d->traducao_certa);
+        break;
+    default:
+        break;
     }
 }

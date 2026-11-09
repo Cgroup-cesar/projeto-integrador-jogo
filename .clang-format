@@ -1,3 +1,4 @@
+# [REQ:RNF1] legibilidade: estilo único do projeto (clang-format -i src/*.c src/*.h)
 # Estilo do projeto: legível para iniciantes
 BasedOnStyle: LLVM
 IndentWidth: 4

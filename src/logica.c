@@ -33,12 +33,18 @@ int logica_binaria(PoolLogico *pool, OpLogico op, int esq, int dir) {
 // [REQ:PURA-logica_aplica] a semântica dos 5 conectivos num lugar só (os painéis também usam)
 bool logica_aplica(OpLogico op, bool a, bool b) {
     switch (op) {
-    case OP_NAO: return !a;
-    case OP_E: return a && b;
-    case OP_OU: return a || b;
-    case OP_IMPLICA: return !a || b;
-    case OP_SSE: return a == b;
-    case OP_ATOMO: return a;
+    case OP_NAO:
+        return !a;
+    case OP_E:
+        return a && b;
+    case OP_OU:
+        return a || b;
+    case OP_IMPLICA:
+        return !a || b;
+    case OP_SSE:
+        return a == b;
+    case OP_ATOMO:
+        return a;
     }
     return false;
 }
@@ -59,7 +65,8 @@ bool logica_avalia(const PoolLogico *pool, int raiz, const bool *valores) {
 }
 
 void logica_valores_da_linha(int linha, int n_atomos, bool *valores) {
-    for (int i = 0; i < n_atomos; i++) valores[i] = ((linha >> (n_atomos - 1 - i)) & 1) != 0;
+    for (int i = 0; i < n_atomos; i++)
+        valores[i] = ((linha >> (n_atomos - 1 - i)) & 1) != 0;
 }
 
 // [REQ:PURA-logica_tabela_verdade] gera a tabela-verdade inteira; as rodadas e os painéis leem daqui
@@ -80,7 +87,8 @@ static int conta_verdadeiras(const PoolLogico *pool, int raiz, int n_atomos) {
     int linhas = logica_tabela_verdade(pool, raiz, n_atomos, tabela);
     int verdadeiras = 0;
     // padrão FOLD: soma as linhas verdadeiras
-    for (int i = 0; i < linhas; i++) verdadeiras += tabela[i] ? 1 : 0;
+    for (int i = 0; i < linhas; i++)
+        verdadeiras += tabela[i] ? 1 : 0;
     return verdadeiras;
 }
 
@@ -100,23 +108,34 @@ bool logica_eh_satisfazivel(const PoolLogico *pool, int raiz, int n_atomos) {
 // ------------------------------------------------------------------ texto
 static int precedencia(OpLogico op) {
     switch (op) {
-    case OP_ATOMO: return 6;
-    case OP_NAO: return 5;
-    case OP_E: return 4;
-    case OP_OU: return 3;
-    case OP_IMPLICA: return 2;
-    case OP_SSE: return 1;
+    case OP_ATOMO:
+        return 6;
+    case OP_NAO:
+        return 5;
+    case OP_E:
+        return 4;
+    case OP_OU:
+        return 3;
+    case OP_IMPLICA:
+        return 2;
+    case OP_SSE:
+        return 1;
     }
     return 0;
 }
 
 static const char *simbolo(OpLogico op) {
     switch (op) {
-    case OP_E: return " \xE2\x88\xA7 ";       // ∧
-    case OP_OU: return " \xE2\x88\xA8 ";      // ∨
-    case OP_IMPLICA: return " \xE2\x86\x92 "; // →
-    case OP_SSE: return " \xE2\x86\x94 ";     // ↔
-    default: return "";
+    case OP_E:
+        return " \xE2\x88\xA7 "; // ∧
+    case OP_OU:
+        return " \xE2\x88\xA8 "; // ∨
+    case OP_IMPLICA:
+        return " \xE2\x86\x92 "; // →
+    case OP_SSE:
+        return " \xE2\x86\x94 "; // ↔
+    default:
+        return "";
     }
 }
 
@@ -128,8 +147,8 @@ static void anexa(char *saida, size_t tamanho, const char *texto) {
 static void escreve_no(const PoolLogico *pool, int i, const char *const *nomes, char *saida, size_t tamanho);
 
 // Escreve o filho entre parênteses só quando a precedência (ou a associatividade) exige.
-static void escreve_filho(const PoolLogico *pool, int filho, OpLogico pai, bool lado_direito, const char *const *nomes,
-                          char *saida, size_t tamanho) {
+static void escreve_filho(const PoolLogico *pool, int filho, OpLogico pai, bool lado_direito,
+                          const char *const *nomes, char *saida, size_t tamanho) {
     int pf = precedencia(pool->nos[filho].op);
     int pp = precedencia(pai);
     bool direita_assoc = pai == OP_IMPLICA;
@@ -154,7 +173,8 @@ static void escreve_no(const PoolLogico *pool, int i, const char *const *nomes, 
     }
 }
 
-void logica_para_texto(const PoolLogico *pool, int raiz, const char *const *nomes, char *saida, size_t tamanho) {
+void logica_para_texto(const PoolLogico *pool, int raiz, const char *const *nomes, char *saida,
+                       size_t tamanho) {
     if (tamanho == 0) return;
     saida[0] = '\0';
     escreve_no(pool, raiz, nomes, saida, tamanho);
@@ -184,16 +204,22 @@ static bool eh_binaria(TipoFicha t) {
 
 static OpLogico op_da_ficha(TipoFicha t) {
     switch (t) {
-    case FICHA_E: return OP_E;
-    case FICHA_OU: return OP_OU;
-    case FICHA_SE_ENTAO: return OP_IMPLICA;
-    case FICHA_SSE: return OP_SSE;
-    default: return OP_ATOMO;
+    case FICHA_E:
+        return OP_E;
+    case FICHA_OU:
+        return OP_OU;
+    case FICHA_SE_ENTAO:
+        return OP_IMPLICA;
+    case FICHA_SSE:
+        return OP_SSE;
+    default:
+        return OP_ATOMO;
     }
 }
 
 static int termo(Parser *p) {
-    if (p->pos >= p->n) return falha(p, p->pos, "A frase terminou cedo: depois de um conectivo precisa vir uma palavra.");
+    if (p->pos >= p->n)
+        return falha(p, p->pos, "A frase terminou cedo: depois de um conectivo precisa vir uma palavra.");
     Ficha f = p->fichas[p->pos];
     if (f.tipo == FICHA_NAO) {
         p->pos++;

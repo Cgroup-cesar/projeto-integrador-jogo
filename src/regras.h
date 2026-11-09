@@ -25,7 +25,8 @@ typedef enum {
     FASE_TOTAL
 } Fase;
 
-// Eventos que podem mudar a fase. Quem gera o evento é o módulo de cada fase; quem decide é regras_proxima_fase.
+// Eventos que podem mudar a fase. Quem gera o evento é o módulo de cada fase; quem decide é
+// regras_proxima_fase.
 typedef enum {
     EV_NENHUM,
     EV_INICIAR,                 // Enter no menu
@@ -73,7 +74,8 @@ typedef struct {
 
 Vector3 regras_frente(float yaw);
 Vector3 regras_nova_posicao(Vector3 pos, float yaw, Vector2 mover, float velocidade, float dt);
-bool regras_criatura_ve_jogador(Vector3 olho, Vector3 frente, Vector3 alvo, bool caminho_livre, bool escondido);
+bool regras_criatura_ve_jogador(Vector3 olho, Vector3 frente, Vector3 alvo, bool caminho_livre,
+                                bool escondido);
 float regras_ruido_percebido(Ruido ruido, Vector3 ouvinte);
 EstadoCriatura regras_proximo_estado_criatura(EstadoCriatura atual, PercepcaoCriatura p);
 const char *regras_nome_estado_criatura(EstadoCriatura estado);
@@ -83,12 +85,14 @@ int regras_placar(const EventoPlacar *eventos, int n);
 int regras_placar_da_fase(const EventoPlacar *eventos, int n, int fase);
 int regras_bonus_tempo(float tempo_total);
 int regras_integridade_vidro(const Rachadura *rachaduras, int n, int vidas_max);
+// Depois de um erro: sem vidas, o vidro rompe (EV_VIDRO_ROMPEU); com vidas, nada muda de fase.
+EventoFase regras_evento_do_erro(int vidas_restantes);
 bool regras_interativo_ativo(TipoInterativo tipo, int fase);
 
 // ------------------------------------------------------------------ circuitos dos painéis
 typedef enum { PORTA_E, PORTA_OU, PORTA_XOU, PORTA_NE, PORTA_NAO, PORTA_TOTAL } TipoPorta;
 
-#define MAX_PORTAS 4
+#define MAX_PORTAS   4
 #define REF_PORTA(i) (16 + (i)) // entradas são 0, 1, 2...; saídas de portas são REF_PORTA(i)
 
 typedef struct {
@@ -103,7 +107,7 @@ typedef struct {
     int n_entradas; // a saída do circuito é a última porta
 } Circuito;
 
-void regras_circuito_painel1(Circuito *c);                              // (A ∧ ¬B) ∧ C
+void regras_circuito_painel1(Circuito *c);                             // (A ∧ ¬B) ∧ C
 void regras_circuito_painel2(Circuito *c, TipoPorta p1, TipoPorta p2); // (A [p1] B) [p2] (¬A)
 bool regras_avaliar_circuito(const Circuito *c, const bool *entradas, bool *leds);
 bool regras_circuito_confere_tabela(const Circuito *c, const bool *alvo);

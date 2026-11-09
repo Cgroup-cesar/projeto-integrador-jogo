@@ -15,7 +15,7 @@
 #include <stdio.h>
 #include <string.h>
 
-static Estado estado; // o estado inteiro do jogo (estático: nada de malloc por quadro)
+static Estado estado;                      // o estado inteiro do jogo (estático: nada de malloc por quadro)
 static const char *arquivo_captura = NULL; // --captura <arquivo.png>: salva um quadro e segue
 static float captura_em = 0.8f;            // --captura-em <segundos>
 static Fase fase_inicial = FASE_MENU;      // --fase <NOME> (debug): começa direto numa fase
@@ -23,6 +23,8 @@ static Fase fase_captura = FASE_TOTAL;     // --captura-fase <NOME>: a captura e
 static bool mudo = false;                  // --mudo: sem som
 
 // ================================================================== entrada
+// [REQ:RF2] controle por teclado e mouse: lido uma vez por quadro (WASD, mouse, Shift, E, 1/2/3, setas,
+// Enter, Esc)
 static void le_entrada(Entrada *in) {
     memset(in, 0, sizeof(*in));
     in->mover.x = (float)(IsKeyDown(KEY_D) - IsKeyDown(KEY_A));
@@ -63,18 +65,19 @@ typedef struct {
     EventoFase roteiro[16];
     int roteiro_n, roteiro_i;
     float tempo_fase_anterior;
-    float andando_t;        // teste de colisão: anda de verdade até o vidro na primeira saída
+    float andando_t; // teste de colisão: anda de verdade até o vidro na primeira saída
     bool colisao_conferida;
-    bool pego_testado;      // 1ª partida, S2: espera a criatura ouvir, perseguir e pegar
+    bool pego_testado;       // 1ª partida, S2: espera a criatura ouvir, perseguir e pegar
     unsigned estados_vistos; // bits dos EstadoCriatura que apareceram nesse teste
-    bool armario_testado;   // 2ª partida, S1: entra e sai de um armário
-    int codigo_saida;       // −1 = ainda jogando; 0 = ok; 1 = falhou
+    bool armario_testado;    // 2ª partida, S1: entra e sai de um armário
+    int codigo_saida;        // −1 = ainda jogando; 0 = ok; 1 = falhou
 } Piloto;
 
 static Piloto piloto = {.codigo_saida = -1};
 
 static void piloto_falha(const char *motivo) {
-    printf("SMOKE FALHOU na fase %s (partida %d): %s\n", regras_nome_fase(estado.fase), piloto.partida + 1, motivo);
+    printf("SMOKE FALHOU na fase %s (partida %d): %s\n", regras_nome_fase(estado.fase), piloto.partida + 1,
+           motivo);
     piloto.codigo_saida = 1;
 }
 
@@ -116,8 +119,11 @@ static bool piloto_confere_colisao(Estado *e, Entrada *in, float dt) {
         return true;
     }
     piloto.colisao_conferida = true;
-    if (e->jog.pos.z < e->nivel.vidro_z + 0.2f + JOGADOR_RAIO - 0.05f) piloto_falha("o jogador atravessou o vidro");
-    else printf("SMOKE  colisão ok: andou até z=%.2f e parou antes do vidro (z=%.2f)\n", e->jog.pos.z, e->nivel.vidro_z);
+    if (e->jog.pos.z < e->nivel.vidro_z + 0.2f + JOGADOR_RAIO - 0.05f)
+        piloto_falha("o jogador atravessou o vidro");
+    else
+        printf("SMOKE  colisão ok: andou até z=%.2f e parou antes do vidro (z=%.2f)\n", e->jog.pos.z,
+               e->nivel.vidro_z);
     return true;
 }
 
@@ -130,8 +136,10 @@ static bool piloto_espera_ser_pego(Estado *e, Entrada *in) {
         piloto.pego_testado = true;
         bool investigou = piloto.estados_vistos & (1u << CRIATURA_INVESTIGA);
         bool perseguiu = piloto.estados_vistos & (1u << CRIATURA_PERSEGUE);
-        if (!investigou || !perseguiu) piloto_falha("a criatura pegou sem passar por INVESTIGA e PERSEGUE");
-        else printf("SMOKE  criatura ok: ouviu (INVESTIGA), viu (PERSEGUE) e pegou; a saída recomeça\n");
+        if (!investigou || !perseguiu)
+            piloto_falha("a criatura pegou sem passar por INVESTIGA e PERSEGUE");
+        else
+            printf("SMOKE  criatura ok: ouviu (INVESTIGA), viu (PERSEGUE) e pegou; a saída recomeça\n");
         return false;
     }
     if (criatura_em_susto(e)) return true;
@@ -140,7 +148,8 @@ static bool piloto_espera_ser_pego(Estado *e, Entrada *in) {
         return true;
     }
     // A leste do duto, fora da 1ª rota de patrulha (que vai para oeste): ela só o acha se ouvir.
-    // Olhando para o duto (oeste) e "correndo" de lado contra a parede norte: não sai do lugar, mas faz barulho.
+    // Olhando para o duto (oeste) e "correndo" de lado contra a parede norte: não sai do lugar, mas faz
+    // barulho.
     if (e->tempo_fase < 0.2f) jogador_teleporta(e, nivel_centro_celula(18, 11), -PI * 0.5f);
     bool surgiu = e->cri.ativo && e->cri.surgindo >= 1.0f;
     in->correr = surgiu;
@@ -209,7 +218,9 @@ static void piloto_age(Estado *e, Entrada *in) {
         e->menu.cursor = 0;
         in->confirmar = true;
         break;
-    case FASE_INTRO: in->confirmar = true; break;
+    case FASE_INTRO:
+        in->confirmar = true;
+        break;
     case FASE_R1:
     case FASE_R2:
     case FASE_R3:
@@ -221,11 +232,18 @@ static void piloto_age(Estado *e, Entrada *in) {
         }
         break;
     case FASE_S1:
-    case FASE_S2: piloto_saida(e, in); break;
-    case FASE_RESPOSTA_FINAL: compositor_piloto(e, in, piloto.partida == 1); break;
+    case FASE_S2:
+        piloto_saida(e, in);
+        break;
+    case FASE_RESPOSTA_FINAL:
+        compositor_piloto(e, in, piloto.partida == 1);
+        break;
     case FASE_FIM_RUIM:
-    case FASE_FIM_BOM: in->confirmar = e->fim.tela_final && e->fim.tempo_tela > 0.5f; break;
-    default: break;
+    case FASE_FIM_BOM:
+        in->confirmar = e->fim.tela_final && e->fim.tempo_tela > 0.5f;
+        break;
+    default:
+        break;
     }
 }
 
@@ -238,7 +256,8 @@ static void piloto_entrada(Estado *e, Entrada *in, float dt) {
         piloto.tempo_fase_anterior = 0.0f;
     }
     if (e->tempo_fase + 0.001f < piloto.tempo_fase_anterior)
-        printf("SMOKE  partida %d: %s recomeçou (%d erro(s) na fase)\n", piloto.partida + 1, regras_nome_fase(e->fase), e->erros_na_fase);
+        printf("SMOKE  partida %d: %s recomeçou (%d erro(s) na fase)\n", piloto.partida + 1,
+               regras_nome_fase(e->fase), e->erros_na_fase);
     piloto.tempo_fase_anterior = e->tempo_fase;
     if (e->fase == FASE_S1 && piloto_confere_colisao(e, in, dt)) return;
     if (piloto_espera_ser_pego(e, in)) return; // a cada quadro: precisa segurar a corrida
@@ -261,6 +280,7 @@ static void atualiza(Estado *e, float dt) {
     audio_atualiza(e, dt);
 }
 
+// [REQ:RNF3] desenhar recebe const Estado *: não muda nada; o loop é entrada → atualiza → desenha
 static void desenha(const Estado *e) {
     posfx_inicia_cena(e);
     jogo_desenha_cena(e);
@@ -303,8 +323,10 @@ static void le_argumentos(Estado *e, int argc, char **argv) {
             const char *nome = argv[++i];
             for (int f = 0; f < FASE_TOTAL; f++) {
                 if (strcmp(nome, regras_nome_fase((Fase)f)) != 0) continue;
-                if (fase) fase_inicial = (Fase)f;
-                else fase_captura = (Fase)f;
+                if (fase)
+                    fase_inicial = (Fase)f;
+                else
+                    fase_captura = (Fase)f;
             }
         }
     }
@@ -320,14 +342,18 @@ static void abre_janela(void) {
 }
 
 static void quadro(Estado *e) {
-    // [REQ:RF1] dt de GetFrameTime() limitado a DT_MAXIMO; no smoke, passo fixo (velocidade acelerada)
+    // [REQ:RF1] [REQ:RNF4] dt de GetFrameTime() limitado a DT_MAXIMO; no smoke, passo fixo (velocidade
+    // acelerada)
     float dt = e->modo_smoke ? DT_MAXIMO : GetFrameTime();
     if (dt > DT_MAXIMO) dt = DT_MAXIMO;
-    if (e->modo_smoke) piloto_entrada(e, &e->in, dt);
-    else le_entrada(&e->in);
+    if (e->modo_smoke)
+        piloto_entrada(e, &e->in, dt);
+    else
+        le_entrada(&e->in);
     atualiza(e, dt);
     desenha(e);
-    bool na_hora = fase_captura == FASE_TOTAL ? e->tempo_total > captura_em : (e->fase == fase_captura && e->tempo_fase > captura_em);
+    bool na_hora = fase_captura == FASE_TOTAL ? e->tempo_total > captura_em
+                                              : (e->fase == fase_captura && e->tempo_fase > captura_em);
     if (arquivo_captura != NULL && na_hora) {
         salva_captura(arquivo_captura);
         arquivo_captura = NULL;
@@ -336,6 +362,23 @@ static void quadro(Estado *e) {
         captura_numerada();
         e->pedir_captura = false;
     }
+}
+
+// Carrega tudo o que depende da janela: render target e shaders, fonte, sons e o modelo opcional.
+static void carrega_recursos(void) {
+    posfx_inicia(&estado.rec);
+    ui_carrega_fonte(&estado.rec);
+    audio_inicia(&estado.rec);
+    criatura_carrega_modelo(&estado.rec);
+    if (mudo || estado.modo_smoke) SetMasterVolume(0.0f); // o smoke roda calado
+}
+
+static void descarrega_recursos(void) {
+    criatura_descarrega_modelo(&estado.rec);
+    audio_finaliza(&estado.rec);
+    ui_descarrega_fonte(&estado.rec);
+    posfx_finaliza(&estado.rec);
+    CloseWindow();
 }
 
 int main(int argc, char **argv) {
@@ -352,33 +395,20 @@ int main(int argc, char **argv) {
     // [REQ:RF1] janela e game loop a 60 FPS: entrada → atualiza → desenha
     SetTargetFPS(estado.modo_smoke ? 0 : FPS_ALVO);
     estado.vhs_ligado = VHS_LIGADO_AO_INICIAR;
-    posfx_inicia(&estado.rec);
-    ui_carrega_fonte(&estado.rec);
-    audio_inicia(&estado.rec);
-    criatura_carrega_modelo(&estado.rec);
-    if (mudo) SetMasterVolume(0.0f);
+    carrega_recursos();
     if (estado.modo_smoke) {
-        SetMasterVolume(0.0f); // o smoke roda calado
-        SetRandomSeed(1985);   // o smoke é determinístico: mesmo resultado em toda execução
+        SetRandomSeed(1985); // o smoke é determinístico: mesmo resultado em toda execução
         piloto_comeca_partida();
     }
     jogo_inicia(&estado);
     if (!estado.modo_smoke) jogo_vai_para_fase(&estado, fase_inicial);
-
     while (!WindowShouldClose() && !estado.sair) {
         quadro(&estado);
         if (estado.modo_smoke && piloto.codigo_saida >= 0) break;
     }
-
-    jogo_finaliza(&estado);
-    criatura_descarrega_modelo(&estado.rec);
-    audio_finaliza(&estado.rec);
-    ui_descarrega_fonte(&estado.rec);
-    posfx_finaliza(&estado.rec);
-    CloseWindow();
-    if (estado.modo_smoke && piloto.codigo_saida != 0) {
-        if (piloto.codigo_saida < 0) printf("SMOKE FALHOU: a janela fechou antes do fim (fase %s)\n", regras_nome_fase(estado.fase));
-        return 1;
-    }
-    return 0;
+    descarrega_recursos();
+    if (!estado.modo_smoke || piloto.codigo_saida == 0) return 0;
+    if (piloto.codigo_saida < 0)
+        printf("SMOKE FALHOU: a janela fechou antes do fim (fase %s)\n", regras_nome_fase(estado.fase));
+    return 1;
 }

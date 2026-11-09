@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define CELULAS (MAPA_LARGURA * MAPA_ALTURA)
+#define CELULAS              (MAPA_LARGURA * MAPA_ALTURA)
 #define ALTURA_OLHO_CRIATURA 2.4f
 
 // Pontos de patrulha (coluna, linha): os cantos do loop de corredores, o gerador e o Arquivo.
@@ -33,7 +33,8 @@ void criatura_carrega_modelo(Recursos *rec) {
         TraceLog(LOG_WARNING, "PRECURSOR: não deu para carregar %s; usando o placeholder", caminho);
         return;
     }
-    for (int i = 0; i < rec->modelo_precursor.materialCount && rec->luz_ok; i++) rec->modelo_precursor.materials[i].shader = rec->luz;
+    for (int i = 0; i < rec->modelo_precursor.materialCount && rec->luz_ok; i++)
+        rec->modelo_precursor.materials[i].shader = rec->luz;
 }
 
 void criatura_descarrega_modelo(Recursos *rec) {
@@ -46,7 +47,8 @@ static void desenha_modelo(const Estado *e, Color cor) {
     BoundingBox caixa = GetModelBoundingBox(*m);
     float altura = fmaxf(0.01f, caixa.max.y - caixa.min.y);
     float escala = 2.6f / altura;
-    DrawModelEx(*m, (Vector3){0, -caixa.min.y * escala, 0}, (Vector3){0, 1, 0}, 0.0f, (Vector3){escala, escala, escala}, cor);
+    DrawModelEx(*m, (Vector3){0, -caixa.min.y * escala, 0}, (Vector3){0, 1, 0}, 0.0f,
+                (Vector3){escala, escala, escala}, cor);
 }
 
 // ================================================================== estados iniciais
@@ -109,7 +111,8 @@ static int celula_de(Vector3 p) {
 }
 
 static bool livre(const Nivel *n, int celula) {
-    return celula >= 0 && celula < CELULAS && nivel_caminhavel(n, celula % MAPA_LARGURA, celula / MAPA_LARGURA);
+    return celula >= 0 && celula < CELULAS &&
+           nivel_caminhavel(n, celula % MAPA_LARGURA, celula / MAPA_LARGURA);
 }
 
 // Se o alvo cair num móvel (console, painel) ou na parede, usa uma célula livre vizinha.
@@ -127,6 +130,7 @@ static int distancia_manhattan(int a, int b) {
 
 static int menor_f_aberto(const bool *aberto, const int *g, int destino) {
     int melhor = -1, melhor_f = 1 << 30;
+    // padrão FOLD: a célula aberta com o menor f = g + h
     for (int i = 0; i < CELULAS; i++) {
         if (!aberto[i]) continue;
         int f = g[i] + distancia_manhattan(i, destino);
@@ -140,10 +144,12 @@ static int menor_f_aberto(const bool *aberto, const int *g, int destino) {
 
 static int reconstroi(const int *veio, int origem, int destino, int *caminho, int maximo) {
     int tamanho = 0;
-    for (int c = destino; c != origem && tamanho <= CELULAS; c = veio[c]) tamanho++;
+    for (int c = destino; c != origem && tamanho <= CELULAS; c = veio[c])
+        tamanho++;
     if (tamanho > maximo) return 0;
     int i = tamanho;
-    for (int c = destino; c != origem; c = veio[c]) caminho[--i] = c;
+    for (int c = destino; c != origem; c = veio[c])
+        caminho[--i] = c;
     return tamanho;
 }
 
@@ -152,7 +158,8 @@ static int a_estrela(const Nivel *n, int origem, int destino, int *caminho, int 
     if (!livre(n, origem) || !livre(n, destino)) return 0;
     int g[CELULAS], veio[CELULAS];
     bool aberto[CELULAS] = {false}, fechado[CELULAS] = {false};
-    for (int i = 0; i < CELULAS; i++) g[i] = 1 << 29;
+    for (int i = 0; i < CELULAS; i++)
+        g[i] = 1 << 29;
     g[origem] = 0;
     veio[origem] = -1;
     aberto[origem] = true;
@@ -230,7 +237,8 @@ static void escolhe_destino(Estado *e, PercepcaoCriatura p, Vector3 ruido, float
         c->procura_t -= dt;
         if (c->procura_t > 0.0f && c->caminho_i < c->caminho_n) break;
         c->procura_t = 1.6f;
-        planeja(e, Vector3Add(c->ultima_vista, (Vector3){(float)GetRandomValue(-3, 3), 0, (float)GetRandomValue(-3, 3)}));
+        planeja(e, Vector3Add(c->ultima_vista,
+                              (Vector3){(float)GetRandomValue(-3, 3), 0, (float)GetRandomValue(-3, 3)}));
         break;
     }
 }
@@ -253,13 +261,28 @@ static void passos_da_criatura(Estado *e, float dt) {
     if (longe < 16.0f) audio_toca(e, SOM_PASSO_CRIATURA, 1.0f - longe / 16.0f, 0.7f);
 }
 
+// Ir direto ao jogador só se o passo não bater em nada (a visão sai a 2,4 m e passa por cima de móveis
+// baixos).
+static bool pode_ir_direto(const Estado *e) {
+    const Criatura *c = &e->cri;
+    if (c->estado != CRIATURA_PERSEGUE || !c->ve_jogador) return false;
+    Vector3 para = {e->jog.pos.x - c->pos.x, 0.0f, e->jog.pos.z - c->pos.z};
+    float dist = Vector3Length(para);
+    if (dist < 0.01f) return true;
+    Vector3 adiante = Vector3Add(c->pos, Vector3Scale(para, fminf(0.4f, dist) / dist));
+    return !col_paredes_colide(&e->paredes, adiante, 0.25f, 2.5f);
+}
+
 static void anda(Estado *e, float dt) {
     Criatura *c = &e->cri;
     Vector3 alvo;
-    if (c->estado == CRIATURA_PERSEGUE && c->ve_jogador) alvo = e->jog.pos; // linha de visão livre: vai direto
+    if (pode_ir_direto(e))
+        alvo = e->jog.pos; // linha de visão livre e nada no caminho: vai direto
     else if (c->caminho_i < c->caminho_n)
-        alvo = nivel_centro_celula(c->caminho[c->caminho_i] % MAPA_LARGURA, c->caminho[c->caminho_i] / MAPA_LARGURA);
-    else return;
+        alvo = nivel_centro_celula(c->caminho[c->caminho_i] % MAPA_LARGURA,
+                                   c->caminho[c->caminho_i] / MAPA_LARGURA);
+    else
+        return;
     Vector3 para = {alvo.x - c->pos.x, 0.0f, alvo.z - c->pos.z};
     float dist = Vector3Length(para);
     if (dist < 0.12f) {
@@ -279,7 +302,12 @@ static void tenta_capturar(Estado *e) {
     const Criatura *c = &e->cri;
     if (e->jog.modo == MODO_ARMARIO || criatura_em_susto(e)) return;
     Vector3 corpo_c = {c->pos.x, 1.0f, c->pos.z}, corpo_j = {e->jog.pos.x, 1.0f, e->jog.pos.z};
-    if (!CheckCollisionSpheres(corpo_c, CRIATURA_RAIO_CAPTURA, corpo_j, CRIATURA_RAIO_CAPTURA)) return;
+    if (CheckCollisionSpheres(corpo_c, CRIATURA_RAIO_CAPTURA, corpo_j, CRIATURA_RAIO_CAPTURA))
+        criatura_captura(e);
+}
+
+void criatura_captura(Estado *e) {
+    if (criatura_em_susto(e)) return;
     e->pegos_na_fase++;
     e->jog.modo = MODO_ANDANDO;
     criatura_susto(e, EV_PEGO); // volta ao início da saída atual (o checkpoint)
@@ -334,8 +362,10 @@ static void atualiza_nos_corredores(Estado *e, float dt) {
 void criatura_atualiza(Estado *e, float dt) {
     Criatura *c = &e->cri;
     c->fala_t = fmaxf(0.0f, c->fala_t - dt);
-    if (c->contido) atualiza_contido(e, dt);
-    else if (regras_fase_eh_saida(e->fase)) atualiza_nos_corredores(e, dt);
+    if (c->contido)
+        atualiza_contido(e, dt);
+    else if (regras_fase_eh_saida(e->fase))
+        atualiza_nos_corredores(e, dt);
 }
 
 // ================================================================== corpo procedural
@@ -346,7 +376,8 @@ static void membro(Vector3 a, Vector3 b, float raio, Color cor) {
 
 static void mao(Vector3 pulso, Vector3 direcao, Color cor) {
     for (int d = -1; d <= 1; d++) {
-        Vector3 ponta = Vector3Add(pulso, Vector3Add(Vector3Scale(direcao, 0.32f), (Vector3){d * 0.05f, -0.02f, 0}));
+        Vector3 ponta =
+            Vector3Add(pulso, Vector3Add(Vector3Scale(direcao, 0.32f), (Vector3){d * 0.05f, -0.02f, 0}));
         membro(pulso, ponta, 0.012f, cor);
     }
 }
@@ -358,7 +389,8 @@ static void cabeca(float altura, float fenda, Color cor) {
     DrawSphereEx((Vector3){0, 0, 0}, 1.0f, 8, 10, cor);
     rlPopMatrix();
     // A fenda vertical no rosto liso: se abre quando ele "fala".
-    DrawCubeV((Vector3){0.0f, altura - 0.02f, 0.175f}, (Vector3){0.012f + fenda * 0.05f, 0.26f, 0.02f}, (Color){18, 4, 6, 255});
+    DrawCubeV((Vector3){0.0f, altura - 0.02f, 0.175f}, (Vector3){0.012f + fenda * 0.05f, 0.26f, 0.02f},
+              (Color){18, 4, 6, 255});
 }
 
 // Brilho do corpo na cela: com as luzes A e B apagadas, ele é quase invisível.
@@ -387,12 +419,14 @@ static void desenha_corpo(const Estado *e, Color pele) {
     Vector3 ombro_e = {-0.2f, 2.0f, 0}, ombro_d = {0.2f, 2.0f, 0};
     Vector3 pulso_e = {-0.26f, 0.85f, 0.05f}, pulso_d = {0.26f, 0.85f, 0.05f};
     if (c->mao_no_vidro) pulso_d = (Vector3){0.3f, 1.75f, 0.25f}; // a mão encostada no vidro
-    if (c->estado == CRIATURA_PERSEGUE && c->ativo) pulso_e = pulso_d = (Vector3){0, 1.6f, 0.55f}; // braços estendidos
+    if (c->estado == CRIATURA_PERSEGUE && c->ativo)
+        pulso_e = pulso_d = (Vector3){0, 1.6f, 0.55f}; // braços estendidos
     membro(ombro_e, pulso_e, 0.035f, pele);
     membro(ombro_d, pulso_d, 0.035f, pele);
     mao(pulso_e, (Vector3){0, -1, 0}, pele);
     mao(pulso_d, c->mao_no_vidro ? (Vector3){0, 0.3f, 1} : (Vector3){0, -1, 0}, pele);
-    cabeca(cabeca_y, c->fala_t > 0.0f || c->estado == CRIATURA_PERSEGUE ? 0.6f + 0.4f * sinf(t * 18.0f) : 0.0f, pele);
+    cabeca(cabeca_y,
+           c->fala_t > 0.0f || c->estado == CRIATURA_PERSEGUE ? 0.6f + 0.4f * sinf(t * 18.0f) : 0.0f, pele);
 }
 
 // Com F3: o caminho do A* em amarelo.
@@ -411,15 +445,20 @@ void criatura_desenha(const Estado *e) {
     if (!c->contido && !c->ativo) return;
     float t = e->tempo_total;
     float jitter = (fmodf(t * 0.9f, 1.0f) > 0.9f) ? sinf(t * 55.0f) * 4.0f : sinf(t * 0.8f) * 1.5f;
-    if (e->fase == FASE_FIM_BOM) jitter = c->congelado_t > 0.0f ? 0.0f : sinf(t * 80.0f) * 22.0f; // convulsiona e congela
+    if (e->fase == FASE_FIM_BOM)
+        jitter = c->congelado_t > 0.0f ? 0.0f : sinf(t * 80.0f) * 22.0f; // convulsiona e congela
     Color pele = escurece(COR_PELE, visibilidade(e));
     rlPushMatrix();
     float subida = c->contido ? 0.0f : (c->surgindo - 1.0f) * 2.7f; // sobe pelo duto
-    rlTranslatef(c->pos.x + (c->distorcao > 0.0f ? sinf(t * 70.0f) * c->distorcao * 0.4f : 0.0f), c->pos.y + subida, c->pos.z);
+    rlTranslatef(c->pos.x + (c->distorcao > 0.0f ? sinf(t * 70.0f) * c->distorcao * 0.4f : 0.0f),
+                 c->pos.y + subida, c->pos.z);
     rlRotatef(c->yaw * RAD2DEG + jitter, 0.0f, 1.0f, 0.0f);
-    if (c->distorcao > 0.0f) rlScalef(1.0f - c->distorcao * 0.8f, 1.0f + c->distorcao * 1.5f, 1.0f - c->distorcao * 0.8f);
-    if (e->rec.tem_modelo) desenha_modelo(e, pele);
-    else desenha_corpo(e, pele);
+    if (c->distorcao > 0.0f)
+        rlScalef(1.0f - c->distorcao * 0.8f, 1.0f + c->distorcao * 1.5f, 1.0f - c->distorcao * 0.8f);
+    if (e->rec.tem_modelo)
+        desenha_modelo(e, pele);
+    else
+        desenha_corpo(e, pele);
     rlPopMatrix();
 }
 
@@ -438,10 +477,11 @@ void criatura_desenha_jumpscare(const Estado *e) {
     }
     float abre = w * (0.015f + t * 0.07f);
     DrawEllipse(cx, cy, abre * 1.6f, h * 0.46f, (Color){60, 8, 14, 255}); // borda viva da fenda
-    DrawEllipse(cx, cy, abre, h * 0.43f, (Color){10, 0, 2, 255});          // a fenda aberta
+    DrawEllipse(cx, cy, abre, h * 0.43f, (Color){10, 0, 2, 255});         // a fenda aberta
     for (int i = -4; i <= 4; i++) {
         float x = cx + i * abre * 0.22f;
-        DrawLineEx((Vector2){x, cy - h * 0.34f}, (Vector2){x + sinf(i * 1.7f) * 3.0f, cy + h * 0.34f}, 1.0f, (Color){120, 30, 34, 170});
+        DrawLineEx((Vector2){x, cy - h * 0.34f}, (Vector2){x + sinf(i * 1.7f) * 3.0f, cy + h * 0.34f}, 1.0f,
+                   (Color){120, 30, 34, 170});
     }
     DrawRectangleGradientV(0, 0, (int)w, (int)(h * 0.25f), Fade(BLACK, 0.8f), Fade(BLACK, 0.0f));
     if (t < 0.12f) DrawRectangle(0, 0, (int)w, (int)h, Fade(WHITE, 0.55f * (1.0f - t / 0.12f)));

@@ -61,14 +61,21 @@ static void testa_estados_criatura(void) {
 static void testa_placar(void) {
     CHECK(regras_placar(NULL, 0) == 0); // placar sem eventos
     EventoPlacar ev[] = {
-        {PONTO_RODADA_SEM_ERRO, 100, FASE_R1}, {PONTO_ERRO, -25, FASE_R2}, {PONTO_SAIDA_LIMPA, 50, FASE_S1},
-        {PONTO_ERRO, -25, FASE_R2},            {PONTO_FINAL_BOM, 200, FASE_FIM_BOM},
+        {PONTO_RODADA_SEM_ERRO, 100, FASE_R1}, {PONTO_ERRO, -25, FASE_R2},
+        {PONTO_SAIDA_LIMPA, 50, FASE_S1},      {PONTO_ERRO, -25, FASE_R2},
+        {PONTO_FINAL_BOM, 200, FASE_FIM_BOM},
     };
     CHECK(regras_placar(ev, 5) == 300);
     CHECK(regras_placar_da_fase(ev, 5, FASE_R2) == -50);
     CHECK(regras_placar_da_fase(ev, 5, FASE_S2) == 0);
     CHECK(regras_bonus_tempo(TEMPO_ALVO_PARTIDA_S + 10) == 0);
     CHECK(regras_bonus_tempo(TEMPO_ALVO_PARTIDA_S - 100) == 50);
+}
+
+static void testa_evento_do_erro(void) {
+    CHECK(regras_evento_do_erro(2) == EV_NENHUM);
+    CHECK(regras_evento_do_erro(1) == EV_NENHUM);
+    CHECK(regras_evento_do_erro(0) == EV_VIDRO_ROMPEU);
 }
 
 static void testa_vidro(void) {
@@ -90,7 +97,8 @@ static void testa_colecao_ruidos(void) {
     CHECK(col_ruidos_mais_forte(&c, (Vector3){0, 0, 0}, NULL) == -1); // criatura sem ruídos (lista vazia)
     col_ruidos_atualiza(&c, 0.1f);                                    // lista vazia não quebra
     CHECK(c.n == 0);
-    for (int i = 0; i < MAX_RUIDOS + 3; i++) col_ruidos_adiciona(&c, (Ruido){{(float)i, 0, 0}, 3, 1, RUIDO_PASSO});
+    for (int i = 0; i < MAX_RUIDOS + 3; i++)
+        col_ruidos_adiciona(&c, (Ruido){{(float)i, 0, 0}, 3, 1, RUIDO_PASSO});
     CHECK(c.n == MAX_RUIDOS); // vetor cheio: descarta sem travar
     CHECK(!col_ruidos_adiciona(&c, (Ruido){{0, 0, 0}, 3, 1, RUIDO_PASSO}));
 
@@ -104,11 +112,26 @@ static void testa_colecao_ruidos(void) {
     CHECK(d.n == 0);
 }
 
+static void testa_colecao_eventos(void) {
+    ColEventos c = {0};
+    col_eventos_acumula(&c, (EventoPlacar){PONTO_ERRO, -25, FASE_R2});
+    col_eventos_acumula(&c, (EventoPlacar){PONTO_ERRO, -25, FASE_R2}); // mesmo tipo e fase: soma no último
+    CHECK(c.n == 1 && c.itens[0].pontos == -50);
+    col_eventos_acumula(&c, (EventoPlacar){PONTO_ERRO, -25, FASE_R3}); // fase nova: evento novo
+    CHECK(c.n == 2);
+    for (int i = 0; i < MAX_EVENTOS + 5; i++)
+        col_eventos_adiciona(&c, (EventoPlacar){PONTO_RODADA_SEM_ERRO, 1, FASE_R1});
+    CHECK(c.n == MAX_EVENTOS); // vetor cheio: descarta sem travar
+    CHECK(regras_placar(c.itens, c.n) == -75 + (MAX_EVENTOS - 2));
+}
+
 static void testa_colecao_particulas(void) {
     ColParticulas c = {0};
     col_particulas_adiciona(&c, (Particula){{0, 1, 0}, {0, 0, 0}, 1.0f, 1.0f, PARTICULA_POEIRA});
-    col_particulas_adiciona(&c, (Particula){{0, 1, 0}, {100, 0, 0}, 5.0f, 5.0f, PARTICULA_FAGULHA}); // vai sair
-    col_particulas_adiciona(&c, (Particula){{0, 1, 0}, {0, 0, 0}, 0.05f, 1.0f, PARTICULA_POEIRA});   // vai morrer
+    col_particulas_adiciona(&c,
+                            (Particula){{0, 1, 0}, {100, 0, 0}, 5.0f, 5.0f, PARTICULA_FAGULHA}); // vai sair
+    col_particulas_adiciona(&c,
+                            (Particula){{0, 1, 0}, {0, 0, 0}, 0.05f, 1.0f, PARTICULA_POEIRA}); // vai morrer
     col_particulas_atualiza(&c, 0.1f, (Vector3){-5, -5, -5}, (Vector3){5, 5, 5});
     CHECK(c.n == 1);
     CHECK(c.itens[0].vida < 1.0f);
@@ -119,7 +142,8 @@ static void testa_colecao_rachaduras(void) {
     col_rachaduras_adiciona(&c, (Rachadura){.comprimento = 0, .comprimento_alvo = 0.3f, .dano = 1});
     col_rachaduras_atualiza(&c, 0.05f);
     CHECK(c.itens[0].comprimento > 0.0f && c.itens[0].comprimento < 0.3f);
-    for (int i = 0; i < 40; i++) col_rachaduras_atualiza(&c, 0.05f);
+    for (int i = 0; i < 40; i++)
+        col_rachaduras_atualiza(&c, 0.05f);
     CHECK(perto(c.itens[0].comprimento, 0.3f));
 }
 
@@ -140,7 +164,8 @@ static void testa_colecao_interativos(void) {
     col_interativos_adiciona(&c, (Interativo){INTER_PAINEL1, {3, 1, 0}, {0.5f, 0.5f, 0.1f}, {-1, 0, 0}});
     CHECK(col_interativos_na_mira(&c, (Vector3){0, 1, 0}, (Vector3){0, 0, 1}, 3.0f) == 0);
     CHECK(col_interativos_na_mira(&c, (Vector3){0, 1, 0}, (Vector3){0, 0, -1}, 3.0f) == 1);
-    CHECK(col_interativos_na_mira(&c, (Vector3){0, 1, 0}, (Vector3){0, 1, 0}, 3.0f) == -1); // olhando pro teto
+    CHECK(col_interativos_na_mira(&c, (Vector3){0, 1, 0}, (Vector3){0, 1, 0}, 3.0f) ==
+          -1);                                // olhando pro teto
     col_interativos_filtra_fase(&c, FASE_S1); // na saída 1: armário e painel 1
     CHECK(c.n == 2 && c.itens[0].tipo == INTER_ARMARIO && c.itens[1].tipo == INTER_PAINEL1);
     col_interativos_filtra_fase(&c, FASE_MENU);
@@ -155,7 +180,9 @@ int main(void) {
     testa_estados_criatura();
     testa_placar();
     testa_vidro();
+    testa_evento_do_erro();
     testa_colecao_ruidos();
+    testa_colecao_eventos();
     testa_colecao_particulas();
     testa_colecao_rachaduras();
     testa_colecao_paredes();

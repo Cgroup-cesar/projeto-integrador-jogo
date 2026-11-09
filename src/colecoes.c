@@ -23,7 +23,8 @@ bool col_ruidos_adiciona(ColRuidos *c, Ruido r) {
 void col_ruidos_atualiza(ColRuidos *c, float dt) {
     // [REQ:MAP-ruidos] cada ruído perde intensidade com o tempo (multiplicado por dt)
     // padrão MAP
-    for (int i = 0; i < c->n; i++) c->itens[i].intensidade -= RUIDO_DECAIMENTO * dt;
+    for (int i = 0; i < c->n; i++)
+        c->itens[i].intensidade -= RUIDO_DECAIMENTO * dt;
 
     // [REQ:FILTER-ruidos] remove os ruídos esgotados, compactando o vetor
     int j = 0;
@@ -54,6 +55,10 @@ bool col_particulas_adiciona(ColParticulas *c, Particula p) {
     if (!tem_espaco(c->n, MAX_PARTICULAS, "particulas")) return false;
     c->itens[c->n++] = p;
     return true;
+}
+
+bool col_sorteia_por_segundo(float taxa, float dt) {
+    return GetRandomValue(0, 9999) < (int)(taxa * dt * 10000.0f);
 }
 
 typedef struct {
@@ -108,6 +113,14 @@ bool col_eventos_adiciona(ColEventos *c, EventoPlacar ev) {
     return true;
 }
 
+bool col_eventos_acumula(ColEventos *c, EventoPlacar ev) {
+    if (c->n > 0 && c->itens[c->n - 1].tipo == ev.tipo && c->itens[c->n - 1].fase == ev.fase) {
+        c->itens[c->n - 1].pontos += ev.pontos;
+        return true;
+    }
+    return col_eventos_adiciona(c, ev);
+}
+
 // ================================================================== interativos
 bool col_interativos_adiciona(ColInterativos *c, Interativo it) {
     if (!tem_espaco(c->n, MAX_INTERATIVOS, "interativos")) return false;
@@ -129,7 +142,8 @@ static BoundingBox caixa_de(Vector3 centro, Vector3 meio) {
     return (BoundingBox){Vector3Subtract(centro, meio), Vector3Add(centro, meio)};
 }
 
-// [REQ:FOLD-interativos] [REQ:RF4] acha o interativo mais próximo no campo de visão (GetRayCollisionBox na mira)
+// [REQ:FOLD-interativos] [REQ:RF4] acha o interativo mais próximo no campo de visão (GetRayCollisionBox na
+// mira)
 int col_interativos_na_mira(const ColInterativos *c, Vector3 olho, Vector3 frente, float alcance) {
     Ray mira = {olho, Vector3Normalize(frente)};
     float limite_cos = cosf(ANGULO_INTERACAO_GRAUS * DEG2RAD);
@@ -169,10 +183,12 @@ static void colide_com_parede(void *acumulador, const void *elemento, void *cont
     acc->colidiu = acc->colidiu || CheckCollisionBoxes(acc->corpo, (BoundingBox){p->min, p->max});
 }
 
-// [REQ:FOLD-paredes] [REQ:RF4] "colidiu com alguma?" é um fold com OU sobre CheckCollisionBoxes (fx_fold genérico)
+// [REQ:FOLD-paredes] [REQ:RF4] "colidiu com alguma?" é um fold com OU sobre CheckCollisionBoxes (fx_fold
+// genérico)
 bool col_paredes_colide(const ColParedes *c, Vector3 centro, float raio, float altura) {
     ContextoColisao acc = {
-        .corpo = {{centro.x - raio, centro.y, centro.z - raio}, {centro.x + raio, centro.y + altura, centro.z + raio}},
+        .corpo = {{centro.x - raio, centro.y, centro.z - raio},
+                  {centro.x + raio, centro.y + altura, centro.z + raio}},
         .colidiu = false,
     };
     fx_fold(c->itens, c->n, sizeof(Parede), &acc, colide_com_parede, NULL);

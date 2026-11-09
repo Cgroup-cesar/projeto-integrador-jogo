@@ -12,7 +12,17 @@
 #include <stdio.h>
 #include <string.h>
 
-enum { FICHA_P, FICHA_Q, FICHA_NAO_, FICHA_E_, FICHA_OU_, FICHA_SE_, FICHA_APAGAR, FICHA_TRANSMITIR, TOTAL_FICHAS };
+enum {
+    FICHA_P,
+    FICHA_Q,
+    FICHA_NAO_,
+    FICHA_E_,
+    FICHA_OU_,
+    FICHA_SE_,
+    FICHA_APAGAR,
+    FICHA_TRANSMITIR,
+    TOTAL_FICHAS
+};
 #define COLUNAS_FICHAS 4
 
 static void desenha_textos_fim(const Estado *e);
@@ -31,15 +41,22 @@ static void avisa(Compositor *c, TextoId texto, const char *detalhe) {
 
 static Ficha ficha_da_tecla(int indice) {
     switch (indice) {
-    case FICHA_P: return (Ficha){FICHA_ATOMO, ATOMO_P};
-    case FICHA_Q: return (Ficha){FICHA_ATOMO, ATOMO_Q};
-    case FICHA_NAO_: return (Ficha){FICHA_NAO, 0};
-    case FICHA_E_: return (Ficha){FICHA_E, 0};
-    case FICHA_OU_: return (Ficha){FICHA_OU, 0};
-    default: return (Ficha){FICHA_SE_ENTAO, 0};
+    case FICHA_P:
+        return (Ficha){FICHA_ATOMO, ATOMO_P};
+    case FICHA_Q:
+        return (Ficha){FICHA_ATOMO, ATOMO_Q};
+    case FICHA_NAO_:
+        return (Ficha){FICHA_NAO, 0};
+    case FICHA_E_:
+        return (Ficha){FICHA_E, 0};
+    case FICHA_OU_:
+        return (Ficha){FICHA_OU, 0};
+    default:
+        return (Ficha){FICHA_SE_ENTAO, 0};
     }
 }
 
+// [REQ:RF6] a condição de vitória/derrota: a frase transmitida é analisada pelo motor de lógica
 static void transmite(Estado *e) {
     Compositor *c = &e->comp;
     ErroLogica erro;
@@ -108,7 +125,10 @@ static void desenha_fichas(const Estado *e, Vector2 pos) {
 
 static int ficha_para_indice(Ficha f) {
     if (f.tipo == FICHA_ATOMO) return f.atomo == ATOMO_P ? FICHA_P : FICHA_Q;
-    return f.tipo == FICHA_NAO ? FICHA_NAO_ : f.tipo == FICHA_E ? FICHA_E_ : f.tipo == FICHA_OU ? FICHA_OU_ : FICHA_SE_;
+    return f.tipo == FICHA_NAO  ? FICHA_NAO_
+           : f.tipo == FICHA_E  ? FICHA_E_
+           : f.tipo == FICHA_OU ? FICHA_OU_
+                                : FICHA_SE_;
 }
 
 // A frase montada, em fichas, e a mesma frase em notação lógica (quando já fecha).
@@ -116,21 +136,26 @@ static void desenha_frase(const Estado *e, Vector2 pos, float largura) {
     float s = ui_escala();
     const Compositor *c = &e->comp;
     char frase[256] = "";
+    // padrão FOLD: junta as fichas num texto só
     for (int i = 0; i < c->n; i++) {
         strncat(frase, dialogo_ficha(ficha_para_indice(c->fichas[i])), sizeof(frase) - strlen(frase) - 2);
         strncat(frase, " ", sizeof(frase) - strlen(frase) - 1);
     }
     ui_texto(e, dialogo_texto(TXT_TERMINAL_FRASE), pos, 16 * s, Fade(COR_FOSFORO, 0.6f));
-    float h = ui_texto_quebrado(e, c->n > 0 ? frase : "_", (Vector2){pos.x, pos.y + 24 * s}, largura, 18 * s, COR_FOSFORO);
+    float h = ui_texto_quebrado(e, c->n > 0 ? frase : "_", (Vector2){pos.x, pos.y + 24 * s}, largura, 18 * s,
+                                COR_FOSFORO);
     PoolLogico pool;
     logica_pool_limpa(&pool);
     ErroLogica erro;
     int raiz = c->n > 0 ? logica_parse_fichas(&pool, c->fichas, c->n, &erro) : -1;
     char formal[128];
     static const char *const nomes[] = {"P", "Q"};
-    if (raiz >= 0) logica_para_texto(&pool, raiz, nomes, formal, sizeof(formal));
-    else snprintf(formal, sizeof(formal), "%s", c->n > 0 ? dialogo_texto(TXT_TERMINAL_INCOMPLETA) : "");
-    ui_texto(e, formal, (Vector2){pos.x, pos.y + 30 * s + h}, 22 * s, raiz >= 0 ? COR_VIDRO : Fade(COR_FOSFORO, 0.4f));
+    if (raiz >= 0)
+        logica_para_texto(&pool, raiz, nomes, formal, sizeof(formal));
+    else
+        snprintf(formal, sizeof(formal), "%s", c->n > 0 ? dialogo_texto(TXT_TERMINAL_INCOMPLETA) : "");
+    ui_texto(e, formal, (Vector2){pos.x, pos.y + 30 * s + h}, 22 * s,
+             raiz >= 0 ? COR_VIDRO : Fade(COR_FOSFORO, 0.4f));
 }
 
 void compositor_desenha(const Estado *e) {
@@ -144,25 +169,30 @@ void compositor_desenha(const Estado *e) {
     Rectangle area = terminal_moldura(e, dialogo_texto(TXT_TERMINAL_RESPONDA));
     if (c->transmitindo) {
         bool pisca = fmodf(c->transmitindo_t, 0.5f) < 0.3f;
-        ui_texto(e, dialogo_texto(TXT_TERMINAL_TRANSMITINDO), (Vector2){area.x, area.y + 120 * s}, 34 * s, pisca ? COR_ALARME : Fade(COR_ALARME, 0.4f));
+        ui_texto(e, dialogo_texto(TXT_TERMINAL_TRANSMITINDO), (Vector2){area.x, area.y + 120 * s}, 34 * s,
+                 pisca ? COR_ALARME : Fade(COR_ALARME, 0.4f));
         return;
     }
-    ui_texto_quebrado(e, dialogo_texto(TXT_TERMINAL_FICHAS), (Vector2){area.x, area.y}, area.width, 16 * s, COR_FOSFORO);
-    ui_texto(e, dialogo_texto(TXT_TERMINAL_LEGENDA_PQ), (Vector2){area.x, area.y + 26 * s}, 15 * s, Fade(COR_VIDRO, 0.8f));
+    ui_texto_quebrado(e, dialogo_texto(TXT_TERMINAL_FICHAS), (Vector2){area.x, area.y}, area.width, 16 * s,
+                      COR_FOSFORO);
+    ui_texto(e, dialogo_texto(TXT_TERMINAL_LEGENDA_PQ), (Vector2){area.x, area.y + 26 * s}, 15 * s,
+             Fade(COR_VIDRO, 0.8f));
     desenha_fichas(e, (Vector2){area.x + 10 * s, area.y + 64 * s});
     desenha_frase(e, (Vector2){area.x, area.y + 170 * s}, area.width);
     if (c->mensagem_t > 0.0f) {
         ui_texto(e, c->mensagem, (Vector2){area.x, area.y + 330 * s}, 26 * s, COR_ALARME);
         ui_texto_quebrado(e, c->detalhe, (Vector2){area.x, area.y + 364 * s}, area.width, 16 * s, COR_AMBAR);
     }
-    ui_texto(e, dialogo_texto(TXT_TERMINAL_SAIR), (Vector2){area.x, area.y + area.height - 24 * s}, 15 * s, Fade(COR_FOSFORO, 0.45f));
+    ui_texto(e, dialogo_texto(TXT_TERMINAL_SAIR), (Vector2){area.x, area.y + area.height - 24 * s}, 15 * s,
+             Fade(COR_FOSFORO, 0.45f));
 }
 
 // ================================================================== piloto automático (--smoke)
 // Final ruim: primeiro uma frase inválida ([E] + TRANSMITIR → SINTAXE INVÁLIDA), depois P SE…ENTÃO Q.
 // Final bom: P E NÃO P.
 void compositor_piloto(const Estado *e, Entrada *in, bool final_bom) {
-    static const int ruim[] = {FICHA_E_, FICHA_TRANSMITIR, FICHA_APAGAR, FICHA_P, FICHA_SE_, FICHA_Q, FICHA_TRANSMITIR};
+    static const int ruim[] = {FICHA_E_,  FICHA_TRANSMITIR, FICHA_APAGAR,    FICHA_P,
+                               FICHA_SE_, FICHA_Q,          FICHA_TRANSMITIR};
     static const int bom[] = {FICHA_P, FICHA_E_, FICHA_NAO_, FICHA_P, FICHA_TRANSMITIR};
     const int *plano = final_bom ? bom : ruim;
     int tamanho = final_bom ? 5 : 7;
@@ -174,10 +204,14 @@ void compositor_piloto(const Estado *e, Entrada *in, bool final_bom) {
     }
     int alvo = plano[c->acoes];
     int col = c->cursor % COLUNAS_FICHAS, lin = c->cursor / COLUNAS_FICHAS;
-    if (lin != alvo / COLUNAS_FICHAS) in->baixo = true;
-    else if (col < alvo % COLUNAS_FICHAS) in->direita = true;
-    else if (col > alvo % COLUNAS_FICHAS) in->esquerda = true;
-    else in->confirmar = true;
+    if (lin != alvo / COLUNAS_FICHAS)
+        in->baixo = true;
+    else if (col < alvo % COLUNAS_FICHAS)
+        in->direita = true;
+    else if (col > alvo % COLUNAS_FICHAS)
+        in->esquerda = true;
+    else
+        in->confirmar = true;
 }
 
 // ================================================================== os dois finais
@@ -186,8 +220,10 @@ void compositor_inicia_fim(Estado *e) {
     // Os glifos do vidro se desfazem em fragmentos (nos dois finais).
     const Nivel *n = &e->nivel;
     for (int i = 0; i < 70; i++) {
-        Vector3 p = {n->vidro_x0 + 3.0f + GetRandomValue(0, 600) / 100.0f, 1.8f + GetRandomValue(0, 90) / 100.0f, n->vidro_z - 0.05f};
-        Vector3 v = {GetRandomValue(-120, 120) / 100.0f, GetRandomValue(-40, 120) / 100.0f, GetRandomValue(-60, 60) / 100.0f};
+        Vector3 p = {n->vidro_x0 + 3.0f + GetRandomValue(0, 600) / 100.0f,
+                     1.8f + GetRandomValue(0, 90) / 100.0f, n->vidro_z - 0.05f};
+        Vector3 v = {GetRandomValue(-120, 120) / 100.0f, GetRandomValue(-40, 120) / 100.0f,
+                     GetRandomValue(-60, 60) / 100.0f};
         col_particulas_adiciona(&e->particulas, (Particula){p, v, 2.5f, 2.5f, PARTICULA_FRAGMENTO});
     }
 }
@@ -197,7 +233,7 @@ void compositor_inicia_fim(Estado *e) {
 static void atualiza_fim_ruim(Estado *e, float antes, float t) {
     if (antes < 0.1f && t >= 0.1f) audio_toca(e, SOM_ALARME, 0.7f, 0.8f);
     if (t > 5.0f && t < 7.6f) e->apagao_t = 0.1f; // as luzes morrem
-    if (antes < 6.2f && t >= 6.2f) { // a silhueta, a 1 m do jogador
+    if (antes < 6.2f && t >= 6.2f) {              // a silhueta, a 1 m do jogador
         Criatura *c = &e->cri;
         Vector3 frente = jogador_direcao(e);
         c->contido = false;
@@ -222,16 +258,21 @@ void compositor_atualiza_fim(Estado *e, float dt) {
     if (e->fim.tela_final) return;
     float antes = e->fim.tempo;
     e->fim.tempo += dt;
-    if (e->in.confirmar && e->fim.tempo > 1.0f && !criatura_em_susto(e)) e->fim.tempo += 3.0f; // ENTER acelera
-    if (e->fase == FASE_FIM_RUIM) atualiza_fim_ruim(e, antes, e->fim.tempo);
-    else atualiza_fim_bom(e, antes, e->fim.tempo);
+    if (e->in.confirmar && e->fim.tempo > 1.0f && !criatura_em_susto(e))
+        e->fim.tempo += 3.0f; // ENTER acelera
+    if (e->fase == FASE_FIM_RUIM)
+        atualiza_fim_ruim(e, antes, e->fim.tempo);
+    else
+        atualiza_fim_bom(e, antes, e->fim.tempo);
 }
 
 // Efeitos por cima da cena (dentro do render target): a tela vai ao preto no fim de cada cinemática.
 void compositor_desenha_fim(const Estado *e) {
     float t = e->fim.tempo;
-    float preto = e->fase == FASE_FIM_RUIM ? (t > 8.2f ? 1.0f : 0.0f) : fminf(1.0f, fmaxf(0.0f, (t - 13.0f) / 1.0f));
-    if (e->fase == FASE_FIM_BOM && t > 2.8f && t < 4.8f) preto = fmaxf(preto, 0.55f); // o silêncio escurece a sala
+    float preto =
+        e->fase == FASE_FIM_RUIM ? (t > 8.2f ? 1.0f : 0.0f) : fminf(1.0f, fmaxf(0.0f, (t - 13.0f) / 1.0f));
+    if (e->fase == FASE_FIM_BOM && t > 2.8f && t < 4.8f)
+        preto = fmaxf(preto, 0.55f); // o silêncio escurece a sala
     if (preto > 0.0f) DrawRectangle(0, 0, e->rec.alvo_largura, e->rec.alvo_altura, Fade(BLACK, preto));
 }
 
@@ -242,14 +283,20 @@ static void desenha_textos_fim(const Estado *e) {
     if (e->fase == FASE_FIM_RUIM) {
         if (t < 2.4f) ui_texto_centro(e, dialogo_texto(TXT_FIM_RUIM_ACEITA), 200 * s, 40 * s, COR_ALARME);
         if (t > 2.2f && t < 5.4f) { // os glifos do vidro se reorganizam em português legível
-            Vector2 tela = GetWorldToScreen((Vector3){e->cri.pos.x, 2.95f, e->nivel.vidro_z}, e->camera); // sobre ele
+            Vector2 tela =
+                GetWorldToScreen((Vector3){e->cri.pos.x, 2.95f, e->nivel.vidro_z}, e->camera); // sobre ele
             const char *texto = dialogo_texto(TXT_FIM_RUIM_OBRIGADO);
             Vector2 m = ui_mede(e, texto, 44 * s);
             float tremor = sinf(t * 30.0f) * 2.0f * s;
-            ui_texto(e, texto, (Vector2){tela.x - m.x * 0.5f + tremor, tela.y - m.y * 0.5f}, 44 * s, Fade(COR_FOSFORO, fminf(1.0f, (t - 2.2f) * 1.5f)));
+            ui_texto(e, texto, (Vector2){tela.x - m.x * 0.5f + tremor, tela.y - m.y * 0.5f}, 44 * s,
+                     Fade(COR_FOSFORO, fminf(1.0f, (t - 2.2f) * 1.5f)));
         }
-        if (t > 8.2f) ui_texto_quebrado(e, dialogo_texto(TXT_FIM_RUIM_TELA), (Vector2){160 * s, 320 * s}, GetScreenWidth() - 320 * s, 30 * s, RAYWHITE);
+        if (t > 8.2f)
+            ui_texto_quebrado(e, dialogo_texto(TXT_FIM_RUIM_TELA), (Vector2){160 * s, 320 * s},
+                              GetScreenWidth() - 320 * s, 30 * s, RAYWHITE);
         return;
     }
-    if (t > 13.0f) ui_texto_quebrado(e, dialogo_texto(TXT_FIM_BOM_TELA), (Vector2){160 * s, 300 * s}, GetScreenWidth() - 320 * s, 30 * s, RAYWHITE);
+    if (t > 13.0f)
+        ui_texto_quebrado(e, dialogo_texto(TXT_FIM_BOM_TELA), (Vector2){160 * s, 300 * s},
+                          GetScreenWidth() - 320 * s, 30 * s, RAYWHITE);
 }

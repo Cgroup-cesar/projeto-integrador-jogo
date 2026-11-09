@@ -12,8 +12,8 @@ Arquivo de retomada: se a sessão cair, leia este arquivo e o `git log` antes de
 | M5 — Precursor | ✅ pronto | `feat: o Precursor nos corredores com IA, A* e captura (M5)` |
 | M6 — Final | ✅ pronto | `feat: resposta final por fichas e os dois finais (M6)` |
 | M7 — Áudio e atmosfera | ✅ pronto | `feat: áudio procedural e atmosfera (M7)` |
-| M8 — Polimento e auditoria | ⏳ próximo | |
-| M9 — README | | |
+| M8 — Polimento e auditoria | ✅ pronto | `feat: polimento, auditoria e CLAUDE.md (M8)` |
+| M9 — README | ⏳ próximo | |
 
 ## M0 — Fundação
 
@@ -74,3 +74,25 @@ Arquivo de retomada: se a sessão cair, leia este arquivo e o `git log` antes de
 **Pronto:** `src/audio_sintese.c` gera em código (22050 Hz, mono, 16 bits) os 18 sons: zumbido de lâmpada, voz do Precursor (3 osciladores FM com formantes variando), VERDADEIRO (acorde grave consonante, 0,6 s), FALSO (guincho dissonante subindo, 0,5 s), bip do interfone, máquina de escrever, interruptor, passos (os da criatura mais graves e lentos), estalo de vidro, estrondo do susto, alarme, respiração no armário, ambiência em laço da sala e das saídas, papel, a energia voltando e a distorção. Um `assets/audio/<nome>.ogg` substitui o som sintetizado; sem placa de som, o jogo segue em silêncio. Laços por fase (ambiência, zumbido quando a lâmpada está acesa, alarme, respiração), silêncio total antes do estrondo e no final bom. `--exporta-sons <pasta>` grava os sons em WAV; `--mudo` tira o som. Atmosfera: 12 lâmpadas (mais nos corredores), lâmpadas vermelhas mais fortes nas saídas, rodapé escuro e faixa de tinta oliva nas paredes, poeira flutuando perto do jogador (além da poeira do apagão, das fagulhas e dos fragmentos), sem apagão nos 4 primeiros segundos de uma saída.
 
 **Verificado:** `make` sem avisos; `make test` 100%; `make smoke` passa (mudo); os 18 sons exportados e medidos (duração certa, pico ≤ 0,8, sem saturação); capturas conferidas da sala e do corredor.
+
+## M8 — Polimento e auditoria
+
+**Pronto:** `CLAUDE.md` (resumo, regras invioláveis, comandos, fluxo Git, regra do Kanban e commits sem menção ao Claude) e `docs/ARQUITETURA.md` (as três camadas, um quadro, puro × impuro, máquina de fases, módulos, como estender). Textos revisados: todos os rótulos de interface foram para `src/dialogo.c`, os sem uso saíram e o objetivo da S2 diz "ao sul da sala". Âncoras `[REQ:…]` para RF2, RF5, RF6, RNF1, RNF2, RNF3 e RNF6. Teclas de debug conferidas (F1, F2, F3, F5, F9, F12; desligadas no modo feira). `tools/check_readme_refs.sh` escrito para o M9.
+
+**Auditoria por grep:** nenhum `raylib.h` em `logica.c`/`regras.c`; nenhum `Draw*` em `*_atualiza`; todo `*_desenha` recebe `const Estado *`; o único movimento sem `dt` é o olhar pelo mouse (correto: o deslocamento do mouse já é por quadro); três laços de desenho sobre coleções ganharam o comentário "laço de desenho"; `entra_fase` e `main` foram divididas (passavam de 40 linhas).
+
+**Auditoria independente (subagente que não viu estas notas):** corrigido o que ele apontou:
+1. O placar do HUD/terminal não mudava na hora do erro → os folds de placar e vidas são recalculados a cada quadro.
+2. Entrar no armário à vista da criatura pulava o susto e não contava como "pego" → `criatura_captura` única (susto, recomeço, sem os +50).
+3. Muitos erros podiam encher o vetor de eventos e engolir os pontos do final → os erros de uma fase somam num evento só (`col_eventos_acumula`) e `MAX_EVENTOS` foi a 96.
+4. O código não seguia o `.clang-format` → formatado com `clang-format` (0 avisos em `--dry-run`).
+5. O "3 erros reiniciam a rodada" era decidido no próprio teste → regra pura `regras_evento_do_erro`, usada pelo jogo e testada; o test_fluxo ganhou uma partida com recomeços intercalados (pego na S1, vidro rompido na R2) que chega ao FIM_BOM.
+6. Fagulhas, poeira e apagões eram sorteados por quadro → `col_sorteia_por_segundo(taxa, dt)`.
+7. `terminal_atualiza` estava vazio → cuida da navegação (setas, Esc); `rodadas.c` decide o ENTER. `jogo_finaliza` (vazio) saiu.
+8. A perseguição direta podia atravessar móveis baixos → só vai direto se o passo não colide; senão, segue o A*.
+9. `[REQ:RF3]` estava no topo de um arquivo → foi para cima das seis coleções em `estado.h`.
+10. Laços que fazem map/filter/fold fora das seis coleções ganharam o rótulo do padrão.
+11. Testes: precedência ∨ > → > ↔, vetor cheio e acúmulo de eventos, `regras_evento_do_erro`.
+Não aplicado: "commits pequenos" (a especificação manda um commit por marco na v0; ver decisão 45) e o README (é o M9).
+
+**Verificado:** `make` sem avisos; `make test`: test_logica 37/37, test_regras 61/61, test_fluxo 46/46; CTest 3/3; `make smoke` passa (colisão, vidro rompido, captura, armário, dois finais).

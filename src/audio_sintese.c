@@ -6,13 +6,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define TAXA 22050
+#define TAXA    22050
 #define DOIS_PI 6.28318530718f
 
 static const char *const NOMES[SOM_TOTAL] = {
-    "zumbido_lampada", "voz_precursor", "verdadeiro", "falso",     "bip_interfone", "maquina_escrever",
-    "interruptor",     "passo",         "passo_criatura", "vidro_estalo", "estrondo", "alarme",
-    "respiracao",      "ambiente_sala", "ambiente_saida", "papel",  "energia",       "distorcao",
+    "zumbido_lampada", "voz_precursor", "verdadeiro",     "falso",        "bip_interfone", "maquina_escrever",
+    "interruptor",     "passo",         "passo_criatura", "vidro_estalo", "estrondo",      "alarme",
+    "respiracao",      "ambiente_sala", "ambiente_saida", "papel",        "energia",       "distorcao",
 };
 
 // ================================================================== ferramentas de síntese
@@ -44,7 +44,8 @@ static float filtra(float *estado, float entrada, float suavidade) {
 static void zumbido(Buffer *b) { // zumbido de lâmpada: 60 Hz e harmônicos, com um chiado leve
     for (int i = 0; i < b->n; i++) {
         float t = (float)i / TAXA;
-        b->amostras[i] = 0.25f * sinf(DOIS_PI * 60 * t) + 0.18f * sinf(DOIS_PI * 120 * t) + 0.08f * sinf(DOIS_PI * 180 * t) + 0.03f * ruido();
+        b->amostras[i] = 0.25f * sinf(DOIS_PI * 60 * t) + 0.18f * sinf(DOIS_PI * 120 * t) +
+                         0.08f * sinf(DOIS_PI * 180 * t) + 0.03f * ruido();
     }
 }
 
@@ -56,7 +57,8 @@ static void voz(Buffer *b) { // 3 osciladores FM com formantes que variam: não 
         float formante1 = sinf(DOIS_PI * (550 + 250 * sinf(DOIS_PI * 2.3f * t)) * t);
         float formante2 = sinf(DOIS_PI * (1250 + 400 * sinf(DOIS_PI * 1.1f * t)) * t);
         float silabas = 0.5f + 0.5f * sinf(DOIS_PI * 4.2f * t);
-        b->amostras[i] = envelope(t, 0.08f, d) * (0.55f * fm + 0.25f * fm * formante1 + 0.15f * fm * formante2) * silabas;
+        b->amostras[i] =
+            envelope(t, 0.08f, d) * (0.55f * fm + 0.25f * fm * formante1 + 0.15f * fm * formante2) * silabas;
     }
 }
 
@@ -83,7 +85,8 @@ static void falso(Buffer *b) { // guincho dissonante subindo (trítono)
 static void bip(Buffer *b) { // bip do interfone com chiado de rádio
     for (int i = 0; i < b->n; i++) {
         float t = (float)i / TAXA;
-        b->amostras[i] = (t < 0.12f ? 0.4f * sinf(DOIS_PI * 1050 * t) : 0.0f) + 0.12f * ruido() * envelope(t, 0.01f, 0.25f);
+        b->amostras[i] = (t < 0.12f ? 0.4f * sinf(DOIS_PI * 1050 * t) : 0.0f) +
+                         0.12f * ruido() * envelope(t, 0.01f, 0.25f);
     }
 }
 
@@ -109,7 +112,8 @@ static void estalo(Buffer *b) { // estalo de vidro: ruído seco e parciais agudo
     for (int i = 0; i < b->n; i++) {
         float t = (float)i / TAXA;
         float seco = expf(-t * 60.0f) * ruido();
-        float anel = expf(-t * 9.0f) * (sinf(DOIS_PI * 2300 * t) + 0.6f * sinf(DOIS_PI * 3700 * t) + 0.4f * sinf(DOIS_PI * 5100 * t));
+        float anel = expf(-t * 9.0f) * (sinf(DOIS_PI * 2300 * t) + 0.6f * sinf(DOIS_PI * 3700 * t) +
+                                        0.4f * sinf(DOIS_PI * 5100 * t));
         b->amostras[i] = 0.6f * seco + 0.2f * anel;
     }
 }
@@ -118,7 +122,8 @@ static void estrondo(Buffer *b) { // o susto: baque grave, ruído e um guincho p
     float lp = 0;
     for (int i = 0; i < b->n; i++) {
         float t = (float)i / TAXA;
-        float baque = expf(-t * 3.0f) * (sinf(DOIS_PI * (55 - 20 * t) * t) + filtra(&lp, ruido(), 0.05f) * 1.5f);
+        float baque =
+            expf(-t * 3.0f) * (sinf(DOIS_PI * (55 - 20 * t) * t) + filtra(&lp, ruido(), 0.05f) * 1.5f);
         float guincho = expf(-t * 2.5f) * sinf(DOIS_PI * (900 + 600 * sinf(DOIS_PI * 7 * t)) * t);
         b->amostras[i] = 0.58f * baque + 0.3f * guincho;
     }
@@ -128,7 +133,8 @@ static void alarme(Buffer *b) { // sirene de dois tons (laço de 1 s)
     for (int i = 0; i < b->n; i++) {
         float t = (float)i / TAXA;
         float f = t < 0.5f ? 640.0f : 480.0f;
-        b->amostras[i] = 0.3f * (sinf(DOIS_PI * f * t) > 0 ? 1.0f : -1.0f) * 0.6f + 0.2f * sinf(DOIS_PI * f * 2 * t);
+        b->amostras[i] =
+            0.3f * (sinf(DOIS_PI * f * t) > 0 ? 1.0f : -1.0f) * 0.6f + 0.2f * sinf(DOIS_PI * f * 2 * t);
     }
 }
 
@@ -141,13 +147,16 @@ static void respiracao(Buffer *b) { // inspira, expira (laço de 2 s), ruído ab
     }
 }
 
-static void ambiente(Buffer *b, float grave, float metal) { // drone em laço; nas saídas, mais escuro e com metal
+static void ambiente(Buffer *b, float grave,
+                     float metal) { // drone em laço; nas saídas, mais escuro e com metal
     float lp = 0;
     for (int i = 0; i < b->n; i++) {
         float t = (float)i / TAXA;
-        float drone = sinf(DOIS_PI * grave * t) + 0.5f * sinf(DOIS_PI * grave * 1.5f * t + sinf(DOIS_PI * 0.25f * t));
+        float drone =
+            sinf(DOIS_PI * grave * t) + 0.5f * sinf(DOIS_PI * grave * 1.5f * t + sinf(DOIS_PI * 0.25f * t));
         float rumor = filtra(&lp, ruido(), 0.02f) * 2.0f;
-        float rangido = metal * sinf(DOIS_PI * 420 * t + 4 * sinf(DOIS_PI * 0.5f * t)) * powf(fmaxf(0.0f, sinf(DOIS_PI * 0.25f * t)), 12.0f);
+        float rangido = metal * sinf(DOIS_PI * 420 * t + 4 * sinf(DOIS_PI * 0.5f * t)) *
+                        powf(fmaxf(0.0f, sinf(DOIS_PI * 0.25f * t)), 12.0f);
         b->amostras[i] = 0.22f * drone + 0.25f * rumor + 0.12f * rangido;
     }
 }
@@ -180,32 +189,70 @@ static void distorcao(Buffer *b) {
 
 // ================================================================== montagem
 static float duracao(IdSom som) {
-    static const float d[SOM_TOTAL] = {1.0f, 1.6f, 0.6f, 0.5f, 0.25f, 0.05f, 0.06f, 0.14f, 0.3f,
-                                       0.45f, 1.2f, 1.0f, 2.0f, 4.0f, 4.0f, 0.3f, 1.2f, 1.0f};
+    static const float d[SOM_TOTAL] = {1.0f,  1.6f, 0.6f, 0.5f, 0.25f, 0.05f, 0.06f, 0.14f, 0.3f,
+                                       0.45f, 1.2f, 1.0f, 2.0f, 4.0f,  4.0f,  0.3f,  1.2f,  1.0f};
     return d[som];
 }
 
+// Exceção ao limite de ~40 linhas: é só um caso por som, sem lógica (cada som tem a sua função acima).
 static void sintetiza(IdSom som, Buffer *b) {
     switch (som) {
-    case SOM_ZUMBIDO_LAMPADA: zumbido(b); break;
-    case SOM_VOZ_PRECURSOR: voz(b); break;
-    case SOM_VERDADEIRO: verdadeiro(b); break;
-    case SOM_FALSO: falso(b); break;
-    case SOM_BIP_INTERFONE: bip(b); break;
-    case SOM_MAQUINA_ESCREVER: clique(b, 3100.0f, 0.3f); break;
-    case SOM_INTERRUPTOR: clique(b, 900.0f, 0.5f); break;
-    case SOM_PASSO: passo(b, 85.0f, 30.0f); break;
-    case SOM_PASSO_CRIATURA: passo(b, 48.0f, 12.0f); break;
-    case SOM_VIDRO_ESTALO: estalo(b); break;
-    case SOM_ESTRONDO: estrondo(b); break;
-    case SOM_ALARME: alarme(b); break;
-    case SOM_RESPIRACAO: respiracao(b); break;
-    case SOM_AMBIENTE_SALA: ambiente(b, 55.0f, 0.0f); break;
-    case SOM_AMBIENTE_SAIDA: ambiente(b, 41.0f, 1.0f); break;
-    case SOM_PAPEL: papel(b); break;
-    case SOM_ENERGIA: energia(b); break;
-    case SOM_DISTORCAO: distorcao(b); break;
-    default: break;
+    case SOM_ZUMBIDO_LAMPADA:
+        zumbido(b);
+        break;
+    case SOM_VOZ_PRECURSOR:
+        voz(b);
+        break;
+    case SOM_VERDADEIRO:
+        verdadeiro(b);
+        break;
+    case SOM_FALSO:
+        falso(b);
+        break;
+    case SOM_BIP_INTERFONE:
+        bip(b);
+        break;
+    case SOM_MAQUINA_ESCREVER:
+        clique(b, 3100.0f, 0.3f);
+        break;
+    case SOM_INTERRUPTOR:
+        clique(b, 900.0f, 0.5f);
+        break;
+    case SOM_PASSO:
+        passo(b, 85.0f, 30.0f);
+        break;
+    case SOM_PASSO_CRIATURA:
+        passo(b, 48.0f, 12.0f);
+        break;
+    case SOM_VIDRO_ESTALO:
+        estalo(b);
+        break;
+    case SOM_ESTRONDO:
+        estrondo(b);
+        break;
+    case SOM_ALARME:
+        alarme(b);
+        break;
+    case SOM_RESPIRACAO:
+        respiracao(b);
+        break;
+    case SOM_AMBIENTE_SALA:
+        ambiente(b, 55.0f, 0.0f);
+        break;
+    case SOM_AMBIENTE_SAIDA:
+        ambiente(b, 41.0f, 1.0f);
+        break;
+    case SOM_PAPEL:
+        papel(b);
+        break;
+    case SOM_ENERGIA:
+        energia(b);
+        break;
+    case SOM_DISTORCAO:
+        distorcao(b);
+        break;
+    default:
+        break;
     }
 }
 
@@ -221,7 +268,8 @@ static Wave onda_sintetizada(IdSom som) {
         return (Wave){0};
     }
     sintetiza(som, &b);
-    for (int i = 0; i < b.n; i++) pcm[i] = (short)(fmaxf(-1.0f, fminf(1.0f, b.amostras[i])) * 30000.0f);
+    for (int i = 0; i < b.n; i++)
+        pcm[i] = (short)(fmaxf(-1.0f, fminf(1.0f, b.amostras[i])) * 30000.0f);
     free(b.amostras);
     return (Wave){(unsigned int)b.n, TAXA, 16, 1, pcm};
 }
@@ -254,7 +302,8 @@ void audio_inicia(Recursos *rec) {
     for (int i = 0; i < SOM_TOTAL; i++) {
         char relativo[64], caminho[512];
         snprintf(relativo, sizeof(relativo), "audio/%s.ogg", NOMES[i]);
-        if (ui_caminho_asset(relativo, caminho, sizeof(caminho))) rec->sons[i] = LoadSound(caminho); // o .ogg substitui
+        if (ui_caminho_asset(relativo, caminho, sizeof(caminho)))
+            rec->sons[i] = LoadSound(caminho); // o .ogg substitui
         if (!IsSoundValid(rec->sons[i])) rec->sons[i] = som_sintetizado((IdSom)i);
     }
 }
@@ -280,10 +329,12 @@ void audio_para(const Estado *e, IdSom som) {
 }
 
 void audio_silencia(const Estado *e) {
-    for (int i = 0; i < SOM_TOTAL; i++) audio_para(e, (IdSom)i);
+    for (int i = 0; i < SOM_TOTAL; i++)
+        audio_para(e, (IdSom)i);
 }
 
-// ================================================================== laços (ambiência por fase, zumbido, alarme, respiração)
+// ================================================================== laços (ambiência por fase, zumbido,
+// alarme, respiração)
 static void mantem_laco(const Estado *e, IdSom som, bool ligado, float volume) {
     if (!ligado) {
         audio_para(e, som);
@@ -300,7 +351,8 @@ static void mantem_laco(const Estado *e, IdSom som, bool ligado, float volume) {
 void audio_atualiza(Estado *e, float dt) {
     (void)dt;
     if (!e->rec.audio_ok) return;
-    bool silencio = e->silencio_t > 0.0f || (e->fase == FASE_FIM_BOM && e->fim.tempo > 2.8f && e->fim.tempo < 4.8f);
+    bool silencio =
+        e->silencio_t > 0.0f || (e->fase == FASE_FIM_BOM && e->fim.tempo > 2.8f && e->fim.tempo < 4.8f);
     bool saida = regras_fase_eh_saida(e->fase);
     bool sala = !saida && e->fase != FASE_FIM_RUIM && !(e->fase == FASE_INTRO && !e->intro.interfone);
     bool lampada_acesa = e->apagao_t <= 0.0f && (sala || (saida && e->painel.resolvido));

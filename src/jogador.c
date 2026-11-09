@@ -4,6 +4,7 @@
 #include "ui.h"
 #include "dialogo.h"
 #include "audio_sintese.h"
+#include "criatura.h"
 #include <math.h>
 
 #define PITCH_MAXIMO 1.35f
@@ -37,6 +38,7 @@ Vector3 jogador_direcao(const Estado *e) {
 }
 
 // ------------------------------------------------------------------ olhar
+// [REQ:RF2] câmera em 1ª pessoa pelo mouse (o deslocamento do mouse já é por quadro: não multiplica por dt)
 static void olha(Estado *e) {
     Jogador *j = &e->jog;
     if (j->modo == MODO_PAINEL || j->modo == MODO_DIARIO) return;
@@ -58,8 +60,10 @@ static void move_com_colisao(Estado *e, Vector3 alvo) {
 
 static void atualiza_folego(Jogador *j, bool quer_correr, float dt) {
     j->correndo = quer_correr && !j->exausto && j->folego > 0.0f;
-    if (j->correndo) j->folego -= dt;
-    else j->folego += JOGADOR_FOLEGO_RECUPERA * dt;
+    if (j->correndo)
+        j->folego -= dt;
+    else
+        j->folego += JOGADOR_FOLEGO_RECUPERA * dt;
     if (j->folego <= 0.0f) {
         j->folego = 0.0f;
         j->exausto = true; // sem fôlego: só volta a correr depois de recuperar 1 s
@@ -82,10 +86,12 @@ static void passos(Estado *e, bool andando, float dt) {
     j->tempo_passo -= intervalo;
     float raio = j->correndo ? RUIDO_RAIO_CORRER : RUIDO_RAIO_ANDAR;
     if (regras_fase_eh_saida(e->fase))
-        col_ruidos_adiciona(&e->ruidos, (Ruido){j->pos, raio, 1.0f, j->correndo ? RUIDO_CORRIDA : RUIDO_PASSO});
+        col_ruidos_adiciona(&e->ruidos,
+                            (Ruido){j->pos, raio, 1.0f, j->correndo ? RUIDO_CORRIDA : RUIDO_PASSO});
     audio_toca(e, SOM_PASSO, j->correndo ? 1.0f : 0.6f, 0.9f + GetRandomValue(0, 20) / 100.0f);
 }
 
+// [REQ:RF2] WASD anda, Shift corre (com fôlego); a posição nova vem da regra pura
 static void anda(Estado *e, float dt) {
     Jogador *j = &e->jog;
     bool andando = e->in.mover.x != 0.0f || e->in.mover.y != 0.0f;
@@ -98,8 +104,10 @@ static void anda(Estado *e, float dt) {
 // ------------------------------------------------------------------ armário
 static int armario_mais_proximo(const Estado *e, Vector3 pos) {
     int melhor = 0;
+    // padrão FOLD: o armário mais próximo
     for (int i = 1; i < e->nivel.n_armarios; i++)
-        if (Vector3Distance(e->nivel.armarios[i], pos) < Vector3Distance(e->nivel.armarios[melhor], pos)) melhor = i;
+        if (Vector3Distance(e->nivel.armarios[i], pos) < Vector3Distance(e->nivel.armarios[melhor], pos))
+            melhor = i;
     return melhor;
 }
 
@@ -113,7 +121,7 @@ static void entra_no_armario(Estado *e, const Interativo *it) {
     audio_toca(e, SOM_INTERRUPTOR, 0.7f, 0.6f);
     // Entrar no armário a menos de 2 m dele enquanto ele te vê não adianta.
     bool visto = e->cri.ativo && e->cri.ve_jogador;
-    if (visto && Vector3Distance(e->cri.pos, j->pos) < CRIATURA_DIST_ARMARIO) e->evento = EV_PEGO;
+    if (visto && Vector3Distance(e->cri.pos, j->pos) < CRIATURA_DIST_ARMARIO) criatura_captura(e);
 }
 
 static void sai_do_armario(Estado *e) {
@@ -132,14 +140,20 @@ static void interage(Estado *e, const Interativo *it) {
         j->modo = MODO_TERMINAL;
         break;
     case INTER_PAINEL1:
-    case INTER_PAINEL2: j->modo = MODO_PAINEL; break;
+    case INTER_PAINEL2:
+        j->modo = MODO_PAINEL;
+        break;
     case INTER_DIARIO:
         j->modo = MODO_DIARIO;
         e->diario_lido = true;
         audio_toca(e, SOM_PAPEL, 0.8f, 1.0f);
         break;
-    case INTER_ARMARIO: entra_no_armario(e, it); break;
-    case INTER_PORTA: ui_fala(e, FALAS_PORTA_TRANCADA); break;
+    case INTER_ARMARIO:
+        entra_no_armario(e, it);
+        break;
+    case INTER_PORTA:
+        ui_fala(e, FALAS_PORTA_TRANCADA);
+        break;
     }
 }
 
@@ -159,7 +173,8 @@ void jogador_atualiza(Estado *e, float dt) {
     Jogador *j = &e->jog;
     if (j->modo == MODO_ANDANDO) {
         anda(e, dt);
-        j->mira = col_interativos_na_mira(&e->interativos, jogador_olho(e), jogador_direcao(e), DISTANCIA_INTERACAO);
+        j->mira = col_interativos_na_mira(&e->interativos, jogador_olho(e), jogador_direcao(e),
+                                          DISTANCIA_INTERACAO);
     } else {
         j->mira = -1;
         atualiza_folego(j, false, dt);
@@ -181,7 +196,8 @@ void jogador_desenha(const Estado *e) {
     if (e->jog.modo != MODO_ARMARIO) return;
     int w = e->rec.alvo_largura, h = e->rec.alvo_altura;
     int fresta = h / 14;
-    for (int y = 0; y < h; y += fresta * 2) DrawRectangle(0, y, w, fresta + fresta / 3, BLACK);
+    for (int y = 0; y < h; y += fresta * 2)
+        DrawRectangle(0, y, w, fresta + fresta / 3, BLACK);
     DrawRectangle(0, 0, w / 7, h, BLACK);
     DrawRectangle(w - w / 7, 0, w / 7, h, BLACK);
 }

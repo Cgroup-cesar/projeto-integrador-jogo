@@ -33,15 +33,15 @@ typedef struct {
 
 typedef struct {
     bool ok;
-    int posicao;         // índice da ficha onde o problema foi notado
-    char mensagem[120];  // explicação amigável, em português
+    int posicao;        // índice da ficha onde o problema foi notado
+    char mensagem[120]; // explicação amigável, em português
 } ErroLogica;
 
 #define LOGICA_MAX_ATOMOS 4
 
 // ------------------------------------------------------------------ construção da árvore
 void logica_pool_limpa(PoolLogico *pool);
-int logica_atomo(PoolLogico *pool, int atomo);                       // devolve o índice do nó ou −1 (pool cheio)
+int logica_atomo(PoolLogico *pool, int atomo); // devolve o índice do nó ou −1 (pool cheio)
 int logica_nao(PoolLogico *pool, int filho);
 int logica_binaria(PoolLogico *pool, OpLogico op, int esq, int dir);
 
@@ -56,7 +56,8 @@ bool logica_eh_satisfazivel(const PoolLogico *pool, int raiz, int n_atomos);
 
 // ------------------------------------------------------------------ texto e parser
 // Escreve a expressão com ¬ ∧ ∨ → ↔ (UTF-8) e só os parênteses necessários.
-void logica_para_texto(const PoolLogico *pool, int raiz, const char *const *nomes, char *saida, size_t tamanho);
+void logica_para_texto(const PoolLogico *pool, int raiz, const char *const *nomes, char *saida,
+                       size_t tamanho);
 
 // Gramática: expr := termo (BINOP termo)*   termo := NAO termo | ATOMO
 // Precedência ¬ > ∧ > ∨ > → > ↔; associatividade à esquerda, exceto → (à direita).

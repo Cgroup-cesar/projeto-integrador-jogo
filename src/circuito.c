@@ -15,8 +15,10 @@ static const bool ALVO_PAINEL2[4] = {true, true, false, true};
 
 // ================================================================== circuito do painel
 static void monta(const Painel *p, Circuito *c) {
-    if (p->numero == 1) regras_circuito_painel1(c);
-    else regras_circuito_painel2(c, (TipoPorta)p->escolha[0], (TipoPorta)p->escolha[1]);
+    if (p->numero == 1)
+        regras_circuito_painel1(c);
+    else
+        regras_circuito_painel2(c, (TipoPorta)p->escolha[0], (TipoPorta)p->escolha[1]);
 }
 
 static bool esta_resolvido(const Painel *p) {
@@ -88,8 +90,9 @@ static void resolve(Estado *e) {
 
 // Apagões curtos enquanto a energia não volta (uns 4% de chance por segundo).
 static void apagoes(Estado *e, float dt) {
-    if (e->painel.resolvido || e->apagao_t > 0.0f || e->tempo_fase < 4.0f) return; // nada de apagão logo de cara
-    if (GetRandomValue(0, 10000) < (int)(dt * 400.0f)) e->apagao_t = 0.35f + GetRandomValue(0, 30) / 100.0f;
+    if (e->painel.resolvido || e->apagao_t > 0.0f || e->tempo_fase < 4.0f)
+        return; // nada de apagão logo de cara
+    if (col_sorteia_por_segundo(0.04f, dt)) e->apagao_t = 0.35f + GetRandomValue(0, 30) / 100.0f;
 }
 
 void circuito_atualiza(Estado *e, float dt) {
@@ -98,7 +101,8 @@ void circuito_atualiza(Estado *e, float dt) {
     if (p->resolvido) {
         p->resolvido_t += dt;
         if (p->resolvido_t > 1.8f && e->jog.modo == MODO_PAINEL) e->jog.modo = MODO_ANDANDO;
-        if (p->resolvido_t > 1.0f && nivel_na_sala_de_observacao(&e->nivel, e->jog.pos)) e->evento = EV_SAIDA_CONCLUIDA;
+        if (p->resolvido_t > 1.0f && nivel_na_sala_de_observacao(&e->nivel, e->jog.pos))
+            e->evento = EV_SAIDA_CONCLUIDA;
         return;
     }
     if (e->jog.modo != MODO_PAINEL) return;
@@ -132,10 +136,13 @@ static Vector2 porta(const Estado *e, Vector2 centro, const char *nome, bool led
     float s = ui_escala();
     Rectangle r = {centro.x - 70 * s, centro.y - 22 * s, 140 * s, 44 * s};
     DrawRectangleRounded(r, 0.2f, 4, selecionada ? Fade(COR_AMBAR, 0.25f) : (Color){12, 20, 15, 255});
-    DrawRectangleRoundedLinesEx(r, 0.2f, 4, selecionada ? 2.5f : 1.5f, selecionada ? COR_AMBAR : Fade(COR_FOSFORO, 0.6f));
+    DrawRectangleRoundedLinesEx(r, 0.2f, 4, selecionada ? 2.5f : 1.5f,
+                                selecionada ? COR_AMBAR : Fade(COR_FOSFORO, 0.6f));
     Vector2 m = ui_mede(e, nome, 16 * s);
-    ui_texto(e, nome, (Vector2){centro.x - m.x * 0.5f - 8 * s, centro.y - 8 * s}, 16 * s, selecionada ? COR_AMBAR : COR_FOSFORO);
-    DrawCircleV((Vector2){r.x + r.width - 12 * s, centro.y}, 6 * s, led ? COR_FOSFORO : (Color){20, 40, 25, 255});
+    ui_texto(e, nome, (Vector2){centro.x - m.x * 0.5f - 8 * s, centro.y - 8 * s}, 16 * s,
+             selecionada ? COR_AMBAR : COR_FOSFORO);
+    DrawCircleV((Vector2){r.x + r.width - 12 * s, centro.y}, 6 * s,
+                led ? COR_FOSFORO : (Color){20, 40, 25, 255});
     return (Vector2){r.x + r.width, centro.y};
 }
 
@@ -157,16 +164,20 @@ static void desenha_painel1(const Estado *e, Rectangle r) {
     for (int i = 0; i < 3; i++) {
         ent[i] = (Vector2){r.x + 150 * s, r.y + (110 + i * 90) * s};
         char rotulo[48];
-        snprintf(rotulo, sizeof(rotulo), "[%d] %s  %s", i + 1, nomes[i], dialogo_texto(p->chaves[i] ? TXT_PAINEL_CHAVE_LIGADA : TXT_PAINEL_CHAVE_DESLIGADA));
-        ui_opcao(e, rotulo, (Vector2){r.x + 26 * s, ent[i].y - 10 * s}, 120 * s + 60 * s, 16 * s, p->cursor == i, p->chaves[i] ? COR_FOSFORO : Fade(COR_FOSFORO, 0.7f));
+        snprintf(rotulo, sizeof(rotulo), dialogo_texto(TXT_PAINEL_CHAVE), i + 1, nomes[i],
+                 dialogo_texto(p->chaves[i] ? TXT_PAINEL_CHAVE_LIGADA : TXT_PAINEL_CHAVE_DESLIGADA));
+        ui_opcao(e, rotulo, (Vector2){r.x + 26 * s, ent[i].y - 10 * s}, 120 * s + 60 * s, 16 * s,
+                 p->cursor == i, p->chaves[i] ? COR_FOSFORO : Fade(COR_FOSFORO, 0.7f));
         ent[i].x += 40 * s;
     }
     Vector2 nao = porta(e, (Vector2){r.x + 330 * s, ent[1].y}, dialogo_porta(PORTA_NAO), leds[0], false);
     fio(ent[1], (Vector2){r.x + 260 * s, ent[1].y}, p->chaves[1]);
-    Vector2 e1 = porta(e, (Vector2){r.x + 500 * s, (ent[0].y + ent[1].y) * 0.5f}, dialogo_porta(PORTA_E), leds[1], false);
+    Vector2 e1 = porta(e, (Vector2){r.x + 500 * s, (ent[0].y + ent[1].y) * 0.5f}, dialogo_porta(PORTA_E),
+                       leds[1], false);
     fio(ent[0], (Vector2){r.x + 430 * s, e1.y - 10 * s}, p->chaves[0]);
     fio(nao, (Vector2){r.x + 430 * s, e1.y + 10 * s}, leds[0]);
-    Vector2 e2 = porta(e, (Vector2){r.x + 660 * s, (e1.y + ent[2].y) * 0.5f}, dialogo_porta(PORTA_E), leds[2], false);
+    Vector2 e2 =
+        porta(e, (Vector2){r.x + 660 * s, (e1.y + ent[2].y) * 0.5f}, dialogo_porta(PORTA_E), leds[2], false);
     fio(e1, (Vector2){r.x + 590 * s, e2.y - 10 * s}, leds[1]);
     fio(ent[2], (Vector2){r.x + 590 * s, e2.y + 10 * s}, p->chaves[2]);
     fio(e2, (Vector2){r.x + 770 * s, e2.y}, saida);
@@ -178,7 +189,8 @@ static void desenha_tabela_painel2(const Estado *e, Vector2 pos) {
     Circuito c;
     monta(&e->painel, &c);
     char cabecalho[48];
-    snprintf(cabecalho, sizeof(cabecalho), "A B   %s   %s", dialogo_texto(TXT_PAINEL_SAIDA), dialogo_texto(TXT_PAINEL_ALVO));
+    snprintf(cabecalho, sizeof(cabecalho), "A B   %s   %s", dialogo_texto(TXT_PAINEL_SAIDA),
+             dialogo_texto(TXT_PAINEL_ALVO));
     ui_texto(e, cabecalho, pos, 16 * s, Fade(COR_FOSFORO, 0.7f));
     for (int l = 0; l < 4; l++) {
         bool ent[2];
@@ -186,9 +198,12 @@ static void desenha_tabela_painel2(const Estado *e, Vector2 pos) {
         bool saida = regras_avaliar_circuito(&c, ent, NULL);
         bool bate = saida == ALVO_PAINEL2[l];
         float y = pos.y + (28 + l * 28) * s;
-        if (l == linha_mostrada(e)) DrawRectangleRounded((Rectangle){pos.x - 8 * s, y - 4 * s, 200 * s, 26 * s}, 0.3f, 4, Fade(COR_FOSFORO, 0.12f));
+        if (l == linha_mostrada(e))
+            DrawRectangleRounded((Rectangle){pos.x - 8 * s, y - 4 * s, 200 * s, 26 * s}, 0.3f, 4,
+                                 Fade(COR_FOSFORO, 0.12f));
         char linha[48];
-        snprintf(linha, sizeof(linha), "%d %d     %s       %s", ent[0], ent[1], saida ? "1" : "0", ALVO_PAINEL2[l] ? "1" : "0");
+        snprintf(linha, sizeof(linha), "%d %d     %s       %s", ent[0], ent[1], saida ? "1" : "0",
+                 ALVO_PAINEL2[l] ? "1" : "0");
         ui_texto(e, linha, (Vector2){pos.x, y}, 18 * s, bate ? COR_FOSFORO : COR_ALARME);
     }
 }
@@ -203,12 +218,14 @@ static void desenha_painel2(const Estado *e, Rectangle r) {
     Vector2 a = {r.x + 60 * s, r.y + 130 * s}, b = {r.x + 60 * s, r.y + 210 * s};
     ui_texto(e, "A", (Vector2){a.x - 30 * s, a.y - 10 * s}, 20 * s, cor_sinal(ent[0]));
     ui_texto(e, "B", (Vector2){b.x - 30 * s, b.y - 10 * s}, 20 * s, cor_sinal(ent[1]));
-    Vector2 p1 = porta(e, (Vector2){r.x + 220 * s, (a.y + b.y) * 0.5f}, dialogo_porta(p->escolha[0]), leds[0], p->cursor % 2 == 0);
+    Vector2 p1 = porta(e, (Vector2){r.x + 220 * s, (a.y + b.y) * 0.5f}, dialogo_porta(p->escolha[0]), leds[0],
+                       p->cursor % 2 == 0);
     fio(a, (Vector2){r.x + 150 * s, p1.y - 10 * s}, ent[0]);
     fio(b, (Vector2){r.x + 150 * s, p1.y + 10 * s}, ent[1]);
     Vector2 nao = porta(e, (Vector2){r.x + 220 * s, r.y + 300 * s}, dialogo_porta(PORTA_NAO), leds[1], false);
     fio((Vector2){a.x, a.y}, (Vector2){r.x + 150 * s, nao.y}, ent[0]);
-    Vector2 p2 = porta(e, (Vector2){r.x + 420 * s, (p1.y + nao.y) * 0.5f}, dialogo_porta(p->escolha[1]), leds[2], p->cursor % 2 == 1);
+    Vector2 p2 = porta(e, (Vector2){r.x + 420 * s, (p1.y + nao.y) * 0.5f}, dialogo_porta(p->escolha[1]),
+                       leds[2], p->cursor % 2 == 1);
     fio(p1, (Vector2){r.x + 350 * s, p2.y - 10 * s}, leds[0]);
     fio(nao, (Vector2){r.x + 350 * s, p2.y + 10 * s}, leds[1]);
     fio(p2, (Vector2){r.x + 520 * s, p2.y}, saida);
@@ -220,13 +237,20 @@ void circuito_desenha(const Estado *e) {
     if (e->jog.modo != MODO_PAINEL) return;
     float s = ui_escala();
     const Painel *p = &e->painel;
-    Rectangle r = {GetScreenWidth() * 0.5f - 430 * s, 64 * s, 860 * s, 430 * s}; // acima da legenda do interfone
+    Rectangle r = {GetScreenWidth() * 0.5f - 430 * s, 64 * s, 860 * s,
+                   430 * s}; // acima da legenda do interfone
     ui_painel(r, COR_AMBAR);
-    ui_texto(e, dialogo_texto(p->numero == 1 ? TXT_PAINEL1_TITULO : TXT_PAINEL2_TITULO), (Vector2){r.x + 24 * s, r.y + 18 * s}, 24 * s, COR_AMBAR);
-    if (p->numero == 1) desenha_painel1(e, r);
-    else desenha_painel2(e, r);
-    TextoId rodape = p->resolvido ? TXT_PAINEL_RESOLVIDO : p->numero == 1 ? TXT_PAINEL_INSTRUCOES1 : TXT_PAINEL_INSTRUCOES2;
-    ui_texto(e, dialogo_texto(rodape), (Vector2){r.x + 24 * s, r.y + r.height - 40 * s}, 18 * s, p->resolvido ? COR_AMBAR : Fade(COR_FOSFORO, 0.8f));
+    ui_texto(e, dialogo_texto(p->numero == 1 ? TXT_PAINEL1_TITULO : TXT_PAINEL2_TITULO),
+             (Vector2){r.x + 24 * s, r.y + 18 * s}, 24 * s, COR_AMBAR);
+    if (p->numero == 1)
+        desenha_painel1(e, r);
+    else
+        desenha_painel2(e, r);
+    TextoId rodape = p->resolvido     ? TXT_PAINEL_RESOLVIDO
+                     : p->numero == 1 ? TXT_PAINEL_INSTRUCOES1
+                                      : TXT_PAINEL_INSTRUCOES2;
+    ui_texto(e, dialogo_texto(rodape), (Vector2){r.x + 24 * s, r.y + r.height - 40 * s}, 18 * s,
+             p->resolvido ? COR_AMBAR : Fade(COR_FOSFORO, 0.8f));
 }
 
 // ================================================================== desenho 3D: LEDs no gabinete
@@ -240,7 +264,8 @@ void circuito_desenha_3d(const Estado *e) {
     Vector3 frente = painel1 ? (Vector3){0, 0, 0.27f} : (Vector3){0.27f, 0, 0};
     Vector3 lado = painel1 ? (Vector3){0.22f, 0, 0} : (Vector3){0, 0, -0.22f};
     for (int i = 0; i < 3; i++) {
-        Vector3 led = Vector3Add(Vector3Add((Vector3){c.x, 1.35f, c.z}, frente), Vector3Scale(lado, (float)(i - 1)));
+        Vector3 led =
+            Vector3Add(Vector3Add((Vector3){c.x, 1.35f, c.z}, frente), Vector3Scale(lado, (float)(i - 1)));
         DrawSphereEx(led, 0.035f, 6, 6, leds[i] ? COR_FOSFORO : (Color){20, 40, 25, 255});
     }
     Vector3 lamp = Vector3Add((Vector3){c.x, 1.62f, c.z}, frente);
@@ -256,9 +281,12 @@ static void piloto_painel1(const Painel *p, Entrada *in) {
         bool alvo[3];
         logica_valores_da_linha(linha, 3, alvo);
         if (!regras_avaliar_circuito(&c, alvo, NULL)) continue;
-        if (p->chaves[0] != alvo[0]) in->tecla1 = true;
-        else if (p->chaves[1] != alvo[1]) in->tecla2 = true;
-        else if (p->chaves[2] != alvo[2]) in->tecla3 = true;
+        if (p->chaves[0] != alvo[0])
+            in->tecla1 = true;
+        else if (p->chaves[1] != alvo[1])
+            in->tecla2 = true;
+        else if (p->chaves[2] != alvo[2])
+            in->tecla3 = true;
         return;
     }
 }
@@ -271,8 +299,10 @@ static void piloto_painel2(const Painel *p, Entrada *in) {
             if (!regras_circuito_confere_tabela(&c, ALVO_PAINEL2)) continue;
             const int alvo[2] = {p1, p2};
             int encaixe = p->escolha[0] != alvo[0] ? 0 : 1;
-            if (p->cursor % 2 != encaixe) in->direita = true;
-            else in->baixo = true;
+            if (p->cursor % 2 != encaixe)
+                in->direita = true;
+            else
+                in->baixo = true;
             return;
         }
     }
@@ -280,6 +310,8 @@ static void piloto_painel2(const Painel *p, Entrada *in) {
 
 void circuito_piloto(const Estado *e, Entrada *in) {
     if (e->painel.resolvido) return;
-    if (e->painel.numero == 1) piloto_painel1(&e->painel, in);
-    else piloto_painel2(&e->painel, in);
+    if (e->painel.numero == 1)
+        piloto_painel1(&e->painel, in);
+    else
+        piloto_painel2(&e->painel, in);
 }

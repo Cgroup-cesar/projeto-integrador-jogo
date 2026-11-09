@@ -7,13 +7,13 @@
 static int checagens_total = 0;
 static int checagens_falhas = 0;
 
-#define CHECK(condicao)                                                                \
-    do {                                                                               \
-        checagens_total++;                                                             \
-        if (!(condicao)) {                                                             \
-            checagens_falhas++;                                                        \
-            printf("  FALHOU  %s:%d  %s\n", __FILE__, __LINE__, #condicao);           \
-        }                                                                              \
+#define CHECK(condicao)                                                                                      \
+    do {                                                                                                     \
+        checagens_total++;                                                                                   \
+        if (!(condicao)) {                                                                                   \
+            checagens_falhas++;                                                                              \
+            printf("  FALHOU  %s:%d  %s\n", __FILE__, __LINE__, #condicao);                                  \
+        }                                                                                                    \
     } while (0)
 
 // Imprime o resumo e devolve o código de saída do programa (0 = tudo certo).
