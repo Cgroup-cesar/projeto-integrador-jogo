@@ -47,3 +47,12 @@ Registro das escolhas feitas onde a especificação deixava espaço ou onde o am
 29. **Painel 2 começa com (OU, E)**, que não resolve, para o jogador ter que mexer.
 30. **Voltar à sala é andando.** Depois do painel, a energia volta e a criatura some; a saída só termina quando o jogador entra de novo na sala de observação (o Varela pede: "Volte para a sala").
 31. **Apagões nas saídas:** enquanto a energia não volta, há uma chance de ~4% por segundo de um apagão de 0,35 a 0,65 s (as lâmpadas caem a 8%).
+
+## O Precursor
+
+32. **Pontos de patrulha:** os cantos do loop de corredores `(8,5)`, `(21,5)`, `(21,11)`, `(8,11)`, mais o gerador `(19,2)` e o Arquivo `(3,11)`, em ciclo.
+33. **INVESTIGA termina em PROCURA.** Ao chegar no ruído sem achar ninguém, ele procura em volta por 6 s (a mesma regra da PROCURA depois de perder o jogador de vista) e volta a patrulhar.
+34. **Perseguição direta só com linha de visão livre.** Quando ele vê o jogador, anda em linha reta até ele (a visão já garantiu que não há parede no meio); sem ver, segue o caminho do A*.
+35. **Móveis bloqueiam a visão** (o raycast usa a coleção de paredes, que inclui armários, console e painéis): dá para se esconder atrás de um armário, não só dentro.
+36. **Checkpoint = início da saída atual.** Ser pego recomeça a saída com a porta abrindo e a criatura de novo no duto (15 s); o diário lido continua valendo.
+37. **Smoke determinístico.** Com `--smoke`, a semente do sorteio é fixa (1985); o jogo normal continua aleatório.

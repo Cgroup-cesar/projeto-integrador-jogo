@@ -6,6 +6,9 @@
 #include "rodadas.h"
 #include "circuito.h"
 #include "compositor.h"
+#include "criatura.h"
+#include "nivel.h"
+#include <math.h>
 #include "posfx.h"
 #include "audio_sintese.h"
 #include "ui.h"
@@ -61,6 +64,9 @@ typedef struct {
     float tempo_fase_anterior;
     float andando_t;        // teste de colisão: anda de verdade até o vidro na primeira saída
     bool colisao_conferida;
+    bool pego_testado;      // 1ª partida, S2: espera a criatura ouvir, perseguir e pegar
+    unsigned estados_vistos; // bits dos EstadoCriatura que apareceram nesse teste
+    bool armario_testado;   // 2ª partida, S1: entra e sai de um armário
     int codigo_saida;       // −1 = ainda jogando; 0 = ok; 1 = falhou
 } Piloto;
 
@@ -114,6 +120,48 @@ static bool piloto_confere_colisao(Estado *e, Entrada *in, float dt) {
     return true;
 }
 
+// 1ª partida, S2: fica no corredor de baixo, a 4 células do duto, e corre sem sair do lugar (barulho de 10 m)
+// quando a criatura surge. Ela precisa ouvir, investigar, ver, perseguir e pegar; a saída recomeça.
+static bool piloto_espera_ser_pego(Estado *e, Entrada *in) {
+    if (piloto.partida != 0 || e->fase != FASE_S2 || piloto.pego_testado) return false;
+    if (e->cri.ativo) piloto.estados_vistos |= 1u << e->cri.estado;
+    if (e->pegos_na_fase > 0) {
+        piloto.pego_testado = true;
+        bool investigou = piloto.estados_vistos & (1u << CRIATURA_INVESTIGA);
+        bool perseguiu = piloto.estados_vistos & (1u << CRIATURA_PERSEGUE);
+        if (!investigou || !perseguiu) piloto_falha("a criatura pegou sem passar por INVESTIGA e PERSEGUE");
+        else printf("SMOKE  criatura ok: ouviu (INVESTIGA), viu (PERSEGUE) e pegou; a saída recomeça\n");
+        return false;
+    }
+    if (criatura_em_susto(e)) return true;
+    if (piloto.tempo_na_fase > 60.0f) {
+        piloto_falha("a criatura não pegou o jogador parado no corredor");
+        return true;
+    }
+    // A leste do duto, fora da 1ª rota de patrulha (que vai para oeste): ela só o acha se ouvir.
+    // Olhando para o duto (oeste) e "correndo" de lado contra a parede norte: não sai do lugar, mas faz barulho.
+    if (e->tempo_fase < 0.2f) jogador_teleporta(e, nivel_centro_celula(18, 11), -PI * 0.5f);
+    bool surgiu = e->cri.ativo && e->cri.surgindo >= 1.0f;
+    in->correr = surgiu;
+    in->mover.x = surgiu ? 1.0f : 0.0f;
+    return true;
+}
+
+// 2ª partida, S1: entra no primeiro armário e sai de novo.
+static bool piloto_testa_armario(Estado *e, Entrada *in) {
+    if (piloto.partida != 1 || e->fase != FASE_S1 || piloto.armario_testado) return false;
+    if (e->jog.modo == MODO_ARMARIO) {
+        in->interagir = true;
+        piloto.armario_testado = true;
+        printf("SMOKE  armário ok: entrou e saiu\n");
+        return true;
+    }
+    Vector3 a = e->nivel.armarios[0], fora = e->nivel.armario_saida[0];
+    jogador_teleporta(e, fora, atan2f(a.x - fora.x, a.z - fora.z));
+    in->interagir = true;
+    return true;
+}
+
 // Na S2 ele lê o diário antes do painel (o terminal passa a mostrar a anotação recuperada).
 static bool piloto_le_diario(Estado *e, Entrada *in) {
     if (e->fase != FASE_S2) return false;
@@ -130,7 +178,7 @@ static bool piloto_le_diario(Estado *e, Entrada *in) {
 
 static void piloto_saida(Estado *e, Entrada *in) {
     bool painel1 = e->fase == FASE_S1;
-    if (piloto_le_diario(e, in)) return;
+    if (piloto_testa_armario(e, in) || piloto_le_diario(e, in)) return;
     if (e->painel.resolvido) {
         jogador_teleporta(e, e->nivel.inicio, PI); // volta para a sala de observação
         return;
@@ -192,6 +240,7 @@ static void piloto_entrada(Estado *e, Entrada *in, float dt) {
         printf("SMOKE  partida %d: %s recomeçou (%d erro(s) na fase)\n", piloto.partida + 1, regras_nome_fase(e->fase), e->erros_na_fase);
     piloto.tempo_fase_anterior = e->tempo_fase;
     if (e->fase == FASE_S1 && piloto_confere_colisao(e, in, dt)) return;
+    if (piloto_espera_ser_pego(e, in)) return; // a cada quadro: precisa segurar a corrida
     piloto.tempo_na_fase += dt;
     if (piloto.tempo_na_fase > SMOKE_LIMITE_FASE_S) {
         piloto_falha("tempo esgotado (travou?)");
@@ -300,7 +349,11 @@ int main(int argc, char **argv) {
     posfx_inicia(&estado.rec);
     ui_carrega_fonte(&estado.rec);
     audio_inicia(&estado.rec);
-    if (estado.modo_smoke) piloto_comeca_partida();
+    criatura_carrega_modelo(&estado.rec);
+    if (estado.modo_smoke) {
+        SetRandomSeed(1985); // o smoke é determinístico: mesmo resultado em toda execução
+        piloto_comeca_partida();
+    }
     jogo_inicia(&estado);
     if (!estado.modo_smoke) jogo_vai_para_fase(&estado, fase_inicial);
 
@@ -310,6 +363,7 @@ int main(int argc, char **argv) {
     }
 
     jogo_finaliza(&estado);
+    criatura_descarrega_modelo(&estado.rec);
     audio_finaliza(&estado.rec);
     ui_descarrega_fonte(&estado.rec);
     posfx_finaliza(&estado.rec);

@@ -4,6 +4,10 @@
 
 #include "estado.h"
 
+// Modelo opcional (assets/modelos/precursor.glb). Sem ele, o placeholder procedural entra sem erro.
+void criatura_carrega_modelo(Recursos *rec);
+void criatura_descarrega_modelo(Recursos *rec);
+
 void criatura_contem(Estado *e);       // fases de sala: dentro da cela
 void criatura_inicia_saida(Estado *e); // saídas: surge do duto depois de alguns segundos
 void criatura_puxa_para_contencao(Estado *e); // painel resolvido: some numa distorção

@@ -103,6 +103,9 @@ typedef struct {
     float avanco_vidro; // 0..1: o passo em direção ao vidro depois da R1
     bool mao_no_vidro;
     float congelado_t;  // final bom
+    float surgindo;     // 0..1 enquanto sobe pelo duto
+    float som_passo_t;
+    float procura_t;    // na PROCURA: troca de ponto a cada pouco
 } Criatura;
 
 // ------------------------------------------------------------------ rodadas (sala de observação)
