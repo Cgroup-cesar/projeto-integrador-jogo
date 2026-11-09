@@ -1,0 +1,11 @@
+# Estilo do projeto: legível para iniciantes
+BasedOnStyle: LLVM
+IndentWidth: 4
+ColumnLimit: 110
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortLoopsOnASingleLine: false
+BreakBeforeBraces: Attach
+PointerAlignment: Right
+AlignConsecutiveMacros: true
+SortIncludes: false
