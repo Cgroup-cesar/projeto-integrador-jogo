@@ -40,6 +40,7 @@ Projeto Integrador da disciplina **Programação Imperativa e Funcional (PIF)**,
 | Olhar | mouse |
 | Correr (4 s de fôlego; faz barulho) | Shift |
 | Interagir: console, painel, diário, armário (entrar e sair) | E |
+| Lanterna: liga e desliga (sem bateria; apaga sozinha no armário) | F |
 | Sair do terminal, do painel ou do diário; pausar | Esc |
 | Luzes A e B da cela (no console) | 1 e 2 |
 | Chaves A, B e C (painel 1) | 1, 2 e 3 |
@@ -115,6 +116,7 @@ src/compositor.c/.h      resposta final por fichas e os dois finais
 src/circuito.c/.h        painéis de circuito 1 e 2
 src/nivel.c/.h           mapa ASCII → geometria, paredes, interativos e luzes
 src/jogador.c/.h         câmera, movimento, fôlego, armário, mira
+src/lanterna.c/.h        a lanterna: tecla F, luz em cone saindo dos olhos, modelo na mão
 src/criatura.c/.h        o Precursor: IA, A*, placeholder procedural, captura, susto
 src/dialogo.c/.h         todos os textos do jogo
 src/audio_sintese.c/.h   sons gerados em código (e substituição por .ogg)
@@ -124,7 +126,7 @@ tests/checagem.h         a macro CHECK
 tests/test_logica.c      conectivos, classificações, parser, painéis
 tests/test_regras.c      regras puras e coleções, com as bordas
 tests/test_fluxo.c       partidas inteiras pela máquina de fases
-assets/fontes/ · assets/modelos/ · assets/audio/ · assets/texturas/   opcionais (só modelos/precursor.glb por enquanto)
+assets/fontes/ · assets/modelos/ · assets/audio/ · assets/texturas/   opcionais (por enquanto, só modelos/precursor.glb e modelos/lanterna.glb)
 docs/ESPECIFICACAO_PROJETO_PRECURSOR.md   a especificação (fonte da verdade do design)
 docs/ARQUITETURA.md · docs/DECISOES.md · docs/PROGRESSO.md   arquitetura · decisões · progresso da v0
 docs/img/                capturas de tela
@@ -171,11 +173,11 @@ Cada trecho que cumpre um requisito tem, logo acima, um comentário-âncora `// 
 
 | Requisito | Onde | Âncora | Como foi cumprido |
 | :---- | :---- | :---- | :---- |
-| RF1 Janela e game loop a 60 FPS com `GetFrameTime()` | [src/main.c#L395-L396](src/main.c#L395-L396)<br>[src/main.c#L345-L354](src/main.c#L345-L354)<br>[src/criatura.c#L293-L294](src/criatura.c#L293-L294) | `[REQ:RF1]` | `SetTargetFPS(60)`; `dt = GetFrameTime()` limitado a 0,05 s e passado a todo `xxx_atualiza`, que multiplica movimento, temporizadores e animações (aqui, o passo da criatura). |
-| RF2 Controle do jogador por teclado/mouse | [src/main.c#L26-L54](src/main.c#L26-L54)<br>[src/jogador.c#L41-L49](src/jogador.c#L41-L49)<br>[src/jogador.c#L94-L102](src/jogador.c#L94-L102) | `[REQ:RF2]` | Câmera em 1ª pessoa pelo mouse; WASD, Shift (corrida com fôlego), E, 1/2/3, setas, ENTER e Esc, lidos uma vez por quadro numa `struct Entrada`. |
-| RF3 Coleção (vetor) de múltiplos objetos | [src/estado.h#L218-L225](src/estado.h#L218-L225) | `[REQ:RF3]` | Seis coleções de capacidade fixa com contador (ruídos, partículas, rachaduras, eventos, interativos, paredes), sem `malloc` por quadro; ver a tabela de map, filter e fold. |
+| RF1 Janela e game loop a 60 FPS com `GetFrameTime()` | [src/main.c#L399-L400](src/main.c#L399-L400)<br>[src/main.c#L347-L356](src/main.c#L347-L356)<br>[src/criatura.c#L293-L294](src/criatura.c#L293-L294) | `[REQ:RF1]` | `SetTargetFPS(60)`; `dt = GetFrameTime()` limitado a 0,05 s e passado a todo `xxx_atualiza`, que multiplica movimento, temporizadores e animações (aqui, o passo da criatura). |
+| RF2 Controle do jogador por teclado/mouse | [src/main.c#L27-L56](src/main.c#L27-L56)<br>[src/jogador.c#L41-L49](src/jogador.c#L41-L49)<br>[src/jogador.c#L94-L102](src/jogador.c#L94-L102) | `[REQ:RF2]` | Câmera em 1ª pessoa pelo mouse; WASD, Shift (corrida com fôlego), E, 1/2/3, setas, ENTER e Esc, lidos uma vez por quadro numa `struct Entrada`. |
+| RF3 Coleção (vetor) de múltiplos objetos | [src/estado.h#L227-L234](src/estado.h#L227-L234) | `[REQ:RF3]` | Seis coleções de capacidade fixa com contador (ruídos, partículas, rachaduras, eventos, interativos, paredes), sem `malloc` por quadro; ver a tabela de map, filter e fold. |
 | RF4 Colisões com funções da Raylib | [src/jogador.c#L52-L59](src/jogador.c#L52-L59)<br>[src/colecoes.c#L186-L196](src/colecoes.c#L186-L196)<br>[src/colecoes.c#L145-L165](src/colecoes.c#L145-L165)<br>[src/criatura.c#L200-L201](src/criatura.c#L200-L201)<br>[src/criatura.c#L307-L314](src/criatura.c#L307-L314) | `[REQ:RF4]` | `CheckCollisionBoxes` (jogador × paredes, vidro, móveis e armários, eixo por eixo), `GetRayCollisionBox` (mira de interação e visão da criatura contra as paredes) e `CheckCollisionSpheres` (captura). |
-| RF5 Placar, vidas, telas de início e fim | [src/jogo.c#L45-L50](src/jogo.c#L45-L50)<br>[src/ui.c#L275-L288](src/ui.c#L275-L288)<br>[src/ui.c#L424-L461](src/ui.c#L424-L461) | `[REQ:RF5]` | Placar = fold dos eventos; vidas = integridade do vidro (fold das rachaduras), recalculados a cada quadro; menu com o aviso de nome provisório, intro e tela de fim com placar por fase. |
+| RF5 Placar, vidas, telas de início e fim | [src/jogo.c#L46-L51](src/jogo.c#L46-L51)<br>[src/ui.c#L275-L288](src/ui.c#L275-L288)<br>[src/ui.c#L424-L461](src/ui.c#L424-L461) | `[REQ:RF5]` | Placar = fold dos eventos; vidas = integridade do vidro (fold das rachaduras), recalculados a cada quadro; menu com o aviso de nome provisório, intro e tela de fim com placar por fase. |
 | RF6 Condição de vitória/derrota | [src/compositor.c#L59-L73](src/compositor.c#L59-L73)<br>[src/ui.c#L424-L461](src/ui.c#L424-L461) | `[REQ:RF6]` | A frase transmitida vai para `regras_avalia_transmissao`: contradição → final bom (VITÓRIA); satisfazível → final ruim (DERROTA); inválida → SINTAXE INVÁLIDA, sem penalidade. |
 
 ### Map, filter e fold nas coleções
@@ -222,9 +224,9 @@ Cada laço leva o comentário `// padrão MAP`, `// padrão FILTER` ou `// padr�
 | Requisito | Onde | Âncora | Como foi cumprido |
 | :---- | :---- | :---- | :---- |
 | RNF1 Legibilidade | [.clang-format#L1-L12](.clang-format#L1-L12) | `[REQ:RNF1]` | Nomes em português, claros e consistentes (`atualiza_…`, `desenha_…`, `colidiu_…`); funções de até ~40 linhas (a única exceção, em `audio_sintese.c`, está comentada); o código segue o `.clang-format` (`clang-format --dry-run` sem avisos). |
-| RNF2 Modularização | [src/estado.h#L193-L240](src/estado.h#L193-L240) | `[REQ:RNF2]` | Uma struct por objeto, uma função por responsabilidade, um módulo por sistema; o maior arquivo tem menos de 500 linhas. |
-| RNF3 Separação update/render | [src/main.c#L283-L294](src/main.c#L283-L294) | `[REQ:RNF3]` | Todo módulo tem `xxx_atualiza(Estado *e, float dt)` e `xxx_desenha(const Estado *e)`; o `const` garante que desenhar não muda nada; nenhum `Draw*` em `*_atualiza` (auditado com grep). |
-| RNF4 Robustez | [src/colecoes.c#L9-L14](src/colecoes.c#L9-L14)<br>[src/main.c#L345-L354](src/main.c#L345-L354)<br>[src/nivel.c#L36-L40](src/nivel.c#L36-L40)<br>[src/ui.c#L26-L53](src/ui.c#L26-L53)<br>[src/criatura.c#L23-L39](src/criatura.c#L23-L39) | `[REQ:RNF4]` | Vetor cheio descarta com `TraceLog`, sem travar; listas vazias (sem ruídos, sem eventos) testadas; `dt` limitado; fora do mapa conta como parede; sem fonte, som ou modelo, entra o placeholder. |
+| RNF2 Modularização | [src/estado.h#L201-L249](src/estado.h#L201-L249) | `[REQ:RNF2]` | Uma struct por objeto, uma função por responsabilidade, um módulo por sistema; o maior arquivo tem menos de 500 linhas. |
+| RNF3 Separação update/render | [src/main.c#L285-L296](src/main.c#L285-L296) | `[REQ:RNF3]` | Todo módulo tem `xxx_atualiza(Estado *e, float dt)` e `xxx_desenha(const Estado *e)`; o `const` garante que desenhar não muda nada; nenhum `Draw*` em `*_atualiza` (auditado com grep). |
+| RNF4 Robustez | [src/colecoes.c#L9-L14](src/colecoes.c#L9-L14)<br>[src/main.c#L347-L356](src/main.c#L347-L356)<br>[src/nivel.c#L36-L40](src/nivel.c#L36-L40)<br>[src/ui.c#L26-L53](src/ui.c#L26-L53)<br>[src/criatura.c#L23-L39](src/criatura.c#L23-L39) | `[REQ:RNF4]` | Vetor cheio descarta com `TraceLog`, sem travar; listas vazias (sem ruídos, sem eventos) testadas; `dt` limitado; fora do mapa conta como parede; sem fonte, som ou modelo, entra o placeholder. |
 | RNF5 Documentação | [README.md#L167-L167](README.md#L167-L167) | `[REQ:RNF5]` | Este README, `docs/ARQUITETURA.md`, `docs/DECISOES.md` (as escolhas e por quê), `docs/PROGRESSO.md` e `CLAUDE.md`. |
 | RNF6 Versionamento + Makefile | [Makefile#L1-L2](Makefile#L1-L2) | `[REQ:RNF6]` | `Makefile` como build principal (com `test`, `smoke`, `readme-check`); um commit por marco na v0 (M0 a M9) e, daqui em diante, branch por card e PR (ver Metodologia). |
 
@@ -244,7 +246,7 @@ Cada laço leva o comentário `// padrão MAP`, `// padrão FILTER` ou `// padr�
 **O game loop (RF1):** `dt` limitado e o quadro entrada → atualiza → desenha.
 
 ```c
-// src/main.c#L344-L354
+// src/main.c#L346-L356
 static void quadro(Estado *e) {
     // [REQ:RF1] [REQ:RNF4] dt de GetFrameTime() limitado a DT_MAXIMO; no smoke, passo fixo (velocidade
     // acelerada)
@@ -275,7 +277,7 @@ static void tenta_capturar(Estado *e) {
 **O placar (RF5):** dois folds recalculados a cada quadro.
 
 ```c
-// src/jogo.c#L45-L50
+// src/jogo.c#L46-L51
 // [REQ:RF5] placar = fold dos eventos; vidas = integridade do vidro (fold das rachaduras).
 // Recalculados a cada quadro, para o HUD e o terminal mostrarem o erro na hora.
 static void atualiza_folds(Estado *e) {
@@ -362,7 +364,7 @@ static void testa_vidro(void) {
 **Desenhar só lê o estado (RNF3):**
 
 ```c
-// src/main.c#L283-L294
+// src/main.c#L285-L296
 // [REQ:RNF3] desenhar recebe const Estado *: não muda nada; o loop é entrada → atualiza → desenha
 static void desenha(const Estado *e) {
     posfx_inicia_cena(e);
@@ -462,5 +464,6 @@ SMOKE OK: a partida foi jogada até os dois finais.
 - **raylib**, de Ramon Santamaria e colaboradores, licença zlib/libpng: [raylib.com](https://www.raylib.com). Não vem copiada no repositório.
 - **Fonte VT323** (opcional), de Peter Hull, licença SIL Open Font License 1.1: [fonts.google.com/specimen/VT323](https://fonts.google.com/specimen/VT323). É baixada por `tools/baixa_fonte` e não vem no repositório.
 - **Modelo 3D do Precursor** (`assets/modelos/precursor.glb`): *"Gaunt Horror Creature – Free Creepy 3D Model"* by **Purple.Point**, publicado no Sketchfab, licensed under [Creative Commons Attribution 4.0 (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/). <!-- colar aqui o link da página do modelo no Sketchfab --> Alteração feita pela equipe: as texturas JPEG embutidas foram convertidas para PNG (a raylib padrão não lê JPEG); a geometria não foi alterada. Sem o arquivo, o jogo usa o corpo procedural.
+- **Modelo 3D da lanterna** (`assets/modelos/lanterna.glb`): *"Lowpoly Flashlight (Lanterna)"* by **EnrycoDosSantos**, publicado no Sketchfab, licensed under [Creative Commons Attribution 4.0 (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/). <!-- colar aqui o link da página do modelo no Sketchfab --> Usado sem alterações. Sem o arquivo, o jogo desenha uma lanterna de cilindros.
 - **Sons e glifos:** gerados em código pela equipe. Se outro asset for adicionado em `assets/`, credite-o aqui.
 - **Equipe:** <!-- preencher: nome e usuário do GitHub de cada integrante -->

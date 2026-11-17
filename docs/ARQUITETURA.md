@@ -7,7 +7,7 @@ flowchart TB
     subgraph LOOP["Game loop imperativo (o como): usa a raylib"]
         main["main.c: entrada → atualiza → desenha; --smoke; modo feira"]
         jogo["jogo.c: aplica a máquina de fases e despacha por fase"]
-        mods["jogador.c · criatura.c · rodadas.c · circuito.c · compositor.c · nivel.c · glifos.c"]
+        mods["jogador.c · lanterna.c · criatura.c · rodadas.c · circuito.c · compositor.c · nivel.c · glifos.c"]
         tela["terminal.c · ui.c · posfx.c · audio_sintese.c · dialogo.c"]
     end
     subgraph DECIDE["Lógica funcional (o o quê): sem raylib.h, testável sem janela"]
@@ -80,6 +80,7 @@ stateDiagram-v2
 | `logica.c` · `regras.c` · `funcional.h` · `colecoes.c` | a camada pura |
 | `nivel.c` | mapa ASCII → paredes, móveis, interativos, luzes; desenho do Posto 7 |
 | `jogador.c` | câmera, movimento com colisão, fôlego, passos, armário, mira |
+| `lanterna.c` | a lanterna: F liga e desliga, a 5ª luz do shader (cone saindo dos olhos) e o modelo na mão |
 | `criatura.c` | o Precursor: corpo procedural, IA, A*, captura, susto |
 | `rodadas.c` · `terminal.c` · `glifos.c` | as 3 rodadas (o ENTER decide), o analisador SNI-85 (setas e Esc), a língua dos glifos |
 | `circuito.c` | os painéis 1 e 2 |
