@@ -3,6 +3,7 @@
 #include "nivel.h"
 #include "jogador.h"
 #include "criatura.h"
+#include "lanterna.h"
 #include "rodadas.h"
 #include "terminal.h"
 #include "circuito.h"
@@ -115,6 +116,7 @@ static void entra_fase(Estado *e, Fase fase, bool reinicio) {
     case FASE_INTRO:
         memset(&e->intro, 0, sizeof(e->intro));
         jogador_teleporta(e, e->nivel.inicio, PI);
+        lanterna_reinicia(e); // partida nova: começa apagada
         break;
     case FASE_R1:
     case FASE_R2:
@@ -160,6 +162,7 @@ void jogo_vai_para_fase(Estado *e, Fase fase) {
 void jogo_inicia(Estado *e) {
     nivel_carrega(&e->nivel);
     e->jog.ultima_celula = -1;
+    lanterna_reinicia(e);
     entra_fase(e, FASE_MENU, false);
 }
 
@@ -293,7 +296,10 @@ void jogo_atualiza(Estado *e, float dt) {
     atualiza_temporizadores(e, dt);
     atualiza_feira(e, dt);
     criatura_atualiza_susto(e, dt);
-    if (anda_livre && !criatura_em_susto(e)) jogador_atualiza(e, dt);
+    if (anda_livre && !criatura_em_susto(e)) {
+        jogador_atualiza(e, dt);
+        lanterna_atualiza(e, dt);
+    }
     nivel_atualiza(e, dt);
     atualiza_fase(e, dt);
     criatura_atualiza(e, dt);
@@ -312,16 +318,20 @@ void jogo_atualiza(Estado *e, float dt) {
 
 // ================================================================== desenho
 static void desenha_mundo_3d(const Estado *e) {
-    Vector3 pos[4], cor[4];
-    Vector4 cone[4];
+    Vector3 pos[LUZES_SHADER], cor[LUZES_SHADER];
+    Vector4 cone[LUZES_SHADER];
+    float queda[LUZES_SHADER] = {1.0f, 1.0f, 1.0f, 1.0f, 1.0f}; // as lâmpadas do cenário: queda comum
     int n = nivel_luzes(e, pos, cor, cone);
+    if (lanterna_luz(e, &pos[n], &cor[n], &cone[n], &queda[n])) n++; // a 5ª luz
     float ambiente = e->apagao_t > 0.0f ? LUZ_AMBIENTE * 0.3f : LUZ_AMBIENTE;
     BeginMode3D(e->camera);
-    posfx_comeca_luz(e, pos, cor, cone, n, ambiente);
+    posfx_comeca_luz(e, pos, cor, cone, queda, n, ambiente);
     nivel_desenha(e);
     criatura_desenha(e);
+    lanterna_desenha(e);
     posfx_termina_luz(e);
     nivel_desenha_emissivos(e);
+    lanterna_desenha_brilho(e);
     circuito_desenha_3d(e);
     glifos_desenha(e);
     nivel_desenha_vidro(e);

@@ -22,6 +22,7 @@ typedef struct {
     bool confirmar;
     bool cima, baixo, esquerda, direita;
     bool tecla1, tecla2, tecla3;
+    bool lanterna; // F: liga e desliga a lanterna
     bool f1, f2, f3, f5, f9, f12;
     bool alguma; // qualquer tecla ou movimento (modo feira)
 } Entrada;
@@ -39,13 +40,15 @@ typedef struct {
     Shader luz;
     bool luz_ok;
     int loc_luz_pos, loc_luz_cor, loc_luz_ambiente, loc_luz_nevoa, loc_luz_camera, loc_luz_modelo;
-    int loc_luz_cone, loc_luz_contraluz;
+    int loc_luz_cone, loc_luz_contraluz, loc_luz_queda;
     RenderTexture2D alvo; // cena 3D renderizada a ESCALA_RENDER da janela
     int alvo_largura, alvo_altura;
     Sound sons[SOM_MAXIMO];
     bool audio_ok;
     Model modelo_precursor; // opcional: assets/modelos/precursor.glb
     bool tem_modelo;
+    Model modelo_lanterna; // opcional: assets/modelos/lanterna.glb
+    bool tem_lanterna;
 } Recursos;
 
 // ------------------------------------------------------------------ nível (gerado do mapa ASCII)
@@ -81,6 +84,11 @@ typedef struct {
     float balanco;     // balanço da câmera ao andar
     int ultima_celula; // para notar quando ele cruza uma porta
 } Jogador;
+
+// A lanterna: o jogador começa com ela; sem bateria (infinita).
+typedef struct {
+    bool ligada;
+} Lanterna;
 
 // ------------------------------------------------------------------ o Precursor
 typedef struct {
@@ -206,6 +214,7 @@ typedef struct Estado {
     Camera3D camera;
     Nivel nivel;
     Jogador jog;
+    Lanterna lanterna;
     Criatura cri;
     Rodada rod;
     Painel painel;

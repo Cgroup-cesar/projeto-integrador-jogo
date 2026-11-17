@@ -7,6 +7,7 @@
 #include "circuito.h"
 #include "compositor.h"
 #include "criatura.h"
+#include "lanterna.h"
 #include "nivel.h"
 #include <math.h>
 #include "posfx.h"
@@ -41,6 +42,7 @@ static void le_entrada(Entrada *in) {
     in->tecla1 = IsKeyPressed(KEY_ONE) || IsKeyPressed(KEY_KP_1);
     in->tecla2 = IsKeyPressed(KEY_TWO) || IsKeyPressed(KEY_KP_2);
     in->tecla3 = IsKeyPressed(KEY_THREE) || IsKeyPressed(KEY_KP_3);
+    in->lanterna = IsKeyPressed(KEY_F);
 #if TECLAS_DEBUG
     in->f1 = IsKeyPressed(KEY_F1);
     in->f2 = IsKeyPressed(KEY_F2);
@@ -370,10 +372,12 @@ static void carrega_recursos(void) {
     ui_carrega_fonte(&estado.rec);
     audio_inicia(&estado.rec);
     criatura_carrega_modelo(&estado.rec);
+    lanterna_carrega_modelo(&estado.rec);
     if (mudo || estado.modo_smoke) SetMasterVolume(0.0f); // o smoke roda calado
 }
 
 static void descarrega_recursos(void) {
+    lanterna_descarrega_modelo(&estado.rec);
     criatura_descarrega_modelo(&estado.rec);
     audio_finaliza(&estado.rec);
     ui_descarrega_fonte(&estado.rec);

@@ -14,13 +14,15 @@ void posfx_atualiza(Estado *e, float dt);
 void posfx_inicia_cena(const Estado *e);
 void posfx_termina_cena(const Estado *e);
 
-// Liga o shader de luz e névoa com as luzes do quadro (até 4). Desenhe a geometria iluminada entre as duas.
-// cones[i]: xyz = direção, w = cosseno da meia-abertura; w < -1 = luz pontual comum.
+// Liga o shader de luz e névoa com as luzes do quadro (até LUZES_SHADER). Desenhe a geometria iluminada entre
+// as duas. cones[i]: xyz = direção, w = cosseno da meia-abertura; w < -1 = luz pontual comum.
+// quedas[i]: quanto a luz enfraquece com a distância (1 = lâmpada comum; menor = vai mais longe).
 void posfx_comeca_luz(const Estado *e, const Vector3 *posicoes, const Vector3 *cores, const Vector4 *cones,
-                      int n, float ambiente);
+                      const float *quedas, int n, float ambiente);
 void posfx_termina_luz(const Estado *e);
 
 // Entre comeca_luz e termina_luz: contraluz nas bordas do que for desenhado a seguir (intensidade 0 desliga).
+// Chame fora de rlPushMatrix/rlPopMatrix (envia o lote pendente com a transformação atual).
 void posfx_contraluz(const Estado *e, Color cor, float intensidade);
 
 // Amplia o render target para a janela inteira, com o filtro VHS se estiver ligado.

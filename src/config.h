@@ -113,6 +113,15 @@
 #define PISCADA_VARIACAO_S  0.9f  // intervalo entre piscadas: de 2,1 a 3,9 s
 #define PISCADA_PULA        0.15f // chance de um ciclo passar sem piscar
 #define PISCADA_FORCA       0.7f  // fração do holofote A aceso no auge da piscada
+// O shader aceita até 5 luzes: as 4 do cenário (nivel_luzes) e a lanterna (o texto do shader segue este
+// valor).
+#define LUZES_SHADER 5
+
+// ---------------------------------------------------------------- lanterna (tecla F, sem bateria)
+#define LANTERNA_ABERTURA_GRAUS 22.0f // meia-abertura do cone
+#define LANTERNA_INTENSIDADE    3.1f
+#define LANTERNA_QUEDA          0.4f // perda de força com a distância (lâmpadas = 1): menor = alcança mais longe
+#define LANTERNA_COMPRIMENTO_M  0.24f // o modelo na mão é escalado para esse comprimento
 
 // ---------------------------------------------------------------- paleta (só use onde a raylib já foi
 // incluída)
@@ -126,5 +135,6 @@
 #define COR_PELE      (Color){0xc9, 0xd4, 0xdc, 255}
 #define COR_CONTRALUZ (Color){0x7a, 0xb0, 0xe0, 255}
 #define COR_AMBAR     (Color){0xd9, 0xa4, 0x41, 255}
+#define COR_LANTERNA  (Color){0xf2, 0xe8, 0xd0, 255}
 
 #endif

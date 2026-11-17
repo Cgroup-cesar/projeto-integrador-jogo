@@ -55,10 +55,16 @@ static const char *VHS_FS_100 =
     "}\n";
 
 // ------------------------------------------------------------------ shaders de luz e névoa
-// Até 4 luzes pontuais, ambiente bem baixo e névoa exponencial quase preta. A normal sai das derivadas
-// da posição (sombreado chapado, bom para low-poly); na versão 100 só há atenuação por distância.
+// O número de luzes entra no texto do shader a partir de LUZES_SHADER (config.h): um lugar só para mudar.
+#define TEXTO(x)    #x
+#define TEXTO_DE(x) TEXTO(x)
+#define N_LUZES     TEXTO_DE(LUZES_SHADER)
+// Até LUZES_SHADER luzes pontuais, ambiente bem baixo e névoa exponencial quase preta. A normal sai das
+// derivadas da posição (sombreado chapado, bom para low-poly); na versão 100 só há atenuação por distância.
 // luzCone[i]: xyz = direção do holofote, w = cosseno da meia-abertura (w < -1: luz pontual comum); fora
-// do cone sobram 15%. contraluz: cor somada nas bordas (só o Precursor liga; o resto recebe zero).
+// do cone sobram 15%. luzQueda[i]: quanto a luz enfraquece com a distância (1 = lâmpada comum; menor
+// = vai mais longe, como a lanterna). contraluz: cor somada nas bordas (só o Precursor liga; o resto recebe
+// zero).
 static const char *LUZ_VS_330 = "#version 330\n"
                                 "in vec3 vertexPosition; in vec2 vertexTexCoord; in vec4 vertexColor;\n"
                                 "uniform mat4 mvp; uniform mat4 matModel;\n"
@@ -73,7 +79,8 @@ static const char *LUZ_FS_330 =
     "#version 330\n"
     "in vec3 fragPosition; in vec4 fragColor; in vec2 fragTexCoord;\n"
     "uniform sampler2D texture0; uniform vec4 colDiffuse;\n"
-    "uniform vec3 luzPos[4]; uniform vec3 luzCor[4]; uniform vec4 luzCone[4];\n"
+    "uniform vec3 luzPos[" N_LUZES "]; uniform vec3 luzCor[" N_LUZES "]; uniform vec4 luzCone[" N_LUZES "];\n"
+    "uniform float luzQueda[" N_LUZES "];\n"
     "uniform float ambiente; uniform float nevoa; uniform vec3 camera;\n"
     "uniform vec3 contraluz;\n"
     "out vec4 finalColor;\n"
@@ -87,11 +94,11 @@ static const char *LUZ_FS_330 =
     "    vec3 paraCamera = camera - fragPosition;\n"
     "    if (dot(n, paraCamera) < 0.0) n = -n;\n"
     "    vec3 luz = vec3(ambiente);\n"
-    "    for (int i = 0; i < 4; i++) {\n"
+    "    for (int i = 0; i < " N_LUZES "; i++) {\n"
     "        vec3 l = luzPos[i] - fragPosition;\n"
     "        float d = length(l);\n"
     "        vec3 dir = l / max(d, 0.001);\n"
-    "        float atenua = 1.0 / (1.0 + 0.09 * d + 0.07 * d * d);\n"
+    "        float atenua = 1.0 / (1.0 + luzQueda[i] * (0.09 * d + 0.07 * d * d));\n"
     "        float difusa = max(dot(n, dir), 0.0) * 0.85 + 0.15;\n"
     "        luz += luzCor[i] * atenua * difusa * foco(luzCone[i], dir);\n"
     "    }\n"
@@ -117,19 +124,20 @@ static const char *LUZ_FS_100 =
     "precision mediump float;\n"
     "varying vec3 fragPosition; varying vec4 fragColor; varying vec2 fragTexCoord;\n"
     "uniform sampler2D texture0; uniform vec4 colDiffuse;\n"
-    "uniform vec3 luzPos[4]; uniform vec3 luzCor[4]; uniform vec4 luzCone[4];\n"
+    "uniform vec3 luzPos[" N_LUZES "]; uniform vec3 luzCor[" N_LUZES "]; uniform vec4 luzCone[" N_LUZES "];\n"
+    "uniform float luzQueda[" N_LUZES "];\n"
     "uniform float ambiente; uniform float nevoa; uniform vec3 camera;\n"
     "uniform vec3 contraluz;\n"
     "void main() {\n"
     "    vec4 base = texture2D(texture0, fragTexCoord) * colDiffuse * fragColor;\n"
     "    vec3 luz = vec3(ambiente);\n"
-    "    for (int i = 0; i < 4; i++) {\n"
+    "    for (int i = 0; i < " N_LUZES "; i++) {\n"
     "        vec3 l = luzPos[i] - fragPosition;\n"
     "        float d = length(l);\n"
     "        vec4 cone = luzCone[i];\n"
     "        float foco = cone.w < -1.0 ? 1.0\n"
     "            : mix(0.15, 1.0, smoothstep(cone.w, cone.w + 0.06, dot(-l / max(d, 0.001), cone.xyz)));\n"
-    "        luz += luzCor[i] * foco / (1.0 + 0.09 * d + 0.07 * d * d);\n"
+    "        luz += luzCor[i] * foco / (1.0 + luzQueda[i] * (0.09 * d + 0.07 * d * d));\n"
     "    }\n"
     "    vec3 cor = base.rgb * luz + contraluz * 0.2;\n" // sem normal na versão 100: um brilho fraco por
                                                          // igual
@@ -183,6 +191,7 @@ static void carrega_luz(Recursos *rec) {
     rec->loc_luz_camera = GetShaderLocation(rec->luz, "camera");
     rec->loc_luz_modelo = GetShaderLocation(rec->luz, "matModel");
     rec->loc_luz_cone = GetShaderLocation(rec->luz, "luzCone");
+    rec->loc_luz_queda = GetShaderLocation(rec->luz, "luzQueda");
     rec->loc_luz_contraluz = GetShaderLocation(rec->luz, "contraluz");
 }
 
@@ -199,21 +208,24 @@ void posfx_finaliza(Recursos *rec) {
 }
 
 void posfx_comeca_luz(const Estado *e, const Vector3 *posicoes, const Vector3 *cores, const Vector4 *cones,
-                      int n, float ambiente) {
+                      const float *quedas, int n, float ambiente) {
     const Recursos *r = &e->rec;
     if (!r->luz_ok) return;
-    Vector3 pos[4] = {0}, cor[4] = {0}, sem_contraluz = {0};
-    Vector4 cone[4];
-    for (int i = 0; i < 4; i++) { // padrão MAP: as luzes do quadro → os vetores do shader
+    Vector3 pos[LUZES_SHADER] = {0}, cor[LUZES_SHADER] = {0}, sem_contraluz = {0};
+    Vector4 cone[LUZES_SHADER];
+    float queda[LUZES_SHADER];
+    for (int i = 0; i < LUZES_SHADER; i++) { // padrão MAP: as luzes do quadro → os vetores do shader
         bool tem = i < n;
         pos[i] = tem ? posicoes[i] : (Vector3){0};
         cor[i] = tem ? cores[i] : (Vector3){0};
         cone[i] = tem ? cones[i] : (Vector4){0, -1, 0, -2.0f};
+        queda[i] = tem ? quedas[i] : 1.0f;
     }
     float nevoa = NEVOA_DENSIDADE;
-    SetShaderValueV(r->luz, r->loc_luz_pos, pos, SHADER_UNIFORM_VEC3, 4);
-    SetShaderValueV(r->luz, r->loc_luz_cor, cor, SHADER_UNIFORM_VEC3, 4);
-    SetShaderValueV(r->luz, r->loc_luz_cone, cone, SHADER_UNIFORM_VEC4, 4);
+    SetShaderValueV(r->luz, r->loc_luz_pos, pos, SHADER_UNIFORM_VEC3, LUZES_SHADER);
+    SetShaderValueV(r->luz, r->loc_luz_cor, cor, SHADER_UNIFORM_VEC3, LUZES_SHADER);
+    SetShaderValueV(r->luz, r->loc_luz_cone, cone, SHADER_UNIFORM_VEC4, LUZES_SHADER);
+    SetShaderValueV(r->luz, r->loc_luz_queda, queda, SHADER_UNIFORM_FLOAT, LUZES_SHADER);
     SetShaderValue(r->luz, r->loc_luz_contraluz, &sem_contraluz, SHADER_UNIFORM_VEC3);
     SetShaderValue(r->luz, r->loc_luz_ambiente, &ambiente, SHADER_UNIFORM_FLOAT);
     SetShaderValue(r->luz, r->loc_luz_nevoa, &nevoa, SHADER_UNIFORM_FLOAT);
@@ -228,6 +240,8 @@ void posfx_termina_luz(const Estado *e) {
 
 // A geometria imediata (DrawCube...) fica num lote até ser enviada; esvaziar o lote antes de trocar o
 // uniforme garante que a contraluz pegue só o que for desenhado depois desta chamada.
+// Chame FORA de rlPushMatrix/rlPopMatrix: ao enviar o lote, a raylib manda a transformação atual como
+// matModel.
 void posfx_contraluz(const Estado *e, Color cor, float intensidade) {
     const Recursos *r = &e->rec;
     if (!r->luz_ok) return;
