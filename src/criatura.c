@@ -467,6 +467,10 @@ void criatura_desenha(const Estado *e) {
     if (e->fase == FASE_FIM_BOM)
         jitter = c->congelado_t > 0.0f ? 0.0f : sinf(t * 80.0f) * 22.0f; // convulsiona e congela
     Color pele = escurece(COR_PELE, visibilidade(e));
+    // A contraluz liga e desliga FORA do rlPushMatrix: ela envia o lote pendente, e a raylib manda junto a
+    // transformação atual como matModel. Dentro do push, as paredes eram iluminadas na posição dele (pretas).
+    float contraluz = (c->contido ? CONTRALUZ_CELA : CONTRALUZ_CORREDOR) * (1.0f - c->distorcao);
+    posfx_contraluz(e, COR_CONTRALUZ, contraluz); // recorta a silhueta; desligada logo depois do corpo
     rlPushMatrix();
     float subida = c->contido ? 0.0f : (c->surgindo - 1.0f) * 2.7f; // sobe pelo duto
     rlTranslatef(c->pos.x + (c->distorcao > 0.0f ? sinf(t * 70.0f) * c->distorcao * 0.4f : 0.0f),
@@ -475,14 +479,12 @@ void criatura_desenha(const Estado *e) {
     aplica_postura(e);
     if (c->distorcao > 0.0f)
         rlScalef(1.0f - c->distorcao * 0.8f, 1.0f + c->distorcao * 1.5f, 1.0f - c->distorcao * 0.8f);
-    float contraluz = (c->contido ? CONTRALUZ_CELA : CONTRALUZ_CORREDOR) * (1.0f - c->distorcao);
-    posfx_contraluz(e, COR_CONTRALUZ, contraluz); // recorta a silhueta; desligada logo depois do corpo
     if (e->rec.tem_modelo)
         desenha_modelo(e, pele);
     else
         desenha_corpo(e, pele);
-    posfx_contraluz(e, COR_CONTRALUZ, 0.0f);
     rlPopMatrix();
+    posfx_contraluz(e, COR_CONTRALUZ, 0.0f); // envia o corpo procedural (lote) ainda com a contraluz
 }
 
 // ================================================================== o rosto na câmera
