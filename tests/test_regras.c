@@ -62,6 +62,42 @@ static void testa_estados_criatura(void) {
     CHECK(regras_proximo_estado_criatura(CRIATURA_PROCURA, ouviu) == CRIATURA_INVESTIGA);
 }
 
+// [REQ:PURA-regras_postura_criatura] testa a postura parado, andando e perseguindo
+static void testa_postura_criatura(void) {
+    PosturaCriatura parado = regras_postura_criatura(0.0f, 0.4f, 1.0f);
+    CHECK(perto(parado.balanco_graus, 0.0f) && perto(parado.sobe, 0.0f)); // parado não balança
+    CHECK(perto(parado.inclina_graus, CRIATURA_INCLINA_PARADO));
+    CHECK(fabsf(parado.respira - 1.0f) <= CRIATURA_RESPIRA + 0.0001f); // respira só um pouco
+    float quarto = CRIATURA_PASSADA_M / 4.0f;                          // pico do balanço
+    PosturaCriatura anda = regras_postura_criatura(CRIATURA_VEL_PATRULHA, quarto, 1.0f);
+    CHECK(perto(anda.balanco_graus, CRIATURA_BALANCO_GRAUS) && perto(anda.sobe, CRIATURA_SOBE_M));
+    PosturaCriatura persegue = regras_postura_criatura(CRIATURA_VEL_PERSEGUE, quarto, 1.0f);
+    CHECK(persegue.inclina_graus > anda.inclina_graus); // mais rápido, mais curvado
+    CHECK(perto(persegue.inclina_graus, CRIATURA_INCLINA_CORRENDO));
+    CHECK(perto(persegue.respira, 1.0f)); // andando não respira
+    PosturaCriatura rapido = regras_postura_criatura(99.0f, quarto, 1.0f);
+    CHECK(perto(rapido.inclina_graus, CRIATURA_INCLINA_CORRENDO)); // não passa do limite
+}
+
+// [REQ:PURA-regras_piscada_cela] testa a lâmpada com defeito: rara, curta, irregular e repetível
+static void testa_piscada_cela(void) {
+    int acendeu = 0, quadros_acesos = 0, quadros = 0;
+    bool na_faixa = true;
+    float antes = 0.0f;
+    for (int i = 0; i < 6000; i++, quadros++) { // 60 s a cada 0,01 s
+        float v = regras_piscada_cela(i * 0.01f);
+        if (v < 0.0f || v > 1.0f) na_faixa = false;
+        if (v > 0.0f && antes <= 0.0f) acendeu++; // cada piscada dupla acende duas vezes
+        if (v > 0.0f) quadros_acesos++;
+        antes = v;
+    }
+    CHECK(na_faixa);
+    CHECK(acendeu / 2 >= 12 && acendeu / 2 <= 22);  // ~3 s em média: entre 12 e 22 piscadas em 60 s
+    CHECK(quadros_acesos < quadros / 10);           // acesa menos de 10% do tempo
+    CHECK(perto(regras_piscada_cela(-1.0f), 0.0f)); // tempo negativo: apagada
+    CHECK(regras_piscada_cela(12.34f) == regras_piscada_cela(12.34f)); // repetível
+}
+
 // [REQ:PURA-regras_placar] testa o placar sem eventos, o total e o placar por fase
 static void testa_placar(void) {
     CHECK(regras_placar(NULL, 0) == 0); // placar sem eventos
@@ -185,6 +221,8 @@ int main(void) {
     testa_visao();
     testa_ruido_percebido();
     testa_estados_criatura();
+    testa_postura_criatura();
+    testa_piscada_cela();
     testa_placar();
     testa_vidro();
     testa_evento_do_erro();

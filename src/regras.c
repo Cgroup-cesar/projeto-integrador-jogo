@@ -183,6 +183,40 @@ const char *regras_nome_estado_criatura(EstadoCriatura estado) {
     return nomes[estado];
 }
 
+// [REQ:PURA-regras_postura_criatura] postura procedural: corcunda, balanço da passada e respiração
+PosturaCriatura regras_postura_criatura(float velocidade, float passada, float t) {
+    float ritmo = fminf(1.0f, fmaxf(0.0f, velocidade / CRIATURA_VEL_PERSEGUE)); // 0 parado, 1 perseguindo
+    float andando = fminf(1.0f, ritmo * 3.0f); // o balanço já entra inteiro na patrulha
+    float ciclo = passada * (2.0f * PI / CRIATURA_PASSADA_M);
+    PosturaCriatura p;
+    p.inclina_graus = CRIATURA_INCLINA_PARADO + (CRIATURA_INCLINA_CORRENDO - CRIATURA_INCLINA_PARADO) * ritmo;
+    p.balanco_graus = sinf(ciclo) * CRIATURA_BALANCO_GRAUS * andando;
+    p.sobe = fabsf(sinf(ciclo)) * CRIATURA_SOBE_M * andando;
+    p.respira = 1.0f + sinf(t * 1.1f) * CRIATURA_RESPIRA * (1.0f - andando);
+    return p;
+}
+
+// Número "sorteado" em [0, 1) a partir do ciclo: sem rand(), então o resultado é puro e repetível.
+static float sorteio(int ciclo, unsigned semente) {
+    unsigned h = (unsigned)ciclo * 2654435761u ^ semente;
+    h ^= h >> 13;
+    h *= 0x5bd1e995u;
+    h ^= h >> 15;
+    return (float)(h & 0xffffu) / 65536.0f;
+}
+
+// [REQ:PURA-regras_piscada_cela] lâmpada com defeito: piscada dupla em intervalos irregulares
+float regras_piscada_cela(float t) {
+    if (t < 0.0f) return 0.0f;
+    int ciclo = (int)(t / PISCADA_INTERVALO_S);
+    if (sorteio(ciclo, 0x9e37u) < PISCADA_PULA) return 0.0f; // às vezes ela não falha
+    float s = t - ciclo * PISCADA_INTERVALO_S - sorteio(ciclo, 0x85ebu) * PISCADA_VARIACAO_S;
+    if (s < 0.0f || s >= 0.30f) return 0.0f;
+    if (s < 0.07f) return 1.0f;               // acende
+    if (s < 0.13f) return 0.0f;               // apaga
+    return 1.0f - (s - 0.13f) / 0.17f * 0.6f; // acende de novo, fraquejando (1,0 → 0,4)
+}
+
 // ================================================================== placar, vidas e interativos
 // [REQ:FOLD-eventos] [REQ:PURA-regras_placar] o placar é a soma (fold) dos eventos; sem eventos, 0
 int regras_placar(const EventoPlacar *eventos, int n) {

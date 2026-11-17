@@ -80,6 +80,21 @@ float regras_ruido_percebido(Ruido ruido, Vector3 ouvinte);
 EstadoCriatura regras_proximo_estado_criatura(EstadoCriatura atual, PercepcaoCriatura p);
 const char *regras_nome_estado_criatura(EstadoCriatura estado);
 
+// Postura do corpo a cada quadro: substitui a animação que o modelo .glb não tem.
+// `velocidade` em m/s (já suavizada), `passada` = metros andados (dá o ritmo dos passos), `t` em s.
+typedef struct {
+    float inclina_graus; // para a frente (corcunda); cresce com a velocidade
+    float balanco_graus; // de um lado para o outro a cada passo; zero parado
+    float sobe;          // metros: sobe e desce duas vezes por passada; zero parado
+    float respira;       // escala horizontal do corpo (~1); só parado
+} PosturaCriatura;
+
+PosturaCriatura regras_postura_criatura(float velocidade, float passada, float t);
+
+// Lâmpada com defeito: 0 apagada, até 1 no flash. Piscada dupla (acende, apaga, acende fraquejando) em
+// intervalos irregulares de ~3 s. Determinística: o mesmo `t` dá sempre o mesmo valor.
+float regras_piscada_cela(float t);
+
 // ------------------------------------------------------------------ placar, vidas e interativos
 int regras_placar(const EventoPlacar *eventos, int n);
 int regras_placar_da_fase(const EventoPlacar *eventos, int n, int fase);

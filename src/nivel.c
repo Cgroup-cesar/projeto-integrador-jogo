@@ -215,19 +215,38 @@ static float brilho_sala(const Estado *e) {
     return 1.0f;
 }
 
-static int luzes_sala(const Estado *e, Vector3 *pos, Vector3 *cor) {
+// Holofotes A e B: entre o Precursor (z = 5) e o vidro (z = 7), rente ao teto, um de cada lado dele.
+// Antes ficavam atrás dele e só iluminavam as costas; daqui a luz cai no rosto que o jogador vê.
+#define HOLOFOTE_A (Vector3){6.5f, PE_DIREITO - 0.2f, 6.4f}
+#define HOLOFOTE_B (Vector3){11.5f, PE_DIREITO - 0.2f, 6.4f}
+
+static Vector4 holofote(Vector3 de, Vector3 alvo) {
+    Vector3 d = Vector3Normalize(Vector3Subtract(alvo, de));
+    return (Vector4){d.x, d.y, d.z, cosf(HOLOFOTE_ABERTURA_GRAUS * DEG2RAD)};
+}
+
+// Lâmpada com defeito no holofote A: só nas rodadas, com a cela toda apagada e fora do apagão.
+float nivel_piscada_cela(const Estado *e) {
+    if (!regras_fase_eh_rodada(e->fase) || e->rod.luz_a || e->rod.luz_b || e->apagao_t > 0.0f) return 0.0f;
+    return regras_piscada_cela(e->tempo_total) * PISCADA_FORCA;
+}
+
+static int luzes_sala(const Estado *e, Vector3 *pos, Vector3 *cor, Vector4 *cone) {
     bool menu = e->fase == FASE_MENU || e->fase == FASE_INTRO;
     bool luz_a = menu ? true : e->rod.luz_a;
     bool luz_b = menu ? false : e->rod.luz_b;
-    float cela = (menu ? 0.9f : 2.2f) * (e->apagao_t > 0.0f ? 0.0f : 1.0f);
+    float cela = (menu ? 0.9f : 2.2f) * HOLOFOTE_GANHO * (e->apagao_t > 0.0f ? 0.0f : 1.0f);
     float sala = brilho_sala(e) * (menu ? 0.7f : 1.5f);
+    Vector3 peito = Vector3Add(e->nivel.cela_precursor, (Vector3){0.0f, 1.5f, 0.0f});
     pos[0] = (Vector3){8.0f, PE_DIREITO - 0.25f, 11.0f};
     cor[0] = e->alarme_t > 0.0f ? cor_luz(COR_ALARME, 0.6f + 0.5f * sinf(e->tempo_total * 6.0f))
                                 : cor_luz(COR_LAMPADA, sala);
-    pos[1] = (Vector3){5.0f, PE_DIREITO - 0.4f, 4.0f};
-    cor[1] = cor_luz(COR_VIDRO, luz_a ? cela : 0.0f);
-    pos[2] = (Vector3){11.0f, PE_DIREITO - 0.4f, 4.0f};
+    pos[1] = HOLOFOTE_A;
+    cor[1] = cor_luz(COR_VIDRO, luz_a ? cela : cela * nivel_piscada_cela(e));
+    cone[1] = holofote(pos[1], peito);
+    pos[2] = HOLOFOTE_B;
     cor[2] = cor_luz(COR_VIDRO, luz_b ? cela : 0.0f);
+    cone[2] = holofote(pos[2], peito);
     pos[3] = (Vector3){e->nivel.console.x, 1.4f, e->nivel.console.z - 0.4f};
     cor[3] = cor_luz(COR_FOSFORO, e->jog.modo == MODO_TERMINAL ? 0.35f : 0.18f);
     return 4;
@@ -263,9 +282,11 @@ static int luzes_saida(const Estado *e, Vector3 *pos, Vector3 *cor) {
     return 4;
 }
 
-int nivel_luzes(const Estado *e, Vector3 *posicoes, Vector3 *cores) {
+int nivel_luzes(const Estado *e, Vector3 *posicoes, Vector3 *cores, Vector4 *cones) {
+    for (int i = 0; i < 4; i++) // padrão MAP: começa tudo como luz pontual; a sala troca A e B por holofotes
+        cones[i] = (Vector4){0.0f, -1.0f, 0.0f, -2.0f};
     if (regras_fase_eh_saida(e->fase)) return luzes_saida(e, posicoes, cores);
-    return luzes_sala(e, posicoes, cores);
+    return luzes_sala(e, posicoes, cores, cones);
 }
 
 // ================================================================== atualiza
@@ -425,10 +446,9 @@ void nivel_desenha_emissivos(const Estado *e) {
         DrawSphereEx((Vector3){8.0f, PE_DIREITO - 0.25f, 11.0f}, 0.11f, 8, 8,
                      e->alarme_t > 0 ? COR_ALARME : lamp);
     bool menu = e->fase == FASE_MENU || e->fase == FASE_INTRO;
-    if ((menu || e->rod.luz_a) && e->apagao_t <= 0.0f)
-        DrawSphereEx((Vector3){5.0f, PE_DIREITO - 0.4f, 4.0f}, 0.1f, 8, 8, COR_VIDRO);
-    if (!menu && e->rod.luz_b && e->apagao_t <= 0.0f)
-        DrawSphereEx((Vector3){11.0f, PE_DIREITO - 0.4f, 4.0f}, 0.1f, 8, 8, COR_VIDRO);
+    bool a_acesa = menu || e->rod.luz_a || nivel_piscada_cela(e) > 0.0f;
+    if (a_acesa && e->apagao_t <= 0.0f) DrawSphereEx(HOLOFOTE_A, 0.1f, 8, 8, COR_VIDRO);
+    if (!menu && e->rod.luz_b && e->apagao_t <= 0.0f) DrawSphereEx(HOLOFOTE_B, 0.1f, 8, 8, COR_VIDRO);
     Color tela = e->jog.modo == MODO_TERMINAL ? COR_FOSFORO : (Color){0x2a, 0x6a, 0x3a, 255};
     DrawCubeV((Vector3){n->console.x, 1.1f, n->console.z - 0.78f}, (Vector3){0.9f, 0.14f, 0.3f}, tela);
 }

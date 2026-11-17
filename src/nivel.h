@@ -20,8 +20,13 @@ char nivel_celula(const Nivel *n, int coluna, int linha);
 bool nivel_caminhavel(const Nivel *n, int coluna, int linha); // para o A* da criatura
 bool nivel_na_sala_de_observacao(const Nivel *n, Vector3 pos);
 
-// Até 4 luzes pontuais para o shader, escolhidas conforme a fase e a posição do jogador.
-int nivel_luzes(const Estado *e, Vector3 *posicoes, Vector3 *cores);
+// Até 4 luzes para o shader, escolhidas conforme a fase e a posição do jogador. cones[i] (ver posfx.h):
+// na sala, as luzes A e B da cela são holofotes no Precursor; as outras são pontuais.
+int nivel_luzes(const Estado *e, Vector3 *posicoes, Vector3 *cores, Vector4 *cones);
+
+// Com a cela apagada nas rodadas, o holofote A pisca como lâmpada com defeito (0 = apagado; ver
+// regras_piscada_cela). O Precursor usa o mesmo valor para aparecer no flash.
+float nivel_piscada_cela(const Estado *e);
 
 void nivel_atualiza(Estado *e, float dt);
 void nivel_desenha(const Estado *e);           // geometria iluminada (dentro do shader de luz)

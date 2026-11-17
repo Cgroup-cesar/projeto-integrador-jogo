@@ -66,8 +66,15 @@
 #define CRIATURA_SURGE_S       15.0f // tempo até ele sair do duto no início de cada saída
 #define CRIATURA_RAIO_CAPTURA  0.5f  // duas esferas de 0,5 m: pego quando a distância < 1 m
 #define CRIATURA_DIST_ARMARIO  2.0f  // entrar no armário a menos disso enquanto ele vê = pego
-#define JUMPSCARE_S            1.2f
-#define JUMPSCARE_SILENCIO_S   0.2f
+// Postura procedural (o modelo .glb não tem animação): ver regras_postura_criatura
+#define CRIATURA_PASSADA_M        1.6f   // metros por passada completa (pernas longas)
+#define CRIATURA_INCLINA_PARADO   3.0f   // graus para a frente, parado
+#define CRIATURA_INCLINA_CORRENDO 18.0f  // graus para a frente, perseguindo
+#define CRIATURA_BALANCO_GRAUS    5.0f   // de um lado para o outro a cada passo
+#define CRIATURA_SOBE_M           0.05f  // sobe e desce a cada passo
+#define CRIATURA_RESPIRA          0.015f // o tronco se expande 1,5% parado
+#define JUMPSCARE_S               1.2f
+#define JUMPSCARE_SILENCIO_S      0.2f
 
 // ---------------------------------------------------------------- sala, vidro e placar
 #define VIDAS_VIDRO               3
@@ -95,17 +102,29 @@
 // ---------------------------------------------------------------- luz e névoa
 #define LUZ_AMBIENTE    0.06f
 #define NEVOA_DENSIDADE 0.085f
+// Holofotes da cela (luzes A e B): ficam à frente e acima do Precursor, apontados para o peito dele.
+#define HOLOFOTE_ABERTURA_GRAUS 30.0f // meia-abertura do cone; fora dele sobram 15% (a cela não fica preta)
+#define HOLOFOTE_GANHO          1.6f  // compensa a luz que deixou de se espalhar pela cela
+// Contraluz fria só no corpo do Precursor: recorta a silhueta mesmo no escuro (não clareia o resto).
+#define CONTRALUZ_CELA     0.55f
+#define CONTRALUZ_CORREDOR 0.22f // mais fraca: nos corredores ele ainda precisa se esconder no escuro
+// Lâmpada com defeito na cela apagada: piscada dupla, em média a cada 3 s, sem ritmo de relógio.
+#define PISCADA_INTERVALO_S 3.0f  // um ciclo; a piscada cai num ponto sorteado dentro dele
+#define PISCADA_VARIACAO_S  0.9f  // intervalo entre piscadas: de 2,1 a 3,9 s
+#define PISCADA_PULA        0.15f // chance de um ciclo passar sem piscar
+#define PISCADA_FORCA       0.7f  // fração do holofote A aceso no auge da piscada
 
 // ---------------------------------------------------------------- paleta (só use onde a raylib já foi
 // incluída)
-#define COR_SOMBRA   (Color){0x0c, 0x0f, 0x0c, 255}
-#define COR_CONCRETO (Color){0x2b, 0x3a, 0x33, 255}
-#define COR_OLIVA    (Color){0x4a, 0x4f, 0x3a, 255}
-#define COR_LAMPADA  (Color){0xd9, 0xa4, 0x41, 255}
-#define COR_FOSFORO  (Color){0x7d, 0xff, 0x9a, 255}
-#define COR_VIDRO    (Color){0x5a, 0xa0, 0xc8, 255}
-#define COR_ALARME   (Color){0xff, 0x5a, 0x4f, 255}
-#define COR_PELE     (Color){0xc9, 0xd4, 0xdc, 255}
-#define COR_AMBAR    (Color){0xd9, 0xa4, 0x41, 255}
+#define COR_SOMBRA    (Color){0x0c, 0x0f, 0x0c, 255}
+#define COR_CONCRETO  (Color){0x2b, 0x3a, 0x33, 255}
+#define COR_OLIVA     (Color){0x4a, 0x4f, 0x3a, 255}
+#define COR_LAMPADA   (Color){0xd9, 0xa4, 0x41, 255}
+#define COR_FOSFORO   (Color){0x7d, 0xff, 0x9a, 255}
+#define COR_VIDRO     (Color){0x5a, 0xa0, 0xc8, 255}
+#define COR_ALARME    (Color){0xff, 0x5a, 0x4f, 255}
+#define COR_PELE      (Color){0xc9, 0xd4, 0xdc, 255}
+#define COR_CONTRALUZ (Color){0x7a, 0xb0, 0xe0, 255}
+#define COR_AMBAR     (Color){0xd9, 0xa4, 0x41, 255}
 
 #endif

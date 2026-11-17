@@ -6,6 +6,7 @@
 #include "jogador.h"
 #include "audio_sintese.h"
 #include "ui.h"
+#include "posfx.h"
 #include "rlgl.h"
 #include <math.h>
 #include <stdlib.h>
@@ -297,6 +298,12 @@ static void anda(Estado *e, float dt) {
     passos_da_criatura(e, dt);
 }
 
+// Quanto ele andou neste quadro alimenta a postura do corpo (regras_postura_criatura).
+static void mede_passada(Criatura *c, float andou, float dt) {
+    c->passada += andou;
+    c->vel_suave += (andou / fmaxf(dt, 0.0001f) - c->vel_suave) * fminf(1.0f, 6.0f * dt);
+}
+
 // [REQ:RF4] captura com CheckCollisionSpheres: duas esferas de 0,5 m (pego quando a distância < 1 m)
 static void tenta_capturar(Estado *e) {
     const Criatura *c = &e->cri;
@@ -355,7 +362,9 @@ static void atualiza_nos_corredores(Estado *e, float dt) {
     c->estado = novo;
     c->tempo_replanejar += dt;
     escolhe_destino(e, p, ruido, dt);
+    Vector3 antes = c->pos;
     anda(e, dt);
+    mede_passada(c, Vector3Distance(antes, c->pos), dt);
     tenta_capturar(e);
 }
 
@@ -399,6 +408,7 @@ static float visibilidade(const Estado *e) {
     if (e->apagao_t > 0.0f) return 0.05f;
     bool menu = e->fase == FASE_MENU || e->fase == FASE_INTRO;
     float v = 0.12f + (menu || e->rod.luz_a ? 0.4f : 0.0f) + (e->rod.luz_b ? 0.6f : 0.0f);
+    v += nivel_piscada_cela(e) * 0.6f; // aparece no flash da lâmpada com defeito
     if (e->fase == FASE_RESPOSTA_FINAL || e->fase == FASE_FIM_BOM || e->fase == FASE_FIM_RUIM) v = 1.0f;
     return fminf(1.0f, v);
 }
@@ -439,6 +449,15 @@ static void desenha_caminho(const Estado *e) {
     }
 }
 
+// Sem animação no modelo: corcunda, balanço e respiração por transformação, com o pivô nos pés.
+static void aplica_postura(const Estado *e) {
+    PosturaCriatura p = regras_postura_criatura(e->cri.vel_suave, e->cri.passada, e->tempo_total);
+    rlTranslatef(0.0f, p.sobe, 0.0f);
+    rlRotatef(p.inclina_graus, 1.0f, 0.0f, 0.0f); // +X inclina a cabeça para +Z (a frente)
+    rlRotatef(p.balanco_graus, 0.0f, 0.0f, 1.0f);
+    rlScalef(p.respira, 1.0f, p.respira);
+}
+
 void criatura_desenha(const Estado *e) {
     const Criatura *c = &e->cri;
     desenha_caminho(e);
@@ -453,12 +472,16 @@ void criatura_desenha(const Estado *e) {
     rlTranslatef(c->pos.x + (c->distorcao > 0.0f ? sinf(t * 70.0f) * c->distorcao * 0.4f : 0.0f),
                  c->pos.y + subida, c->pos.z);
     rlRotatef(c->yaw * RAD2DEG + jitter, 0.0f, 1.0f, 0.0f);
+    aplica_postura(e);
     if (c->distorcao > 0.0f)
         rlScalef(1.0f - c->distorcao * 0.8f, 1.0f + c->distorcao * 1.5f, 1.0f - c->distorcao * 0.8f);
+    float contraluz = (c->contido ? CONTRALUZ_CELA : CONTRALUZ_CORREDOR) * (1.0f - c->distorcao);
+    posfx_contraluz(e, COR_CONTRALUZ, contraluz); // recorta a silhueta; desligada logo depois do corpo
     if (e->rec.tem_modelo)
         desenha_modelo(e, pele);
     else
         desenha_corpo(e, pele);
+    posfx_contraluz(e, COR_CONTRALUZ, 0.0f);
     rlPopMatrix();
 }
 

@@ -39,6 +39,7 @@ typedef struct {
     Shader luz;
     bool luz_ok;
     int loc_luz_pos, loc_luz_cor, loc_luz_ambiente, loc_luz_nevoa, loc_luz_camera, loc_luz_modelo;
+    int loc_luz_cone, loc_luz_contraluz;
     RenderTexture2D alvo; // cena 3D renderizada a ESCALA_RENDER da janela
     int alvo_largura, alvo_altura;
     Sound sons[SOM_MAXIMO];
@@ -106,6 +107,8 @@ typedef struct {
     float surgindo;    // 0..1 enquanto sobe pelo duto
     float som_passo_t;
     float procura_t; // na PROCURA: troca de ponto a cada pouco
+    float vel_suave; // m/s realmente andados, suavizado: dá a postura (regras_postura_criatura)
+    float passada;   // metros andados desde que surgiu: dá o ritmo do balanço
 } Criatura;
 
 // ------------------------------------------------------------------ rodadas (sala de observação)

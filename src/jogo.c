@@ -313,10 +313,11 @@ void jogo_atualiza(Estado *e, float dt) {
 // ================================================================== desenho
 static void desenha_mundo_3d(const Estado *e) {
     Vector3 pos[4], cor[4];
-    int n = nivel_luzes(e, pos, cor);
+    Vector4 cone[4];
+    int n = nivel_luzes(e, pos, cor, cone);
     float ambiente = e->apagao_t > 0.0f ? LUZ_AMBIENTE * 0.3f : LUZ_AMBIENTE;
     BeginMode3D(e->camera);
-    posfx_comeca_luz(e, pos, cor, n, ambiente);
+    posfx_comeca_luz(e, pos, cor, cone, n, ambiente);
     nivel_desenha(e);
     criatura_desenha(e);
     posfx_termina_luz(e);
