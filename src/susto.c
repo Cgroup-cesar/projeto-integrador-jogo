@@ -4,6 +4,94 @@
 #include "audio_sintese.h"
 #include "posfx.h"
 #include <math.h>
+#include <stdlib.h>
+
+// ================================================================== a boca (mandíbula sem esqueleto)
+// Medidas do precursor.glb, nas unidades do arquivo (a caixa vai de −1 a 1 em y; o rosto olha para +z):
+// a dobradiça fica perto das orelhas, e a mandíbula é o que está abaixo da boca, à frente do pescoço.
+static const float DOBRADICA_Y = 0.80f, DOBRADICA_Z = 0.03f;
+static const float QUEIXO_Y_MIN = 0.60f, QUEIXO_Y_MAX = 0.765f, QUEIXO_Z_MIN = 0.06f;
+static const float QUEIXO_X_CENTRO = -0.015f, QUEIXO_MEIA_LARGURA = 0.12f;
+
+static float suaviza(float de, float ate, float x) {
+    float t = fminf(1.0f, fmaxf(0.0f, (x - de) / (ate - de)));
+    return t * t * (3.0f - 2.0f * t);
+}
+
+// 1 no queixo; cai a zero na linha da boca, embaixo, nas laterais e para trás (sem rasgar a pele).
+static float peso_da_mandibula(Vector3 v) {
+    return suaviza(QUEIXO_Y_MAX, QUEIXO_Y_MAX - 0.025f, v.y) *
+           suaviza(QUEIXO_Y_MIN, QUEIXO_Y_MIN + 0.03f, v.y) *
+           suaviza(QUEIXO_MEIA_LARGURA, QUEIXO_MEIA_LARGURA - 0.03f, fabsf(v.x - QUEIXO_X_CENTRO)) *
+           suaviza(QUEIXO_Z_MIN, QUEIXO_Z_MIN + 0.04f, v.z);
+}
+
+static void libera_boca(BocaModelo *b) {
+    free(b->indice);
+    free(b->peso);
+    free(b->original);
+    *b = (BocaModelo){0};
+}
+
+// Alocação única, no carregamento: os vértices de peso > 0 ficam compactados nos vetores da boca.
+void susto_carrega_boca(Recursos *rec) {
+    BocaModelo *b = &rec->boca;
+    *b = (BocaModelo){0};
+    if (!rec->tem_modelo || rec->modelo_precursor.meshes[0].vertices == NULL) return;
+    const Mesh *m = &rec->modelo_precursor.meshes[0];
+    const Vector3 *v = (const Vector3 *)m->vertices;
+    b->indice = malloc((size_t)m->vertexCount * sizeof(int));
+    b->peso = malloc((size_t)m->vertexCount * sizeof(float));
+    b->original = malloc((size_t)m->vertexCount * sizeof(Vector3));
+    if (b->indice == NULL || b->peso == NULL || b->original == NULL) {
+        TraceLog(LOG_WARNING, "PRECURSOR: sem memória para a boca; o susto segue de boca parada");
+        libera_boca(b);
+        return;
+    }
+    for (int i = 0; i < m->vertexCount; i++) { // padrão FILTER: só os vértices da mandíbula
+        float p = peso_da_mandibula(v[i]);
+        if (p <= 0.0f) continue;
+        b->indice[b->n] = i;
+        b->peso[b->n] = p;
+        b->original[b->n++] = v[i];
+    }
+    b->primeiro = b->n > 0 ? b->indice[0] : 0;
+    b->ultimo = b->n > 0 ? b->indice[b->n - 1] : 0;
+    TraceLog(LOG_INFO, "PRECURSOR: boca com %d vértices", b->n);
+}
+
+void susto_descarrega_boca(Recursos *rec) {
+    libera_boca(&rec->boca);
+}
+
+// Gira a mandíbula em volta da dobradiça (eixo x) e envia à GPU só a faixa da malha que mudou.
+static void gira_mandibula(Recursos *rec, float graus) {
+    BocaModelo *b = &rec->boca;
+    Mesh *m = &rec->modelo_precursor.meshes[0];
+    Vector3 *v = (Vector3 *)m->vertices;
+    for (int k = 0; k < b->n; k++) { // padrão MAP: posição original → posição girada
+        float a = graus * DEG2RAD * b->peso[k];
+        float y = b->original[k].y - DOBRADICA_Y, z = b->original[k].z - DOBRADICA_Z;
+        v[b->indice[k]].y = DOBRADICA_Y + y * cosf(a) - z * sinf(a);
+        v[b->indice[k]].z = DOBRADICA_Z + y * sinf(a) + z * cosf(a);
+    }
+    int n = b->ultimo - b->primeiro + 1;
+    UpdateMeshBuffer(*m, 0, &v[b->primeiro], n * (int)sizeof(Vector3), b->primeiro * (int)sizeof(Vector3));
+    b->graus = graus;
+}
+
+static float tempo_do_rosto(const Estado *e);
+
+// Com o rosto na tela, a boca segue regras_quadro_susto; fora do susto, o modelo volta ao original.
+static void mexe_boca(Estado *e) {
+    if (e->rec.boca.n == 0) return;
+    float graus = 0.0f;
+    if (susto_rosto_na_tela(e)) {
+        float boca = regras_quadro_susto(tempo_do_rosto(e)).boca;
+        graus = -JUMPSCARE_BOCA_FECHA + (JUMPSCARE_BOCA_ABRE + JUMPSCARE_BOCA_FECHA) * boca;
+    }
+    if (graus != e->rec.boca.graus) gira_mandibula(&e->rec, graus);
+}
 
 // ================================================================== estado
 float susto_duracao(const Estado *e) {
@@ -24,6 +112,7 @@ bool susto_ativo(const Estado *e) {
 
 // O grito começa junto com o rosto; o eco que sobra no fim do som continua na tela seguinte.
 void susto_atualiza(Estado *e, float dt) {
+    mexe_boca(e);
     if (e->silencio_t > 0.0f) {
         e->silencio_t -= dt;
         if (e->silencio_t <= 0.0f) audio_toca(e, SOM_JUMPSCARE, 1.0f, 1.0f);

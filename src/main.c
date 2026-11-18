@@ -374,12 +374,14 @@ static void carrega_recursos(void) {
     ui_carrega_fonte(&estado.rec);
     audio_inicia(&estado.rec);
     criatura_carrega_modelo(&estado.rec);
+    susto_carrega_boca(&estado.rec);
     lanterna_carrega_modelo(&estado.rec);
     if (mudo || estado.modo_smoke) SetMasterVolume(0.0f); // o smoke roda calado
 }
 
 static void descarrega_recursos(void) {
     lanterna_descarrega_modelo(&estado.rec);
+    susto_descarrega_boca(&estado.rec);
     criatura_descarrega_modelo(&estado.rec);
     audio_finaliza(&estado.rec);
     ui_descarrega_fonte(&estado.rec);

@@ -121,6 +121,14 @@ static void testa_quadro_susto(void) {
     CHECK(perto(antes.distancia, JUMPSCARE_PERTO_M) && perto(antes.clarao, 0.0f)); // fica colado, sem clarão
     CHECK(mudou >= (int)(2.0f * JUMPSCARE_TREMOR_HZ) - 4); // treme rápido: ~40 posições novas por segundo
     CHECK(regras_quadro_susto(0.77f).tremor_y == regras_quadro_susto(0.77f).tremor_y); // repetível
+    CHECK(perto(regras_quadro_susto(JUMPSCARE_PULO_S * 0.5f).boca, 1.0f)); // pula de boca escancarada
+    float menor = 1.0f, maior = 0.0f;
+    for (int i = 0; i < 100; i++) { // 1 s depois do pulo: a boca abre e fecha
+        float b = regras_quadro_susto(JUMPSCARE_PULO_S + i * 0.01f).boca;
+        menor = fminf(menor, b);
+        maior = fmaxf(maior, b);
+    }
+    CHECK(menor >= 0.0f && maior <= 1.0f && menor < 0.15f && maior > 0.85f);
 }
 
 // [REQ:PURA-regras_placar] testa o placar sem eventos, o total e o placar por fase

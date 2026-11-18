@@ -30,6 +30,16 @@ typedef struct {
 // ------------------------------------------------------------------ recursos carregados uma vez
 #define SOM_MAXIMO 24
 
+// A mandíbula do precursor.glb (o modelo não tem esqueleto): os vértices do queixo e quanto cada um gira.
+typedef struct {
+    int n;                // vértices da mandíbula
+    int *indice;          // onde cada um está na malha
+    float *peso;          // 0..1: quanto acompanha o giro (suaviza a emenda com o resto do rosto)
+    Vector3 *original;    // a posição sem giro
+    int primeiro, ultimo; // a faixa da malha que muda (só ela vai para a GPU)
+    float graus;          // giro aplicado agora (0 = o modelo original)
+} BocaModelo;
+
 typedef struct {
     Font fonte;
     bool tem_fonte; // false = fonte padrão da raylib + translitera()
@@ -49,6 +59,7 @@ typedef struct {
     float susto_s;          // duração do susto: segue o som carregado (0 = sem áudio; vale JUMPSCARE_S)
     Model modelo_precursor; // opcional: assets/modelos/precursor.glb
     bool tem_modelo;
+    BocaModelo boca;       // a mandíbula animada no susto (susto_carrega_boca)
     Model modelo_lanterna; // opcional: assets/modelos/lanterna.glb
     bool tem_lanterna;
 } Recursos;

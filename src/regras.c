@@ -236,6 +236,8 @@ QuadroSusto regras_quadro_susto(float t) {
     q.tremor_y = tremida(ciclo, 0x6b43u) * JUMPSCARE_TREMOR_M * forca;
     q.giro_graus = tremida(ciclo, 0xa7c5u) * JUMPSCARE_TREMOR_GRAUS * forca;
     q.clarao = depois < 0.0f ? 0.0f : fmaxf(0.0f, 1.0f - depois / JUMPSCARE_CLARAO_S);
+    float ritmo = 2.0f * PI * JUMPSCARE_BOCA_HZ * t + 1.7f * sinf(2.0f * PI * 1.3f * t); // ritmo irregular
+    q.boca = depois < 0.0f ? 1.0f : 0.5f + 0.5f * sinf(ritmo);
     return q;
 }
 

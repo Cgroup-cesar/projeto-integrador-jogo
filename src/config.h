@@ -89,8 +89,11 @@
 #define JUMPSCARE_TREMOR_M     0.02f // deslocamento máximo do tremor
 #define JUMPSCARE_TREMOR_GRAUS 5.0f  // giro máximo do tremor
 #define JUMPSCARE_CLARAO_S     0.12f // clarão branco quando ele chega
-#define JUMPSCARE_ESCURECE     0.6f  // o cenário ao fundo fica 60% mais escuro
+#define JUMPSCARE_ESCURECE     0.85f // o cenário ao fundo fica 85% mais escuro: o foco é a criatura
 #define JUMPSCARE_LUZ          1.1f  // força da luz branca de baixo no rosto (pisca)
+#define JUMPSCARE_BOCA_HZ      4.5f  // quantas vezes por segundo a boca abre e fecha
+#define JUMPSCARE_BOCA_FECHA   8.0f  // graus que a mandíbula sobe para a boca fechar
+#define JUMPSCARE_BOCA_ABRE    28.0f // e escancarada
 // Onde fica o rosto no precursor.glb, em fração da caixa do modelo (0 = mínimo, 1 = máximo).
 #define JUMPSCARE_ROSTO_X 0.48f
 #define JUMPSCARE_ROSTO_Y 0.90f

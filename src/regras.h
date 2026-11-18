@@ -98,6 +98,7 @@ typedef struct {
     float tremor_x, tremor_y; // metros, de −JUMPSCARE_TREMOR_M a +JUMPSCARE_TREMOR_M
     float giro_graus;         // em torno do eixo da câmera
     float clarao;             // 1 quando ele chega, apagando em JUMPSCARE_CLARAO_S
+    float boca;               // 0 fechando, 1 escancarada: no pulo, aberta; depois abre e fecha
 } QuadroSusto;
 
 QuadroSusto regras_quadro_susto(float t);
