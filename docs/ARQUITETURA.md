@@ -81,12 +81,13 @@ stateDiagram-v2
 | `nivel.c` | mapa ASCII → paredes, móveis, interativos, luzes; desenho do Posto 7 |
 | `jogador.c` | câmera, movimento com colisão, fôlego, passos, armário, mira |
 | `lanterna.c` | a lanterna: F liga e desliga, a 5ª luz do shader (cone saindo dos olhos) e o modelo na mão |
-| `criatura.c` | o Precursor: corpo procedural, IA, A*, captura, susto |
+| `criatura.c` | o Precursor: corpo procedural, IA, A*, captura |
+| `susto.c` | o jumpscare: silêncio, grito e o rosto do modelo pulando até a câmera e tremendo (movimento em `regras_quadro_susto`); dura o trecho alto do `jumpscare.mp3` |
 | `rodadas.c` · `terminal.c` · `glifos.c` | as 3 rodadas (o ENTER decide), o analisador SNI-85 (setas e Esc), a língua dos glifos |
 | `circuito.c` | os painéis 1 e 2 |
 | `compositor.c` | a resposta final por fichas e os dois finais |
 | `dialogo.c` | todos os textos |
-| `audio_sintese.c` | os sons gerados em código |
+| `audio_sintese.c` | os sons gerados em código (ou lidos de `assets/audio/`) |
 | `posfx.c` | render target, luz e névoa, VHS |
 | `ui.c` | fonte com fallback, menu, HUD, legendas, diário, tela de fim |
 
