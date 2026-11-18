@@ -208,7 +208,6 @@ typedef struct {
 
 typedef struct {
     int cursor;
-    bool pular_para_apagao; // MENU_TESTE_APAGAO: pedido do menu, atendido em jogo.c
 } Menu;
 
 // ------------------------------------------------------------------ o estado inteiro

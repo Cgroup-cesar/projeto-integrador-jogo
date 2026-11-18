@@ -160,17 +160,6 @@ void jogo_vai_para_fase(Estado *e, Fase fase) {
     if (fase > FASE_MENU && fase < FASE_TOTAL) entra_fase(e, fase, false);
 }
 
-// TEMPORÁRIO (MENU_TESTE_APAGAO): a R2 já traduzida. As luzes falham em 2,2 s, a 2ª queda de energia vem
-// em 3,2 s e a S2 começa em 6 s, como depois de acertar a tradução.
-static void atende_teste_apagao(Estado *e) {
-    if (!e->menu.pular_para_apagao) return;
-    e->menu.pular_para_apagao = false;
-    entra_fase(e, FASE_R2, false);
-    e->rod.etapa = ETAPA_CONCLUIDA;
-    e->rod.concluida_t = 0.0f;
-    ui_fala(e, FALAS_APOS_R2);
-}
-
 void jogo_inicia(Estado *e) {
     nivel_carrega(&e->nivel);
     e->jog.ultima_celula = -1;
@@ -321,7 +310,6 @@ void jogo_atualiza(Estado *e, float dt) {
         &e->particulas, dt, (Vector3){0, -0.5f, 0},
         (Vector3){MAPA_LARGURA * TAMANHO_CELULA, PE_DIREITO, MAPA_ALTURA * TAMANHO_CELULA});
     ui_atualiza(e, dt);
-    atende_teste_apagao(e);
     jogador_atualiza_camera(e);
     atualiza_folds(e);
     EventoFase ev = e->evento;

@@ -26,7 +26,6 @@
 // ---------------------------------------------------------------- debug e modos
 #define TECLAS_DEBUG                                                                                         \
     1 // F1 VHS · F2 pular fase · F3 estado da criatura · F5 reiniciar · F9 resposta · F12 captura
-#define MENU_TESTE_APAGAO   1     // TEMPORÁRIO: opção no menu que pula para logo antes da 2ª queda de energia
 #define FEIRA_INATIVIDADE_S 90.0f // no modo feira (--feira), volta ao menu após esse tempo sem nenhuma tecla
 #define FIM_VOLTA_MENU_S    20.0f // a tela de fim volta sozinha ao menu
 #define SMOKE_LIMITE_FASE_S                                                                                  \
