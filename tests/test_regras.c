@@ -98,6 +98,39 @@ static void testa_piscada_cela(void) {
     CHECK(regras_piscada_cela(12.34f) == regras_piscada_cela(12.34f)); // repetível
 }
 
+// [REQ:PURA-regras_quadro_susto] testa o pulo até a câmera, o tremor e o clarão
+static void testa_quadro_susto(void) {
+    QuadroSusto inicio = regras_quadro_susto(0.0f);
+    CHECK(perto(inicio.distancia, JUMPSCARE_LONGE_M) && perto(inicio.clarao, 0.0f)); // começa longe
+    QuadroSusto chegou = regras_quadro_susto(JUMPSCARE_PULO_S);
+    CHECK(perto(chegou.distancia, JUMPSCARE_PERTO_M) && perto(chegou.clarao, 1.0f)); // colado, com clarão
+    CHECK(perto(regras_quadro_susto(-1.0f).distancia, JUMPSCARE_LONGE_M));           // tempo negativo
+    bool so_aproxima = true, no_limite = true;
+    int mudou = 0;
+    QuadroSusto antes = inicio;
+    for (int i = 1; i <= 200; i++) { // 2 s a cada 0,01 s
+        QuadroSusto q = regras_quadro_susto(i * 0.01f);
+        if (q.distancia > antes.distancia + 0.0001f) so_aproxima = false;
+        if (fabsf(q.tremor_x) > JUMPSCARE_TREMOR_M || fabsf(q.tremor_y) > JUMPSCARE_TREMOR_M ||
+            fabsf(q.giro_graus) > JUMPSCARE_TREMOR_GRAUS)
+            no_limite = false;
+        if (!perto(q.tremor_x, antes.tremor_x)) mudou++;
+        antes = q;
+    }
+    CHECK(so_aproxima && no_limite);
+    CHECK(perto(antes.distancia, JUMPSCARE_PERTO_M) && perto(antes.clarao, 0.0f)); // fica colado, sem clarão
+    CHECK(mudou >= (int)(2.0f * JUMPSCARE_TREMOR_HZ) - 4); // treme rápido: ~40 posições novas por segundo
+    CHECK(regras_quadro_susto(0.77f).tremor_y == regras_quadro_susto(0.77f).tremor_y); // repetível
+    CHECK(perto(regras_quadro_susto(JUMPSCARE_PULO_S * 0.5f).boca, 1.0f)); // pula de boca escancarada
+    float menor = 1.0f, maior = 0.0f;
+    for (int i = 0; i < 100; i++) { // 1 s depois do pulo: a boca abre e fecha
+        float b = regras_quadro_susto(JUMPSCARE_PULO_S + i * 0.01f).boca;
+        menor = fminf(menor, b);
+        maior = fmaxf(maior, b);
+    }
+    CHECK(menor >= 0.0f && maior <= 1.0f && menor < 0.15f && maior > 0.85f);
+}
+
 // [REQ:PURA-regras_placar] testa o placar sem eventos, o total e o placar por fase
 static void testa_placar(void) {
     CHECK(regras_placar(NULL, 0) == 0); // placar sem eventos
@@ -223,6 +256,7 @@ int main(void) {
     testa_estados_criatura();
     testa_postura_criatura();
     testa_piscada_cela();
+    testa_quadro_susto();
     testa_placar();
     testa_vidro();
     testa_evento_do_erro();

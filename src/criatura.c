@@ -2,6 +2,7 @@
 // Estados: PATRULHA → INVESTIGA (ruído mais forte) → PERSEGUE (vê o jogador) → PROCURA (6 s) → PATRULHA.
 // A decisão de estado é pura (regras_proximo_estado_criatura); aqui ficam percepção, caminho e movimento.
 #include "criatura.h"
+#include "susto.h"
 #include "nivel.h"
 #include "jogador.h"
 #include "audio_sintese.h"
@@ -42,12 +43,12 @@ void criatura_descarrega_modelo(Recursos *rec) {
     if (rec->tem_modelo) UnloadModel(rec->modelo_precursor);
 }
 
-// O modelo é escalado para 2,6 m de altura, com os pés no chão.
+// O modelo é escalado para CRIATURA_ALTURA_M (2,6 m), com os pés no chão.
 static void desenha_modelo(const Estado *e, Color cor) {
     const Model *m = &e->rec.modelo_precursor;
     BoundingBox caixa = GetModelBoundingBox(*m);
     float altura = fmaxf(0.01f, caixa.max.y - caixa.min.y);
-    float escala = 2.6f / altura;
+    float escala = CRIATURA_ALTURA_M / altura;
     DrawModelEx(*m, (Vector3){0, -caixa.min.y * escala, 0}, (Vector3){0, 1, 0}, 0.0f,
                 (Vector3){escala, escala, escala}, cor);
 }
@@ -75,33 +76,6 @@ void criatura_puxa_para_contencao(Estado *e) {
     if (!c->ativo) return;
     c->distorcao = 0.001f;
     audio_toca(e, SOM_DISTORCAO, 0.9f, 1.0f);
-}
-
-// ================================================================== susto (jumpscare)
-void criatura_susto(Estado *e, EventoFase depois) {
-    if (criatura_em_susto(e)) return;
-    e->silencio_t = JUMPSCARE_SILENCIO_S; // 0,2 s de silêncio antes do estrondo
-    e->jumpscare_t = JUMPSCARE_S;
-    e->evento_pos_susto = depois;
-    audio_silencia(e);
-}
-
-bool criatura_em_susto(const Estado *e) {
-    return e->silencio_t > 0.0f || e->jumpscare_t > 0.0f;
-}
-
-void criatura_atualiza_susto(Estado *e, float dt) {
-    if (e->silencio_t > 0.0f) {
-        e->silencio_t -= dt;
-        if (e->silencio_t <= 0.0f) audio_toca(e, SOM_ESTRONDO, 1.0f, 1.0f);
-        return;
-    }
-    if (e->jumpscare_t <= 0.0f) return;
-    e->jumpscare_t -= dt;
-    if (e->jumpscare_t > 0.0f) return;
-    e->jumpscare_t = 0.0f;
-    if (e->evento_pos_susto != EV_NENHUM) e->evento = e->evento_pos_susto;
-    e->evento_pos_susto = EV_NENHUM;
 }
 
 // ================================================================== A* na grade do mapa
@@ -245,7 +219,9 @@ static void escolhe_destino(Estado *e, PercepcaoCriatura p, Vector3 ruido, float
 }
 
 // ================================================================== movimento
-static float velocidade(const Criatura *c, float t) {
+// No bote (perseguindo, a menos de CRIATURA_BOTE_M), ele não pausa: vem direto e mais rápido.
+static float velocidade(const Criatura *c, float t, bool bote) {
+    if (bote) return CRIATURA_VEL_PERSEGUE * CRIATURA_BOTE_VEL;
     float base = c->estado == CRIATURA_PERSEGUE    ? CRIATURA_VEL_PERSEGUE
                  : c->estado == CRIATURA_INVESTIGA ? CRIATURA_VEL_INVESTIGA
                                                    : CRIATURA_VEL_PATRULHA;
@@ -290,8 +266,9 @@ static void anda(Estado *e, float dt) {
         c->caminho_i++;
         return;
     }
+    bool bote = c->estado == CRIATURA_PERSEGUE && Vector3Distance(c->pos, e->jog.pos) < CRIATURA_BOTE_M;
     // [REQ:RF1] o movimento da criatura também é multiplicado por dt
-    float passo = fminf(dist, velocidade(c, e->tempo_total) * dt);
+    float passo = fminf(dist, velocidade(c, e->tempo_total, bote) * dt);
     c->pos = Vector3Add(c->pos, Vector3Scale(para, passo / dist));
     float yaw_alvo = atan2f(para.x, para.z);
     c->yaw += atan2f(sinf(yaw_alvo - c->yaw), cosf(yaw_alvo - c->yaw)) * fminf(1.0f, 7.0f * dt);
@@ -304,20 +281,20 @@ static void mede_passada(Criatura *c, float andou, float dt) {
     c->vel_suave += (andou / fmaxf(dt, 0.0001f) - c->vel_suave) * fminf(1.0f, 6.0f * dt);
 }
 
-// [REQ:RF4] captura com CheckCollisionSpheres: duas esferas de 0,5 m (pego quando a distância < 1 m)
+// [REQ:RF4] captura com CheckCollisionSpheres: duas esferas de 0,8 m (pego quando a distância < 1,6 m)
 static void tenta_capturar(Estado *e) {
     const Criatura *c = &e->cri;
-    if (e->jog.modo == MODO_ARMARIO || criatura_em_susto(e)) return;
+    if (e->jog.modo == MODO_ARMARIO || susto_ativo(e)) return;
     Vector3 corpo_c = {c->pos.x, 1.0f, c->pos.z}, corpo_j = {e->jog.pos.x, 1.0f, e->jog.pos.z};
     if (CheckCollisionSpheres(corpo_c, CRIATURA_RAIO_CAPTURA, corpo_j, CRIATURA_RAIO_CAPTURA))
         criatura_captura(e);
 }
 
 void criatura_captura(Estado *e) {
-    if (criatura_em_susto(e)) return;
+    if (susto_ativo(e)) return;
     e->pegos_na_fase++;
     e->jog.modo = MODO_ANDANDO;
-    criatura_susto(e, EV_PEGO); // volta ao início da saída atual (o checkpoint)
+    susto_inicia(e, EV_PEGO); // volta ao início da saída atual (o checkpoint)
 }
 
 // ================================================================== atualiza
@@ -461,7 +438,7 @@ static void aplica_postura(const Estado *e) {
 void criatura_desenha(const Estado *e) {
     const Criatura *c = &e->cri;
     desenha_caminho(e);
-    if (!c->contido && !c->ativo) return;
+    if ((!c->contido && !c->ativo) || susto_rosto_na_tela(e)) return; // no susto, só o rosto aparece
     float t = e->tempo_total;
     float jitter = (fmodf(t * 0.9f, 1.0f) > 0.9f) ? sinf(t * 55.0f) * 4.0f : sinf(t * 0.8f) * 1.5f;
     if (e->fase == FASE_FIM_BOM)
@@ -485,29 +462,4 @@ void criatura_desenha(const Estado *e) {
         desenha_corpo(e, pele);
     rlPopMatrix();
     posfx_contraluz(e, COR_CONTRALUZ, 0.0f); // envia o corpo procedural (lote) ainda com a contraluz
-}
-
-// ================================================================== o rosto na câmera
-void criatura_desenha_jumpscare(const Estado *e) {
-    if (e->jumpscare_t <= 0.0f || e->silencio_t > 0.0f) return;
-    float w = (float)e->rec.alvo_largura, h = (float)e->rec.alvo_altura;
-    float t = 1.0f - e->jumpscare_t / JUMPSCARE_S;
-    float tremor = sinf(e->tempo_total * 95.0f) * w * 0.012f;
-    DrawRectangle(0, 0, (int)w, (int)h, (Color){4, 2, 2, 240});
-    int cx = (int)(w * 0.5f + tremor), cy = (int)(h * 0.58f);
-    float rx = w * (0.27f + t * 0.1f), ry = h * (0.74f + t * 0.12f);
-    for (int i = 0; i < 6; i++) { // sombreado: as bordas do rosto mais escuras
-        float f = 1.0f - i * 0.12f;
-        DrawEllipse(cx, cy, rx * f, ry * f, escurece(COR_PELE, 0.28f + i * 0.07f));
-    }
-    float abre = w * (0.015f + t * 0.07f);
-    DrawEllipse(cx, cy, abre * 1.6f, h * 0.46f, (Color){60, 8, 14, 255}); // borda viva da fenda
-    DrawEllipse(cx, cy, abre, h * 0.43f, (Color){10, 0, 2, 255});         // a fenda aberta
-    for (int i = -4; i <= 4; i++) {
-        float x = cx + i * abre * 0.22f;
-        DrawLineEx((Vector2){x, cy - h * 0.34f}, (Vector2){x + sinf(i * 1.7f) * 3.0f, cy + h * 0.34f}, 1.0f,
-                   (Color){120, 30, 34, 170});
-    }
-    DrawRectangleGradientV(0, 0, (int)w, (int)(h * 0.25f), Fade(BLACK, 0.8f), Fade(BLACK, 0.0f));
-    if (t < 0.12f) DrawRectangle(0, 0, (int)w, (int)h, Fade(WHITE, 0.55f * (1.0f - t / 0.12f)));
 }

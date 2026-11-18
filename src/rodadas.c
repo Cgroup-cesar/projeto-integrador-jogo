@@ -2,6 +2,7 @@
 // Toda resposta do Precursor sai de logica_avalia sobre a frase observada, nunca de uma tabela fixa.
 #include "rodadas.h"
 #include "criatura.h"
+#include "susto.h"
 #include "audio_sintese.h"
 #include "dialogo.h"
 #include "ui.h"
@@ -149,7 +150,7 @@ static void registra_erro(Estado *e) {
     if (depois == EV_NENHUM) return;
     // 3º erro: o vidro rompe, vem o jumpscare e a rodada recomeça com o vidro restaurado.
     e->rod.rompendo = true;
-    criatura_susto(e, depois);
+    susto_inicia(e, depois);
 }
 
 // ================================================================== decifrar

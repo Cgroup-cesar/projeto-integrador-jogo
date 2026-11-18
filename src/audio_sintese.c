@@ -1,5 +1,6 @@
 // audio_sintese.c — todos os sons gerados em código (22050 Hz, mono, 16 bits).
-// Se existir assets/audio/<nome>.ogg, ele substitui o som sintetizado. Sem placa de som, tudo vira silêncio.
+// Se existir assets/audio/<nome>.ogg (ou .wav, .mp3), ele substitui o som sintetizado. Sem placa de som,
+// tudo vira silêncio.
 #include "audio_sintese.h"
 #include "ui.h"
 #include <math.h>
@@ -13,6 +14,7 @@ static const char *const NOMES[SOM_TOTAL] = {
     "zumbido_lampada", "voz_precursor", "verdadeiro",     "falso",        "bip_interfone", "maquina_escrever",
     "interruptor",     "passo",         "passo_criatura", "vidro_estalo", "estrondo",      "alarme",
     "respiracao",      "ambiente_sala", "ambiente_saida", "papel",        "energia",       "distorcao",
+    "jumpscare",
 };
 
 // ================================================================== ferramentas de síntese
@@ -189,8 +191,8 @@ static void distorcao(Buffer *b) {
 
 // ================================================================== montagem
 static float duracao(IdSom som) {
-    static const float d[SOM_TOTAL] = {1.0f,  1.6f, 0.6f, 0.5f, 0.25f, 0.05f, 0.06f, 0.14f, 0.3f,
-                                       0.45f, 1.2f, 1.0f, 2.0f, 4.0f,  4.0f,  0.3f,  1.2f,  1.0f};
+    static const float d[SOM_TOTAL] = {1.0f, 1.6f, 0.6f, 0.5f, 0.25f, 0.05f, 0.06f, 0.14f, 0.3f, 0.45f,
+                                       1.2f, 1.0f, 2.0f, 4.0f, 4.0f,  0.3f,  1.2f,  1.0f,  1.2f};
     return d[som];
 }
 
@@ -251,6 +253,9 @@ static void sintetiza(IdSom som, Buffer *b) {
     case SOM_DISTORCAO:
         distorcao(b);
         break;
+    case SOM_JUMPSCARE: // sem o arquivo, o susto usa o mesmo estrondo do apagão
+        estrondo(b);
+        break;
     default:
         break;
     }
@@ -292,6 +297,17 @@ void audio_exporta(const char *pasta) {
     }
 }
 
+// assets/audio/<nome>.ogg, .wav ou .mp3 (o primeiro que existir); sem nenhum, um Sound inválido.
+static Sound som_do_arquivo(const char *nome) {
+    static const char *const EXTENSOES[] = {"ogg", "wav", "mp3"};
+    for (int k = 0; k < 3; k++) { // padrão FILTER: fica a primeira extensão que existe
+        char relativo[64], caminho[512];
+        snprintf(relativo, sizeof(relativo), "audio/%s.%s", nome, EXTENSOES[k]);
+        if (ui_caminho_asset(relativo, caminho, sizeof(caminho))) return LoadSound(caminho);
+    }
+    return (Sound){0};
+}
+
 void audio_inicia(Recursos *rec) {
     InitAudioDevice();
     rec->audio_ok = IsAudioDeviceReady();
@@ -299,12 +315,12 @@ void audio_inicia(Recursos *rec) {
         TraceLog(LOG_WARNING, "PRECURSOR: sem dispositivo de áudio; o jogo segue em silêncio");
         return;
     }
-    for (int i = 0; i < SOM_TOTAL; i++) {
-        char relativo[64], caminho[512];
-        snprintf(relativo, sizeof(relativo), "audio/%s.ogg", NOMES[i]);
-        if (ui_caminho_asset(relativo, caminho, sizeof(caminho)))
-            rec->sons[i] = LoadSound(caminho); // o .ogg substitui
-        if (!IsSoundValid(rec->sons[i])) rec->sons[i] = som_sintetizado((IdSom)i);
+    for (int i = 0; i < SOM_TOTAL; i++) { // padrão MAP: cada nome → um som (do arquivo ou sintetizado)
+        rec->sons[i] = som_do_arquivo(NOMES[i]);
+        bool do_arquivo = IsSoundValid(rec->sons[i]);
+        if (!do_arquivo) rec->sons[i] = som_sintetizado((IdSom)i);
+        // O susto dura até o fim do trecho alto do som (medido no arquivo); o sintetizado é mais curto.
+        if (i == SOM_JUMPSCARE) rec->susto_s = do_arquivo ? JUMPSCARE_AUDIO_S : JUMPSCARE_S;
     }
 }
 

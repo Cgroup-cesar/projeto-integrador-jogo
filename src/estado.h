@@ -30,6 +30,16 @@ typedef struct {
 // ------------------------------------------------------------------ recursos carregados uma vez
 #define SOM_MAXIMO 24
 
+// A mandíbula do precursor.glb (o modelo não tem esqueleto): os vértices do queixo e quanto cada um gira.
+typedef struct {
+    int n;                // vértices da mandíbula
+    int *indice;          // onde cada um está na malha
+    float *peso;          // 0..1: quanto acompanha o giro (suaviza a emenda com o resto do rosto)
+    Vector3 *original;    // a posição sem giro
+    int primeiro, ultimo; // a faixa da malha que muda (só ela vai para a GPU)
+    float graus;          // giro aplicado agora (0 = o modelo original)
+} BocaModelo;
+
 typedef struct {
     Font fonte;
     bool tem_fonte; // false = fonte padrão da raylib + translitera()
@@ -41,12 +51,15 @@ typedef struct {
     bool luz_ok;
     int loc_luz_pos, loc_luz_cor, loc_luz_ambiente, loc_luz_nevoa, loc_luz_camera, loc_luz_modelo;
     int loc_luz_cone, loc_luz_contraluz, loc_luz_queda;
-    RenderTexture2D alvo; // cena 3D renderizada a ESCALA_RENDER da janela
+    RenderTexture2D alvo;       // cena 3D renderizada a ESCALA_RENDER da janela
+    RenderTexture2D alvo_susto; // o rosto do susto (mesmo tamanho), colado por cima da cena
     int alvo_largura, alvo_altura;
     Sound sons[SOM_MAXIMO];
     bool audio_ok;
+    float susto_s;          // duração do susto: segue o som carregado (0 = sem áudio; vale JUMPSCARE_S)
     Model modelo_precursor; // opcional: assets/modelos/precursor.glb
     bool tem_modelo;
+    BocaModelo boca;       // a mandíbula animada no susto (susto_carrega_boca)
     Model modelo_lanterna; // opcional: assets/modelos/lanterna.glb
     bool tem_lanterna;
 } Recursos;

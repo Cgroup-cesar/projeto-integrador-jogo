@@ -476,7 +476,7 @@ void ui_desenha(const Estado *e) {
     if (e->fase == FASE_INTRO) desenha_intro(e);
     if (jogando && e->jumpscare_t <= 0.0f) desenha_hud(e);
     desenha_diario(e);
-    desenha_legenda(e);
+    if (e->jumpscare_t <= 0.0f) desenha_legenda(e); // nada por cima do rosto no susto
     if ((e->fase == FASE_FIM_BOM || e->fase == FASE_FIM_RUIM) && e->fim.tela_final) desenha_tela_final(e);
     if (e->pausado) desenha_pausa(e);
     desenha_debug(e);

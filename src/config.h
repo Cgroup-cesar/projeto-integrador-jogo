@@ -64,8 +64,11 @@
 #define CRIATURA_VISAO_DIST    14.0f
 #define CRIATURA_PROCURA_S     6.0f
 #define CRIATURA_SURGE_S       15.0f // tempo até ele sair do duto no início de cada saída
-#define CRIATURA_RAIO_CAPTURA  0.5f  // duas esferas de 0,5 m: pego quando a distância < 1 m
+#define CRIATURA_RAIO_CAPTURA  0.8f  // duas esferas de 0,8 m: pego quando a distância < 1,6 m
+#define CRIATURA_BOTE_M        3.0f  // perseguindo e mais perto que isso: avança sem as pausas, mais rápido
+#define CRIATURA_BOTE_VEL      1.35f // multiplica a velocidade de perseguição no bote
 #define CRIATURA_DIST_ARMARIO  2.0f  // entrar no armário a menos disso enquanto ele vê = pego
+#define CRIATURA_ALTURA_M      2.6f  // o precursor.glb é escalado para essa altura, com os pés no chão
 // Postura procedural (o modelo .glb não tem animação): ver regras_postura_criatura
 #define CRIATURA_PASSADA_M        1.6f   // metros por passada completa (pernas longas)
 #define CRIATURA_INCLINA_PARADO   3.0f   // graus para a frente, parado
@@ -73,8 +76,27 @@
 #define CRIATURA_BALANCO_GRAUS    5.0f   // de um lado para o outro a cada passo
 #define CRIATURA_SOBE_M           0.05f  // sobe e desce a cada passo
 #define CRIATURA_RESPIRA          0.015f // o tronco se expande 1,5% parado
-#define JUMPSCARE_S               1.2f
-#define JUMPSCARE_SILENCIO_S      0.2f
+// Susto (jumpscare): o rosto do modelo pula até a câmera e fica tremendo (ver regras_quadro_susto).
+// Com assets/audio/jumpscare.mp3, o rosto fica até o fim do trecho alto do som (depois só sobra o eco).
+#define JUMPSCARE_S            1.2f  // duração com o som sintetizado (sem assets/audio/jumpscare.*)
+#define JUMPSCARE_AUDIO_S      2.04f // duração com o jumpscare.mp3 (medida no arquivo)
+#define JUMPSCARE_SILENCIO_S   0.2f
+#define JUMPSCARE_PULO_S       0.16f // o pulo: de longe até colado na câmera
+#define JUMPSCARE_LONGE_M      2.6f  // distância da câmera ao rosto no começo do pulo
+#define JUMPSCARE_PERTO_M      0.2f  // e no fim: o rosto enche a tela
+#define JUMPSCARE_TREMOR_HZ    40.0f // posições novas do tremor por segundo
+#define JUMPSCARE_TREMOR_M     0.02f // deslocamento máximo do tremor
+#define JUMPSCARE_TREMOR_GRAUS 5.0f  // giro máximo do tremor
+#define JUMPSCARE_CLARAO_S     0.12f // clarão branco quando ele chega
+#define JUMPSCARE_ESCURECE     0.85f // o cenário ao fundo fica 85% mais escuro: o foco é a criatura
+#define JUMPSCARE_LUZ          1.1f  // força da luz branca de baixo no rosto (pisca)
+#define JUMPSCARE_BOCA_HZ      4.5f  // quantas vezes por segundo a boca abre e fecha
+#define JUMPSCARE_BOCA_FECHA   8.0f  // graus que a mandíbula sobe para a boca fechar
+#define JUMPSCARE_BOCA_ABRE    28.0f // e escancarada
+// Onde fica o rosto no precursor.glb, em fração da caixa do modelo (0 = mínimo, 1 = máximo).
+#define JUMPSCARE_ROSTO_X 0.48f
+#define JUMPSCARE_ROSTO_Y 0.90f
+#define JUMPSCARE_ROSTO_Z 0.72f
 
 // ---------------------------------------------------------------- sala, vidro e placar
 #define VIDAS_VIDRO               3

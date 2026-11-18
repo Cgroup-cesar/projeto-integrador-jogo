@@ -3,6 +3,7 @@
 #include "nivel.h"
 #include "jogador.h"
 #include "criatura.h"
+#include "susto.h"
 #include "lanterna.h"
 #include "rodadas.h"
 #include "terminal.h"
@@ -295,8 +296,8 @@ void jogo_atualiza(Estado *e, float dt) {
     }
     atualiza_temporizadores(e, dt);
     atualiza_feira(e, dt);
-    criatura_atualiza_susto(e, dt);
-    if (anda_livre && !criatura_em_susto(e)) {
+    susto_atualiza(e, dt);
+    if (anda_livre && !susto_ativo(e)) {
         jogador_atualiza(e, dt);
         lanterna_atualiza(e, dt);
     }
@@ -344,7 +345,7 @@ void jogo_desenha_cena(const Estado *e) {
     if (!tela_preta) desenha_mundo_3d(e);
     if (regras_fase_eh_rodada(e->fase) || e->fase == FASE_RESPOSTA_FINAL) rodadas_desenha(e);
     jogador_desenha(e);
-    criatura_desenha_jumpscare(e);
+    susto_desenha(e);
     if (e->fase == FASE_FIM_BOM || e->fase == FASE_FIM_RUIM) compositor_desenha_fim(e);
 }
 

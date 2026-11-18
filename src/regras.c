@@ -217,6 +217,30 @@ float regras_piscada_cela(float t) {
     return 1.0f - (s - 0.13f) / 0.17f * 0.6f; // acende de novo, fraquejando (1,0 → 0,4)
 }
 
+// Sorteio em [−1, 1): uma posição do tremor.
+static float tremida(int ciclo, unsigned semente) {
+    return sorteio(ciclo, semente) * 2.0f - 1.0f;
+}
+
+// [REQ:PURA-regras_quadro_susto] o rosto pula até a câmera, freia colado nela e treme sem parar
+QuadroSusto regras_quadro_susto(float t) {
+    if (t < 0.0f) t = 0.0f;
+    float x = fminf(1.0f, t / JUMPSCARE_PULO_S);
+    float chegada = 1.0f - (1.0f - x) * (1.0f - x) * (1.0f - x); // sai rápido e freia colado na câmera
+    int ciclo = (int)(t * JUMPSCARE_TREMOR_HZ);
+    float forca = 0.35f + 0.65f * chegada; // no pulo já treme; colado, treme inteiro
+    float depois = t - JUMPSCARE_PULO_S;
+    QuadroSusto q;
+    q.distancia = JUMPSCARE_LONGE_M + (JUMPSCARE_PERTO_M - JUMPSCARE_LONGE_M) * chegada;
+    q.tremor_x = tremida(ciclo, 0x2f1du) * JUMPSCARE_TREMOR_M * forca;
+    q.tremor_y = tremida(ciclo, 0x6b43u) * JUMPSCARE_TREMOR_M * forca;
+    q.giro_graus = tremida(ciclo, 0xa7c5u) * JUMPSCARE_TREMOR_GRAUS * forca;
+    q.clarao = depois < 0.0f ? 0.0f : fmaxf(0.0f, 1.0f - depois / JUMPSCARE_CLARAO_S);
+    float ritmo = 2.0f * PI * JUMPSCARE_BOCA_HZ * t + 1.7f * sinf(2.0f * PI * 1.3f * t); // ritmo irregular
+    q.boca = depois < 0.0f ? 1.0f : 0.5f + 0.5f * sinf(ritmo);
+    return q;
+}
+
 // ================================================================== placar, vidas e interativos
 // [REQ:FOLD-eventos] [REQ:PURA-regras_placar] o placar é a soma (fold) dos eventos; sem eventos, 0
 int regras_placar(const EventoPlacar *eventos, int n) {
