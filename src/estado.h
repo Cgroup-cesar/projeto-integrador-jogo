@@ -41,10 +41,12 @@ typedef struct {
     bool luz_ok;
     int loc_luz_pos, loc_luz_cor, loc_luz_ambiente, loc_luz_nevoa, loc_luz_camera, loc_luz_modelo;
     int loc_luz_cone, loc_luz_contraluz, loc_luz_queda;
-    RenderTexture2D alvo; // cena 3D renderizada a ESCALA_RENDER da janela
+    RenderTexture2D alvo;       // cena 3D renderizada a ESCALA_RENDER da janela
+    RenderTexture2D alvo_susto; // o rosto do susto (mesmo tamanho), colado por cima da cena
     int alvo_largura, alvo_altura;
     Sound sons[SOM_MAXIMO];
     bool audio_ok;
+    float susto_s;          // duração do susto: segue o som carregado (0 = sem áudio; vale JUMPSCARE_S)
     Model modelo_precursor; // opcional: assets/modelos/precursor.glb
     bool tem_modelo;
     Model modelo_lanterna; // opcional: assets/modelos/lanterna.glb
@@ -195,6 +197,7 @@ typedef struct {
 
 typedef struct {
     int cursor;
+    bool pular_para_apagao; // MENU_TESTE_APAGAO: pedido do menu, atendido em jogo.c
 } Menu;
 
 // ------------------------------------------------------------------ o estado inteiro

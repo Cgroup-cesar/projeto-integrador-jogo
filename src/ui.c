@@ -235,13 +235,20 @@ static void atualiza_legendas(Estado *e, float dt) {
 }
 
 // ------------------------------------------------------------------ menu e fim (lógica)
+// Opções: INICIAR, [TESTE: 2ª queda de energia, se MENU_TESTE_APAGAO], SAIR. A feira só tem INICIAR.
+static bool menu_tem_teste(const Estado *e) {
+    return MENU_TESTE_APAGAO && !e->modo_feira;
+}
+
 static void atualiza_menu(Estado *e) {
-    int opcoes = e->modo_feira ? 1 : 2;
+    int opcoes = e->modo_feira ? 1 : menu_tem_teste(e) ? 3 : 2;
     if (e->in.cima) e->menu.cursor = (e->menu.cursor + opcoes - 1) % opcoes;
     if (e->in.baixo) e->menu.cursor = (e->menu.cursor + 1) % opcoes;
     if (!e->in.confirmar) return;
     if (e->menu.cursor == 0)
         e->evento = EV_INICIAR;
+    else if (menu_tem_teste(e) && e->menu.cursor == 1)
+        e->menu.pular_para_apagao = true;
     else
         e->sair = true;
 }
@@ -282,7 +289,13 @@ static void desenha_menu(const Estado *e) {
     ui_texto_centro(e, dialogo_texto(TXT_MENU_AVISO_PROVISORIO), 278 * s, 22 * s, COR_AMBAR);
 #endif
     desenha_opcao(e, dialogo_texto(TXT_MENU_INICIAR), 380 * s, e->menu.cursor == 0);
-    if (!e->modo_feira) desenha_opcao(e, dialogo_texto(TXT_MENU_SAIR), 430 * s, e->menu.cursor == 1);
+    int sair = 1;
+    if (menu_tem_teste(e)) {
+        desenha_opcao(e, dialogo_texto(TXT_MENU_TESTE_APAGAO), 430 * s, e->menu.cursor == 1);
+        sair = 2;
+    }
+    if (!e->modo_feira)
+        desenha_opcao(e, dialogo_texto(TXT_MENU_SAIR), (380 + 50 * sair) * s, e->menu.cursor == sair);
     ui_texto_centro(e, dialogo_texto(TXT_MENU_DICA), 560 * s, 18 * s, Fade(COR_VIDRO, 0.8f));
     ui_texto_centro(e, dialogo_texto(TXT_MENU_CONTROLES), 650 * s, 18 * s, Fade(COR_FOSFORO, 0.55f));
 }
@@ -476,7 +489,7 @@ void ui_desenha(const Estado *e) {
     if (e->fase == FASE_INTRO) desenha_intro(e);
     if (jogando && e->jumpscare_t <= 0.0f) desenha_hud(e);
     desenha_diario(e);
-    desenha_legenda(e);
+    if (e->jumpscare_t <= 0.0f) desenha_legenda(e); // nada por cima do rosto no susto
     if ((e->fase == FASE_FIM_BOM || e->fase == FASE_FIM_RUIM) && e->fim.tela_final) desenha_tela_final(e);
     if (e->pausado) desenha_pausa(e);
     desenha_debug(e);

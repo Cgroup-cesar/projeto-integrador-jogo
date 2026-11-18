@@ -7,6 +7,7 @@
 #include "circuito.h"
 #include "compositor.h"
 #include "criatura.h"
+#include "susto.h"
 #include "lanterna.h"
 #include "nivel.h"
 #include <math.h>
@@ -144,7 +145,7 @@ static bool piloto_espera_ser_pego(Estado *e, Entrada *in) {
             printf("SMOKE  criatura ok: ouviu (INVESTIGA), viu (PERSEGUE) e pegou; a saída recomeça\n");
         return false;
     }
-    if (criatura_em_susto(e)) return true;
+    if (susto_ativo(e)) return true;
     if (piloto.tempo_na_fase > 60.0f) {
         piloto_falha("a criatura não pegou o jogador parado no corredor");
         return true;
@@ -284,6 +285,7 @@ static void atualiza(Estado *e, float dt) {
 
 // [REQ:RNF3] desenhar recebe const Estado *: não muda nada; o loop é entrada → atualiza → desenha
 static void desenha(const Estado *e) {
+    susto_prepara(e); // o rosto do susto, na textura dele
     posfx_inicia_cena(e);
     jogo_desenha_cena(e);
     posfx_termina_cena(e);

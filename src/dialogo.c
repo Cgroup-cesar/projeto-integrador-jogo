@@ -94,6 +94,7 @@ static const char *const TEXTOS[TXT_TOTAL] = {
     [TXT_MENU_AVISO_PROVISORIO] = "[NOME PROVISÓRIO — título final a definir]",
     [TXT_MENU_CONTROLES] = "WASD andar · mouse olhar · Shift correr · E interagir · Esc pausar",
     [TXT_MENU_DICA] = "Setas e ENTER para escolher",
+    [TXT_MENU_TESTE_APAGAO] = "TESTE: SEGUNDA QUEDA DE ENERGIA",
     [TXT_PAUSA] = "PAUSA",
     [TXT_PAUSA_CONTINUAR] = "CONTINUAR",
     [TXT_PAUSA_MENU] = "VOLTAR AO MENU",
