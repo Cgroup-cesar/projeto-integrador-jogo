@@ -5,6 +5,7 @@
 #include "regras.h"
 #include "colecoes.h"
 #include <math.h>
+#include <string.h>
 
 static bool perto(float a, float b) {
     return fabsf(a - b) < 0.001f;
@@ -250,6 +251,48 @@ static void testa_colecao_interativos(void) {
     CHECK(c.n == 0);
 }
 
+// [REQ:PURA-regras_monta_texto] testa {NOME}, {PROF}, {x|y}, marcador desconhecido e o corte sem quebrar
+// acento
+static void testa_monta_texto(void) {
+    Marcador m[] = {{"NOME", "Inês"}, {"PROF", "Professora"}};
+    char s[64];
+    regras_monta_texto("Olá, {PROF} {NOME}. Bem-vind{o|a}.", m, 2, true, s, sizeof(s));
+    CHECK(strcmp(s, "Olá, Professora Inês. Bem-vinda.") == 0);
+    regras_monta_texto("Saiu viv{o|a}.", m, 2, false, s, sizeof(s));
+    CHECK(strcmp(s, "Saiu vivo.") == 0); // masculino: a primeira opção
+    regras_monta_texto("{XYZ} e {sem fim", m, 2, false, s, sizeof(s));
+    CHECK(strcmp(s, "{XYZ} e {sem fim") == 0); // desconhecido e chave aberta ficam como estão
+    regras_monta_texto("sem marcador", NULL, 0, false, s, sizeof(s));
+    CHECK(strcmp(s, "sem marcador") == 0);
+    char curto[4]; // cabem 3 bytes: "In" e o "ê" (2 bytes) não cabe inteiro
+    regras_monta_texto("{NOME}", m, 2, false, curto, sizeof(curto));
+    CHECK(strcmp(curto, "In") == 0);
+}
+
+// [REQ:PURA-regras_nome_edita] testa letras com acento, o limite de letras, o Backspace e os espaços
+// recusados
+static void testa_nome_edita(void) {
+    char nome[40] = "";
+    CHECK(!regras_nome_edita(nome, sizeof(nome), 16, ' ')); // não começa com espaço
+    CHECK(regras_nome_edita(nome, sizeof(nome), 16, 'J'));
+    CHECK(regras_nome_edita(nome, sizeof(nome), 16, 0xE3)); // ã
+    CHECK(strcmp(nome, "Jã") == 0);
+    CHECK(regras_nome_edita(nome, sizeof(nome), 16, ' '));
+    CHECK(!regras_nome_edita(nome, sizeof(nome), 16, ' ')); // dois espaços seguidos
+    CHECK(!regras_nome_edita(nome, sizeof(nome), 16, '7')); // número
+    CHECK(regras_nome_edita(nome, sizeof(nome), 16, NOME_APAGAR));
+    CHECK(regras_nome_edita(nome, sizeof(nome), 16, NOME_APAGAR)); // apaga o "ã" inteiro (2 bytes)
+    CHECK(strcmp(nome, "J") == 0);
+    for (int i = 0; i < 20; i++) // tenta digitar 20 "é"; só cabem 15 (16 letras com o J)
+        regras_nome_edita(nome, sizeof(nome), 16, 0xE9);
+    CHECK(strlen(nome) == 1 + 15 * 2);
+    char pequeno[4] = "";
+    CHECK(!regras_nome_edita(pequeno, sizeof(pequeno), 16, NOME_APAGAR)); // apagar o vazio não faz nada
+    CHECK(regras_nome_edita(pequeno, sizeof(pequeno), 16, 'a') &&
+          regras_nome_edita(pequeno, sizeof(pequeno), 16, 'b'));
+    CHECK(!regras_nome_edita(pequeno, sizeof(pequeno), 16, 0xE7)); // o "ç" (2 bytes) não cabe mais
+}
+
 int main(void) {
     SetTraceLogLevel(LOG_ERROR); // o aviso de vetor cheio é esperado aqui
     testa_movimento();
@@ -262,6 +305,8 @@ int main(void) {
     testa_placar();
     testa_vidro();
     testa_evento_do_erro();
+    testa_monta_texto();
+    testa_nome_edita();
     testa_colecao_ruidos();
     testa_colecao_eventos();
     testa_colecao_particulas();

@@ -4,6 +4,7 @@
 #define REGRAS_H
 
 #include <stdbool.h>
+#include <stddef.h>
 #include "config.h"
 #include "raymath.h"
 #include "logica.h"
@@ -30,7 +31,7 @@ typedef enum {
 typedef enum {
     EV_NENHUM,
     EV_INICIAR,                 // Enter no menu
-    EV_INTRO_TERMINOU,          // fim do texto datilografado e das falas do interfone
+    EV_INTRO_TERMINOU,          // fim das perguntas, do texto datilografado e da carta pelo rádio
     EV_RODADA_CONCLUIDA,        // decifrou e traduziu
     EV_VIDRO_ROMPEU,            // 3º erro: a rodada recomeça
     EV_SAIDA_CONCLUIDA,         // painel resolvido e de volta à sala
@@ -153,5 +154,25 @@ void regras_circuito_painel1(Circuito *c);                             // (A ∧
 void regras_circuito_painel2(Circuito *c, TipoPorta p1, TipoPorta p2); // (A [p1] B) [p2] (¬A)
 bool regras_avaliar_circuito(const Circuito *c, const bool *entradas, bool *leds);
 bool regras_circuito_confere_tabela(const Circuito *c, const bool *alvo);
+
+// ------------------------------------------------------------------ textos do roteiro (nome e gênero)
+// Um marcador do roteiro e o que entra no lugar dele: {"NOME", "Ana"} troca "{NOME}" por "Ana".
+// As palavras ficam em dialogo.c; aqui só a regra de troca (por isso a função não sabe português).
+typedef struct {
+    const char *chave;
+    const char *valor;
+} Marcador;
+
+// Copia `modelo` para `saida` trocando cada "{CHAVE}" pelo valor do marcador e cada "{x|y}" por x (masculino)
+// ou y (feminino). Marcador desconhecido ou "{" sem "}" ficam como estão. Nunca passa de `tamanho` bytes e
+// nunca corta uma letra acentuada pela metade (UTF-8).
+void regras_monta_texto(const char *modelo, const Marcador *marcadores, int n, bool feminino, char *saida,
+                        size_t tamanho);
+
+// Edita o nome digitado: `codigo` é a letra (Unicode) ou NOME_APAGAR (Backspace, tira a última letra).
+// Aceita letras (com acento), espaço entre palavras, hífen e apóstrofo, até `max_letras` letras.
+// Devolve true se o nome mudou.
+#define NOME_APAGAR 8
+bool regras_nome_edita(char *nome, size_t tamanho, int max_letras, int codigo);
 
 #endif
