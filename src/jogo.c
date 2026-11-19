@@ -336,6 +336,7 @@ static void desenha_mundo_3d(const Estado *e) {
     circuito_desenha_3d(e);
     glifos_desenha(e);
     nivel_desenha_vidro(e);
+    if (regras_fase_eh_rodada(e->fase) || e->fase == FASE_RESPOSTA_FINAL) rodadas_desenha(e); // rachaduras no plano do vidro (3D)
     EndMode3D();
 }
 
@@ -343,7 +344,6 @@ void jogo_desenha_cena(const Estado *e) {
     ClearBackground(BLACK);
     bool tela_preta = e->fase == FASE_INTRO && !e->intro.interfone;
     if (!tela_preta) desenha_mundo_3d(e);
-    if (regras_fase_eh_rodada(e->fase) || e->fase == FASE_RESPOSTA_FINAL) rodadas_desenha(e);
     jogador_desenha(e);
     susto_desenha(e);
     if (e->fase == FASE_FIM_BOM || e->fase == FASE_FIM_RUIM) compositor_desenha_fim(e);
