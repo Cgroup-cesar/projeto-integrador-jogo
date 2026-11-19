@@ -25,6 +25,7 @@ typedef enum {
     SOM_ENERGIA,
     SOM_DISTORCAO,
     SOM_JUMPSCARE, // só no susto (o apagão usa SOM_ESTRONDO)
+    SOM_RESPIRACAO_OFEGANTE, // so toca ao sair do armario depois de muito tempo escondido
     SOM_TOTAL
 } IdSom;
 

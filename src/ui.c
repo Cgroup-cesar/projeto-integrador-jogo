@@ -1,5 +1,6 @@
 // ui.c — fonte com fallback, texto transliterado, menu, HUD, legendas e tela de fim.
 #include "ui.h"
+#include <math.h>
 #include "audio_sintese.h"
 #include <stdio.h>
 #include <string.h>
@@ -346,14 +347,27 @@ static void desenha_vidro_e_placar(const Estado *e) {
 }
 
 static void desenha_folego(const Estado *e) {
-    if (!regras_fase_eh_saida(e->fase) || e->jog.folego >= JOGADOR_FOLEGO_MAX - 0.01f) return;
+    const Jogador *j = &e->jog;
+    bool escondido = j->modo == MODO_ARMARIO;
+    // Escondido a barra aparece sempre (ela esvazia ali dentro); fora, so nas saidas e enquanto nao esta cheia.
+    if (!escondido && (!regras_fase_eh_saida(e->fase) || j->folego >= JOGADOR_FOLEGO_MAX - 0.01f)) return;
     float s = ui_escala();
-    float fracao = e->jog.folego / JOGADOR_FOLEGO_MAX;
+    float fracao = j->folego / JOGADOR_FOLEGO_MAX;
     Rectangle r = {30 * s, GetScreenHeight() - 50 * s, 200 * s, 8 * s};
-    ui_texto(e, dialogo_texto(TXT_HUD_FOLEGO), (Vector2){r.x, r.y - 24 * s}, 16 * s, Fade(COR_FOSFORO, 0.7f));
+    Color cor = j->exausto ? COR_ALARME : COR_FOSFORO;
+    Color cor_texto = Fade(COR_FOSFORO, 0.7f);
+    // A partir de 8 s escondido: vermelha e piscando, cada vez mais rapido ate os 12 s (3 Hz -> 8 Hz).
+    if (escondido && j->armario_t >= ARMARIO_TEMPO_OFEGO) {
+        float dt = j->armario_t - ARMARIO_TEMPO_OFEGO;
+        float janela = fmaxf(0.1f, ARMARIO_TEMPO_MAX - ARMARIO_TEMPO_OFEGO);
+        float fase = 6.2831853f * (3.0f * dt + 0.5f * (5.0f / janela) * dt * dt);
+        float pisca = 0.5f + 0.5f * sinf(fase);
+        cor = Fade(COR_ALARME, 0.3f + 0.7f * pisca);
+        cor_texto = Fade(COR_ALARME, 0.4f + 0.6f * pisca);
+    }
+    ui_texto(e, dialogo_texto(TXT_HUD_FOLEGO), (Vector2){r.x, r.y - 24 * s}, 16 * s, cor_texto);
     DrawRectangleRec(r, Fade(BLACK, 0.6f));
-    DrawRectangle((int)r.x, (int)r.y, (int)(r.width * fracao), (int)r.height,
-                  e->jog.exausto ? COR_ALARME : COR_FOSFORO);
+    DrawRectangle((int)r.x, (int)r.y, (int)(r.width * fracao), (int)r.height, cor);
 }
 
 static TextoId objetivo(const Estado *e) {

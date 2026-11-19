@@ -159,6 +159,13 @@
 #define COR_AMBAR     (Color){0xd9, 0xa4, 0x41, 255}
 #define COR_LANTERNA  (Color){0xf2, 0xe8, 0xd0, 255}
 
+// Folego no armario: expulso aos 12 s; saindo com 8 s ou mais escondido, ofega.
+#define ARMARIO_TEMPO_MAX   12.0f
+#define ARMARIO_TEMPO_OFEGO 8.0f
+
+// Zerou o folego correndo: so volta a correr com esta fracao da barra.
+#define FOLEGO_RETOMA_FRACAO 0.75f
+
 #endif
 
 // ---------------------------------------------------------------- Armário
