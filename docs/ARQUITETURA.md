@@ -86,7 +86,8 @@ stateDiagram-v2
 | `circuito.c` | os painéis 1 e 2 |
 | `compositor.c` | a resposta final por fichas e os dois finais |
 | `dialogo.c` | todos os textos |
-| `audio_sintese.c` | os sons gerados em código |
+| `audio_sintese.c` | os sons curtos gerados em código |
+| `trilhas.c` | os sons longos gravados: trilha do menu, vozes, coração e passos (o volume vem de `regras_volumes_trilhas`) |
 | `posfx.c` | render target, luz e névoa, VHS |
 | `ui.c` | fonte com fallback, menu, HUD, legendas, diário, tela de fim |
 

@@ -52,5 +52,5 @@ Só humanos movem para **Feito**, depois de revisar o PR. Trabalho novo descober
 
 ## Onde mexer
 Textos: `src/dialogo.c` · balanceamento e cores: `src/config.h` · mapa: `src/nivel.c` (texto ASCII) ·
-rodadas: `src/rodadas.c` · painéis: `src/circuito.c` · criatura: `src/criatura.c` · lanterna: `src/lanterna.c` · sons: `src/audio_sintese.c`.
+rodadas: `src/rodadas.c` · painéis: `src/circuito.c` · criatura: `src/criatura.c` · lanterna: `src/lanterna.c` · sons: `src/audio_sintese.c` (curtos) e `src/trilhas.c` (gravados).
 Arquitetura e fluxo de um quadro: `docs/ARQUITETURA.md`. Progresso da v0: `docs/PROGRESSO.md`.
