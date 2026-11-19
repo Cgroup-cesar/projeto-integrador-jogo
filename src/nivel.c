@@ -1,4 +1,4 @@
-// nivel.c — o Posto 7: mapa ASCII → paredes, móveis, interativos e luzes.
+// nivel.c — o bloco de contenção: mapa ASCII → paredes, móveis, interativos e luzes.
 // O mapa é texto para a equipe editar. 1 célula = 2 m; pé-direito 3 m.
 #include "nivel.h"
 #include <math.h>

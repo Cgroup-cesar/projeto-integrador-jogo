@@ -306,12 +306,12 @@ static void copia_letras(const char *texto, int letras, char *saida, size_t tama
 
 static void desenha_intro(const Estado *e) {
     float s = ui_escala();
-    if (e->intro.interfone) return; // a sala aparece; as falas vêm pelas legendas
+    if (e->intro.etapa != INTRO_DATILOGRAFA) return; // perguntas: identidade.c; rádio: as legendas
     DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), BLACK);
     float y = 230 * s;
     for (int i = 0; i <= e->intro.linha && i < INTRO_LINHAS; i++) {
-        char parcial[256];
-        const char *linha = dialogo_intro(i);
+        char parcial[256], linha[256];
+        dialogo_personaliza(&e->ident, dialogo_intro(i), linha, sizeof(linha));
         if (i == e->intro.linha)
             copia_letras(linha, (int)e->intro.letras, parcial, sizeof(parcial));
         else
@@ -406,12 +406,15 @@ static void desenha_legenda(const Estado *e) {
         largura = GetScreenWidth() - 680 * s;
         x = 24 * s;
     }
-    const char *quem = l->falante == FALANTE_VARELA  ? dialogo_texto(TXT_FALANTE_VARELA)
-                       : l->falante == FALANTE_ELIAS ? dialogo_texto(TXT_FALANTE_ELIAS)
-                                                     : "";
+    const char *quem = l->falante == FALANTE_VARELA    ? dialogo_texto(TXT_FALANTE_VARELA)
+                       : l->falante == FALANTE_JOGADOR ? dialogo_texto(TXT_FALANTE_JOGADOR)
+                                                       : "";
+    char nome_falante[96], fala[512];
+    dialogo_personaliza(&e->ident, quem, nome_falante, sizeof(nome_falante));
+    dialogo_personaliza(&e->ident, l->texto, fala, sizeof(fala));
     ui_painel((Rectangle){x - 16 * s, y - 34 * s, largura + 32 * s, 104 * s}, COR_AMBAR);
-    ui_texto(e, quem, (Vector2){x, y - 26 * s}, 16 * s, COR_AMBAR);
-    ui_texto_quebrado(e, l->texto, (Vector2){x, y}, largura, 22 * s, RAYWHITE);
+    ui_texto(e, nome_falante, (Vector2){x, y - 26 * s}, 16 * s, COR_AMBAR);
+    ui_texto_quebrado(e, fala, (Vector2){x, y}, largura, 22 * s, RAYWHITE);
 }
 
 static void desenha_diario(const Estado *e) {

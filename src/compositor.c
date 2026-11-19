@@ -281,23 +281,27 @@ void compositor_desenha_fim(const Estado *e) {
 static void desenha_textos_fim(const Estado *e) {
     if (e->fim.tela_final || criatura_em_susto(e)) return;
     float s = ui_escala(), t = e->fim.tempo;
+    char tela[512]; // o texto final, com o nome e o gênero de quem jogou
+    dialogo_personaliza(&e->ident,
+                        dialogo_texto(e->fase == FASE_FIM_RUIM ? TXT_FIM_RUIM_TELA : TXT_FIM_BOM_TELA), tela,
+                        sizeof(tela));
     if (e->fase == FASE_FIM_RUIM) {
         if (t < 2.4f) ui_texto_centro(e, dialogo_texto(TXT_FIM_RUIM_ACEITA), 200 * s, 40 * s, COR_ALARME);
         if (t > 2.2f && t < 5.4f) { // os glifos do vidro se reorganizam em português legível
             Vector2 tela =
                 GetWorldToScreen((Vector3){e->cri.pos.x, 2.95f, e->nivel.vidro_z}, e->camera); // sobre ele
-            const char *texto = dialogo_texto(TXT_FIM_RUIM_OBRIGADO);
+            char texto[96];
+            dialogo_personaliza(&e->ident, dialogo_texto(TXT_FIM_RUIM_OBRIGADO), texto, sizeof(texto));
             Vector2 m = ui_mede(e, texto, 44 * s);
             float tremor = sinf(t * 30.0f) * 2.0f * s;
             ui_texto(e, texto, (Vector2){tela.x - m.x * 0.5f + tremor, tela.y - m.y * 0.5f}, 44 * s,
                      Fade(COR_FOSFORO, fminf(1.0f, (t - 2.2f) * 1.5f)));
         }
         if (t > 8.2f)
-            ui_texto_quebrado(e, dialogo_texto(TXT_FIM_RUIM_TELA), (Vector2){160 * s, 320 * s},
-                              GetScreenWidth() - 320 * s, 30 * s, RAYWHITE);
+            ui_texto_quebrado(e, tela, (Vector2){160 * s, 320 * s}, GetScreenWidth() - 320 * s, 30 * s,
+                              RAYWHITE);
         return;
     }
     if (t > 13.0f)
-        ui_texto_quebrado(e, dialogo_texto(TXT_FIM_BOM_TELA), (Vector2){160 * s, 300 * s},
-                          GetScreenWidth() - 320 * s, 30 * s, RAYWHITE);
+        ui_texto_quebrado(e, tela, (Vector2){160 * s, 300 * s}, GetScreenWidth() - 320 * s, 30 * s, RAYWHITE);
 }

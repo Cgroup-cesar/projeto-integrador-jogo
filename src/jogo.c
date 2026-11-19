@@ -12,6 +12,7 @@
 #include "posfx.h"
 #include "audio_sintese.h"
 #include "dialogo.h"
+#include "identidade.h"
 #include "ui.h"
 #include <string.h>
 
@@ -114,7 +115,8 @@ static void entra_fase(Estado *e, Fase fase, bool reinicio) {
         entra_menu(e);
         break;
     case FASE_INTRO:
-        memset(&e->intro, 0, sizeof(e->intro));
+        memset(&e->intro, 0, sizeof(e->intro)); // começa em INTRO_GENERO
+        identidade_reinicia(e);                 // quem joga agora escolhe de novo
         jogador_teleporta(e, e->nivel.inicio, PI);
         lanterna_reinicia(e); // partida nova: começa apagada
         break;
@@ -163,6 +165,7 @@ void jogo_inicia(Estado *e) {
     nivel_carrega(&e->nivel);
     e->jog.ultima_celula = -1;
     lanterna_reinicia(e);
+    identidade_garante_nome(e); // para --fase começar direto numa fase já com um nome
     entra_fase(e, FASE_MENU, false);
 }
 
@@ -177,12 +180,17 @@ static int conta_letras(const char *texto) {
 
 static void atualiza_intro(Estado *e, float dt) {
     Intro *it = &e->intro;
-    if (it->interfone) {
+    if (it->etapa <= INTRO_NOME) {
+        identidade_atualiza(e, dt);
+        return;
+    }
+    if (it->etapa == INTRO_RADIO) {
         if (e->in.confirmar) ui_legenda_pula(e);
         if (ui_legendas_vazias(e)) e->evento = EV_INTRO_TERMINOU;
         return;
     }
-    const char *linha = dialogo_intro(it->linha);
+    char linha[256];
+    dialogo_personaliza(&e->ident, dialogo_intro(it->linha), linha, sizeof(linha));
     float total = (float)conta_letras(linha);
     float antes = it->letras;
     it->letras += dt * 30.0f;
@@ -195,7 +203,7 @@ static void atualiza_intro(Estado *e, float dt) {
     it->letras = 0.0f;
     it->espera = 0.0f;
     if (it->linha >= INTRO_LINHAS) {
-        it->interfone = true;
+        it->etapa = INTRO_RADIO;
         ui_fala(e, FALAS_INTRO_INTERFONE);
     }
 }
@@ -287,7 +295,7 @@ void jogo_atualiza(Estado *e, float dt) {
         return;
     }
     bool anda_livre = e->fase != FASE_MENU && e->fase != FASE_FIM_BOM && e->fase != FASE_FIM_RUIM &&
-                      !(e->fase == FASE_INTRO && !e->intro.interfone);
+                      !(e->fase == FASE_INTRO && e->intro.etapa != INTRO_RADIO);
     if (e->in.voltar && anda_livre && e->jog.modo == MODO_ANDANDO) {
         e->pausado = true;
         e->menu.cursor = 0;
@@ -340,7 +348,7 @@ static void desenha_mundo_3d(const Estado *e) {
 
 void jogo_desenha_cena(const Estado *e) {
     ClearBackground(BLACK);
-    bool tela_preta = e->fase == FASE_INTRO && !e->intro.interfone;
+    bool tela_preta = e->fase == FASE_INTRO && e->intro.etapa != INTRO_RADIO;
     if (!tela_preta) desenha_mundo_3d(e);
     if (regras_fase_eh_rodada(e->fase) || e->fase == FASE_RESPOSTA_FINAL) rodadas_desenha(e);
     jogador_desenha(e);
@@ -354,5 +362,6 @@ void jogo_desenha_interface(const Estado *e) {
         compositor_desenha(e);
         circuito_desenha(e);
     }
+    identidade_desenha(e);
     ui_desenha(e);
 }

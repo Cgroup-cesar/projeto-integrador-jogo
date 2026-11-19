@@ -24,7 +24,10 @@ typedef struct {
     bool tecla1, tecla2, tecla3;
     bool lanterna; // F: liga e desliga a lanterna
     bool f1, f2, f3, f5, f9, f12;
-    bool alguma; // qualquer tecla ou movimento (modo feira)
+    bool alguma;                   // qualquer tecla ou movimento (modo feira)
+    int letras[MAX_LETRAS_QUADRO]; // letras digitadas neste quadro (Unicode), para o campo do nome
+    int n_letras;
+    bool apagar; // Backspace (repete se ficar apertado)
 } Entrada;
 
 // ------------------------------------------------------------------ recursos carregados uma vez
@@ -167,7 +170,7 @@ typedef struct {
 } Compositor;
 
 // ------------------------------------------------------------------ intro, legendas e fim
-typedef enum { FALANTE_VARELA, FALANTE_ELIAS, FALANTE_SISTEMA } Falante;
+typedef enum { FALANTE_VARELA, FALANTE_JOGADOR, FALANTE_SISTEMA } Falante;
 
 typedef struct {
     const char *texto;
@@ -187,12 +190,22 @@ typedef struct {
     float tempo; // tempo da legenda da frente
 } FilaLegendas;
 
+// A intro em etapas: as duas perguntas, o texto datilografado e a carta do Varela pelo rádio (já na sala).
+typedef enum { INTRO_GENERO, INTRO_NOME, INTRO_DATILOGRAFA, INTRO_RADIO } EtapaIntro;
+
 typedef struct {
+    EtapaIntro etapa;
+    float tempo_etapa; // no modo feira, cada pergunta segue sozinha depois de IDENTIDADE_FEIRA_S
     int linha;
     float letras; // quantas letras da linha atual já apareceram
     float espera;
-    bool interfone; // terminou o texto datilografado; agora são as falas do Varela
 } Intro;
+
+// Quem o jogador é: escolhido no início da partida e usado nos marcadores {NOME}, {PROF} e {x|y} das falas.
+typedef struct {
+    bool feminino;             // false = professor, true = professora
+    char nome[NOME_MAX_BYTES]; // UTF-8, até NOME_MAX_LETRAS letras
+} Identidade;
 
 typedef struct {
     float tempo; // tempo da cinemática
@@ -228,6 +241,7 @@ typedef struct Estado {
     Painel painel;
     Compositor comp;
     Intro intro;
+    Identidade ident;
     FilaLegendas legendas;
     Mixagem mix;
     Fim fim;

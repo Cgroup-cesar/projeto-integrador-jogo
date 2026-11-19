@@ -1,4 +1,4 @@
-// lanterna.c — a lanterna do Prof. Elias. F liga e desliga (sem bateria: a luz é sempre cheia). A luz é um
+// lanterna.c — a lanterna de quem joga. F liga e desliga (sem bateria: a luz é sempre cheia). A luz é um
 // cone saindo dos olhos; o modelo fica na mão, no canto da tela.
 #include "lanterna.h"
 #include "jogador.h"

@@ -65,7 +65,7 @@ static bool andando(const Estado *e) {
 static SituacaoSom situacao(const Estado *e) {
     const Criatura *c = &e->cri;
     SituacaoSom s;
-    s.tela_inicial = e->fase == FASE_MENU || (e->fase == FASE_INTRO && !e->intro.interfone);
+    s.tela_inicial = e->fase == FASE_MENU || (e->fase == FASE_INTRO && e->intro.etapa != INTRO_RADIO);
     s.precursor_falando = precursor_falando(e);
     s.radio_falando = e->legendas.n > 0 && e->legendas.fila[0].falante == FALANTE_VARELA;
     s.criatura_solta = regras_fase_eh_saida(e->fase) && c->ativo && c->distorcao <= 0.0f;

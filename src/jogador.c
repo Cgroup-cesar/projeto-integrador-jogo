@@ -1,4 +1,5 @@
-// jogador.c — o Prof. Elias Moura em 1ª pessoa: olhar, andar, correr, esconder-se e interagir.
+// jogador.c — quem joga (professor ou professora) em 1ª pessoa: olhar, andar, correr, esconder-se e
+// interagir.
 #include "jogador.h"
 #include "nivel.h"
 #include "ui.h"

@@ -54,6 +54,12 @@ static void le_entrada(Entrada *in) {
 #endif
     in->alguma = GetKeyPressed() != 0 || in->mover.x != 0 || in->mover.y != 0 || in->mouse.x != 0 ||
                  in->mouse.y != 0 || IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
+    // Letras digitadas (o campo do nome): a raylib guarda numa fila; lemos até ela esvaziar.
+    // GetCharPressed já entrega o Unicode com acento ("ã", "ç"), que IsKeyPressed não sabe dar.
+    for (int c = GetCharPressed(); c > 0; c = GetCharPressed())
+        if (in->n_letras < MAX_LETRAS_QUADRO) in->letras[in->n_letras++] = c;
+    in->apagar = IsKeyPressed(KEY_BACKSPACE) || IsKeyPressedRepeat(KEY_BACKSPACE);
+    in->alguma = in->alguma || in->n_letras > 0;
 }
 
 // ================================================================== piloto automático (--smoke)

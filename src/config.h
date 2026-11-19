@@ -28,6 +28,7 @@
     1 // F1 VHS · F2 pular fase · F3 estado da criatura · F5 reiniciar · F9 resposta · F12 captura
 #define FEIRA_INATIVIDADE_S 90.0f // no modo feira (--feira), volta ao menu após esse tempo sem nenhuma tecla
 #define FIM_VOLTA_MENU_S    20.0f // a tela de fim volta sozinha ao menu
+#define IDENTIDADE_FEIRA_S  20.0f // no modo feira, "professor ou professora?" e o nome seguem sozinhos
 #define SMOKE_LIMITE_FASE_S                                                                                  \
     180.0f // no --smoke, uma fase que demora mais que isso (tempo simulado) é travamento
 
@@ -88,16 +89,19 @@
 
 // ---------------------------------------------------------------- capacidades das coleções (sem malloc por
 // quadro)
-#define MAX_RUIDOS      32
-#define MAX_PARTICULAS  256
-#define MAX_RACHADURAS  24
-#define MAX_EVENTOS     96
-#define MAX_INTERATIVOS 24
-#define MAX_PAREDES     256
-#define MAX_LAMPADAS    24
-#define MAX_LEGENDAS    8
-#define MAX_NOS_LOGICA  64
-#define MAX_CAMINHO     128
+#define MAX_RUIDOS        32
+#define MAX_PARTICULAS    256
+#define MAX_RACHADURAS    24
+#define MAX_EVENTOS       96
+#define MAX_INTERATIVOS   24
+#define MAX_PAREDES       256
+#define MAX_LAMPADAS      24
+#define MAX_LEGENDAS      8
+#define MAX_LETRAS_QUADRO 8                         // letras digitadas guardadas por quadro (campo do nome)
+#define NOME_MAX_LETRAS   16                        // o nome do jogador tem até 16 letras...
+#define NOME_MAX_BYTES    (NOME_MAX_LETRAS * 2 + 1) // ...de até 2 bytes cada em UTF-8 (Latin-1), mais o '\0'
+#define MAX_NOS_LOGICA    64
+#define MAX_CAMINHO       128
 
 // ---------------------------------------------------------------- luz e névoa
 #define LUZ_AMBIENTE    0.06f

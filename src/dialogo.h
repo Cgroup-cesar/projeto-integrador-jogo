@@ -23,8 +23,8 @@ typedef enum {
 
 const Legenda *dialogo_falas(BlocoFalas bloco, int *n);
 
-// Linhas datilografadas da intro (tela preta).
-#define INTRO_LINHAS 4
+// Linhas datilografadas da intro (tela preta). Podem ter marcadores: passe por dialogo_personaliza.
+#define INTRO_LINHAS 3
 const char *dialogo_intro(int linha);
 
 // Textos soltos da interface e das rodadas.
@@ -38,6 +38,17 @@ typedef enum {
     TXT_PAUSA_CONTINUAR,
     TXT_PAUSA_MENU,
     TXT_INTRO_PULAR,
+    TXT_ID_PERGUNTA_GENERO,
+    TXT_ID_PROFESSOR,
+    TXT_ID_PROFESSORA,
+    TXT_ID_DICA_GENERO,
+    TXT_ID_PERGUNTA_NOME,
+    TXT_ID_DICA_NOME,
+    TXT_NOME_PADRAO,
+    TXT_PROF_MAIUSCULA_M,
+    TXT_PROF_MAIUSCULA_F,
+    TXT_PROF_MINUSCULA_M,
+    TXT_PROF_MINUSCULA_F,
     TXT_HUD_VIDRO,
     TXT_HUD_PLACAR,
     TXT_HUD_FOLEGO,
@@ -84,7 +95,7 @@ typedef enum {
     TXT_TERMINAL_COLUNA_UNICA,
     TXT_PAINEL_CHAVE,
     TXT_FALANTE_VARELA,
-    TXT_FALANTE_ELIAS,
+    TXT_FALANTE_JOGADOR,
     TXT_PAINEL1_TITULO,
     TXT_PAINEL2_TITULO,
     TXT_PAINEL_INSTRUCOES1,
@@ -111,6 +122,11 @@ typedef enum {
 } TextoId;
 
 const char *dialogo_texto(TextoId id);
+
+// Troca os marcadores de um texto pelo que o jogador escolheu no início: {NOME}, {PROF} ("Professor" ou
+// "Professora"), {prof} (minúsculo) e {masculino|feminino} (ex.: "viv{o|a}"). A regra está em
+// regras_monta_texto (pura); aqui só ficam as palavras.
+void dialogo_personaliza(const Identidade *id, const char *modelo, char *saida, size_t tamanho);
 
 // Nome de cada fase na tela de fim (placar por fase).
 const char *dialogo_nome_fase(int fase);
