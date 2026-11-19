@@ -1,6 +1,7 @@
 // ui.c — fonte com fallback, texto transliterado, menu, HUD, legendas e tela de fim.
 #include "ui.h"
 #include "audio_sintese.h"
+#include "trilhas.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -195,6 +196,12 @@ float ui_quadrados_vidro(int vidas, Vector2 pos, float lado, Color cor) {
 }
 
 // ------------------------------------------------------------------ legendas
+// Com a gravação da voz do rádio (assets/audio/voz_radio.wav), ela é que soa nas falas (trilhas.c); o bip
+// sintetizado com chiado só toca quando o arquivo não existe.
+static void bip_do_radio(const Estado *e) {
+    if (!trilhas_tem(e, TRILHA_VOZ_RADIO)) audio_toca(e, SOM_BIP_INTERFONE, 0.6f, 1.0f);
+}
+
 void ui_fala(Estado *e, BlocoFalas bloco) {
     int n = 0;
     const Legenda *falas = dialogo_falas(bloco, &n);
@@ -208,7 +215,7 @@ void ui_fala(Estado *e, BlocoFalas bloco) {
     }
     if (estava_vazia && e->legendas.n > 0) {
         e->legendas.tempo = 0.0f;
-        audio_toca(e, SOM_BIP_INTERFONE, 0.6f, 1.0f);
+        bip_do_radio(e);
     }
 }
 
@@ -224,7 +231,7 @@ void ui_legenda_pula(Estado *e) {
         f->fila[i - 1] = f->fila[i];
     f->n--;
     f->tempo = 0.0f;
-    if (f->n > 0) audio_toca(e, SOM_BIP_INTERFONE, 0.6f, 1.0f);
+    if (f->n > 0) bip_do_radio(e);
 }
 
 static void atualiza_legendas(Estado *e, float dt) {

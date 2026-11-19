@@ -49,6 +49,8 @@ typedef struct {
     bool tem_modelo;
     Model modelo_lanterna; // opcional: assets/modelos/lanterna.glb
     bool tem_lanterna;
+    Music trilhas[TRILHA_TOTAL]; // opcionais: sons longos de assets/audio (trilhas.c)
+    bool tem_trilha[TRILHA_TOTAL];
 } Recursos;
 
 // ------------------------------------------------------------------ nível (gerado do mapa ASCII)
@@ -173,6 +175,12 @@ typedef struct {
     Falante falante;
 } Legenda;
 
+// Os sons longos (trilhas.c): o volume que cada um tem agora e a fala do rádio que está tocando.
+typedef struct {
+    float volume[TRILHA_TOTAL];
+    const char *fala_no_radio; // muda a cada legenda nova do Varela: a voz recomeça de outro trecho
+} Mixagem;
+
 typedef struct {
     Legenda fila[MAX_LEGENDAS];
     int n;
@@ -221,6 +229,7 @@ typedef struct Estado {
     Compositor comp;
     Intro intro;
     FilaLegendas legendas;
+    Mixagem mix;
     Fim fim;
     Menu menu;
 

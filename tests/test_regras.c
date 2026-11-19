@@ -98,6 +98,41 @@ static void testa_piscada_cela(void) {
     CHECK(regras_piscada_cela(12.34f) == regras_piscada_cela(12.34f)); // repetível
 }
 
+// [REQ:PURA-regras_volumes_trilhas] testa silêncio, menu, passos e o coração por distância
+static void testa_volumes_trilhas(void) {
+    float v[TRILHA_TOTAL];
+    SituacaoSom tudo = {true, true, true, true, 3.0f, true, true, true}; // silêncio vence tudo
+    regras_volumes_trilhas(tudo, v);
+    bool mudo = true;
+    for (int i = 0; i < TRILHA_TOTAL; i++) // padrão FOLD: algum volume ficou acima de zero?
+        if (v[i] > 0.0f) mudo = false;
+    CHECK(mudo);
+    SituacaoSom menu = {.tela_inicial = true};
+    regras_volumes_trilhas(menu, v);
+    CHECK(v[TRILHA_MENU] > 0.0f && perto(v[TRILHA_PASSO_ANDAR], 0.0f));
+    SituacaoSom anda = {.andando = true}, corre = {.andando = true, .correndo = true};
+    regras_volumes_trilhas(anda, v);
+    CHECK(v[TRILHA_PASSO_ANDAR] > 0.0f && perto(v[TRILHA_PASSO_CORRER], 0.0f)); // andar: passo devagar
+    regras_volumes_trilhas(corre, v);
+    CHECK(v[TRILHA_PASSO_CORRER] > 0.0f && perto(v[TRILHA_PASSO_ANDAR], 0.0f)); // correr: passo rápido
+    SituacaoSom longe = {.criatura_solta = true, .distancia_criatura = 20.0f};
+    regras_volumes_trilhas(longe, v);
+    CHECK(perto(v[TRILHA_CORACAO_NORMAL], 0.0f) && perto(v[TRILHA_CORACAO_RAPIDO], 0.0f)); // longe: nada
+    SituacaoSom meio = {.criatura_solta = true, .distancia_criatura = 10.0f};
+    regras_volumes_trilhas(meio, v);
+    float normal_10m = v[TRILHA_CORACAO_NORMAL];
+    CHECK(normal_10m > 0.0f && perto(v[TRILHA_CORACAO_RAPIDO], 0.0f)); // um pouco longe: coração normal
+    SituacaoSom quase = {.criatura_solta = true, .distancia_criatura = 7.0f};
+    regras_volumes_trilhas(quase, v);
+    CHECK(v[TRILHA_CORACAO_NORMAL] > normal_10m); // mais perto, mais alto
+    SituacaoSom colado = {.criatura_solta = true, .distancia_criatura = 3.0f};
+    regras_volumes_trilhas(colado, v);
+    CHECK(v[TRILHA_CORACAO_RAPIDO] > 0.0f && perto(v[TRILHA_CORACAO_NORMAL], 0.0f)); // muito perto: rápido
+    SituacaoSom presa = {.criatura_solta = false, .distancia_criatura = 3.0f};
+    regras_volumes_trilhas(presa, v);
+    CHECK(perto(v[TRILHA_CORACAO_RAPIDO], 0.0f)); // na cela: sem coração
+}
+
 // [REQ:PURA-regras_placar] testa o placar sem eventos, o total e o placar por fase
 static void testa_placar(void) {
     CHECK(regras_placar(NULL, 0) == 0); // placar sem eventos
@@ -223,6 +258,7 @@ int main(void) {
     testa_estados_criatura();
     testa_postura_criatura();
     testa_piscada_cela();
+    testa_volumes_trilhas();
     testa_placar();
     testa_vidro();
     testa_evento_do_erro();

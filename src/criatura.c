@@ -341,7 +341,7 @@ static bool atualiza_surgimento(Estado *e, float dt) {
     c->ativo = true;
     c->estado = CRIATURA_PATRULHA;
     c->tempo_replanejar = 99.0f;
-    audio_toca(e, SOM_VOZ_PRECURSOR, 0.9f, 0.7f);
+    audio_toca(e, SOM_DISTORCAO, 0.8f, 0.55f); // sair do duto não é fala: um rugido grave
     return true;
 }
 

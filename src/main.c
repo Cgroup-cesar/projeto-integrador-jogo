@@ -12,6 +12,7 @@
 #include <math.h>
 #include "posfx.h"
 #include "audio_sintese.h"
+#include "trilhas.h"
 #include "ui.h"
 #include <stdio.h>
 #include <string.h>
@@ -280,6 +281,7 @@ static void atualiza(Estado *e, float dt) {
     posfx_atualiza(e, dt);
     jogo_atualiza(e, dt);
     audio_atualiza(e, dt);
+    trilhas_atualiza(e, dt);
 }
 
 // [REQ:RNF3] desenhar recebe const Estado *: não muda nada; o loop é entrada → atualiza → desenha
@@ -371,6 +373,7 @@ static void carrega_recursos(void) {
     posfx_inicia(&estado.rec);
     ui_carrega_fonte(&estado.rec);
     audio_inicia(&estado.rec);
+    trilhas_carrega(&estado.rec);
     criatura_carrega_modelo(&estado.rec);
     lanterna_carrega_modelo(&estado.rec);
     if (mudo || estado.modo_smoke) SetMasterVolume(0.0f); // o smoke roda calado
@@ -379,6 +382,7 @@ static void carrega_recursos(void) {
 static void descarrega_recursos(void) {
     lanterna_descarrega_modelo(&estado.rec);
     criatura_descarrega_modelo(&estado.rec);
+    trilhas_descarrega(&estado.rec);
     audio_finaliza(&estado.rec);
     ui_descarrega_fonte(&estado.rec);
     posfx_finaliza(&estado.rec);

@@ -6,6 +6,7 @@
 #include "criatura.h"
 #include "jogador.h"
 #include "audio_sintese.h"
+#include "trilhas.h"
 #include "ui.h"
 #include "dialogo.h"
 #include <math.h>
@@ -69,7 +70,7 @@ static void transmite(Estado *e) {
     c->transmitindo = true;
     c->transmitindo_t = 0.0f;
     c->resultado = resultado;
-    audio_toca(e, SOM_VOZ_PRECURSOR, 1.0f, 0.85f);
+    if (!trilhas_tem(e, TRILHA_VOZ_PRECURSOR)) audio_toca(e, SOM_VOZ_PRECURSOR, 1.0f, 0.85f);
 }
 
 static void usa_ficha(Estado *e, int indice) {

@@ -123,6 +123,18 @@
 #define LANTERNA_QUEDA          0.4f // perda de força com a distância (lâmpadas = 1): menor = alcança mais longe
 #define LANTERNA_COMPRIMENTO_M  0.24f // o modelo na mão é escalado para esse comprimento
 
+// ---------------------------------------------------------------- trilhas (sons longos de assets/audio)
+#define CORACAO_LONGE_M    16.0f // o Precursor solto além disso: sem coração
+#define CORACAO_PERTO_M    6.0f  // aquém disso: coração rápido
+#define TRILHA_FADE_S      0.4f  // tempo de um volume ir de 0 a 1 (troca suave, sem corte seco)
+#define TRILHA_MENU_FADE_S 1.5f  // a trilha do menu some devagar quando a cena abre no laboratório
+#define VOL_TRILHA_MENU    1.0f
+#define VOL_VOZ_PRECURSOR  0.9f
+#define VOL_VOZ_RADIO      0.85f // a voz do Varela por baixo da legenda
+#define VOL_CORACAO        0.85f
+#define VOL_PASSO_ANDAR    0.55f
+#define VOL_PASSO_CORRER   0.8f
+
 // ---------------------------------------------------------------- paleta (só use onde a raylib já foi
 // incluída)
 #define COR_SOMBRA    (Color){0x0c, 0x0f, 0x0c, 255}

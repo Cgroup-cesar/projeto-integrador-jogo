@@ -354,7 +354,9 @@ void audio_atualiza(Estado *e, float dt) {
     bool silencio =
         e->silencio_t > 0.0f || (e->fase == FASE_FIM_BOM && e->fim.tempo > 2.8f && e->fim.tempo < 4.8f);
     bool saida = regras_fase_eh_saida(e->fase);
-    bool sala = !saida && e->fase != FASE_FIM_RUIM && !(e->fase == FASE_INTRO && !e->intro.interfone);
+    // Na tela inicial (menu e texto datilografado) só toca a trilha (trilhas.c): sem chiado nem zumbido.
+    bool tela_inicial = e->fase == FASE_MENU || (e->fase == FASE_INTRO && !e->intro.interfone);
+    bool sala = !saida && e->fase != FASE_FIM_RUIM && !tela_inicial;
     bool lampada_acesa = e->apagao_t <= 0.0f && (sala || (saida && e->painel.resolvido));
     mantem_laco(e, SOM_AMBIENTE_SALA, !silencio && sala, 0.35f);
     mantem_laco(e, SOM_AMBIENTE_SAIDA, !silencio && (saida || e->fase == FASE_FIM_RUIM), 0.5f);

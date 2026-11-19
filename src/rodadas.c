@@ -3,6 +3,7 @@
 #include "rodadas.h"
 #include "criatura.h"
 #include "audio_sintese.h"
+#include "trilhas.h"
 #include "dialogo.h"
 #include "ui.h"
 #include <math.h>
@@ -219,7 +220,7 @@ static void atualiza_escolha_conectivo(Estado *e) {
     r->cursor = 0;
     if (++r->coluna < d->n_colunas) return;
     r->etapa = ETAPA_TRADUZIR;
-    audio_toca(e, SOM_VOZ_PRECURSOR, 1.0f, 1.0f);
+    if (!trilhas_tem(e, TRILHA_VOZ_PRECURSOR)) audio_toca(e, SOM_VOZ_PRECURSOR, 1.0f, 1.0f);
 }
 
 static void atualiza_traducao(Estado *e) {

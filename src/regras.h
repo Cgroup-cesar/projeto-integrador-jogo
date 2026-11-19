@@ -95,6 +95,33 @@ PosturaCriatura regras_postura_criatura(float velocidade, float passada, float t
 // intervalos irregulares de ~3 s. Determinística: o mesmo `t` dá sempre o mesmo valor.
 float regras_piscada_cela(float t);
 
+// ------------------------------------------------------------------ mixagem das trilhas (sons longos)
+typedef enum {
+    TRILHA_MENU,
+    TRILHA_VOZ_PRECURSOR,
+    TRILHA_VOZ_RADIO,
+    TRILHA_CORACAO_NORMAL,
+    TRILHA_CORACAO_RAPIDO,
+    TRILHA_PASSO_ANDAR,
+    TRILHA_PASSO_CORRER,
+    TRILHA_TOTAL
+} IdTrilha;
+
+// O que está acontecendo no quadro, do ponto de vista do som (trilhas.c monta isto a partir do Estado).
+typedef struct {
+    bool tela_inicial;        // menu e texto datilografado da intro (antes de abrir no laboratório)
+    bool precursor_falando;   // ele "diz" uma frase (símbolos no vidro) ou recebe a transmissão final
+    bool radio_falando;       // a legenda da frente é do Varela
+    bool criatura_solta;      // nos corredores, fora da cela
+    float distancia_criatura; // metros até o jogador
+    bool andando, correndo;
+    bool silencio; // os 0,2 s antes do susto, o próprio susto e o silêncio do final bom
+} SituacaoSom;
+
+// Volume alvo (0..1) de cada trilha. Coração: nada além de CORACAO_LONGE_M, normal (mais alto quanto mais
+// perto) até CORACAO_PERTO_M, rápido abaixo disso. trilhas.c só faz o fade até estes valores.
+void regras_volumes_trilhas(SituacaoSom s, float volumes[TRILHA_TOTAL]);
+
 // ------------------------------------------------------------------ placar, vidas e interativos
 int regras_placar(const EventoPlacar *eventos, int n);
 int regras_placar_da_fase(const EventoPlacar *eventos, int n, int fase);

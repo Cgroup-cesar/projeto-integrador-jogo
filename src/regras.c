@@ -217,6 +217,26 @@ float regras_piscada_cela(float t) {
     return 1.0f - (s - 0.13f) / 0.17f * 0.6f; // acende de novo, fraquejando (1,0 → 0,4)
 }
 
+// ================================================================== mixagem das trilhas
+// [REQ:PURA-regras_volumes_trilhas] o volume de cada som longo sai só da situação do quadro
+void regras_volumes_trilhas(SituacaoSom s, float v[TRILHA_TOTAL]) {
+    for (int i = 0; i < TRILHA_TOTAL; i++) // padrão MAP: começa tudo em silêncio
+        v[i] = 0.0f;
+    if (s.silencio) return;
+    v[TRILHA_MENU] = s.tela_inicial ? VOL_TRILHA_MENU : 0.0f;
+    v[TRILHA_VOZ_PRECURSOR] = s.precursor_falando ? VOL_VOZ_PRECURSOR : 0.0f;
+    v[TRILHA_VOZ_RADIO] = s.radio_falando ? VOL_VOZ_RADIO : 0.0f;
+    v[TRILHA_PASSO_ANDAR] = s.andando && !s.correndo ? VOL_PASSO_ANDAR : 0.0f;
+    v[TRILHA_PASSO_CORRER] = s.andando && s.correndo ? VOL_PASSO_CORRER : 0.0f;
+    if (!s.criatura_solta || s.distancia_criatura >= CORACAO_LONGE_M) return;
+    if (s.distancia_criatura < CORACAO_PERTO_M) {
+        v[TRILHA_CORACAO_RAPIDO] = VOL_CORACAO;
+        return;
+    }
+    float perto = (CORACAO_LONGE_M - s.distancia_criatura) / (CORACAO_LONGE_M - CORACAO_PERTO_M); // 0..1
+    v[TRILHA_CORACAO_NORMAL] = VOL_CORACAO * (0.35f + 0.65f * perto);
+}
+
 // ================================================================== placar, vidas e interativos
 // [REQ:FOLD-eventos] [REQ:PURA-regras_placar] o placar é a soma (fold) dos eventos; sem eventos, 0
 int regras_placar(const EventoPlacar *eventos, int n) {
