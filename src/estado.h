@@ -92,6 +92,7 @@ typedef struct {
     bool correndo;
     ModoJogador modo;
     int armario; // índice em Nivel.armarios quando escondido
+    float armario_yaw; // direção da porta: centro do cone de visão enquanto escondido
     int mira;    // índice do interativo na mira (−1 = nenhum)
     float tempo_passo;
     float balanco;     // balanço da câmera ao andar

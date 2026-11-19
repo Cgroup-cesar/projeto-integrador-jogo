@@ -38,14 +38,32 @@ Vector3 jogador_direcao(const Estado *e) {
 }
 
 // ------------------------------------------------------------------ olhar
+// Diferença angular a - b normalizada para [-π, π].
+static float dif_angulo(float a, float b) {
+    float d = fmodf(a - b, 2.0f * PI);
+    if (d > PI) d -= 2.0f * PI;
+    if (d < -PI) d += 2.0f * PI;
+    return d;
+}
+
 // [REQ:RF2] câmera em 1ª pessoa pelo mouse (o deslocamento do mouse já é por quadro: não multiplica por dt)
 static void olha(Estado *e) {
     Jogador *j = &e->jog;
     if (j->modo == MODO_PAINEL || j->modo == MODO_DIARIO) return;
     j->yaw -= e->in.mouse.x * SENSIBILIDADE_MOUSE;
     j->pitch -= e->in.mouse.y * SENSIBILIDADE_MOUSE;
-    if (j->pitch > PITCH_MAXIMO) j->pitch = PITCH_MAXIMO;
-    if (j->pitch < -PITCH_MAXIMO) j->pitch = -PITCH_MAXIMO;
+
+    float pitch_max = PITCH_MAXIMO;
+    if (j->modo == MODO_ARMARIO) {
+        // Escondido, o olhar fica preso a um cone em volta da porta (só se vê pelas frestas).
+        float d = dif_angulo(j->yaw, j->armario_yaw);
+        if (d > ARMARIO_YAW_MAX) d = ARMARIO_YAW_MAX;
+        if (d < -ARMARIO_YAW_MAX) d = -ARMARIO_YAW_MAX;
+        j->yaw = j->armario_yaw + d;
+        pitch_max = ARMARIO_PITCH_MAX;
+    }
+    if (j->pitch > pitch_max) j->pitch = pitch_max;
+    if (j->pitch < -pitch_max) j->pitch = -pitch_max;
 }
 
 // ------------------------------------------------------------------ andar
@@ -117,6 +135,7 @@ static void entra_no_armario(Estado *e, const Interativo *it) {
     j->modo = MODO_ARMARIO;
     Vector3 fora = Vector3Subtract(e->nivel.armario_saida[j->armario], e->nivel.armarios[j->armario]);
     j->yaw = atan2f(fora.x, fora.z);
+    j->armario_yaw = j->yaw;
     j->pitch = 0.0f;
     audio_toca(e, SOM_INTERRUPTOR, 0.7f, 0.6f);
     // Entrar no armário a menos de 2 m dele enquanto ele te vê não adianta.
