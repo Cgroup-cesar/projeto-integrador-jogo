@@ -181,6 +181,9 @@ static const char *const TEXTOS[TXT_TOTAL] = {
     [TXT_NOME_AVISO] = "Seu nome fica só nesta partida: nada é gravado e ele é apagado ao voltar ao menu.",
     [TXT_NOME_CONTADOR] = "%d/%d",
     [TXT_NOME_PADRAO] = "VISITANTE",
+    [TXT_PLACA_POSTO] = "POSTO 7", // placas pintadas em estêncil nas paredes (cenario.c)
+    [TXT_PLACA_RESTRITA] = "ÁREA RESTRITA",
+    [TXT_PLACA_ARQUIVO] = "ARQUIVO",
 };
 
 const char *dialogo_texto(TextoId id) {
