@@ -413,6 +413,26 @@ static void testa_decalques(void) {
     CHECK(minimo >= 0.0f && maximo <= 1.0f && maximo > 0.5f);
 }
 
+// [REQ:PURA-materiais_uv] testa a UV de mundo: em metros, emendada entre caixas e presa ao teto
+static void testa_uv_mundo(void) {
+    Vector2 m = {6.0f, PE_DIREITO}, zero = {0.0f, 0.0f};
+    Vector2 topo = materiais_uv((Vector3){4.0f, PE_DIREITO, 10.0f}, 2, m, zero, PE_DIREITO);
+    Vector2 chao = materiais_uv((Vector3){4.0f, 0.0f, 10.0f}, 2, m, zero, PE_DIREITO);
+    CHECK(perto(topo.y, 0.0f) && perto(chao.y, 1.0f)); // v = 0 no teto, 1 no chão
+    Vector2 a = materiais_uv((Vector3){1.0f, 1.0f, 10.0f}, 2, m, zero, PE_DIREITO);
+    Vector2 b = materiais_uv((Vector3){4.0f, 1.0f, 10.0f}, 2, m, zero, PE_DIREITO);
+    CHECK(perto(b.x - a.x, 0.5f)); // 3 m numa repetição de 6 m: meia textura (nada estica)
+    Vector2 x1 = materiais_uv((Vector3){16.0f, 2.0f, 7.0f}, 0, m, zero, PE_DIREITO);
+    CHECK(perto(x1.x, 7.0f / 6.0f) && perto(x1.y, (PE_DIREITO - 2.0f) / PE_DIREITO)); // face em x usa z
+    Vector2 piso = materiais_uv((Vector3){3.0f, 0.0f, 5.0f}, 1, (Vector2){2.0f, 2.0f}, zero, PE_DIREITO);
+    CHECK(perto(piso.x, 1.5f) && perto(piso.y, 2.5f));
+    Vector2 d =
+        materiais_uv((Vector3){3.0f, 0.0f, 5.0f}, 1, (Vector2){2.0f, 2.0f}, (Vector2){0.25f, 0.5f}, 0);
+    CHECK(perto(d.x, 1.75f) && perto(d.y, 3.0f)); // o deslocamento só soma
+    Vector2 sem_metros = materiais_uv((Vector3){3.0f, 0.0f, 5.0f}, 1, zero, zero, 0); // metros 0 → 1 (sem /0)
+    CHECK(perto(sem_metros.x, 3.0f));
+}
+
 int main(void) {
     SetTraceLogLevel(LOG_ERROR); // o aviso de vetor cheio é esperado aqui
     testa_movimento();
@@ -438,5 +458,6 @@ int main(void) {
     testa_ruido_materiais();
     testa_materiais();
     testa_decalques();
+    testa_uv_mundo();
     return resultado_final("test_regras");
 }

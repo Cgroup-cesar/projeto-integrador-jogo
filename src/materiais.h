@@ -54,4 +54,10 @@ float materiais_mancha(Decalque d, float u, float v, unsigned semente);
 // Desgaste da tinta de estêncil (as placas): 0 = tinta sumiu, 1 = tinta inteira.
 float materiais_desgaste(float u, float v, unsigned semente);
 
+// UV em coordenadas de mundo para uma face da caixa: `eixo` é o eixo da normal (0 = x, 1 = y, 2 = z).
+// Nas faces verticais, u segue a horizontal e v desce a partir de `topo` (o teto); no chão e no teto,
+// u = x e v = z. `metros` = metros por repetição; `desloca` soma à UV (variação entre paredes).
+// A mesma posição do mundo dá sempre a mesma UV: paredes vizinhas emendam e nada estica.
+Vector2 materiais_uv(Vector3 ponto, int eixo, Vector2 metros, Vector2 desloca, float topo);
+
 #endif

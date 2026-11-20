@@ -197,3 +197,13 @@ float materiais_desgaste(float u, float v, unsigned semente) {
     return manchas * spray;
 }
 
+// ================================================================== UV de mundo
+// [REQ:PURA-materiais_uv] UV em metros: a mesma posição do mundo dá a mesma UV (nada estica, vizinhas
+// emendam)
+Vector2 materiais_uv(Vector3 ponto, int eixo, Vector2 metros, Vector2 desloca, float topo) {
+    float mx = metros.x > 0.0f ? metros.x : 1.0f, my = metros.y > 0.0f ? metros.y : 1.0f;
+    Vector2 uv = eixo == 0   ? (Vector2){ponto.z / mx, (topo - ponto.y) / my}
+                 : eixo == 1 ? (Vector2){ponto.x / mx, ponto.z / my}
+                             : (Vector2){ponto.x / mx, (topo - ponto.y) / my};
+    return Vector2Add(uv, desloca);
+}
