@@ -41,7 +41,8 @@ void lanterna_reinicia(Estado *e) {
 
 // Só ilumina quando há jogo na tela (no menu e nos finais ela não aparece).
 static bool acesa(const Estado *e) {
-    bool fora_do_jogo = e->fase == FASE_MENU || e->fase == FASE_FIM_BOM || e->fase == FASE_FIM_RUIM;
+    bool fora_do_jogo =
+        e->fase == FASE_MENU || e->fase == FASE_NOME || e->fase == FASE_FIM_BOM || e->fase == FASE_FIM_RUIM;
     return e->lanterna.ligada && !fora_do_jogo;
 }
 
@@ -117,7 +118,8 @@ static void desenha_cilindros(Mao m) {
 }
 
 static bool na_mao(const Estado *e) {
-    bool jogando = e->fase != FASE_MENU && e->fase != FASE_FIM_BOM && e->fase != FASE_FIM_RUIM;
+    bool jogando =
+        e->fase != FASE_MENU && e->fase != FASE_NOME && e->fase != FASE_FIM_BOM && e->fase != FASE_FIM_RUIM;
     return jogando && e->jog.modo == MODO_ANDANDO && e->jumpscare_t <= 0.0f;
 }
 

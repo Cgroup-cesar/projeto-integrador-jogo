@@ -4,15 +4,17 @@
 #define REGRAS_H
 
 #include <stdbool.h>
+#include <stddef.h>
 #include "config.h"
 #include "raymath.h"
 #include "logica.h"
 #include "colecoes.h"
 
 // ------------------------------------------------------------------ fases da partida
-// MENU → INTRO → R1 → S1 → R2 → S2 → R3 → RESPOSTA_FINAL → FIM_RUIM | FIM_BOM → MENU
+// MENU → NOME → INTRO → R1 → S1 → R2 → S2 → R3 → RESPOSTA_FINAL → FIM_RUIM | FIM_BOM → MENU
 typedef enum {
     FASE_MENU,
+    FASE_NOME, // entrada do nome do(a) jogador(a): só em memória, só nesta partida
     FASE_INTRO,
     FASE_R1,
     FASE_S1,
@@ -30,14 +32,15 @@ typedef enum {
 typedef enum {
     EV_NENHUM,
     EV_INICIAR,                 // Enter no menu
-    EV_INTRO_TERMINOU,          // fim do texto datilografado e das falas do interfone
+    EV_NOME_CONFIRMADO,         // Enter na tela de nome
+    EV_INTRO_TERMINOU,         // fim do texto datilografado e das falas do interfone
     EV_RODADA_CONCLUIDA,        // decifrou e traduziu
     EV_VIDRO_ROMPEU,            // 3º erro: a rodada recomeça
     EV_SAIDA_CONCLUIDA,         // painel resolvido e de volta à sala
     EV_PEGO,                    // a criatura pegou o jogador: a saída recomeça
     EV_TRANSMITIU_CONTRADICAO,  // frase que nunca pode ser verdadeira → final bom
     EV_TRANSMITIU_SATISFAZIVEL, // qualquer outra frase válida → final ruim
-    EV_VOLTAR_MENU,             // Enter na tela de fim ou 20 s
+    EV_VOLTAR_MENU,             // Enter na tela de fim ou 20 s; Esc no nome; pausa; inatividade (feira)
     EV_PULAR_FASE,              // debug F2
     EV_IR_RESPOSTA_FINAL,       // debug F9
     EV_TOTAL
@@ -55,6 +58,37 @@ Fase regras_proxima_fase(Fase fase, EventoFase evento);
 bool regras_reinicia_fase(Fase fase, EventoFase evento);
 // A sequência de eventos de uma partida inteira; o test_fluxo e o --smoke usam a mesma.
 int regras_roteiro_partida(bool final_bom, EventoFase *saida, int maximo);
+
+// Modo feira: depois de FEIRA_INATIVIDADE_S sem nenhuma tecla numa fase de jogo (inclusive a tela de
+// nome), volta ao menu (EV_VOLTAR_MENU). Fora do modo feira, no menu e no fim (que já volta sozinho): nada.
+EventoFase regras_evento_inatividade(bool modo_feira, Fase fase, float tempo_inativo);
+
+// ------------------------------------------------------------------ nome do(a) jogador(a)
+// O nome vive só em memória (buffer fixo em Estado) e só durante a partida. Nada vai para o disco.
+// Os buffers são UTF-8 com `cap` bytes (NOME_CAPACIDADE); o limite visível é NOME_MAX_CHARS letras.
+
+// Letras (inclusive as acentuadas do Latin-1), números, espaço, hífen e apóstrofo.
+bool regras_nome_caractere_valido(int codepoint);
+int regras_nome_conta_letras(const char *nome); // codepoints, não bytes
+// Acrescenta um caractere digitado ao fim do nome, se for válido e couber; true se entrou.
+bool regras_nome_acrescenta(char *nome, size_t cap, int codepoint);
+// Apaga o último caractere inteiro (todos os bytes do codepoint).
+void regras_nome_apaga_ultimo(char *nome);
+// Descarta o que não é válido, tira os espaços das pontas, junta espaços repetidos e corta em
+// NOME_MAX_CHARS letras (nunca no meio de um codepoint). Devolve o número de letras de `saida`.
+int regras_nome_normaliza(const char *entrada, char *saida, size_t cap);
+// Normaliza e, se o resultado ficar vazio, usa `padrao`. `entrada` e `saida` podem ser o mesmo buffer.
+void regras_nome_define(const char *entrada, char *saida, size_t cap, const char *padrao);
+
+// O que fazer com o nome ao entrar numa fase.
+typedef enum {
+    NOME_MANTEM,  // recomeço de fase (vidro rompido, pego, F5): a mesma pessoa continua
+    NOME_APAGA,   // menu (de qualquer origem) e partida nova (tela de nome): zera o buffer
+    NOME_GARANTE, // fases de jogo: se ainda estiver vazio (F2, --fase), vira o padrão
+} AcaoNome;
+AcaoNome regras_nome_ao_entrar(Fase fase, bool reinicio);
+// Aplica a ação acima ao buffer (apagar zera os `cap` bytes inteiros). jogo.c chama ao entrar em cada fase.
+void regras_nome_aplica(char *nome, size_t cap, Fase fase, bool reinicio, const char *padrao);
 
 // ------------------------------------------------------------------ resposta final
 #define ATOMO_P 0 // [VOCÊ FALAR]

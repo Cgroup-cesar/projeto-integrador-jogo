@@ -14,6 +14,7 @@
 #include "posfx.h"
 #include "audio_sintese.h"
 #include "ui.h"
+#include "dialogo.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -52,8 +53,12 @@ static void le_entrada(Entrada *in) {
     in->f9 = IsKeyPressed(KEY_F9);
     in->f12 = IsKeyPressed(KEY_F12);
 #endif
-    in->alguma = GetKeyPressed() != 0 || in->mover.x != 0 || in->mover.y != 0 || in->mouse.x != 0 ||
-                 in->mouse.y != 0 || IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
+    // Tela de nome: esvazia a fila de caracteres do quadro (quem filtra o que vale é regras_nome_acrescenta).
+    for (int c = GetCharPressed(); c != 0; c = GetCharPressed())
+        if (in->n_digitados < ENTRADA_MAX_CARACTERES) in->digitados[in->n_digitados++] = c;
+    in->apagar = IsKeyPressed(KEY_BACKSPACE) || IsKeyPressedRepeat(KEY_BACKSPACE);
+    in->alguma = GetKeyPressed() != 0 || in->n_digitados > 0 || in->mover.x != 0 || in->mover.y != 0 ||
+                 in->mouse.x != 0 || in->mouse.y != 0 || IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
 }
 
 // ================================================================== piloto automático (--smoke)
@@ -89,6 +94,24 @@ static void piloto_comeca_partida(void) {
     piloto.roteiro_i = 0;
 }
 
+// O nome só existe durante a partida: no menu o buffer inteiro está zerado; na intro, com o padrão (o piloto
+// não digita nada). Não imprime o nome.
+static void piloto_confere_nome(Fase para) {
+    if (para == FASE_MENU) {
+        for (size_t i = 0; i < sizeof(estado.nome_jogador); i++)
+            if (estado.nome_jogador[i] != '\0') {
+                piloto_falha("o nome não foi apagado ao voltar ao menu");
+                return;
+            }
+        printf("SMOKE  nome ok: buffer zerado no menu\n");
+    } else if (para == FASE_INTRO) {
+        if (strcmp(estado.nome_jogador, dialogo_texto(TXT_NOME_PADRAO)) != 0)
+            piloto_falha("a partida começou sem o nome padrão");
+        else
+            printf("SMOKE  nome ok: tela de nome pulada, nome padrão em uso\n");
+    }
+}
+
 // Confere a troca de fase contra o roteiro. Recomeços (vidro rompido, pego) mantêm a fase e são aceitos.
 static void piloto_confere_troca(Fase de, Fase para) {
     if (piloto.roteiro_i >= piloto.roteiro_n) {
@@ -102,6 +125,7 @@ static void piloto_confere_troca(Fase de, Fase para) {
     }
     piloto.roteiro_i++;
     printf("SMOKE  partida %d: %s -> %s\n", piloto.partida + 1, regras_nome_fase(de), regras_nome_fase(para));
+    piloto_confere_nome(para);
     if (para != FASE_MENU) return;
     piloto.partida++;
     if (piloto.partida >= 2) {
@@ -414,6 +438,7 @@ int main(int argc, char **argv) {
         quadro(&estado);
         if (estado.modo_smoke && piloto.codigo_saida >= 0) break;
     }
+    memset(estado.nome_jogador, 0, sizeof(estado.nome_jogador)); // o jogo encerrou: o nome some junto
     descarrega_recursos();
     if (!estado.modo_smoke || piloto.codigo_saida == 0) return 0;
     if (piloto.codigo_saida < 0)

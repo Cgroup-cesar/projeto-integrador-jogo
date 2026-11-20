@@ -104,3 +104,11 @@ Não aplicado: "commits pequenos" (a especificação manda um commit por marco n
 **Verificado:** `make readme-check`: 43 linhas de tabela, 9 trechos, 0 erro; `make` sem avisos; `make test` 100%; `make smoke` passa; CTest 3/3.
 
 **Falta (fora da v0, para a equipe):** compilar e jogar no Windows (w64devkit) e no Linux, que não foram testados aqui; rodar `tools/baixa_fonte` para ver os acentos (sem a fonte, o texto sai transliterado); preencher os nomes da equipe nos créditos; publicar a `develop` (`git push`), que ficou só local; trocar o nome provisório quando o título for decidido.
+
+## Nome de quem joga (feira)
+
+**Pronto:** fase `FASE_NOME` entre o menu e a intro (`src/tela_nome.c`), com campo de texto, cursor piscante, contador de 16 letras, Backspace por codepoint, ENTER e Esc. Nome em buffer fixo no `Estado`, só em memória, zerado no menu (fim, pausa, Esc, inatividade do `--feira`), na partida nova e ao sair; mantido nos recomeços. Usado no terminal, numa fala do Varela e na tela final. Regras puras `regras_nome_*` e `regras_evento_inatividade`. Ver decisões 63–68.
+
+**Verificado:** `make` sem avisos; `make test`: test_logica 37/37, test_regras 135/135, test_fluxo 90/90; `make smoke` passa (com as checagens novas do nome); `make readme-check` 0 erro. Capturas conferidas: tela de nome, fala do Varela com o nome e tela final.
+
+**Falta:** testar a digitação à mão (acentos com teclado ABNT2, com e sem a fonte VT323), no Linux e no Windows; atualizar o fluxo de fases na especificação (só humanos editam).

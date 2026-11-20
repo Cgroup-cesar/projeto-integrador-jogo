@@ -31,6 +31,14 @@
 #define SMOKE_LIMITE_FASE_S                                                                                  \
     180.0f // no --smoke, uma fase que demora mais que isso (tempo simulado) é travamento
 
+// ---------------------------------------------------------------- nome do(a) jogador(a) (só em memória)
+// O limite é em letras (codepoints); o buffer é em bytes: em UTF-8 cada letra ocupa até 4 bytes, mais o '\0'.
+#define NOME_MAX_CHARS         16
+#define NOME_BYTES_POR_LETRA   4
+#define NOME_CAPACIDADE        (NOME_MAX_CHARS * NOME_BYTES_POR_LETRA + 1)
+#define NOME_CURSOR_PISCA_S    0.5f // meio período do cursor piscante
+#define ENTRADA_MAX_CARACTERES 16   // caracteres digitados guardados por quadro (fila do GetCharPressed)
+
 // ---------------------------------------------------------------- mundo
 #define TAMANHO_CELULA 2.0f // 1 célula do mapa = 2 m
 #define PE_DIREITO     3.0f // altura das paredes

@@ -5,6 +5,7 @@
 #include "regras.h"
 #include "colecoes.h"
 #include <math.h>
+#include <string.h>
 
 static bool perto(float a, float b) {
     return fabsf(a - b) < 0.001f;
@@ -248,6 +249,103 @@ static void testa_colecao_interativos(void) {
     CHECK(c.n == 0);
 }
 
+// ================================================================== nome de quem joga
+// [REQ:PURA-regras_nome] testa a normalização: vazio, espaços, inválidos, acentos, limite e UTF-8 inteiro
+static void testa_nome_normaliza(void) {
+    char s[NOME_CAPACIDADE];
+    CHECK(regras_nome_normaliza("", s, sizeof(s)) == 0 && s[0] == '\0');
+    CHECK(regras_nome_normaliza("     ", s, sizeof(s)) == 0 && s[0] == '\0');
+    CHECK(regras_nome_normaliza(NULL, s, sizeof(s)) == 0 && s[0] == '\0');
+    CHECK(regras_nome_normaliza("  Ana   Maria  ", s, sizeof(s)) == 9 && strcmp(s, "Ana Maria") == 0);
+    // acentos, hífen e apóstrofo valem: "João D'Ávila-Sá" tem 15 letras e 18 bytes
+    CHECK(regras_nome_normaliza("Jo\xC3\xA3o D'\xC3\x81vila-S\xC3\xA1", s, sizeof(s)) == 15);
+    CHECK(strcmp(s, "Jo\xC3\xA3o D'\xC3\x81vila-S\xC3\xA1") == 0);
+    CHECK(regras_nome_normaliza("R2-D2", s, sizeof(s)) == 5 && strcmp(s, "R2-D2") == 0);
+    // inválidos somem: pontuação, tabulação, emoji (4 bytes), × e ÷, UTF-8 quebrado
+    CHECK(regras_nome_normaliza("Ana!@#$%<>", s, sizeof(s)) == 3 && strcmp(s, "Ana") == 0);
+    CHECK(regras_nome_normaliza("a\tb", s, sizeof(s)) == 2 && strcmp(s, "ab") == 0);
+    CHECK(regras_nome_normaliza("Z\xC3\xA9\xF0\x9F\x98\x80", s, sizeof(s)) == 2);
+    CHECK(strcmp(s, "Z\xC3\xA9") == 0);
+    CHECK(regras_nome_normaliza("2\xC3\x97" "2", s, sizeof(s)) == 2 && strcmp(s, "22") == 0);
+    CHECK(regras_nome_normaliza("A\xC3", s, sizeof(s)) == 1 && strcmp(s, "A") == 0);
+    CHECK(regras_nome_normaliza("\xC3(B", s, sizeof(s)) == 1 && strcmp(s, "B") == 0);
+    CHECK(regras_nome_normaliza("!!! ", s, sizeof(s)) == 0 && s[0] == '\0');
+}
+
+static void testa_nome_limite(void) {
+    char s[NOME_CAPACIDADE];
+    CHECK(regras_nome_normaliza("ABCDEFGHIJKLMNOP", s, sizeof(s)) == NOME_MAX_CHARS); // no limite
+    CHECK(strcmp(s, "ABCDEFGHIJKLMNOP") == 0);
+    CHECK(regras_nome_normaliza("ABCDEFGHIJKLMNOPQRS", s, sizeof(s)) == NOME_MAX_CHARS); // acima: corta
+    CHECK(strcmp(s, "ABCDEFGHIJKLMNOP") == 0);
+    CHECK(regras_nome_normaliza("ABCDEFGHIJKLMNO PQ", s, sizeof(s)) == 15); // não termina em espaço
+    CHECK(strcmp(s, "ABCDEFGHIJKLMNO") == 0);
+    // 17 letras de 2 bytes: ficam 16 letras inteiras (32 bytes), nenhuma partida ao meio
+    const char *acentos = "\xC3\x81\xC3\x89\xC3\x8D\xC3\x93\xC3\x9A\xC3\x82\xC3\x8A\xC3\x94"
+                          "\xC3\x83\xC3\x95\xC3\x87\xC3\x80\xC3\x9C\xC3\x91\xC3\xA1\xC3\xA9\xC3\xAD";
+    CHECK(regras_nome_normaliza(acentos, s, sizeof(s)) == NOME_MAX_CHARS);
+    CHECK(strlen(s) == 32 && strncmp(s, acentos, 32) == 0);
+    CHECK(regras_nome_conta_letras(s) == NOME_MAX_CHARS);
+    // cap pequeno: só cabe o que cabe inteiro
+    char p[4];
+    CHECK(regras_nome_normaliza("\xC3\x81\xC3\x89\xC3\x8D", p, sizeof(p)) == 1 && strcmp(p, "\xC3\x81") == 0);
+    CHECK(regras_nome_normaliza("Ana", p, 3) == 2 && strcmp(p, "An") == 0);
+    CHECK(regras_nome_normaliza("\xC3\x89", p, 2) == 0 && p[0] == '\0');
+    CHECK(regras_nome_normaliza("Ana", p, 1) == 0 && p[0] == '\0');
+    CHECK(regras_nome_normaliza("Ana", p, 0) == 0); // cap zero: não escreve nada
+}
+
+static void testa_nome_padrao(void) {
+    char s[NOME_CAPACIDADE];
+    regras_nome_define("", s, sizeof(s), "VISITANTE");
+    CHECK(strcmp(s, "VISITANTE") == 0);
+    regras_nome_define("    ", s, sizeof(s), "VISITANTE");
+    CHECK(strcmp(s, "VISITANTE") == 0);
+    regras_nome_define("@#!", s, sizeof(s), "VISITANTE");
+    CHECK(strcmp(s, "VISITANTE") == 0);
+    regras_nome_define(" Bia ", s, sizeof(s), "VISITANTE");
+    CHECK(strcmp(s, "Bia") == 0);
+    // no mesmo buffer (como em jogo.c): o que sobrou depois do '\0' é zerado
+    memset(s, 0, sizeof(s));
+    strcpy(s, "   Lu   Mar   ");
+    regras_nome_define(s, s, sizeof(s), "VISITANTE");
+    CHECK(strcmp(s, "Lu Mar") == 0);
+    int sujos = 0;
+    // padrão FOLD
+    for (size_t i = strlen(s); i < sizeof(s); i++)
+        sujos += s[i] != '\0';
+    CHECK(sujos == 0);
+}
+
+static void testa_nome_digitacao(void) {
+    CHECK(regras_nome_caractere_valido('a') && regras_nome_caractere_valido('Z'));
+    CHECK(regras_nome_caractere_valido('7') && regras_nome_caractere_valido(' '));
+    CHECK(regras_nome_caractere_valido('-') && regras_nome_caractere_valido('\''));
+    CHECK(regras_nome_caractere_valido(0xE7) && regras_nome_caractere_valido(0xC3)); // ç, Ã
+    CHECK(!regras_nome_caractere_valido('!') && !regras_nome_caractere_valido('.'));
+    CHECK(!regras_nome_caractere_valido('_'));
+    CHECK(!regras_nome_caractere_valido(0xD7) && !regras_nome_caractere_valido(0xF7)); // × ÷
+    CHECK(!regras_nome_caractere_valido(0x1F600) && !regras_nome_caractere_valido(-1));
+    char s[NOME_CAPACIDADE] = "";
+    CHECK(regras_nome_acrescenta(s, sizeof(s), 'A'));
+    CHECK(regras_nome_acrescenta(s, sizeof(s), 0xE7));
+    CHECK(strcmp(s, "A\xC3\xA7") == 0);
+    CHECK(!regras_nome_acrescenta(s, sizeof(s), '!'));
+    regras_nome_apaga_ultimo(s); // o ç sai inteiro (2 bytes)
+    CHECK(strcmp(s, "A") == 0);
+    regras_nome_apaga_ultimo(s);
+    regras_nome_apaga_ultimo(s); // apagar com o campo vazio não quebra nada
+    CHECK(s[0] == '\0');
+    int aceitos = 0;
+    // padrão FOLD: digita 20 "É"; só NOME_MAX_CHARS entram
+    for (int i = 0; i < 20; i++)
+        aceitos += regras_nome_acrescenta(s, sizeof(s), 0xC9);
+    CHECK(aceitos == NOME_MAX_CHARS && regras_nome_conta_letras(s) == NOME_MAX_CHARS && strlen(s) == 32);
+    char p[4] = "";
+    CHECK(regras_nome_acrescenta(p, sizeof(p), 0xC9));  // 2 bytes + '\0' cabem
+    CHECK(!regras_nome_acrescenta(p, sizeof(p), 0xC9)); // mais 2 não
+}
+
 int main(void) {
     SetTraceLogLevel(LOG_ERROR); // o aviso de vetor cheio é esperado aqui
     testa_movimento();
@@ -266,5 +364,9 @@ int main(void) {
     testa_colecao_rachaduras();
     testa_colecao_paredes();
     testa_colecao_interativos();
+    testa_nome_normaliza();
+    testa_nome_limite();
+    testa_nome_padrao();
+    testa_nome_digitacao();
     return resultado_final("test_regras");
 }

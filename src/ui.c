@@ -75,6 +75,10 @@ static const Troca TROCAS[] = {
     {0x2014, "-"},  {0x2013, "-"},   {0x2026, "..."}, {0x2190, "<-"}, {0x2191, "^"}, {0x2193, "v"},
     {0x2192, "->"}, {0x2194, "<->"}, {0x2227, "^"},   {0x2228, "v"},  {0x25A0, "#"}, {0x25A1, "o"},
     {0x201C, "\""}, {0x201D, "\""},  {0x2018, "'"},   {0x2019, "'"},  {0x2713, "*"}, {0x2714, "*"},
+    // o resto das letras do Latin-1 (podem aparecer no nome de quem joga)
+    {0xC5, "A"},    {0xE5, "a"},     {0xC6, "AE"},    {0xE6, "ae"},   {0xD8, "O"},   {0xF8, "o"},
+    {0xDD, "Y"},    {0xFD, "y"},     {0xFF, "y"},     {0xDF, "ss"},   {0xD0, "D"},   {0xF0, "d"},
+    {0xDE, "TH"},   {0xFE, "th"},
 };
 
 static const char *ascii_de(int codigo) {
@@ -402,9 +406,15 @@ static void desenha_legenda(const Estado *e) {
     const char *quem = l->falante == FALANTE_VARELA  ? dialogo_texto(TXT_FALANTE_VARELA)
                        : l->falante == FALANTE_ELIAS ? dialogo_texto(TXT_FALANTE_ELIAS)
                                                      : "";
+    // [REQ:NOME-USO] a fala com %s (dialogo.c) chama quem joga pelo nome
+    char texto[256];
+    if (strstr(l->texto, "%s") != NULL)
+        snprintf(texto, sizeof(texto), l->texto, e->nome_jogador);
+    else
+        snprintf(texto, sizeof(texto), "%s", l->texto);
     ui_painel((Rectangle){x - 16 * s, y - 34 * s, largura + 32 * s, 104 * s}, COR_AMBAR);
     ui_texto(e, quem, (Vector2){x, y - 26 * s}, 16 * s, COR_AMBAR);
-    ui_texto_quebrado(e, l->texto, (Vector2){x, y}, largura, 22 * s, RAYWHITE);
+    ui_texto_quebrado(e, texto, (Vector2){x, y}, largura, 22 * s, RAYWHITE);
 }
 
 static void desenha_diario(const Estado *e) {
@@ -429,8 +439,10 @@ static void desenha_tela_final(const Estado *e) {
     DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), (Color){4, 6, 5, 240});
     ui_texto_centro(e, dialogo_texto(vitoria ? TXT_FIM_VITORIA : TXT_FIM_DERROTA), 90 * s, 64 * s,
                     vitoria ? COR_FOSFORO : COR_ALARME);
+    snprintf(texto, sizeof(texto), dialogo_texto(TXT_FIM_OPERADOR), e->nome_jogador); // [REQ:NOME-USO]
+    ui_texto_centro(e, texto, 166 * s, 22 * s, COR_AMBAR);
     snprintf(texto, sizeof(texto), "%s  %d", dialogo_texto(TXT_FIM_PLACAR), e->placar);
-    ui_texto_centro(e, texto, 190 * s, 30 * s, COR_FOSFORO);
+    ui_texto_centro(e, texto, 200 * s, 30 * s, COR_FOSFORO);
     float y = 250 * s;
     const Fase fases[] = {FASE_R1,
                           FASE_S1,
@@ -470,8 +482,8 @@ static void desenha_debug(const Estado *e) {
 }
 
 void ui_desenha(const Estado *e) {
-    bool jogando =
-        e->fase != FASE_MENU && e->fase != FASE_INTRO && e->fase != FASE_FIM_BOM && e->fase != FASE_FIM_RUIM;
+    bool jogando = e->fase != FASE_MENU && e->fase != FASE_NOME && e->fase != FASE_INTRO &&
+                   e->fase != FASE_FIM_BOM && e->fase != FASE_FIM_RUIM;
     if (e->fase == FASE_MENU) desenha_menu(e);
     if (e->fase == FASE_INTRO) desenha_intro(e);
     if (jogando && e->jumpscare_t <= 0.0f) desenha_hud(e);

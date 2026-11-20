@@ -232,7 +232,7 @@ float nivel_piscada_cela(const Estado *e) {
 }
 
 static int luzes_sala(const Estado *e, Vector3 *pos, Vector3 *cor, Vector4 *cone) {
-    bool menu = e->fase == FASE_MENU || e->fase == FASE_INTRO;
+    bool menu = e->fase == FASE_MENU || e->fase == FASE_NOME || e->fase == FASE_INTRO;
     bool luz_a = menu ? true : e->rod.luz_a;
     bool luz_b = menu ? false : e->rod.luz_b;
     float cela = (menu ? 0.9f : 2.2f) * HOLOFOTE_GANHO * (e->apagao_t > 0.0f ? 0.0f : 1.0f);
@@ -445,7 +445,7 @@ void nivel_desenha_emissivos(const Estado *e) {
     if (!saida && sala > 0.5f)
         DrawSphereEx((Vector3){8.0f, PE_DIREITO - 0.25f, 11.0f}, 0.11f, 8, 8,
                      e->alarme_t > 0 ? COR_ALARME : lamp);
-    bool menu = e->fase == FASE_MENU || e->fase == FASE_INTRO;
+    bool menu = e->fase == FASE_MENU || e->fase == FASE_NOME || e->fase == FASE_INTRO;
     bool a_acesa = menu || e->rod.luz_a || nivel_piscada_cela(e) > 0.0f;
     if (a_acesa && e->apagao_t <= 0.0f) DrawSphereEx(HOLOFOTE_A, 0.1f, 8, 8, COR_VIDRO);
     if (!menu && e->rod.luz_b && e->apagao_t <= 0.0f) DrawSphereEx(HOLOFOTE_B, 0.1f, 8, 8, COR_VIDRO);

@@ -6,7 +6,7 @@
 // ================================================================== fases
 const char *regras_nome_fase(Fase fase) {
     static const char *const nomes[FASE_TOTAL] = {
-        "MENU", "INTRO", "R1", "S1", "R2", "S2", "R3", "RESPOSTA_FINAL", "FIM_RUIM", "FIM_BOM",
+        "MENU", "NOME", "INTRO", "R1", "S1", "R2", "S2", "R3", "RESPOSTA_FINAL", "FIM_RUIM", "FIM_BOM",
     };
     if (fase < 0 || fase >= FASE_TOTAL) return "?";
     return nomes[fase];
@@ -16,6 +16,7 @@ const char *regras_nome_evento(EventoFase evento) {
     static const char *const nomes[EV_TOTAL] = {
         "NENHUM",
         "INICIAR",
+        "NOME_CONFIRMADO",
         "INTRO_TERMINOU",
         "RODADA_CONCLUIDA",
         "VIDRO_ROMPEU",
@@ -60,10 +61,13 @@ static Fase fase_seguinte(Fase fase) {
 Fase regras_proxima_fase(Fase fase, EventoFase evento) {
     if (fase < 0 || fase >= FASE_TOTAL) return FASE_MENU;
     if (evento == EV_PULAR_FASE) return fase_seguinte(fase);
+    if (evento == EV_VOLTAR_MENU) return FASE_MENU; // de qualquer fase: fim, pausa, Esc no nome, inatividade
     if (evento == EV_IR_RESPOSTA_FINAL && fase >= FASE_INTRO && fase <= FASE_R3) return FASE_RESPOSTA_FINAL;
     switch (fase) {
     case FASE_MENU:
-        return evento == EV_INICIAR ? FASE_INTRO : fase;
+        return evento == EV_INICIAR ? FASE_NOME : fase;
+    case FASE_NOME:
+        return evento == EV_NOME_CONFIRMADO ? FASE_INTRO : fase;
     case FASE_INTRO:
         return evento == EV_INTRO_TERMINOU ? FASE_R1 : fase;
     case FASE_R1:
@@ -80,11 +84,8 @@ Fase regras_proxima_fase(Fase fase, EventoFase evento) {
         if (evento == EV_TRANSMITIU_CONTRADICAO) return FASE_FIM_BOM;
         if (evento == EV_TRANSMITIU_SATISFAZIVEL) return FASE_FIM_RUIM;
         return fase;
-    case FASE_FIM_RUIM:
-    case FASE_FIM_BOM:
-        return evento == EV_VOLTAR_MENU ? FASE_MENU : fase;
-    default:
-        return FASE_MENU;
+    default: // FIM_RUIM e FIM_BOM só saem com EV_VOLTAR_MENU (tratado acima)
+        return fase;
     }
 }
 
@@ -95,7 +96,8 @@ bool regras_reinicia_fase(Fase fase, EventoFase evento) {
 
 int regras_roteiro_partida(bool final_bom, EventoFase *saida, int maximo) {
     const EventoFase roteiro[] = {
-        EV_INICIAR,          EV_INTRO_TERMINOU,
+        EV_INICIAR,          EV_NOME_CONFIRMADO,
+        EV_INTRO_TERMINOU,
         EV_RODADA_CONCLUIDA, EV_SAIDA_CONCLUIDA,
         EV_RODADA_CONCLUIDA, EV_SAIDA_CONCLUIDA,
         EV_RODADA_CONCLUIDA, final_bom ? EV_TRANSMITIU_CONTRADICAO : EV_TRANSMITIU_SATISFAZIVEL,
@@ -106,6 +108,143 @@ int regras_roteiro_partida(bool final_bom, EventoFase *saida, int maximo) {
     for (int i = 0; i < n; i++)
         saida[i] = roteiro[i];
     return n;
+}
+
+EventoFase regras_evento_inatividade(bool modo_feira, Fase fase, float tempo_inativo) {
+    bool jogando = fase != FASE_MENU && fase != FASE_FIM_RUIM && fase != FASE_FIM_BOM;
+    return modo_feira && jogando && tempo_inativo > FEIRA_INATIVIDADE_S ? EV_VOLTAR_MENU : EV_NENHUM;
+}
+
+// ================================================================== nome do(a) jogador(a)
+// UTF-8 sem raylib: lê um codepoint e diz quantos bytes ele ocupa (sequência quebrada: −1, avança o que leu).
+static int utf8_le(const char *p, int *bytes) {
+    const unsigned char *u = (const unsigned char *)p;
+    int n = u[0] < 0x80                ? 1
+            : (u[0] & 0xE0) == 0xC0 ? 2
+            : (u[0] & 0xF0) == 0xE0 ? 3
+            : (u[0] & 0xF8) == 0xF0 ? 4
+                                    : 0;
+    *bytes = 1;
+    if (n <= 1) return n == 1 ? u[0] : -1;
+    int codigo = u[0] & (0x7F >> n);
+    for (int i = 1; i < n; i++) {
+        if ((u[i] & 0xC0) != 0x80) {
+            *bytes = i; // para antes do byte que não continua a sequência (inclusive o '\0')
+            return -1;
+        }
+        codigo = (codigo << 6) | (u[i] & 0x3F);
+    }
+    *bytes = n;
+    return codigo;
+}
+
+// Escreve o codepoint em UTF-8 (até NOME_BYTES_POR_LETRA bytes, sem '\0'); devolve quantos bytes.
+static int utf8_escreve(int codigo, char *saida) {
+    if (codigo < 0x80) {
+        saida[0] = (char)codigo;
+        return 1;
+    }
+    if (codigo < 0x800) {
+        saida[0] = (char)(0xC0 | (codigo >> 6));
+        saida[1] = (char)(0x80 | (codigo & 0x3F));
+        return 2;
+    }
+    if (codigo < 0x10000) {
+        saida[0] = (char)(0xE0 | (codigo >> 12));
+        saida[1] = (char)(0x80 | ((codigo >> 6) & 0x3F));
+        saida[2] = (char)(0x80 | (codigo & 0x3F));
+        return 3;
+    }
+    saida[0] = (char)(0xF0 | (codigo >> 18));
+    saida[1] = (char)(0x80 | ((codigo >> 12) & 0x3F));
+    saida[2] = (char)(0x80 | ((codigo >> 6) & 0x3F));
+    saida[3] = (char)(0x80 | (codigo & 0x3F));
+    return 4;
+}
+
+// [REQ:PURA-regras_nome] o que pode entrar no nome: letras (com acento), números, espaço, hífen e apóstrofo
+bool regras_nome_caractere_valido(int codepoint) {
+    int c = codepoint;
+    if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')) return true;
+    if (c == ' ' || c == '-' || c == '\'') return true;
+    return c >= 0xC0 && c <= 0xFF && c != 0xD7 && c != 0xF7; // letras do Latin-1 (sem × e ÷)
+}
+
+int regras_nome_conta_letras(const char *nome) {
+    int n = 0;
+    for (const char *p = nome; *p != '\0'; p++)
+        if (((unsigned char)*p & 0xC0) != 0x80) n++; // byte de continuação não é letra nova
+    return n;
+}
+
+bool regras_nome_acrescenta(char *nome, size_t cap, int codepoint) {
+    if (!regras_nome_caractere_valido(codepoint) || regras_nome_conta_letras(nome) >= NOME_MAX_CHARS)
+        return false;
+    char bytes[NOME_BYTES_POR_LETRA];
+    size_t n = (size_t)utf8_escreve(codepoint, bytes), usado = strlen(nome);
+    if (usado + n + 1 > cap) return false;
+    memcpy(nome + usado, bytes, n);
+    nome[usado + n] = '\0';
+    return true;
+}
+
+void regras_nome_apaga_ultimo(char *nome) {
+    size_t n = strlen(nome);
+    while (n > 0 && ((unsigned char)nome[n - 1] & 0xC0) == 0x80) // bytes de continuação do último codepoint
+        n--;
+    if (n > 0) n--; // e o byte que abre o codepoint
+    nome[n] = '\0';
+}
+
+int regras_nome_normaliza(const char *entrada, char *saida, size_t cap) {
+    if (cap == 0) return 0;
+    size_t j = 0;
+    int letras = 0;
+    bool espaco = false; // espaço pendente: só é escrito se vier uma letra depois (corta as pontas)
+    for (const char *p = entrada; p != NULL && *p != '\0' && letras < NOME_MAX_CHARS;) {
+        int bytes, c = utf8_le(p, &bytes);
+        p += bytes;
+        if (!regras_nome_caractere_valido(c)) continue;
+        if (c == ' ') {
+            espaco = letras > 0;
+            continue;
+        }
+        char cod[NOME_BYTES_POR_LETRA];
+        size_t n = (size_t)utf8_escreve(c, cod);
+        int extra = espaco ? 1 : 0;
+        if (letras + extra + 1 > NOME_MAX_CHARS || j + (size_t)extra + n + 1 > cap) break;
+        if (espaco) saida[j++] = ' ';
+        memcpy(saida + j, cod, n);
+        j += n;
+        letras += extra + 1;
+        espaco = false;
+    }
+    saida[j] = '\0';
+    return letras;
+}
+
+void regras_nome_define(const char *entrada, char *saida, size_t cap, const char *padrao) {
+    if (cap == 0) return;
+    char limpo[NOME_CAPACIDADE]; // cópia: entrada e saída podem ser o mesmo buffer
+    size_t c = cap < sizeof(limpo) ? cap : sizeof(limpo);
+    if (regras_nome_normaliza(entrada, limpo, c) == 0) regras_nome_normaliza(padrao, limpo, c);
+    size_t n = strlen(limpo) + 1;
+    memcpy(saida, limpo, n);
+    memset(saida + n, 0, cap - n); // nada do que foi digitado sobra depois do '\0'
+}
+
+// [REQ:PURA-regras_nome_ao_entrar] ciclo de vida do nome: apagado no menu e na partida nova, mantido nos
+// recomeços, garantido (padrão) nas fases de jogo
+AcaoNome regras_nome_ao_entrar(Fase fase, bool reinicio) {
+    if (reinicio) return NOME_MANTEM;
+    if (fase == FASE_MENU || fase == FASE_NOME) return NOME_APAGA;
+    return NOME_GARANTE;
+}
+
+void regras_nome_aplica(char *nome, size_t cap, Fase fase, bool reinicio, const char *padrao) {
+    AcaoNome acao = regras_nome_ao_entrar(fase, reinicio);
+    if (acao == NOME_APAGA) memset(nome, 0, cap);
+    if (acao == NOME_GARANTE) regras_nome_define(nome, nome, cap, padrao);
 }
 
 // ================================================================== resposta final

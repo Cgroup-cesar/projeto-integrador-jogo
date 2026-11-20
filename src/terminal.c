@@ -38,6 +38,11 @@ Rectangle terminal_moldura(const Estado *e, const char *cabecalho) {
     ui_texto(e, dialogo_texto(TXT_TERMINAL_TITULO), (Vector2){r.x + 20 * s, r.y + 14 * s}, 24 * s,
              COR_FOSFORO);
     ui_texto(e, cabecalho, (Vector2){r.x + 20 * s, r.y + 46 * s}, 18 * s, Fade(COR_FOSFORO, 0.75f));
+    char operador[NOME_CAPACIDADE + 32]; // [REQ:NOME-USO] quem opera o analisador (o nome desta partida)
+    snprintf(operador, sizeof(operador), dialogo_texto(TXT_TERMINAL_OPERADOR), e->nome_jogador);
+    // acima da moldura, à direita: no terminal o HUD de cima não aparece, então ali não disputa espaço
+    ui_texto(e, operador, (Vector2){r.x + r.width - ui_mede(e, operador, 16 * s).x, r.y - 24 * s}, 16 * s,
+             COR_AMBAR);
     DrawLineEx((Vector2){r.x + 14 * s, r.y + 74 * s}, (Vector2){r.x + r.width - 14 * s, r.y + 74 * s}, 1,
                Fade(COR_FOSFORO, 0.35f));
     if (e->diario_lido)

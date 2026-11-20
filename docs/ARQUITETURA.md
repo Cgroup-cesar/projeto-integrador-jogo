@@ -52,7 +52,9 @@ Por exemplo, a criatura: `criatura.c` faz o raycast contra as paredes (`GetRayCo
 ```mermaid
 stateDiagram-v2
     [*] --> MENU
-    MENU --> INTRO: INICIAR
+    MENU --> NOME: INICIAR
+    NOME --> INTRO: NOME_CONFIRMADO (ENTER; vazio vira VISITANTE)
+    NOME --> MENU: VOLTAR_MENU (Esc)
     INTRO --> R1: INTRO_TERMINOU
     R1 --> S1: RODADA_CONCLUIDA
     S1 --> R2: SAIDA_CONCLUIDA
@@ -63,6 +65,7 @@ stateDiagram-v2
     RESPOSTA_FINAL --> FIM_RUIM: TRANSMITIU_SATISFAZIVEL
     FIM_BOM --> MENU: VOLTAR_MENU (ENTER ou 20 s)
     FIM_RUIM --> MENU: VOLTAR_MENU (ENTER ou 20 s)
+    note right of MENU: VOLTAR_MENU vale de qualquer fase (pausa, inatividade no modo feira) e apaga o nome
     R1 --> R1: VIDRO_ROMPEU (3º erro)
     R2 --> R2: VIDRO_ROMPEU
     R3 --> R3: VIDRO_ROMPEU

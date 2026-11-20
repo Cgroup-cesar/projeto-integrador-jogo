@@ -3,11 +3,13 @@
 #include "dialogo.h"
 
 // ================================================================== falas (legendas)
+// Uma fala com %s recebe o nome de quem joga na hora de desenhar (só a 2ª do interfone da intro).
 #define V FALANTE_VARELA
 #define E FALANTE_ELIAS
 
 static const Legenda INTRO_INTERFONE[] = {
     {"Boa noite, professor. Coronel Varela. Não encoste no vidro.", 4.0f, V},
+    {"%s, você opera o analisador esta noite. Registre tudo o que o professor traduzir.", 5.0f, V},
     {"Nós o chamamos de Precursor. Está conosco desde 77. Não fala como nós. Não pensa como nós.", 5.5f, V},
     {"A Dra. Sampaio concluiu que a língua dele não tem palavras. Só estrutura. Verdadeiro. Falso.", 5.5f, V},
     {"Os interruptores à sua frente controlam as luzes da cela. Ele responde ao que vê. Descubra o que ele "
@@ -171,6 +173,14 @@ static const char *const TEXTOS[TXT_TOTAL] = {
     [TXT_FIM_ERROS] = "ERROS",
     [TXT_FIM_ENTER] = "Pressione ENTER",
     [TXT_FIM_RODAPE] = "Projeto Integrador PIF · nome provisório",
+    [TXT_FIM_OPERADOR] = "OPERADOR(A): %s",
+    [TXT_TERMINAL_OPERADOR] = "OPERADOR(A): %s",
+    [TXT_NOME_TITULO] = "POSTO 7 — REGISTRO DE ACESSO",
+    [TXT_NOME_PERGUNTA] = "Identifique-se, operador(a):",
+    [TXT_NOME_DICA] = "ENTER confirma · Backspace apaga · Esc volta ao menu",
+    [TXT_NOME_AVISO] = "Seu nome fica só nesta partida: nada é gravado e ele é apagado ao voltar ao menu.",
+    [TXT_NOME_CONTADOR] = "%d/%d",
+    [TXT_NOME_PADRAO] = "VISITANTE",
 };
 
 const char *dialogo_texto(TextoId id) {
@@ -180,7 +190,7 @@ const char *dialogo_texto(TextoId id) {
 
 const char *dialogo_nome_fase(int fase) {
     static const char *const nomes[FASE_TOTAL] = {
-        "",        "Intro",    "Rodada 1",       "Saída 1", "Rodada 2",
+        "",        "Nome",     "Intro",    "Rodada 1",       "Saída 1", "Rodada 2",
         "Saída 2", "Rodada 3", "Resposta final", "Final",   "Final",
     };
     return (fase >= 0 && fase < FASE_TOTAL) ? nomes[fase] : "";
