@@ -4,6 +4,7 @@
 #include "checagem.h"
 #include "regras.h"
 #include "colecoes.h"
+#include "materiais.h"
 #include <math.h>
 #include <string.h>
 
@@ -266,7 +267,10 @@ static void testa_nome_normaliza(void) {
     CHECK(regras_nome_normaliza("a\tb", s, sizeof(s)) == 2 && strcmp(s, "ab") == 0);
     CHECK(regras_nome_normaliza("Z\xC3\xA9\xF0\x9F\x98\x80", s, sizeof(s)) == 2);
     CHECK(strcmp(s, "Z\xC3\xA9") == 0);
-    CHECK(regras_nome_normaliza("2\xC3\x97" "2", s, sizeof(s)) == 2 && strcmp(s, "22") == 0);
+    CHECK(regras_nome_normaliza("2\xC3\x97"
+                                "2",
+                                s, sizeof(s)) == 2 &&
+          strcmp(s, "22") == 0);
     CHECK(regras_nome_normaliza("A\xC3", s, sizeof(s)) == 1 && strcmp(s, "A") == 0);
     CHECK(regras_nome_normaliza("\xC3(B", s, sizeof(s)) == 1 && strcmp(s, "B") == 0);
     CHECK(regras_nome_normaliza("!!! ", s, sizeof(s)) == 0 && s[0] == '\0');
@@ -346,6 +350,89 @@ static void testa_nome_digitacao(void) {
     CHECK(!regras_nome_acrescenta(p, sizeof(p), 0xC9)); // mais 2 não
 }
 
+// ================================================================== texturas procedurais (materiais.c)
+// [REQ:PURA-materiais] testa o ruído (faixa, determinismo, repetição sem emenda) e os materiais
+static void testa_ruido_materiais(void) {
+    CHECK(materiais_hash(3, 7, 1985u) == materiais_hash(3, 7, 1985u)); // mesma entrada, mesmo número
+    CHECK(materiais_hash(3, 7, 1985u) != materiais_hash(3, 7, 1986u)); // a semente muda o resultado
+    int fora = 0;
+    // padrão FOLD: conta amostras fora de [0, 1)
+    for (int i = 0; i < 200; i++) {
+        float r = materiais_ruido(i * 0.37f, i * 0.11f, 8, 8, 7u),
+              f = materiais_fbm(i / 200.0f, 0.5f, 4, 4, 4, 7u);
+        fora += r < 0.0f || r >= 1.0f || f < 0.0f || f >= 1.0f;
+    }
+    CHECK(fora == 0);
+    CHECK(perto(materiais_ruido(2.3f, 1.7f, 8, 4, 9u), materiais_ruido(10.3f, 5.7f, 8, 4, 9u))); // período
+    float salto = 0.0f;
+    // padrão FOLD: o maior salto entre a borda direita e a esquerda (a textura repete sem emenda)
+    for (int i = 0; i < 32; i++) {
+        float v = (i + 0.5f) / 32.0f;
+        salto = fmaxf(
+            salto, fabsf(materiais_fbm(0.0005f, v, 12, 6, 4, 3u) - materiais_fbm(0.9995f, v, 12, 6, 4, 3u)));
+    }
+    CHECK(salto < 0.02f);
+}
+
+// Brilho médio perto de 1 (a cor da paleta continua sendo a cor do material: nada fica escuro demais) e
+// mistura em [0, 1]; mesma semente, mesmo pixel.
+static void testa_materiais(void) {
+    for (int m = 0; m < MATERIAL_TOTAL; m++) {
+        float soma = 0.0f;
+        int invalidos = 0;
+        // padrão FOLD: soma do brilho numa grade de 48 × 48 pixels
+        for (int i = 0; i < 48 * 48; i++) {
+            PixelMaterial p =
+                materiais_pixel((TipoMaterial)m, (i % 48 + 0.5f) / 48, (i / 48 + 0.5f) / 48, 0.8f, 1985u);
+            soma += p.brilho;
+            invalidos += p.brilho < 0.15f || p.brilho > 2.0f || p.mistura < 0.0f || p.mistura > 1.0f;
+        }
+        float media = soma / (48 * 48);
+        CHECK(invalidos == 0);
+        CHECK(media > 0.7f && media < 1.15f);
+    }
+    PixelMaterial a = materiais_pixel(MATERIAL_CONCRETO, 0.3f, 0.6f, 0.8f, 1985u);
+    PixelMaterial b = materiais_pixel(MATERIAL_CONCRETO, 0.3f, 0.6f, 0.8f, 1985u);
+    CHECK(a.brilho == b.brilho && a.mistura == b.mistura);
+    PixelMaterial limpo = materiais_pixel(MATERIAL_OLIVA, 0.3f, 0.6f, 0.0f, 1985u); // sujeira 0: sem mistura
+    CHECK(limpo.mistura >= 0.0f && limpo.mistura <= 1.0f);
+}
+
+static void testa_decalques(void) {
+    CHECK(materiais_mancha(DECALQUE_UMIDADE, 0.0f, 0.5f, 1u) == 0.0f); // some na borda
+    CHECK(materiais_mancha(DECALQUE_ARRASTO, 0.5f, 1.0f, 1u) == 0.0f);
+    CHECK(materiais_mancha(DECALQUE_UMIDADE, 0.5f, 0.35f, 1u) > 0.3f); // e existe no meio
+    CHECK(materiais_mancha(DECALQUE_POSTO, 0.5f, 0.5f, 1u) == 0.0f);   // placa de texto não é mancha
+    float minimo = 1.0f, maximo = 0.0f;
+    // padrão FOLD: faixa do desgaste da tinta de estêncil
+    for (int i = 0; i < 256; i++) {
+        float d = materiais_desgaste((i % 16 + 0.5f) / 16, (i / 16 + 0.5f) / 16, 5u);
+        minimo = fminf(minimo, d);
+        maximo = fmaxf(maximo, d);
+    }
+    CHECK(minimo >= 0.0f && maximo <= 1.0f && maximo > 0.5f);
+}
+
+// [REQ:PURA-materiais_uv] testa a UV de mundo: em metros, emendada entre caixas e presa ao teto
+static void testa_uv_mundo(void) {
+    Vector2 m = {6.0f, PE_DIREITO}, zero = {0.0f, 0.0f};
+    Vector2 topo = materiais_uv((Vector3){4.0f, PE_DIREITO, 10.0f}, 2, m, zero, PE_DIREITO);
+    Vector2 chao = materiais_uv((Vector3){4.0f, 0.0f, 10.0f}, 2, m, zero, PE_DIREITO);
+    CHECK(perto(topo.y, 0.0f) && perto(chao.y, 1.0f)); // v = 0 no teto, 1 no chão
+    Vector2 a = materiais_uv((Vector3){1.0f, 1.0f, 10.0f}, 2, m, zero, PE_DIREITO);
+    Vector2 b = materiais_uv((Vector3){4.0f, 1.0f, 10.0f}, 2, m, zero, PE_DIREITO);
+    CHECK(perto(b.x - a.x, 0.5f)); // 3 m numa repetição de 6 m: meia textura (nada estica)
+    Vector2 x1 = materiais_uv((Vector3){16.0f, 2.0f, 7.0f}, 0, m, zero, PE_DIREITO);
+    CHECK(perto(x1.x, 7.0f / 6.0f) && perto(x1.y, (PE_DIREITO - 2.0f) / PE_DIREITO)); // face em x usa z
+    Vector2 piso = materiais_uv((Vector3){3.0f, 0.0f, 5.0f}, 1, (Vector2){2.0f, 2.0f}, zero, PE_DIREITO);
+    CHECK(perto(piso.x, 1.5f) && perto(piso.y, 2.5f));
+    Vector2 d =
+        materiais_uv((Vector3){3.0f, 0.0f, 5.0f}, 1, (Vector2){2.0f, 2.0f}, (Vector2){0.25f, 0.5f}, 0);
+    CHECK(perto(d.x, 1.75f) && perto(d.y, 3.0f)); // o deslocamento só soma
+    Vector2 sem_metros = materiais_uv((Vector3){3.0f, 0.0f, 5.0f}, 1, zero, zero, 0); // metros 0 → 1 (sem /0)
+    CHECK(perto(sem_metros.x, 3.0f));
+}
+
 int main(void) {
     SetTraceLogLevel(LOG_ERROR); // o aviso de vetor cheio é esperado aqui
     testa_movimento();
@@ -368,5 +455,9 @@ int main(void) {
     testa_nome_limite();
     testa_nome_padrao();
     testa_nome_digitacao();
+    testa_ruido_materiais();
+    testa_materiais();
+    testa_decalques();
+    testa_uv_mundo();
     return resultado_final("test_regras");
 }

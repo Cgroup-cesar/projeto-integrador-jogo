@@ -9,6 +9,7 @@
 #include "logica.h"
 #include "regras.h"
 #include "colecoes.h"
+#include "materiais.h"
 
 // ------------------------------------------------------------------ entrada do quadro
 // main.c lê teclado e mouse e preenche isto; os módulos só leem daqui.
@@ -66,6 +67,11 @@ typedef struct {
     BocaModelo boca;       // a mandíbula animada no susto (susto_carrega_boca)
     Model modelo_lanterna; // opcional: assets/modelos/lanterna.glb
     bool tem_lanterna;
+    // Texturas do mapa (texturas.c): criadas uma vez em carrega_recursos, liberadas em descarrega_recursos.
+    Texture2D material[MATERIAL_TOTAL];
+    bool material_de_arquivo[MATERIAL_TOTAL]; // true = assets/texturas/<nome>.png; false = procedural
+    Texture2D decalque[DECALQUE_TOTAL];
+    Texture2D halo; // brilho radial das lâmpadas
 } Recursos;
 
 // ------------------------------------------------------------------ nível (gerado do mapa ASCII)

@@ -65,7 +65,7 @@ endfunction()
 
 enable_testing()
 precursor_teste(test_logica src/logica.c src/regras.c)
-precursor_teste(test_regras src/regras.c src/logica.c src/colecoes.c)
+precursor_teste(test_regras src/regras.c src/logica.c src/colecoes.c src/materiais.c)
 precursor_teste(test_fluxo src/regras.c src/logica.c)
 
 add_custom_target(smoke

@@ -1,6 +1,8 @@
 // nivel.c — o Posto 7: mapa ASCII → paredes, móveis, interativos e luzes.
 // O mapa é texto para a equipe editar. 1 célula = 2 m; pé-direito 3 m.
 #include "nivel.h"
+#include "texturas.h"
+#include "cenario.h"
 #include <math.h>
 #include <string.h>
 
@@ -330,26 +332,34 @@ static Vector3 tamanho_de(const Parede *p) {
     return Vector3Subtract(p->max, p->min);
 }
 
-static void desenha_moveis(const Nivel *n, int armario_oculto) {
-    Color metal = {0x22, 0x26, 0x24, 255};
+// Metal pintado: a textura é cinza neutro e a cor vem do objeto.
+static void metal(const Estado *e, Vector3 centro, Vector3 tamanho, Color cor, int variacao) {
+    texturas_caixa(e->rec.material[MATERIAL_METAL], centro, tamanho, texturas_modo(MATERIAL_METAL, variacao),
+                   cor);
+}
+
+static void desenha_moveis(const Estado *e) {
+    const Nivel *n = &e->nivel;
+    int armario_oculto = e->jog.modo == MODO_ARMARIO ? e->jog.armario : -1; // a câmera está dentro dele
+    Color cinza = {0x22, 0x26, 0x24, 255};
     Vector3 con = n->console;
-    DrawCubeV((Vector3){con.x, 0.5f, con.z - 0.6f}, (Vector3){1.6f, 1.0f, 0.8f}, COR_OLIVA);
-    DrawCubeV((Vector3){con.x, 1.02f, con.z - 0.75f}, (Vector3){1.5f, 0.06f, 0.5f}, metal);
-    DrawCubeV((Vector3){con.x + 0.62f, 1.18f, con.z - 0.88f}, (Vector3){0.22f, 0.3f, 0.1f},
-              metal); // interfone
-    DrawCubeV((Vector3){n->painel1.x, 0.9f, n->painel1.z}, (Vector3){1.2f, 1.8f, 0.5f}, COR_OLIVA);
-    DrawCubeV((Vector3){n->painel2.x, 0.9f, n->painel2.z}, (Vector3){0.5f, 1.8f, 1.2f}, COR_OLIVA);
-    DrawCubeV((Vector3){n->diario.x, 0.4f, n->diario.z}, (Vector3){0.9f, 0.8f, 1.4f},
-              (Color){0x3a, 0x2c, 0x20, 255});
+    metal(e, (Vector3){con.x, 0.5f, con.z - 0.6f}, (Vector3){1.6f, 1.0f, 0.8f}, COR_OLIVA, 1);
+    metal(e, (Vector3){con.x, 1.02f, con.z - 0.75f}, (Vector3){1.5f, 0.06f, 0.5f}, cinza, 2);
+    metal(e, (Vector3){con.x + 0.62f, 1.18f, con.z - 0.88f}, (Vector3){0.22f, 0.3f, 0.1f}, cinza,
+          3); // interfone
+    metal(e, (Vector3){n->painel1.x, 0.9f, n->painel1.z}, (Vector3){1.2f, 1.8f, 0.5f}, COR_OLIVA, 4);
+    metal(e, (Vector3){n->painel2.x, 0.9f, n->painel2.z}, (Vector3){0.5f, 1.8f, 1.2f}, COR_OLIVA, 5);
+    metal(e, (Vector3){n->diario.x, 0.4f, n->diario.z}, (Vector3){0.9f, 0.8f, 1.4f},
+          (Color){0x3a, 0x2c, 0x20, 255}, 6);
     DrawCubeV((Vector3){n->diario.x, 0.81f, n->diario.z}, (Vector3){0.32f, 0.02f, 0.44f},
               (Color){0xc8, 0xc0, 0xa8, 255});
-    for (int i = 0; i < n->n_armarios; i++) {
+    for (int i = 0; i < n->n_armarios; i++) { // laço de desenho: só percorre os armários
         Vector3 d = Vector3Subtract(n->armarios[i], n->armario_saida[i]);
         bool em_x = fabsf(d.x) > fabsf(d.z);
         Vector3 tam = em_x ? (Vector3){0.75f, 2.1f, 1.3f} : (Vector3){1.3f, 2.1f, 0.75f};
         Vector3 c = {n->armarios[i].x, 1.05f, n->armarios[i].z};
         if (i == armario_oculto) continue; // escondido: a camera esta dentro, nao desenha o armario
-        DrawCubeV(c, tam, (Color){0x3b, 0x40, 0x31, 255});
+        metal(e, c, tam, (Color){0x3b, 0x40, 0x31, 255}, 10 + i);
         Vector3 frente = Vector3Scale(Vector3Normalize(d), -(em_x ? tam.x : tam.z) * 0.5f - 0.005f);
         for (int f = 0; f < 4; f++) { // frestas
             Vector3 p = Vector3Add(c, frente);
@@ -364,16 +374,19 @@ static void desenha_porta_da_sala(const Estado *e) {
     if (!regras_fase_eh_saida(e->fase)) return;
     float abre = fminf(1.0f, e->tempo_fase / 1.2f);
     Vector3 p = e->nivel.porta_sala;
-    DrawCubeV((Vector3){p.x, 1.1f, p.z + 2.0f * abre}, (Vector3){0.16f, 2.2f, 2.0f},
-              (Color){0x35, 0x38, 0x2a, 255});
+    texturas_caixa(e->rec.material[MATERIAL_PORTA], (Vector3){p.x, 1.1f, p.z + 2.0f * abre},
+                   (Vector3){0.16f, 2.2f, 2.0f}, texturas_modo(MATERIAL_PORTA, 0), WHITE);
 }
 
-static void desenha_portas_e_duto(const Nivel *n) {
+static void desenha_portas_e_duto(const Estado *e) {
+    const Nivel *n = &e->nivel;
     for (int l = 0; l < MAPA_ALTURA; l++) {
         for (int c = 0; c < MAPA_LARGURA; c++) {
             if (n->celulas[l][c] != 'D') continue;
             Vector3 p = nivel_centro_celula(c, l);
-            DrawCubeV((Vector3){p.x, 2.6f, p.z}, (Vector3){2.0f, 0.8f, 2.0f}, COR_CONCRETO); // verga
+            texturas_caixa(e->rec.material[MATERIAL_CONCRETO], (Vector3){p.x, 2.6f, p.z},
+                           (Vector3){2.0f, 0.8f, 2.0f}, texturas_modo(MATERIAL_CONCRETO, c + l),
+                           WHITE); // verga
         }
     }
     Vector3 d = n->duto;
@@ -383,32 +396,55 @@ static void desenha_portas_e_duto(const Nivel *n) {
                   (Color){0x30, 0x34, 0x30, 255});
 }
 
+// Paredes em passadas por material (uma troca de textura por passada, não uma por parede): concreto
+// aparente em cima, barrado de tinta oliva até BARRADO_ALTURA, friso e rodapé de metal escuro.
+static void desenha_paredes(const Estado *e) {
+    const ColParedes *ps = &e->paredes;
+    Texture2D concreto = e->rec.material[MATERIAL_CONCRETO], oliva = e->rec.material[MATERIAL_OLIVA];
+    float barrado = BARRADO_ALTURA - 0.16f;
+    // laço de desenho: só percorre a coleção para desenhar (não é map/filter/fold)
+    for (int i = 0; i < ps->n; i++)
+        if (ps->itens[i].tipo == PAREDE_MURO)
+            texturas_caixa(concreto, centro_de(&ps->itens[i]), tamanho_de(&ps->itens[i]),
+                           texturas_modo(MATERIAL_CONCRETO, i), WHITE);
+    // laço de desenho: o barrado oliva de cada muro
+    for (int i = 0; i < ps->n; i++) {
+        if (ps->itens[i].tipo != PAREDE_MURO) continue;
+        Vector3 c = centro_de(&ps->itens[i]), t = tamanho_de(&ps->itens[i]);
+        texturas_caixa(oliva, (Vector3){c.x, 0.16f + barrado * 0.5f, c.z},
+                       (Vector3){t.x + 0.02f, barrado, t.z + 0.02f}, texturas_modo(MATERIAL_OLIVA, i), WHITE);
+    }
+    // laço de desenho: rodapé, friso do barrado e a porta trancada da sala
+    for (int i = 0; i < ps->n; i++) {
+        const Parede *p = &ps->itens[i];
+        Vector3 c = centro_de(p), t = tamanho_de(p);
+        if (p->tipo == PAREDE_PORTA)
+            texturas_caixa(e->rec.material[MATERIAL_PORTA], c, t, texturas_modo(MATERIAL_PORTA, 0), WHITE);
+        if (p->tipo != PAREDE_MURO) continue;
+        metal(e, (Vector3){c.x, 0.08f, c.z}, (Vector3){t.x + 0.03f, 0.16f, t.z + 0.03f},
+              (Color){0x16, 0x1c, 0x18, 255}, i);
+        metal(e, (Vector3){c.x, BARRADO_ALTURA, c.z}, (Vector3){t.x + 0.03f, 0.04f, t.z + 0.03f},
+              (Color){0x22, 0x26, 0x20, 255}, i);
+    }
+}
+
 void nivel_desenha(const Estado *e) {
     const Nivel *n = &e->nivel;
     float largura = MAPA_LARGURA * TAMANHO_CELULA, profundidade = MAPA_ALTURA * TAMANHO_CELULA;
-    DrawCubeV((Vector3){largura * 0.5f, -0.05f, profundidade * 0.5f}, (Vector3){largura, 0.1f, profundidade},
-              (Color){0x24, 0x2b, 0x26, 255});
-    DrawCubeV((Vector3){largura * 0.5f, PE_DIREITO + 0.05f, profundidade * 0.5f},
-              (Vector3){largura, 0.1f, profundidade}, (Color){0x18, 0x1c, 0x19, 255});
-    // laço de desenho: só percorre a coleção para desenhar (não é map/filter/fold)
-    for (int i = 0; i < e->paredes.n; i++) {
-        const Parede *p = &e->paredes.itens[i];
-        if (p->tipo == PAREDE_PORTA) DrawCubeV(centro_de(p), tamanho_de(p), (Color){0x35, 0x38, 0x2a, 255});
-        if (p->tipo != PAREDE_MURO) continue;
-        Vector3 c = centro_de(p), t = tamanho_de(p);
-        DrawCubeV(c, t, COR_CONCRETO);
-        // Rodapé escuro e a faixa de tinta oliva a 1,1 m: dão escala e leitura às paredes no escuro.
-        DrawCubeV((Vector3){c.x, 0.08f, c.z}, (Vector3){t.x + 0.02f, 0.16f, t.z + 0.02f},
-                  (Color){0x16, 0x1c, 0x18, 255});
-        DrawCubeV((Vector3){c.x, 1.15f, c.z}, (Vector3){t.x + 0.02f, 0.12f, t.z + 0.02f}, COR_OLIVA);
-    }
+    texturas_caixa(e->rec.material[MATERIAL_PISO], (Vector3){largura * 0.5f, -0.05f, profundidade * 0.5f},
+                   (Vector3){largura, 0.1f, profundidade}, texturas_modo(MATERIAL_PISO, 0), WHITE);
+    texturas_caixa(e->rec.material[MATERIAL_TETO],
+                   (Vector3){largura * 0.5f, PE_DIREITO + 0.05f, profundidade * 0.5f},
+                   (Vector3){largura, 0.1f, profundidade}, texturas_modo(MATERIAL_TETO, 0), WHITE);
+    desenha_paredes(e);
     float meio_x = (n->vidro_x0 + n->vidro_x1) * 0.5f, vl = n->vidro_x1 - n->vidro_x0;
-    DrawCubeV((Vector3){meio_x, 0.45f, n->vidro_z}, (Vector3){vl, 0.9f, 0.4f}, COR_CONCRETO); // mureta
-    for (int i = 0; i <= 3; i++)
-        DrawCubeV((Vector3){n->vidro_x0 + i * vl / 3.0f, 1.95f, n->vidro_z}, (Vector3){0.12f, 2.1f, 0.14f},
-                  (Color){0x1c, 0x20, 0x1e, 255});
-    desenha_moveis(n, e->jog.modo == MODO_ARMARIO ? e->jog.armario : -1);
-    desenha_portas_e_duto(n);
+    texturas_caixa(e->rec.material[MATERIAL_CONCRETO], (Vector3){meio_x, 0.45f, n->vidro_z},
+                   (Vector3){vl, 0.9f, 0.4f}, texturas_modo(MATERIAL_CONCRETO, 99), WHITE); // mureta
+    for (int i = 0; i <= 3; i++) // montantes do vidro
+        metal(e, (Vector3){n->vidro_x0 + i * vl / 3.0f, 1.95f, n->vidro_z}, (Vector3){0.12f, 2.1f, 0.14f},
+              (Color){0x1c, 0x20, 0x1e, 255}, 20 + i);
+    desenha_moveis(e);
+    desenha_portas_e_duto(e);
     desenha_porta_da_sala(e);
 }
 
@@ -443,9 +479,14 @@ void nivel_desenha_emissivos(const Estado *e) {
         DrawSphereEx((Vector3){n->diario.x, PE_DIREITO - 0.3f, n->diario.z}, 0.08f, 6, 6, COR_LAMPADA);
     }
     float sala = brilho_sala(e);
-    if (!saida && sala > 0.5f)
-        DrawSphereEx((Vector3){8.0f, PE_DIREITO - 0.25f, 11.0f}, 0.11f, 8, 8,
-                     e->alarme_t > 0 ? COR_ALARME : lamp);
+    Vector3 lampada_sala = {8.0f, PE_DIREITO - 0.25f, 11.0f};
+    Color cor_sala = e->alarme_t > 0 ? COR_ALARME : lamp;
+    if (!saida && sala > 0.5f) DrawSphereEx(lampada_sala, 0.11f, 8, 8, cor_sala);
+    cenario_comeca_halos();
+    for (int i = 0; saida && i < n->n_lampadas; i++) // laço de desenho: o halo de cada lâmpada acesa
+        cenario_halo(e, n->lampadas[i], lamp);
+    if (!saida && sala > 0.5f) cenario_halo(e, lampada_sala, cor_sala);
+    cenario_termina_halos();
     bool menu = e->fase == FASE_MENU || e->fase == FASE_NOME || e->fase == FASE_INTRO;
     bool a_acesa = menu || e->rod.luz_a || nivel_piscada_cela(e) > 0.0f;
     if (a_acesa && e->apagao_t <= 0.0f) DrawSphereEx(HOLOFOTE_A, 0.1f, 8, 8, COR_VIDRO);

@@ -181,6 +181,9 @@ static const char *const TEXTOS[TXT_TOTAL] = {
     [TXT_NOME_AVISO] = "Seu nome fica só nesta partida: nada é gravado e ele é apagado ao voltar ao menu.",
     [TXT_NOME_CONTADOR] = "%d/%d",
     [TXT_NOME_PADRAO] = "VISITANTE",
+    [TXT_PLACA_POSTO] = "POSTO 7", // placas pintadas em estêncil nas paredes (cenario.c)
+    [TXT_PLACA_RESTRITA] = "ÁREA RESTRITA",
+    [TXT_PLACA_ARQUIVO] = "ARQUIVO",
 };
 
 const char *dialogo_texto(TextoId id) {
@@ -190,8 +193,8 @@ const char *dialogo_texto(TextoId id) {
 
 const char *dialogo_nome_fase(int fase) {
     static const char *const nomes[FASE_TOTAL] = {
-        "",        "Nome",     "Intro",    "Rodada 1",       "Saída 1", "Rodada 2",
-        "Saída 2", "Rodada 3", "Resposta final", "Final",   "Final",
+        "",        "Nome",     "Intro",          "Rodada 1", "Saída 1", "Rodada 2",
+        "Saída 2", "Rodada 3", "Resposta final", "Final",    "Final",
     };
     return (fase >= 0 && fase < FASE_TOTAL) ? nomes[fase] : "";
 }

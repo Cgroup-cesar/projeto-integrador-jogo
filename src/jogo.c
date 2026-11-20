@@ -15,6 +15,7 @@
 #include "dialogo.h"
 #include "ui.h"
 #include "tela_nome.h"
+#include "cenario.h"
 #include <string.h>
 
 // ================================================================== início e fim
@@ -307,8 +308,7 @@ void jogo_atualiza(Estado *e, float dt) {
         return;
     }
     bool anda_livre = e->fase != FASE_MENU && e->fase != FASE_NOME && e->fase != FASE_FIM_BOM &&
-                      e->fase != FASE_FIM_RUIM &&
-                      !(e->fase == FASE_INTRO && !e->intro.interfone);
+                      e->fase != FASE_FIM_RUIM && !(e->fase == FASE_INTRO && !e->intro.interfone);
     if (e->in.voltar && anda_livre && e->jog.modo == MODO_ANDANDO) {
         e->pausado = true;
         e->menu.cursor = 0;
@@ -347,6 +347,7 @@ static void desenha_mundo_3d(const Estado *e) {
     BeginMode3D(e->camera);
     posfx_comeca_luz(e, pos, cor, cone, queda, n, ambiente);
     nivel_desenha(e);
+    cenario_desenha(e);
     criatura_desenha(e);
     lanterna_desenha(e);
     posfx_termina_luz(e);

@@ -14,6 +14,7 @@
 #include "posfx.h"
 #include "audio_sintese.h"
 #include "ui.h"
+#include "texturas.h"
 #include "dialogo.h"
 #include <stdio.h>
 #include <string.h>
@@ -396,6 +397,7 @@ static void quadro(Estado *e) {
 static void carrega_recursos(void) {
     posfx_inicia(&estado.rec);
     ui_carrega_fonte(&estado.rec);
+    texturas_carrega(&estado.rec); // depois da fonte: as placas de estêncil usam a fonte
     audio_inicia(&estado.rec);
     criatura_carrega_modelo(&estado.rec);
     susto_carrega_boca(&estado.rec);
@@ -408,6 +410,7 @@ static void descarrega_recursos(void) {
     susto_descarrega_boca(&estado.rec);
     criatura_descarrega_modelo(&estado.rec);
     audio_finaliza(&estado.rec);
+    texturas_descarrega(&estado.rec);
     ui_descarrega_fonte(&estado.rec);
     posfx_finaliza(&estado.rec);
     CloseWindow();

@@ -112,3 +112,11 @@ Não aplicado: "commits pequenos" (a especificação manda um commit por marco n
 **Verificado:** `make` sem avisos; `make test`: test_logica 37/37, test_regras 135/135, test_fluxo 90/90; `make smoke` passa (com as checagens novas do nome); `make readme-check` 0 erro. Capturas conferidas: tela de nome, fala do Varela com o nome e tela final.
 
 **Falta:** testar a digitação à mão (acentos com teclado ABNT2, com e sem a fonte VT323), no Linux e no Windows; atualizar o fluxo de fases na especificação (só humanos editam).
+
+## Texturas e ambientação do mapa
+
+**Pronto:** seis materiais procedurais (`materiais.c`, puro) com override por `assets/texturas/<material>.png`; `texturas.c` gera/carrega uma vez e libera ao sair; `texturas_caixa` com UV em metros; paredes em concreto aparente com barrado oliva, piso de granilite, forro, móveis e armários em metal pintado, porta com almofadas; `cenario.c` com placas em estêncil, umidade, arrasto, eletrodutos, grelhas, fios e halo das lâmpadas. Ver decisões 69–76.
+
+**Verificado:** `make` sem avisos; `make test`: test_logica 37/37, test_regras 165/165 (+30: ruído, materiais, decalques, UV), test_fluxo 90/90; `make smoke` passa; `make readme-check` 0 erro. FPS sem limite (antes → depois): sala 731 → 690, corredor S1 745 → 658, com lanterna 741 → 637, corredor leste 801 → 704, Arquivo 804 → 714, duto 733 → 667. Geração das texturas: ~126 ms na abertura.
+
+**Falta:** testar numa GPU fraca (a da feira) e em OpenGL 2.1/ES; jogar no Windows; ver as placas com a fonte VT323 (sem ela, "ÁREA" sai "AREA").
