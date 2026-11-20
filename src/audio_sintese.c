@@ -14,7 +14,7 @@ static const char *const NOMES[SOM_TOTAL] = {
     "zumbido_lampada", "voz_precursor", "verdadeiro",     "falso",        "bip_interfone", "maquina_escrever",
     "interruptor",     "passo",         "passo_criatura", "vidro_estalo", "estrondo",      "alarme",
     "respiracao",      "ambiente_sala", "ambiente_saida", "papel",        "energia",       "distorcao",
-    "jumpscare",
+    "jumpscare", "respiracao_ofegante",
 };
 
 // ================================================================== ferramentas de síntese
@@ -265,6 +265,7 @@ static void sintetiza(IdSom som, Buffer *b) {
 static Wave onda_sintetizada(IdSom som) {
     Buffer b = {0};
     b.n = (int)(duracao(som) * TAXA);
+    if (b.n <= 0) return (Wave){0}; // som que so existe como arquivo
     b.amostras = calloc((size_t)b.n, sizeof(float));
     short *pcm = RL_MALLOC((size_t)b.n * sizeof(short));
     if (b.amostras == NULL || pcm == NULL) {

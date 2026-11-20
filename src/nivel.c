@@ -330,7 +330,7 @@ static Vector3 tamanho_de(const Parede *p) {
     return Vector3Subtract(p->max, p->min);
 }
 
-static void desenha_moveis(const Nivel *n) {
+static void desenha_moveis(const Nivel *n, int armario_oculto) {
     Color metal = {0x22, 0x26, 0x24, 255};
     Vector3 con = n->console;
     DrawCubeV((Vector3){con.x, 0.5f, con.z - 0.6f}, (Vector3){1.6f, 1.0f, 0.8f}, COR_OLIVA);
@@ -348,6 +348,7 @@ static void desenha_moveis(const Nivel *n) {
         bool em_x = fabsf(d.x) > fabsf(d.z);
         Vector3 tam = em_x ? (Vector3){0.75f, 2.1f, 1.3f} : (Vector3){1.3f, 2.1f, 0.75f};
         Vector3 c = {n->armarios[i].x, 1.05f, n->armarios[i].z};
+        if (i == armario_oculto) continue; // escondido: a camera esta dentro, nao desenha o armario
         DrawCubeV(c, tam, (Color){0x3b, 0x40, 0x31, 255});
         Vector3 frente = Vector3Scale(Vector3Normalize(d), -(em_x ? tam.x : tam.z) * 0.5f - 0.005f);
         for (int f = 0; f < 4; f++) { // frestas
@@ -406,7 +407,7 @@ void nivel_desenha(const Estado *e) {
     for (int i = 0; i <= 3; i++)
         DrawCubeV((Vector3){n->vidro_x0 + i * vl / 3.0f, 1.95f, n->vidro_z}, (Vector3){0.12f, 2.1f, 0.14f},
                   (Color){0x1c, 0x20, 0x1e, 255});
-    desenha_moveis(n);
+    desenha_moveis(n, e->jog.modo == MODO_ARMARIO ? e->jog.armario : -1);
     desenha_portas_e_duto(n);
     desenha_porta_da_sala(e);
 }

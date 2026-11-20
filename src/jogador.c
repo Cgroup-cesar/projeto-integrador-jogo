@@ -38,14 +38,32 @@ Vector3 jogador_direcao(const Estado *e) {
 }
 
 // ------------------------------------------------------------------ olhar
+// Diferença angular a - b normalizada para [-π, π].
+static float dif_angulo(float a, float b) {
+    float d = fmodf(a - b, 2.0f * PI);
+    if (d > PI) d -= 2.0f * PI;
+    if (d < -PI) d += 2.0f * PI;
+    return d;
+}
+
 // [REQ:RF2] câmera em 1ª pessoa pelo mouse (o deslocamento do mouse já é por quadro: não multiplica por dt)
 static void olha(Estado *e) {
     Jogador *j = &e->jog;
     if (j->modo == MODO_PAINEL || j->modo == MODO_DIARIO) return;
     j->yaw -= e->in.mouse.x * SENSIBILIDADE_MOUSE;
     j->pitch -= e->in.mouse.y * SENSIBILIDADE_MOUSE;
-    if (j->pitch > PITCH_MAXIMO) j->pitch = PITCH_MAXIMO;
-    if (j->pitch < -PITCH_MAXIMO) j->pitch = -PITCH_MAXIMO;
+
+    float pitch_max = PITCH_MAXIMO;
+    if (j->modo == MODO_ARMARIO) {
+        // Escondido, o olhar fica preso a um cone em volta da porta (só se vê pelas frestas).
+        float d = dif_angulo(j->yaw, j->armario_yaw);
+        if (d > ARMARIO_YAW_MAX) d = ARMARIO_YAW_MAX;
+        if (d < -ARMARIO_YAW_MAX) d = -ARMARIO_YAW_MAX;
+        j->yaw = j->armario_yaw + d;
+        pitch_max = ARMARIO_PITCH_MAX;
+    }
+    if (j->pitch > pitch_max) j->pitch = pitch_max;
+    if (j->pitch < -pitch_max) j->pitch = -pitch_max;
 }
 
 // ------------------------------------------------------------------ andar
@@ -58,18 +76,22 @@ static void move_com_colisao(Estado *e, Vector3 alvo) {
     if (!col_paredes_colide(&e->paredes, tenta_z, JOGADOR_RAIO, 1.8f)) j->pos.z = alvo.z;
 }
 
-static void atualiza_folego(Jogador *j, bool quer_correr, float dt) {
-    j->correndo = quer_correr && !j->exausto && j->folego > 0.0f;
+static void atualiza_folego(Estado *e, bool quer_correr, float dt) {
+    Jogador *j = &e->jog;
+    j->correndo = quer_correr && !j->exausto && !j->recupera_total && j->folego > 0.0f;
+    bool estava_correndo = j->correndo;
     if (j->correndo)
         j->folego -= dt;
     else
         j->folego += JOGADOR_FOLEGO_RECUPERA * dt;
-    if (j->folego <= 0.0f) {
-        j->folego = 0.0f;
-        j->exausto = true; // sem fôlego: só volta a correr depois de recuperar 1 s
-    }
-    if (j->folego >= 1.0f) j->exausto = false;
     if (j->folego > JOGADOR_FOLEGO_MAX) j->folego = JOGADOR_FOLEGO_MAX;
+    if (estava_correndo && j->folego <= 0.0f) { // zerou correndo: ofega e so volta a correr com 75% da barra
+        j->exausto = true;
+        audio_toca(e, SOM_RESPIRACAO_OFEGANTE, 1.0f, 1.0f);
+    }
+    if (j->folego < 0.0f) j->folego = 0.0f;
+    if (j->exausto && j->folego >= JOGADOR_FOLEGO_MAX * FOLEGO_RETOMA_FRACAO) j->exausto = false;
+    if (j->recupera_total && j->folego >= JOGADOR_FOLEGO_MAX) j->recupera_total = false;
 }
 
 // Passos fazem barulho: andar, raio de 3 m; correr, raio de 10 m.
@@ -95,7 +117,7 @@ static void passos(Estado *e, bool andando, float dt) {
 static void anda(Estado *e, float dt) {
     Jogador *j = &e->jog;
     bool andando = e->in.mover.x != 0.0f || e->in.mover.y != 0.0f;
-    atualiza_folego(j, e->in.correr && andando, dt);
+    atualiza_folego(e, e->in.correr && andando, dt);
     float velocidade = j->correndo ? JOGADOR_VEL_CORRER : JOGADOR_VEL_ANDAR;
     if (andando) move_com_colisao(e, regras_nova_posicao(j->pos, j->yaw, e->in.mover, velocidade, dt));
     passos(e, andando, dt);
@@ -117,6 +139,8 @@ static void entra_no_armario(Estado *e, const Interativo *it) {
     j->modo = MODO_ARMARIO;
     Vector3 fora = Vector3Subtract(e->nivel.armario_saida[j->armario], e->nivel.armarios[j->armario]);
     j->yaw = atan2f(fora.x, fora.z);
+    j->armario_yaw = j->yaw;
+    j->armario_t = 0.0f;
     j->pitch = 0.0f;
     audio_toca(e, SOM_INTERRUPTOR, 0.7f, 0.6f);
     // Entrar no armário a menos de 2 m dele enquanto ele te vê não adianta.
@@ -128,6 +152,9 @@ static void sai_do_armario(Estado *e) {
     Jogador *j = &e->jog;
     j->modo = MODO_ANDANDO;
     j->pos = e->nivel.armario_saida[j->armario];
+    if (j->armario_t >= ARMARIO_TEMPO_OFEGO || j->folego <= 0.0f) audio_toca(e, SOM_RESPIRACAO_OFEGANTE, 1.0f, 1.0f); // saiu sem folego
+    j->recupera_total = true; // so volta a correr com a barra cheia
+    j->armario_t = 0.0f;
     audio_toca(e, SOM_INTERRUPTOR, 0.7f, 0.55f);
 }
 
@@ -177,7 +204,17 @@ void jogador_atualiza(Estado *e, float dt) {
                                           DISTANCIA_INTERACAO);
     } else {
         j->mira = -1;
-        atualiza_folego(j, false, dt);
+        if (j->modo == MODO_ARMARIO) {
+            j->correndo = false;
+            j->folego -= JOGADOR_FOLEGO_MAX / ARMARIO_TEMPO_MAX * dt; // escondido, a barra esvazia
+            if (j->folego < 0.0f) j->folego = 0.0f;
+        } else {
+            atualiza_folego(e, false, dt);
+        }
+    }
+    if (j->modo == MODO_ARMARIO) { // sem folego: aos 12 s o jogador e expulso
+        j->armario_t += dt;
+        if (j->folego <= 0.0f || j->armario_t >= ARMARIO_TEMPO_MAX) sai_do_armario(e);
     }
     atualiza_modos(e);
 }
