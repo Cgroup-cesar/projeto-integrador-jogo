@@ -3,11 +3,13 @@
 #include "dialogo.h"
 
 // ================================================================== falas (legendas)
+// Uma fala com %s recebe o nome de quem joga na hora de desenhar (só a 2ª do interfone da intro).
 #define V FALANTE_VARELA
 #define E FALANTE_ELIAS
 
 static const Legenda INTRO_INTERFONE[] = {
     {"Boa noite, professor. Coronel Varela. Não encoste no vidro.", 4.0f, V},
+    {"%s, você opera o analisador esta noite. Registre tudo o que o professor traduzir.", 5.0f, V},
     {"Nós o chamamos de Precursor. Está conosco desde 77. Não fala como nós. Não pensa como nós.", 5.5f, V},
     {"A Dra. Sampaio concluiu que a língua dele não tem palavras. Só estrutura. Verdadeiro. Falso.", 5.5f, V},
     {"Os interruptores à sua frente controlam as luzes da cela. Ele responde ao que vê. Descubra o que ele "
