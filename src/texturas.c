@@ -176,3 +176,94 @@ void texturas_descarrega(Recursos *rec) {
     libera(&rec->halo);
 }
 
+// ------------------------------------------------------------------ desenho
+ModoUV texturas_modo(TipoMaterial m, int variacao) {
+    Vector2 desloca = {materiais_hash(variacao, 0, TEXTURA_SEMENTE),
+                       materiais_hash(variacao, 1, TEXTURA_SEMENTE)};
+    switch (m) {
+    case MATERIAL_CONCRETO:
+        return (ModoUV){{TEXTURA_METROS_CONCRETO, PE_DIREITO}, {desloca.x, 0.0f}, false}; // v preso ao teto
+    case MATERIAL_OLIVA:
+        return (ModoUV){{PE_DIREITO, PE_DIREITO}, {desloca.x, 0.0f}, false};
+    case MATERIAL_PISO:
+        return (ModoUV){{TEXTURA_METROS_PISO, TEXTURA_METROS_PISO}, {0.0f, 0.0f}, false};
+    case MATERIAL_TETO:
+        return (ModoUV){{TEXTURA_METROS_TETO, TEXTURA_METROS_TETO}, {0.0f, 0.0f}, false};
+    case MATERIAL_METAL:
+        return (ModoUV){{TEXTURA_METROS_METAL, TEXTURA_METROS_METAL}, desloca, false};
+    default:
+        return (ModoUV){{1.0f, 1.0f}, {0.0f, 0.0f}, true}; // porta: as almofadas seguem a folha
+    }
+}
+
+// Os 4 cantos de cada face (sinal de x, y, z a partir do centro), na ordem que a raylib usa para cubos
+// (anti-horária vista de fora: a face de trás é descartada).
+static const signed char FACES[6][4][3] = {
+    {{-1, -1, 1}, {1, -1, 1}, {1, 1, 1}, {-1, 1, 1}},     // z+
+    {{-1, -1, -1}, {-1, 1, -1}, {1, 1, -1}, {1, -1, -1}}, // z−
+    {{-1, 1, -1}, {-1, 1, 1}, {1, 1, 1}, {1, 1, -1}},     // y+
+    {{-1, -1, -1}, {1, -1, -1}, {1, -1, 1}, {-1, -1, 1}}, // y−
+    {{1, -1, -1}, {1, 1, -1}, {1, 1, 1}, {1, -1, 1}},     // x+
+    {{-1, -1, -1}, {-1, -1, 1}, {-1, 1, 1}, {-1, 1, -1}}, // x−
+};
+static const int EIXO_DA_FACE[6] = {2, 2, 1, 1, 0, 0};
+
+// UV local: cada face vai de 0 a 1, com v = 0 em cima (a imagem não fica de cabeça para baixo).
+static Vector2 uv_local(Vector3 p, int eixo, Vector3 min, Vector3 tam) {
+    Vector2 m = eixo == 0   ? (Vector2){tam.z, tam.y}
+                : eixo == 1 ? (Vector2){tam.x, tam.z}
+                            : (Vector2){tam.x, tam.y};
+    m.x = m.x > 0.0f ? m.x : 1.0f;
+    m.y = m.y > 0.0f ? m.y : 1.0f;
+    Vector2 d = eixo == 0   ? (Vector2){-min.z / m.x, 0.0f}
+                : eixo == 1 ? (Vector2){-min.x / m.x, -min.z / m.y}
+                            : (Vector2){-min.x / m.x, 0.0f};
+    return materiais_uv(p, eixo, m, d, min.y + tam.y);
+}
+
+void texturas_caixa(Texture2D textura, Vector3 centro, Vector3 tamanho, ModoUV uv, Color tinta) {
+    if (textura.id == 0) {
+        DrawCubeV(centro, tamanho, tinta);
+        return;
+    }
+    Vector3 meio = Vector3Scale(tamanho, 0.5f), min = Vector3Subtract(centro, meio);
+    rlSetTexture(textura.id);
+    rlBegin(RL_QUADS);
+    rlColor4ub(tinta.r, tinta.g, tinta.b, tinta.a);
+    // laço de desenho: as 6 faces e os 4 cantos de cada uma (não é map/filter/fold)
+    for (int f = 0; f < 6; f++) {
+        int eixo = EIXO_DA_FACE[f];
+        rlNormal3f(eixo == 0 ? FACES[f][0][0] : 0.0f, eixo == 1 ? FACES[f][0][1] : 0.0f,
+                   eixo == 2 ? FACES[f][0][2] : 0.0f);
+        for (int k = 0; k < 4; k++) {
+            Vector3 p = {centro.x + FACES[f][k][0] * meio.x, centro.y + FACES[f][k][1] * meio.y,
+                         centro.z + FACES[f][k][2] * meio.z};
+            Vector2 st = uv.local ? uv_local(p, eixo, min, tamanho)
+                                  : materiais_uv(p, eixo, uv.metros, uv.desloca, PE_DIREITO);
+            rlTexCoord2f(st.x, st.y);
+            rlVertex3f(p.x, p.y, p.z);
+        }
+    }
+    rlEnd();
+    rlSetTexture(0);
+}
+
+void texturas_quadro(Texture2D textura, Vector3 centro, Vector3 direita, Vector3 cima, Color tinta) {
+    if (textura.id == 0) return;
+    Vector3 d = Vector3Scale(direita, 0.5f), c = Vector3Scale(cima, 0.5f);
+    Vector3 n = Vector3Normalize(Vector3CrossProduct(direita, cima));
+    Vector3 cantos[4] = {Vector3Subtract(Vector3Subtract(centro, d), c),
+                         Vector3Subtract(Vector3Add(centro, d), c), Vector3Add(Vector3Add(centro, d), c),
+                         Vector3Add(Vector3Subtract(centro, d), c)};
+    static const float UV[4][2] = {{0, 1}, {1, 1}, {1, 0}, {0, 0}};
+    rlSetTexture(textura.id);
+    rlBegin(RL_QUADS);
+    rlColor4ub(tinta.r, tinta.g, tinta.b, tinta.a);
+    rlNormal3f(n.x, n.y, n.z);
+    for (int k = 0; k < 4; k++) { // laço de desenho: os 4 cantos (não é map/filter/fold)
+        rlTexCoord2f(UV[k][0], UV[k][1]);
+        rlVertex3f(cantos[k].x, cantos[k].y, cantos[k].z);
+    }
+    rlEnd();
+    rlSetTexture(0);
+}
