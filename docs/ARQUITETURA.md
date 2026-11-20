@@ -8,11 +8,13 @@ flowchart TB
         main["main.c: entrada → atualiza → desenha; --smoke; modo feira"]
         jogo["jogo.c: aplica a máquina de fases e despacha por fase"]
         mods["jogador.c · lanterna.c · criatura.c · rodadas.c · circuito.c · compositor.c · nivel.c · glifos.c"]
+        arte["texturas.c · cenario.c: texturas do mapa (geradas uma vez) e ambientação sem colisão"]
         tela["terminal.c · ui.c · posfx.c · audio_sintese.c · dialogo.c"]
     end
     subgraph DECIDE["Lógica funcional (o o quê): sem raylib.h, testável sem janela"]
         logica["logica.c: árvore, avaliação, tabela-verdade, parser, contradição"]
         regras["regras.c: máquina de fases, movimento, visão, ruído, placar, vidro, circuitos"]
+        mat["materiais.c: ruído, desenho de cada material, UV de mundo"]
         fx["funcional.h: fx_map · fx_filter_inplace · fx_fold"]
         col["colecoes.c/.h: as 6 coleções e seus map/filter/fold"]
     end
@@ -24,6 +26,8 @@ flowchart TB
     jogo --> tela
     mods -->|"pergunta"| regras
     mods -->|"pergunta"| logica
+    mods --> arte
+    arte -->|"pergunta"| mat
     regras --> logica
     col --> regras
     col --> fx
@@ -36,6 +40,11 @@ flowchart TB
 1. **Entrada** (`main.c`): lê teclado e mouse uma vez e preenche `Estado.in`. No `--smoke`, quem preenche é o piloto automático; o resto do jogo não sabe a diferença.
 2. **Atualiza** (`jogo_atualiza` e os `xxx_atualiza(Estado *e, float dt)`): cada módulo muda o estado e, quando a fase precisa mudar, só **pede** um evento (`e->evento = EV_RODADA_CONCLUIDA`). No fim do quadro, `jogo_aplica_evento` pergunta à função pura `regras_proxima_fase(fase, evento)` qual é a próxima fase e prepara o mundo. O `dt` vem de `GetFrameTime()`, limitado a 0,05 s, e multiplica todo movimento, temporizador e animação.
 3. **Desenha** (`xxx_desenha(const Estado *e)`): o `const` garante que desenhar não muda o estado. A cena 3D vai para um render target a 60% da janela (`posfx.c`), recebe luz e névoa por shader e o filtro VHS; a interface (terminal, painéis, HUD, legendas) é desenhada por cima, na resolução da janela.
+   Dentro do shader de luz, a ordem é: `nivel_desenha` (piso, teto, paredes em passadas por material, móveis) → `cenario_desenha` (eletrodutos, grelhas, fios e, por último, os decalques com alfa, sem escrever profundidade) → criatura → lanterna. Fora do shader, `nivel_desenha_emissivos` desenha as lâmpadas e os halos (soma de luz, sem profundidade).
+
+## Recursos carregados uma vez
+
+`main.c` chama `carrega_recursos` antes do primeiro quadro e `descarrega_recursos` ao sair. Tudo o que vai para a GPU fica em `Estado.rec` (`Recursos`): render targets e shaders (`posfx.c`), fonte (`ui.c`), **texturas do mapa** (`texturas_carrega`, depois da fonte, porque as placas em estêncil usam a fonte), sons e modelos. Nenhum desses é criado por quadro. `texturas_carrega` gera cada material a partir de `materiais_pixel` (puro) ou lê `assets/texturas/<material>.png`, gera mipmaps e manda para a GPU; `texturas_descarrega` libera todas.
 
 ## Puro × impuro
 
@@ -44,6 +53,7 @@ flowchart TB
 | `logica.c`: `logica_avalia`, `logica_tabela_verdade`, `logica_eh_contradicao`, `logica_parse_fichas` | `rodadas.c` converte os glifos em fichas e pergunta à lógica o valor de cada linha |
 | `regras.c`: `regras_proxima_fase`, `regras_nova_posicao`, `regras_criatura_ve_jogador`, `regras_ruido_percebido`, `regras_proximo_estado_criatura`, `regras_placar`, `regras_integridade_vidro`, `regras_avaliar_circuito` | `jogador.c`, `criatura.c`, `circuito.c`, `compositor.c`, `jogo.c` aplicam as respostas ao estado |
 | `funcional.h` e os laços de `colecoes.c` (o `TraceLog` do vetor cheio é o único efeito) | `nivel.c`, `glifos.c`, `terminal.c`, `ui.c`, `posfx.c`, `audio_sintese.c` desenham e tocam |
+| `materiais.c`: `materiais_pixel`, `materiais_fbm`, `materiais_mancha`, `materiais_uv` | `texturas.c` transforma em imagem e textura (uma vez); `cenario.c` e `nivel.c` desenham |
 
 Por exemplo, a criatura: `criatura.c` faz o raycast contra as paredes (`GetRayCollisionBox`) e o fold dos ruídos, monta uma `PercepcaoCriatura` e entrega a `regras_proximo_estado_criatura`, que decide PATRULHA, INVESTIGA, PERSEGUE ou PROCURA. O caminho sai de um A* na grade do mapa.
 
@@ -81,7 +91,10 @@ stateDiagram-v2
 | `jogo.c` | aplica `regras_proxima_fase`, prepara cada fase, pontua, pausa, debug, modo feira |
 | `config.h` · `estado.h` | constantes · todo o estado do jogo |
 | `logica.c` · `regras.c` · `funcional.h` · `colecoes.c` | a camada pura |
-| `nivel.c` | mapa ASCII → paredes, móveis, interativos, luzes; desenho do Posto 7 |
+| `nivel.c` | mapa ASCII → paredes, móveis, interativos, luzes; desenho do Posto 7 com as texturas |
+| `materiais.c` | puro: ruído contínuo nas bordas, o desenho de cada material (`materiais_pixel`), manchas, desgaste do estêncil e `materiais_uv` (UV em metros) |
+| `texturas.c` | gera ou carrega as texturas uma vez, libera ao sair; `texturas_caixa` (6 faces, UV de mundo ou local) e `texturas_quadro` (decalque) |
+| `cenario.c` | ambientação sem colisão: placas em estêncil, umidade, arrasto do duto, eletrodutos, grelhas, fios e halo das lâmpadas |
 | `jogador.c` | câmera, movimento com colisão, fôlego, passos, armário, mira |
 | `lanterna.c` | a lanterna: F liga e desliga, a 5ª luz do shader (cone saindo dos olhos) e o modelo na mão |
 | `criatura.c` | o Precursor: corpo procedural, IA, A*, captura |
@@ -94,7 +107,7 @@ stateDiagram-v2
 | `posfx.c` | render target, luz e névoa, VHS |
 | `ui.c` | fonte com fallback, menu, HUD, legendas, diário, tela de fim |
 
-Módulos sem nada para desenhar (`audio_sintese.c`) ou puros (`logica.c`, `regras.c`, `colecoes.c`, `dialogo.c`) não têm `xxx_desenha`.
+Módulos sem nada para desenhar (`audio_sintese.c`) ou puros (`logica.c`, `regras.c`, `colecoes.c`, `dialogo.c`, `materiais.c`) não têm `xxx_desenha`. `texturas.c` e `cenario.c` só desenham a partir do estado e não têm nada para atualizar por quadro, então não têm `xxx_atualiza`.
 
 ## Como estender
 
