@@ -331,26 +331,34 @@ static Vector3 tamanho_de(const Parede *p) {
     return Vector3Subtract(p->max, p->min);
 }
 
-static void desenha_moveis(const Nivel *n, int armario_oculto) {
-    Color metal = {0x22, 0x26, 0x24, 255};
+// Metal pintado: a textura é cinza neutro e a cor vem do objeto.
+static void metal(const Estado *e, Vector3 centro, Vector3 tamanho, Color cor, int variacao) {
+    texturas_caixa(e->rec.material[MATERIAL_METAL], centro, tamanho, texturas_modo(MATERIAL_METAL, variacao),
+                   cor);
+}
+
+static void desenha_moveis(const Estado *e) {
+    const Nivel *n = &e->nivel;
+    int armario_oculto = e->jog.modo == MODO_ARMARIO ? e->jog.armario : -1; // a câmera está dentro dele
+    Color cinza = {0x22, 0x26, 0x24, 255};
     Vector3 con = n->console;
-    DrawCubeV((Vector3){con.x, 0.5f, con.z - 0.6f}, (Vector3){1.6f, 1.0f, 0.8f}, COR_OLIVA);
-    DrawCubeV((Vector3){con.x, 1.02f, con.z - 0.75f}, (Vector3){1.5f, 0.06f, 0.5f}, metal);
-    DrawCubeV((Vector3){con.x + 0.62f, 1.18f, con.z - 0.88f}, (Vector3){0.22f, 0.3f, 0.1f},
-              metal); // interfone
-    DrawCubeV((Vector3){n->painel1.x, 0.9f, n->painel1.z}, (Vector3){1.2f, 1.8f, 0.5f}, COR_OLIVA);
-    DrawCubeV((Vector3){n->painel2.x, 0.9f, n->painel2.z}, (Vector3){0.5f, 1.8f, 1.2f}, COR_OLIVA);
-    DrawCubeV((Vector3){n->diario.x, 0.4f, n->diario.z}, (Vector3){0.9f, 0.8f, 1.4f},
-              (Color){0x3a, 0x2c, 0x20, 255});
+    metal(e, (Vector3){con.x, 0.5f, con.z - 0.6f}, (Vector3){1.6f, 1.0f, 0.8f}, COR_OLIVA, 1);
+    metal(e, (Vector3){con.x, 1.02f, con.z - 0.75f}, (Vector3){1.5f, 0.06f, 0.5f}, cinza, 2);
+    metal(e, (Vector3){con.x + 0.62f, 1.18f, con.z - 0.88f}, (Vector3){0.22f, 0.3f, 0.1f}, cinza,
+          3); // interfone
+    metal(e, (Vector3){n->painel1.x, 0.9f, n->painel1.z}, (Vector3){1.2f, 1.8f, 0.5f}, COR_OLIVA, 4);
+    metal(e, (Vector3){n->painel2.x, 0.9f, n->painel2.z}, (Vector3){0.5f, 1.8f, 1.2f}, COR_OLIVA, 5);
+    metal(e, (Vector3){n->diario.x, 0.4f, n->diario.z}, (Vector3){0.9f, 0.8f, 1.4f},
+          (Color){0x3a, 0x2c, 0x20, 255}, 6);
     DrawCubeV((Vector3){n->diario.x, 0.81f, n->diario.z}, (Vector3){0.32f, 0.02f, 0.44f},
               (Color){0xc8, 0xc0, 0xa8, 255});
-    for (int i = 0; i < n->n_armarios; i++) {
+    for (int i = 0; i < n->n_armarios; i++) { // laço de desenho: só percorre os armários
         Vector3 d = Vector3Subtract(n->armarios[i], n->armario_saida[i]);
         bool em_x = fabsf(d.x) > fabsf(d.z);
         Vector3 tam = em_x ? (Vector3){0.75f, 2.1f, 1.3f} : (Vector3){1.3f, 2.1f, 0.75f};
         Vector3 c = {n->armarios[i].x, 1.05f, n->armarios[i].z};
         if (i == armario_oculto) continue; // escondido: a camera esta dentro, nao desenha o armario
-        DrawCubeV(c, tam, (Color){0x3b, 0x40, 0x31, 255});
+        metal(e, c, tam, (Color){0x3b, 0x40, 0x31, 255}, 10 + i);
         Vector3 frente = Vector3Scale(Vector3Normalize(d), -(em_x ? tam.x : tam.z) * 0.5f - 0.005f);
         for (int f = 0; f < 4; f++) { // frestas
             Vector3 p = Vector3Add(c, frente);
@@ -406,10 +414,10 @@ void nivel_desenha(const Estado *e) {
     }
     float meio_x = (n->vidro_x0 + n->vidro_x1) * 0.5f, vl = n->vidro_x1 - n->vidro_x0;
     DrawCubeV((Vector3){meio_x, 0.45f, n->vidro_z}, (Vector3){vl, 0.9f, 0.4f}, COR_CONCRETO); // mureta
-    for (int i = 0; i <= 3; i++)
-        DrawCubeV((Vector3){n->vidro_x0 + i * vl / 3.0f, 1.95f, n->vidro_z}, (Vector3){0.12f, 2.1f, 0.14f},
-                  (Color){0x1c, 0x20, 0x1e, 255});
-    desenha_moveis(n, e->jog.modo == MODO_ARMARIO ? e->jog.armario : -1);
+    for (int i = 0; i <= 3; i++) // montantes do vidro
+        metal(e, (Vector3){n->vidro_x0 + i * vl / 3.0f, 1.95f, n->vidro_z}, (Vector3){0.12f, 2.1f, 0.14f},
+              (Color){0x1c, 0x20, 0x1e, 255}, 20 + i);
+    desenha_moveis(e);
     desenha_portas_e_duto(n);
     desenha_porta_da_sala(e);
 }
