@@ -15,6 +15,7 @@
 #include "dialogo.h"
 #include "ui.h"
 #include "tela_nome.h"
+#include "cenario.h"
 #include <string.h>
 
 // ================================================================== início e fim
@@ -346,6 +347,7 @@ static void desenha_mundo_3d(const Estado *e) {
     BeginMode3D(e->camera);
     posfx_comeca_luz(e, pos, cor, cone, queda, n, ambiente);
     nivel_desenha(e);
+    cenario_desenha(e);
     criatura_desenha(e);
     lanterna_desenha(e);
     posfx_termina_luz(e);
