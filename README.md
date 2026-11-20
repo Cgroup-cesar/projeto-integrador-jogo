@@ -88,6 +88,12 @@ cmake --build build --target smoke
 
 Sem fonte externa, o jogo usa a fonte padrão da raylib e translitera os acentos (á → a). Para ver os acentos, rode `tools/baixa_fonte.sh` (ou `tools\baixa_fonte.bat`), que baixa a VT323 (licença OFL) para `assets/fontes/`.
 
+### Texturas do mapa (opcional)
+
+Paredes, piso, teto, móveis e portas têm texturas **geradas em código** quando o jogo abre (cerca de 0,1 s, uma vez só): concreto de forma com juntas, furos de tirante, escorridos e umidade; barrado de tinta oliva descascando; piso de granilite em placas; forro manchado; metal pintado com ferrugem; porta com almofadas. A mesma semente dá sempre a mesma imagem.
+
+Para trocar uma delas, ponha um PNG em `assets/texturas/` com um destes nomes: `concreto.png`, `oliva.png`, `piso.png`, `teto.png`, `metal.png`, `porta.png`. Recomendado: 256 × 256 (o concreto, 512 × 256), sem emenda nas bordas, porque a textura se repete pelo mapa. Repetição: concreto a cada 6 m na horizontal e 3 m na vertical (presa ao teto: a parte de cima da imagem fica no teto); oliva a cada 3 m; piso e teto a cada 2 m; metal a cada 1 m; a porta estica a imagem na folha inteira. O `metal.png` deve ser cinza claro e neutro, porque cada móvel tinge o metal com a própria cor. Imagens fora de potência de 2, ou maiores que 1024 px, são redimensionadas ao carregar. Sem o arquivo (ou com um arquivo que não abre), o jogo usa a textura procedural e só registra no log.
+
 ### Problemas comuns
 
 - **raylib não encontrada** (`raylib.h: No such file` ou `cannot find -lraylib`): confira o PATH e o `RAYLIB_PATH` no Windows, o `pkg-config raylib` no Linux e no macOS, ou use o CMake.
@@ -127,11 +133,14 @@ src/audio_sintese.c/.h   sons gerados em código (e substituição por .ogg, .wa
 src/posfx.c/.h           render target, luz e névoa, filtro VHS
 src/ui.c/.h              fonte com fallback, menu, HUD, legendas, diário, tela de fim
 src/tela_nome.c/.h       tela de nome de quem joga (só em memória, só na partida)
+src/materiais.c/.h       desenho das texturas procedurais e UV de mundo (puro, testado sem janela)
+src/texturas.c/.h        gera/carrega as texturas uma vez, libera ao sair; caixa e quadro texturizados
+src/cenario.c/.h         ambientação sem colisão: placas, umidade, arrasto, eletrodutos, fios, halos
 tests/checagem.h         a macro CHECK
 tests/test_logica.c      conectivos, classificações, parser, painéis
 tests/test_regras.c      regras puras e coleções, com as bordas
 tests/test_fluxo.c       partidas inteiras pela máquina de fases
-assets/fontes/ · assets/modelos/ · assets/audio/ · assets/texturas/   opcionais (por enquanto, modelos/precursor.glb, modelos/lanterna.glb e audio/jumpscare.mp3)
+assets/fontes/ · assets/modelos/ · assets/audio/ · assets/texturas/   opcionais (por enquanto, modelos/precursor.glb, modelos/lanterna.glb e audio/jumpscare.mp3; texturas: ver "Texturas do mapa")
 docs/ESPECIFICACAO_PROJETO_PRECURSOR.md   a especificação (fonte da verdade do design)
 docs/ARQUITETURA.md · docs/DECISOES.md · docs/PROGRESSO.md   arquitetura · decisões · progresso da v0
 docs/img/                capturas de tela
@@ -178,11 +187,11 @@ Cada trecho que cumpre um requisito tem, logo acima, um comentário-âncora `// 
 
 | Requisito | Onde | Âncora | Como foi cumprido |
 | :---- | :---- | :---- | :---- |
-| RF1 Janela e game loop a 60 FPS com `GetFrameTime()` | [src/main.c#L427-L428](src/main.c#L427-L428)<br>[src/main.c#L373-L382](src/main.c#L373-L382)<br>[src/criatura.c#L270-L271](src/criatura.c#L270-L271) | `[REQ:RF1]` | `SetTargetFPS(60)`; `dt = GetFrameTime()` limitado a 0,05 s e passado a todo `xxx_atualiza`, que multiplica movimento, temporizadores e animações (aqui, o passo da criatura). |
-| RF2 Controle do jogador por teclado/mouse | [src/main.c#L29-L62](src/main.c#L29-L62)<br>[src/jogador.c#L41-L49](src/jogador.c#L41-L49)<br>[src/jogador.c#L94-L102](src/jogador.c#L94-L102) | `[REQ:RF2]` | Câmera em 1ª pessoa pelo mouse; WASD, Shift (corrida com fôlego), E, 1/2/3, setas, ENTER e Esc, lidos uma vez por quadro numa `struct Entrada`. |
-| RF3 Coleção (vetor) de múltiplos objetos | [src/estado.h#L248-L255](src/estado.h#L248-L255) | `[REQ:RF3]` | Seis coleções de capacidade fixa com contador (ruídos, partículas, rachaduras, eventos, interativos, paredes), sem `malloc` por quadro; ver a tabela de map, filter e fold. |
+| RF1 Janela e game loop a 60 FPS com `GetFrameTime()` | [src/main.c#L430-L431](src/main.c#L430-L431)<br>[src/main.c#L374-L383](src/main.c#L374-L383)<br>[src/criatura.c#L270-L271](src/criatura.c#L270-L271) | `[REQ:RF1]` | `SetTargetFPS(60)`; `dt = GetFrameTime()` limitado a 0,05 s e passado a todo `xxx_atualiza`, que multiplica movimento, temporizadores e animações (aqui, o passo da criatura). |
+| RF2 Controle do jogador por teclado/mouse | [src/main.c#L30-L63](src/main.c#L30-L63)<br>[src/jogador.c#L41-L49](src/jogador.c#L41-L49)<br>[src/jogador.c#L94-L102](src/jogador.c#L94-L102) | `[REQ:RF2]` | Câmera em 1ª pessoa pelo mouse; WASD, Shift (corrida com fôlego), E, 1/2/3, setas, ENTER e Esc, lidos uma vez por quadro numa `struct Entrada`. |
+| RF3 Coleção (vetor) de múltiplos objetos | [src/estado.h#L254-L261](src/estado.h#L254-L261) | `[REQ:RF3]` | Seis coleções de capacidade fixa com contador (ruídos, partículas, rachaduras, eventos, interativos, paredes), sem `malloc` por quadro; ver a tabela de map, filter e fold. |
 | RF4 Colisões com funções da Raylib | [src/jogador.c#L52-L59](src/jogador.c#L52-L59)<br>[src/colecoes.c#L186-L196](src/colecoes.c#L186-L196)<br>[src/colecoes.c#L145-L165](src/colecoes.c#L145-L165)<br>[src/criatura.c#L174-L175](src/criatura.c#L174-L175)<br>[src/criatura.c#L284-L291](src/criatura.c#L284-L291) | `[REQ:RF4]` | `CheckCollisionBoxes` (jogador × paredes, vidro, móveis e armários, eixo por eixo), `GetRayCollisionBox` (mira de interação e visão da criatura contra as paredes) e `CheckCollisionSpheres` (captura). |
-| RF5 Placar, vidas, telas de início e fim | [src/jogo.c#L48-L53](src/jogo.c#L48-L53)<br>[src/ui.c#L279-L292](src/ui.c#L279-L292)<br>[src/ui.c#L434-L473](src/ui.c#L434-L473) | `[REQ:RF5]` | Placar = fold dos eventos; vidas = integridade do vidro (fold das rachaduras), recalculados a cada quadro; menu com o aviso de nome provisório, intro e tela de fim com placar por fase. |
+| RF5 Placar, vidas, telas de início e fim | [src/jogo.c#L49-L54](src/jogo.c#L49-L54)<br>[src/ui.c#L279-L292](src/ui.c#L279-L292)<br>[src/ui.c#L434-L473](src/ui.c#L434-L473) | `[REQ:RF5]` | Placar = fold dos eventos; vidas = integridade do vidro (fold das rachaduras), recalculados a cada quadro; menu com o aviso de nome provisório, intro e tela de fim com placar por fase. |
 | RF6 Condição de vitória/derrota | [src/compositor.c#L60-L74](src/compositor.c#L60-L74)<br>[src/ui.c#L434-L473](src/ui.c#L434-L473) | `[REQ:RF6]` | A frase transmitida vai para `regras_avalia_transmissao`: contradição → final bom (VITÓRIA); satisfazível → final ruim (DERROTA); inválida → SINTAXE INVÁLIDA, sem penalidade. |
 
 ### Map, filter e fold nas coleções
@@ -208,16 +217,16 @@ Cada laço leva o comentário `// padrão MAP`, `// padrão FILTER` ou `// padr�
 
 | Requisito | Onde (função · teste) | Âncora | Como foi cumprido |
 | :---- | :---- | :---- | :---- |
-| `regras_nova_posicao` | [src/regras.c#L271-L280](src/regras.c#L271-L280)<br>[tests/test_regras.c#L14-L25](tests/test_regras.c#L14-L25) | `[REQ:PURA-regras_nova_posicao]` | Posição nova a partir da entrada, da velocidade e do `dt`; a diagonal não é mais rápida. |
-| `regras_criatura_ve_jogador` | [src/regras.c#L282-L292](src/regras.c#L282-L292)<br>[tests/test_regras.c#L27-L37](tests/test_regras.c#L27-L37) | `[REQ:PURA-regras_criatura_ve_jogador]` | Cone de 70°, 14 m, resultado do raycast recebido pronto, invisível no armário. |
-| `regras_ruido_percebido` | [src/regras.c#L294-L300](src/regras.c#L294-L300)<br>[tests/test_regras.c#L39-L47](tests/test_regras.c#L39-L47) | `[REQ:PURA-regras_ruido_percebido]` | O ruído enfraquece com a distância e some fora do raio. |
-| `regras_proximo_estado_criatura` | [src/regras.c#L302-L317](src/regras.c#L302-L317)<br>[tests/test_regras.c#L49-L64](tests/test_regras.c#L49-L64) | `[REQ:PURA-regras_proximo_estado_criatura]` | PATRULHA → INVESTIGA → PERSEGUE → PROCURA (6 s) → PATRULHA. |
-| `regras_postura_criatura` | [src/regras.c#L325-L336](src/regras.c#L325-L336)<br>[tests/test_regras.c#L66-L81](tests/test_regras.c#L66-L81) | `[REQ:PURA-regras_postura_criatura]` | Postura procedural no lugar da animação: corcunda que cresce com a velocidade, balanço da passada (zero parado) e respiração (só parado). |
-| `regras_piscada_cela` | [src/regras.c#L347-L357](src/regras.c#L347-L357)<br>[tests/test_regras.c#L83-L100](tests/test_regras.c#L83-L100) | `[REQ:PURA-regras_piscada_cela]` | Lâmpada com defeito na cela apagada: piscada dupla a cada ~3 s (2,1 a 3,9 s, às vezes pula), sem `rand()`: repetível. |
-| `regras_quadro_susto` | [src/regras.c#L364-L381](src/regras.c#L364-L381)<br>[tests/test_regras.c#L102-L133](tests/test_regras.c#L102-L133) | `[REQ:PURA-regras_quadro_susto]` | O susto quadro a quadro: o rosto pula de 2,6 m até 0,2 m da câmera em 0,16 s e treme (posição e giro novos 40 vezes por segundo), com um clarão na chegada. Sem `rand()`: repetível. |
-| `regras_placar` | [src/regras.c#L384-L391](src/regras.c#L384-L391)<br>[tests/test_regras.c#L135-L148](tests/test_regras.c#L135-L148) | `[REQ:PURA-regras_placar]` | Fold dos eventos (sem eventos, 0). |
-| `regras_integridade_vidro` | [src/regras.c#L410-L420](src/regras.c#L410-L420)<br>[tests/test_regras.c#L157-L170](tests/test_regras.c#L157-L170) | `[REQ:PURA-regras_integridade_vidro]` | Vidas = máximo − fold do dano das rachaduras. |
-| `regras_evento_do_erro` | [src/regras.c#L422-L425](src/regras.c#L422-L425)<br>[tests/test_regras.c#L150-L155](tests/test_regras.c#L150-L155) | `[REQ:PURA-regras_evento_do_erro]` | Só o 3º erro rompe o vidro e recomeça a rodada. |
+| `regras_nova_posicao` | [src/regras.c#L271-L280](src/regras.c#L271-L280)<br>[tests/test_regras.c#L15-L26](tests/test_regras.c#L15-L26) | `[REQ:PURA-regras_nova_posicao]` | Posição nova a partir da entrada, da velocidade e do `dt`; a diagonal não é mais rápida. |
+| `regras_criatura_ve_jogador` | [src/regras.c#L282-L292](src/regras.c#L282-L292)<br>[tests/test_regras.c#L28-L38](tests/test_regras.c#L28-L38) | `[REQ:PURA-regras_criatura_ve_jogador]` | Cone de 70°, 14 m, resultado do raycast recebido pronto, invisível no armário. |
+| `regras_ruido_percebido` | [src/regras.c#L294-L300](src/regras.c#L294-L300)<br>[tests/test_regras.c#L40-L48](tests/test_regras.c#L40-L48) | `[REQ:PURA-regras_ruido_percebido]` | O ruído enfraquece com a distância e some fora do raio. |
+| `regras_proximo_estado_criatura` | [src/regras.c#L302-L317](src/regras.c#L302-L317)<br>[tests/test_regras.c#L50-L65](tests/test_regras.c#L50-L65) | `[REQ:PURA-regras_proximo_estado_criatura]` | PATRULHA → INVESTIGA → PERSEGUE → PROCURA (6 s) → PATRULHA. |
+| `regras_postura_criatura` | [src/regras.c#L325-L336](src/regras.c#L325-L336)<br>[tests/test_regras.c#L67-L82](tests/test_regras.c#L67-L82) | `[REQ:PURA-regras_postura_criatura]` | Postura procedural no lugar da animação: corcunda que cresce com a velocidade, balanço da passada (zero parado) e respiração (só parado). |
+| `regras_piscada_cela` | [src/regras.c#L347-L357](src/regras.c#L347-L357)<br>[tests/test_regras.c#L84-L101](tests/test_regras.c#L84-L101) | `[REQ:PURA-regras_piscada_cela]` | Lâmpada com defeito na cela apagada: piscada dupla a cada ~3 s (2,1 a 3,9 s, às vezes pula), sem `rand()`: repetível. |
+| `regras_quadro_susto` | [src/regras.c#L364-L381](src/regras.c#L364-L381)<br>[tests/test_regras.c#L103-L134](tests/test_regras.c#L103-L134) | `[REQ:PURA-regras_quadro_susto]` | O susto quadro a quadro: o rosto pula de 2,6 m até 0,2 m da câmera em 0,16 s e treme (posição e giro novos 40 vezes por segundo), com um clarão na chegada. Sem `rand()`: repetível. |
+| `regras_placar` | [src/regras.c#L384-L391](src/regras.c#L384-L391)<br>[tests/test_regras.c#L136-L149](tests/test_regras.c#L136-L149) | `[REQ:PURA-regras_placar]` | Fold dos eventos (sem eventos, 0). |
+| `regras_integridade_vidro` | [src/regras.c#L410-L420](src/regras.c#L410-L420)<br>[tests/test_regras.c#L158-L171](tests/test_regras.c#L158-L171) | `[REQ:PURA-regras_integridade_vidro]` | Vidas = máximo − fold do dano das rachaduras. |
+| `regras_evento_do_erro` | [src/regras.c#L422-L425](src/regras.c#L422-L425)<br>[tests/test_regras.c#L151-L156](tests/test_regras.c#L151-L156) | `[REQ:PURA-regras_evento_do_erro]` | Só o 3º erro rompe o vidro e recomeça a rodada. |
 | `regras_avaliar_circuito` | [src/regras.c#L486-L497](src/regras.c#L486-L497)<br>[tests/test_logica.c#L121-L138](tests/test_logica.c#L121-L138) | `[REQ:PURA-regras_avaliar_circuito]` | Avalia porta a porta (cada LED) com a semântica de `logica_aplica`; o Painel 2 tem exatamente duas soluções. |
 | `regras_proxima_fase` | [src/regras.c#L60-L90](src/regras.c#L60-L90)<br>[tests/test_fluxo.c#L26-L44](tests/test_fluxo.c#L26-L44) | `[REQ:PURA-regras_proxima_fase]` | A máquina de fases inteira: (fase, evento) → próxima fase. |
 | `regras_avalia_transmissao` | [src/regras.c#L251-L264](src/regras.c#L251-L264)<br>[tests/test_fluxo.c#L47-L76](tests/test_fluxo.c#L47-L76) | `[REQ:PURA-regras_avalia_transmissao]` | Inválida, contradição (final bom) ou satisfazível (final ruim). |
@@ -230,10 +239,10 @@ Cada laço leva o comentário `// padrão MAP`, `// padrão FILTER` ou `// padr�
 | Requisito | Onde | Âncora | Como foi cumprido |
 | :---- | :---- | :---- | :---- |
 | RNF1 Legibilidade | [.clang-format#L1-L12](.clang-format#L1-L12) | `[REQ:RNF1]` | Nomes em português, claros e consistentes (`atualiza_…`, `desenha_…`, `colidiu_…`); funções de até ~40 linhas (a única exceção, em `audio_sintese.c`, está comentada); o código segue o `.clang-format` (`clang-format --dry-run` sem avisos). |
-| RNF2 Modularização | [src/estado.h#L218-L270](src/estado.h#L218-L270) | `[REQ:RNF2]` | Uma struct por objeto, uma função por responsabilidade, um módulo por sistema; o maior arquivo tem menos de 500 linhas. |
-| RNF3 Separação update/render | [src/main.c#L310-L322](src/main.c#L310-L322) | `[REQ:RNF3]` | Todo módulo tem `xxx_atualiza(Estado *e, float dt)` e `xxx_desenha(const Estado *e)`; o `const` garante que desenhar não muda nada; nenhum `Draw*` em `*_atualiza` (auditado com grep). |
-| RNF4 Robustez | [src/colecoes.c#L9-L14](src/colecoes.c#L9-L14)<br>[src/main.c#L373-L382](src/main.c#L373-L382)<br>[src/nivel.c#L36-L40](src/nivel.c#L36-L40)<br>[src/ui.c#L26-L53](src/ui.c#L26-L53)<br>[src/criatura.c#L24-L40](src/criatura.c#L24-L40) | `[REQ:RNF4]` | Vetor cheio descarta com `TraceLog`, sem travar; listas vazias (sem ruídos, sem eventos) testadas; `dt` limitado; fora do mapa conta como parede; sem fonte, som ou modelo, entra o placeholder. |
-| RNF5 Documentação | [README.md#L174-L174](README.md#L174-L174) | `[REQ:RNF5]` | Este README, `docs/ARQUITETURA.md`, `docs/DECISOES.md` (as escolhas e por quê), `docs/PROGRESSO.md` e `CLAUDE.md`. |
+| RNF2 Modularização | [src/estado.h#L224-L276](src/estado.h#L224-L276) | `[REQ:RNF2]` | Uma struct por objeto, uma função por responsabilidade, um módulo por sistema; o maior arquivo tem menos de 500 linhas. |
+| RNF3 Separação update/render | [src/main.c#L311-L323](src/main.c#L311-L323) | `[REQ:RNF3]` | Todo módulo tem `xxx_atualiza(Estado *e, float dt)` e `xxx_desenha(const Estado *e)`; o `const` garante que desenhar não muda nada; nenhum `Draw*` em `*_atualiza` (auditado com grep). |
+| RNF4 Robustez | [src/colecoes.c#L9-L14](src/colecoes.c#L9-L14)<br>[src/main.c#L374-L383](src/main.c#L374-L383)<br>[src/nivel.c#L38-L42](src/nivel.c#L38-L42)<br>[src/ui.c#L26-L53](src/ui.c#L26-L53)<br>[src/criatura.c#L24-L40](src/criatura.c#L24-L40) | `[REQ:RNF4]` | Vetor cheio descarta com `TraceLog`, sem travar; listas vazias (sem ruídos, sem eventos) testadas; `dt` limitado; fora do mapa conta como parede; sem fonte, som ou modelo, entra o placeholder. |
+| RNF5 Documentação | [README.md#L183-L183](README.md#L183-L183) | `[REQ:RNF5]` | Este README, `docs/ARQUITETURA.md`, `docs/DECISOES.md` (as escolhas e por quê), `docs/PROGRESSO.md` e `CLAUDE.md`. |
 | RNF6 Versionamento + Makefile | [Makefile#L1-L2](Makefile#L1-L2) | `[REQ:RNF6]` | `Makefile` como build principal (com `test`, `smoke`, `readme-check`); um commit por marco na v0 (M0 a M9) e, daqui em diante, branch por card e PR (ver Metodologia). |
 
 ### Critérios de avaliação
@@ -252,7 +261,7 @@ Cada laço leva o comentário `// padrão MAP`, `// padrão FILTER` ou `// padr�
 **O game loop (RF1):** `dt` limitado e o quadro entrada → atualiza → desenha.
 
 ```c
-// src/main.c#L372-L382
+// src/main.c#L373-L383
 static void quadro(Estado *e) {
     // [REQ:RF1] [REQ:RNF4] dt de GetFrameTime() limitado a DT_MAXIMO; no smoke, passo fixo (velocidade
     // acelerada)
@@ -283,7 +292,7 @@ static void tenta_capturar(Estado *e) {
 **O placar (RF5):** dois folds recalculados a cada quadro.
 
 ```c
-// src/jogo.c#L48-L53
+// src/jogo.c#L49-L54
 // [REQ:RF5] placar = fold dos eventos; vidas = integridade do vidro (fold das rachaduras).
 // Recalculados a cada quadro, para o HUD e o terminal mostrarem o erro na hora.
 static void atualiza_folds(Estado *e) {
@@ -350,7 +359,7 @@ int regras_integridade_vidro(const Rachadura *rachaduras, int n, int vidas_max) 
 ```
 
 ```c
-// tests/test_regras.c#L157-L170
+// tests/test_regras.c#L158-L171
 // [REQ:PURA-regras_integridade_vidro] testa as vidas depois de 0, 1, 2 e 3 erros
 static void testa_vidro(void) {
     CHECK(regras_integridade_vidro(NULL, 0, VIDAS_VIDRO) == 3); // sem rachaduras
@@ -370,7 +379,7 @@ static void testa_vidro(void) {
 **Desenhar só lê o estado (RNF3):**
 
 ```c
-// src/main.c#L310-L322
+// src/main.c#L311-L323
 // [REQ:RNF3] desenhar recebe const Estado *: não muda nada; o loop é entrada → atualiza → desenha
 static void desenha(const Estado *e) {
     susto_prepara(e); // o rosto do susto, na textura dele
@@ -423,7 +432,7 @@ bool logica_avalia(const PoolLogico *pool, int raiz, const bool *valores) {
 
 ```
 test_logica   37/37  checagens ok
-test_regras  135/135 checagens ok
+test_regras  165/165 checagens ok
 test_fluxo    90/90  checagens ok
 ```
 
@@ -478,5 +487,5 @@ SMOKE OK: a partida foi jogada até os dois finais.
 - **Fonte VT323** (opcional), de Peter Hull, licença SIL Open Font License 1.1: [fonts.google.com/specimen/VT323](https://fonts.google.com/specimen/VT323). É baixada por `tools/baixa_fonte` e não vem no repositório.
 - **Modelo 3D do Precursor** (`assets/modelos/precursor.glb`): *"Gaunt Horror Creature – Free Creepy 3D Model"* by **Purple.Point**, publicado no Sketchfab, licensed under [Creative Commons Attribution 4.0 (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/). <!-- colar aqui o link da página do modelo no Sketchfab --> Alteração feita pela equipe: as texturas JPEG embutidas foram convertidas para PNG (a raylib padrão não lê JPEG); a geometria não foi alterada. Sem o arquivo, o jogo usa o corpo procedural.
 - **Modelo 3D da lanterna** (`assets/modelos/lanterna.glb`): *"Lowpoly Flashlight (Lanterna)"* by **EnrycoDosSantos**, publicado no Sketchfab, licensed under [Creative Commons Attribution 4.0 (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/). <!-- colar aqui o link da página do modelo no Sketchfab --> Usado sem alterações. Sem o arquivo, o jogo desenha uma lanterna de cilindros.
-- **Sons e glifos:** gerados em código pela equipe. Se outro asset for adicionado em `assets/`, credite-o aqui.
+- **Sons, glifos e texturas do mapa:** gerados em código pela equipe. Se outro asset for adicionado em `assets/`, credite-o aqui.
 - **Equipe:** <!-- preencher: nome e usuário do GitHub de cada integrante -->
