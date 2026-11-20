@@ -373,16 +373,19 @@ static void desenha_porta_da_sala(const Estado *e) {
     if (!regras_fase_eh_saida(e->fase)) return;
     float abre = fminf(1.0f, e->tempo_fase / 1.2f);
     Vector3 p = e->nivel.porta_sala;
-    DrawCubeV((Vector3){p.x, 1.1f, p.z + 2.0f * abre}, (Vector3){0.16f, 2.2f, 2.0f},
-              (Color){0x35, 0x38, 0x2a, 255});
+    texturas_caixa(e->rec.material[MATERIAL_PORTA], (Vector3){p.x, 1.1f, p.z + 2.0f * abre},
+                   (Vector3){0.16f, 2.2f, 2.0f}, texturas_modo(MATERIAL_PORTA, 0), WHITE);
 }
 
-static void desenha_portas_e_duto(const Nivel *n) {
+static void desenha_portas_e_duto(const Estado *e) {
+    const Nivel *n = &e->nivel;
     for (int l = 0; l < MAPA_ALTURA; l++) {
         for (int c = 0; c < MAPA_LARGURA; c++) {
             if (n->celulas[l][c] != 'D') continue;
             Vector3 p = nivel_centro_celula(c, l);
-            DrawCubeV((Vector3){p.x, 2.6f, p.z}, (Vector3){2.0f, 0.8f, 2.0f}, COR_CONCRETO); // verga
+            texturas_caixa(e->rec.material[MATERIAL_CONCRETO], (Vector3){p.x, 2.6f, p.z},
+                           (Vector3){2.0f, 0.8f, 2.0f}, texturas_modo(MATERIAL_CONCRETO, c + l),
+                           WHITE); // verga
         }
     }
     Vector3 d = n->duto;
@@ -440,7 +443,7 @@ void nivel_desenha(const Estado *e) {
         metal(e, (Vector3){n->vidro_x0 + i * vl / 3.0f, 1.95f, n->vidro_z}, (Vector3){0.12f, 2.1f, 0.14f},
               (Color){0x1c, 0x20, 0x1e, 255}, 20 + i);
     desenha_moveis(e);
-    desenha_portas_e_duto(n);
+    desenha_portas_e_duto(e);
     desenha_porta_da_sala(e);
 }
 
