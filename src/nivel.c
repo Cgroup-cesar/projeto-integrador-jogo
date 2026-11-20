@@ -1,6 +1,7 @@
 // nivel.c — o Posto 7: mapa ASCII → paredes, móveis, interativos e luzes.
 // O mapa é texto para a equipe editar. 1 célula = 2 m; pé-direito 3 m.
 #include "nivel.h"
+#include "texturas.h"
 #include <math.h>
 #include <string.h>
 
@@ -386,10 +387,11 @@ static void desenha_portas_e_duto(const Nivel *n) {
 void nivel_desenha(const Estado *e) {
     const Nivel *n = &e->nivel;
     float largura = MAPA_LARGURA * TAMANHO_CELULA, profundidade = MAPA_ALTURA * TAMANHO_CELULA;
-    DrawCubeV((Vector3){largura * 0.5f, -0.05f, profundidade * 0.5f}, (Vector3){largura, 0.1f, profundidade},
-              (Color){0x24, 0x2b, 0x26, 255});
-    DrawCubeV((Vector3){largura * 0.5f, PE_DIREITO + 0.05f, profundidade * 0.5f},
-              (Vector3){largura, 0.1f, profundidade}, (Color){0x18, 0x1c, 0x19, 255});
+    texturas_caixa(e->rec.material[MATERIAL_PISO], (Vector3){largura * 0.5f, -0.05f, profundidade * 0.5f},
+                   (Vector3){largura, 0.1f, profundidade}, texturas_modo(MATERIAL_PISO, 0), WHITE);
+    texturas_caixa(e->rec.material[MATERIAL_TETO],
+                   (Vector3){largura * 0.5f, PE_DIREITO + 0.05f, profundidade * 0.5f},
+                   (Vector3){largura, 0.1f, profundidade}, texturas_modo(MATERIAL_TETO, 0), WHITE);
     // laço de desenho: só percorre a coleção para desenhar (não é map/filter/fold)
     for (int i = 0; i < e->paredes.n; i++) {
         const Parede *p = &e->paredes.itens[i];
