@@ -4,6 +4,7 @@
 #include "checagem.h"
 #include "regras.h"
 #include "colecoes.h"
+#include "materiais.h"
 #include <math.h>
 #include <string.h>
 
@@ -349,6 +350,30 @@ static void testa_nome_digitacao(void) {
     CHECK(!regras_nome_acrescenta(p, sizeof(p), 0xC9)); // mais 2 não
 }
 
+// ================================================================== texturas procedurais (materiais.c)
+// [REQ:PURA-materiais] testa o ruído (faixa, determinismo, repetição sem emenda) e os materiais
+static void testa_ruido_materiais(void) {
+    CHECK(materiais_hash(3, 7, 1985u) == materiais_hash(3, 7, 1985u)); // mesma entrada, mesmo número
+    CHECK(materiais_hash(3, 7, 1985u) != materiais_hash(3, 7, 1986u)); // a semente muda o resultado
+    int fora = 0;
+    // padrão FOLD: conta amostras fora de [0, 1)
+    for (int i = 0; i < 200; i++) {
+        float r = materiais_ruido(i * 0.37f, i * 0.11f, 8, 8, 7u),
+              f = materiais_fbm(i / 200.0f, 0.5f, 4, 4, 4, 7u);
+        fora += r < 0.0f || r >= 1.0f || f < 0.0f || f >= 1.0f;
+    }
+    CHECK(fora == 0);
+    CHECK(perto(materiais_ruido(2.3f, 1.7f, 8, 4, 9u), materiais_ruido(10.3f, 5.7f, 8, 4, 9u))); // período
+    float salto = 0.0f;
+    // padrão FOLD: o maior salto entre a borda direita e a esquerda (a textura repete sem emenda)
+    for (int i = 0; i < 32; i++) {
+        float v = (i + 0.5f) / 32.0f;
+        salto = fmaxf(
+            salto, fabsf(materiais_fbm(0.0005f, v, 12, 6, 4, 3u) - materiais_fbm(0.9995f, v, 12, 6, 4, 3u)));
+    }
+    CHECK(salto < 0.02f);
+}
+
 int main(void) {
     SetTraceLogLevel(LOG_ERROR); // o aviso de vetor cheio é esperado aqui
     testa_movimento();
@@ -371,5 +396,6 @@ int main(void) {
     testa_nome_limite();
     testa_nome_padrao();
     testa_nome_digitacao();
+    testa_ruido_materiais();
     return resultado_final("test_regras");
 }
