@@ -25,6 +25,10 @@ typedef struct {
     bool lanterna; // F: liga e desliga a lanterna
     bool f1, f2, f3, f5, f9, f12;
     bool alguma; // qualquer tecla ou movimento (modo feira)
+    // Tela de nome: caracteres digitados neste quadro (GetCharPressed) e Backspace (com repetição).
+    int digitados[ENTRADA_MAX_CARACTERES];
+    int n_digitados;
+    bool apagar;
 } Entrada;
 
 // ------------------------------------------------------------------ recursos carregados uma vez
@@ -236,6 +240,10 @@ typedef struct Estado {
     FilaLegendas legendas;
     Fim fim;
     Menu menu;
+
+    // Nome de quem está jogando: só em memória, só nesta partida (zerado no menu; ver regras_nome_ao_entrar).
+    // Não vai para disco nem para o log. Usado no terminal, numa fala do Varela e na tela final.
+    char nome_jogador[NOME_CAPACIDADE];
 
     // [REQ:RF3] as seis coleções: struct por objeto, vetor de capacidade fixa e contador (sem malloc por
     // quadro)

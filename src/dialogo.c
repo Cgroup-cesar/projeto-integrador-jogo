@@ -171,6 +171,14 @@ static const char *const TEXTOS[TXT_TOTAL] = {
     [TXT_FIM_ERROS] = "ERROS",
     [TXT_FIM_ENTER] = "Pressione ENTER",
     [TXT_FIM_RODAPE] = "Projeto Integrador PIF · nome provisório",
+    [TXT_FIM_OPERADOR] = "OPERADOR(A): %s",
+    [TXT_TERMINAL_OPERADOR] = "OPERADOR(A): %s",
+    [TXT_NOME_TITULO] = "POSTO 7 — REGISTRO DE ACESSO",
+    [TXT_NOME_PERGUNTA] = "Identifique-se, operador(a):",
+    [TXT_NOME_DICA] = "ENTER confirma · Backspace apaga · Esc volta ao menu",
+    [TXT_NOME_AVISO] = "Seu nome fica só nesta partida: nada é gravado e ele é apagado ao voltar ao menu.",
+    [TXT_NOME_CONTADOR] = "%d/%d",
+    [TXT_NOME_PADRAO] = "VISITANTE",
 };
 
 const char *dialogo_texto(TextoId id) {
@@ -180,7 +188,7 @@ const char *dialogo_texto(TextoId id) {
 
 const char *dialogo_nome_fase(int fase) {
     static const char *const nomes[FASE_TOTAL] = {
-        "",        "Intro",    "Rodada 1",       "Saída 1", "Rodada 2",
+        "",        "Nome",     "Intro",    "Rodada 1",       "Saída 1", "Rodada 2",
         "Saída 2", "Rodada 3", "Resposta final", "Final",   "Final",
     };
     return (fase >= 0 && fase < FASE_TOTAL) ? nomes[fase] : "";

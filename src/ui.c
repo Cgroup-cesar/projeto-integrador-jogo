@@ -75,6 +75,10 @@ static const Troca TROCAS[] = {
     {0x2014, "-"},  {0x2013, "-"},   {0x2026, "..."}, {0x2190, "<-"}, {0x2191, "^"}, {0x2193, "v"},
     {0x2192, "->"}, {0x2194, "<->"}, {0x2227, "^"},   {0x2228, "v"},  {0x25A0, "#"}, {0x25A1, "o"},
     {0x201C, "\""}, {0x201D, "\""},  {0x2018, "'"},   {0x2019, "'"},  {0x2713, "*"}, {0x2714, "*"},
+    // o resto das letras do Latin-1 (podem aparecer no nome de quem joga)
+    {0xC5, "A"},    {0xE5, "a"},     {0xC6, "AE"},    {0xE6, "ae"},   {0xD8, "O"},   {0xF8, "o"},
+    {0xDD, "Y"},    {0xFD, "y"},     {0xFF, "y"},     {0xDF, "ss"},   {0xD0, "D"},   {0xF0, "d"},
+    {0xDE, "TH"},   {0xFE, "th"},
 };
 
 static const char *ascii_de(int codigo) {
@@ -470,8 +474,8 @@ static void desenha_debug(const Estado *e) {
 }
 
 void ui_desenha(const Estado *e) {
-    bool jogando =
-        e->fase != FASE_MENU && e->fase != FASE_INTRO && e->fase != FASE_FIM_BOM && e->fase != FASE_FIM_RUIM;
+    bool jogando = e->fase != FASE_MENU && e->fase != FASE_NOME && e->fase != FASE_INTRO &&
+                   e->fase != FASE_FIM_BOM && e->fase != FASE_FIM_RUIM;
     if (e->fase == FASE_MENU) desenha_menu(e);
     if (e->fase == FASE_INTRO) desenha_intro(e);
     if (jogando && e->jumpscare_t <= 0.0f) desenha_hud(e);

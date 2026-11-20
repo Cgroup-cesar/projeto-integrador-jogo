@@ -14,6 +14,7 @@
 #include "audio_sintese.h"
 #include "dialogo.h"
 #include "ui.h"
+#include "tela_nome.h"
 #include <string.h>
 
 // ================================================================== início e fim
@@ -102,7 +103,15 @@ static void entra_resposta_final(Estado *e) {
     e->jog.modo = MODO_TERMINAL;
 }
 
+// [REQ:NOME-SESSAO] o nome só vive durante a partida: zerado no menu (fim, pausa, Esc, inatividade) e na
+// partida nova; mantido nos recomeços; nas fases de jogo, vazio vira o padrão (F2, --fase, smoke)
+static void aplica_regra_do_nome(Estado *e, Fase fase, bool reinicio) {
+    regras_nome_aplica(e->nome_jogador, sizeof(e->nome_jogador), fase, reinicio,
+                       dialogo_texto(TXT_NOME_PADRAO));
+}
+
 static void entra_fase(Estado *e, Fase fase, bool reinicio) {
+    aplica_regra_do_nome(e, fase, reinicio);
     e->fase = fase;
     e->tempo_fase = 0.0f;
     if (!reinicio) {
@@ -229,17 +238,23 @@ static void atualiza_debug(Estado *e) {
 #endif
 }
 
+// Conta também na tela de nome e na pausa: quem sair dali deixa o jogo voltar ao menu (e o nome é apagado).
 static void atualiza_feira(Estado *e, float dt) {
-    if (!e->modo_feira || !jogando(e)) return;
-    e->tempo_inativo = e->in.alguma ? 0.0f : e->tempo_inativo + dt;
-    if (e->tempo_inativo > FEIRA_INATIVIDADE_S) {
+    if (!e->modo_feira || !jogando(e)) {
         e->tempo_inativo = 0.0f;
-        entra_fase(e, FASE_MENU, false);
+        return;
     }
+    e->tempo_inativo = e->in.alguma ? 0.0f : e->tempo_inativo + dt;
+    EventoFase ev = regras_evento_inatividade(e->modo_feira, e->fase, e->tempo_inativo);
+    if (ev == EV_NENHUM) return;
+    e->tempo_inativo = 0.0f;
+    e->pausado = false;
+    jogo_aplica_evento(e, ev);
 }
 
 static void atualiza_cursor(const Estado *e) {
-    bool prende = jogando(e) && !e->pausado && !e->modo_smoke && e->fase != FASE_INTRO;
+    bool prende =
+        jogando(e) && !e->pausado && !e->modo_smoke && e->fase != FASE_INTRO && e->fase != FASE_NOME;
     if (prende && !IsCursorHidden()) DisableCursor();
     if (!prende && IsCursorHidden()) EnableCursor();
 }
@@ -247,6 +262,9 @@ static void atualiza_cursor(const Estado *e) {
 // ================================================================== atualiza
 static void atualiza_fase(Estado *e, float dt) {
     switch (e->fase) {
+    case FASE_NOME:
+        tela_nome_atualiza(e, dt);
+        break;
     case FASE_INTRO:
         atualiza_intro(e, dt);
         break;
@@ -274,7 +292,7 @@ static void atualiza_fase(Estado *e, float dt) {
 
 static void atualiza_temporizadores(Estado *e, float dt) {
     e->tempo_fase += dt;
-    if (jogando(e) && e->fase != FASE_INTRO) e->tempo_partida += dt;
+    if (jogando(e) && e->fase != FASE_INTRO && e->fase != FASE_NOME) e->tempo_partida += dt;
     e->apagao_t = e->apagao_t > 0.0f ? e->apagao_t - dt : 0.0f;
     e->falha_luz_t = e->falha_luz_t > 0.0f ? e->falha_luz_t - dt : 0.0f;
     e->alarme_t = e->alarme_t > 0.0f ? e->alarme_t - dt : 0.0f;
@@ -283,11 +301,13 @@ static void atualiza_temporizadores(Estado *e, float dt) {
 void jogo_atualiza(Estado *e, float dt) {
     atualiza_cursor(e);
     atualiza_debug(e);
+    atualiza_feira(e, dt);
     if (e->pausado) {
         atualiza_pausa(e);
         return;
     }
-    bool anda_livre = e->fase != FASE_MENU && e->fase != FASE_FIM_BOM && e->fase != FASE_FIM_RUIM &&
+    bool anda_livre = e->fase != FASE_MENU && e->fase != FASE_NOME && e->fase != FASE_FIM_BOM &&
+                      e->fase != FASE_FIM_RUIM &&
                       !(e->fase == FASE_INTRO && !e->intro.interfone);
     if (e->in.voltar && anda_livre && e->jog.modo == MODO_ANDANDO) {
         e->pausado = true;
@@ -295,7 +315,6 @@ void jogo_atualiza(Estado *e, float dt) {
         return;
     }
     atualiza_temporizadores(e, dt);
-    atualiza_feira(e, dt);
     susto_atualiza(e, dt);
     if (anda_livre && !susto_ativo(e)) {
         jogador_atualiza(e, dt);
@@ -355,5 +374,6 @@ void jogo_desenha_interface(const Estado *e) {
         compositor_desenha(e);
         circuito_desenha(e);
     }
+    tela_nome_desenha(e);
     ui_desenha(e);
 }

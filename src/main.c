@@ -52,8 +52,12 @@ static void le_entrada(Entrada *in) {
     in->f9 = IsKeyPressed(KEY_F9);
     in->f12 = IsKeyPressed(KEY_F12);
 #endif
-    in->alguma = GetKeyPressed() != 0 || in->mover.x != 0 || in->mover.y != 0 || in->mouse.x != 0 ||
-                 in->mouse.y != 0 || IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
+    // Tela de nome: esvazia a fila de caracteres do quadro (quem filtra o que vale é regras_nome_acrescenta).
+    for (int c = GetCharPressed(); c != 0; c = GetCharPressed())
+        if (in->n_digitados < ENTRADA_MAX_CARACTERES) in->digitados[in->n_digitados++] = c;
+    in->apagar = IsKeyPressed(KEY_BACKSPACE) || IsKeyPressedRepeat(KEY_BACKSPACE);
+    in->alguma = GetKeyPressed() != 0 || in->n_digitados > 0 || in->mover.x != 0 || in->mover.y != 0 ||
+                 in->mouse.x != 0 || in->mouse.y != 0 || IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
 }
 
 // ================================================================== piloto automático (--smoke)
@@ -414,6 +418,7 @@ int main(int argc, char **argv) {
         quadro(&estado);
         if (estado.modo_smoke && piloto.codigo_saida >= 0) break;
     }
+    memset(estado.nome_jogador, 0, sizeof(estado.nome_jogador)); // o jogo encerrou: o nome some junto
     descarrega_recursos();
     if (!estado.modo_smoke || piloto.codigo_saida == 0) return 0;
     if (piloto.codigo_saida < 0)
