@@ -25,6 +25,8 @@ static void testa_partidas_completas(void) {
 // [REQ:PURA-regras_proxima_fase] testa a ordem das fases da partida
 static void testa_ordem_das_fases(void) {
     Fase f = regras_proxima_fase(FASE_MENU, EV_INICIAR);
+    CHECK(f == FASE_NOME);
+    f = regras_proxima_fase(f, EV_NOME_CONFIRMADO);
     CHECK(f == FASE_INTRO);
     f = regras_proxima_fase(f, EV_INTRO_TERMINOU);
     CHECK(f == FASE_R1);
@@ -98,6 +100,7 @@ static void testa_partida_com_recomecos(void) {
     int recomecos = 0;
     Fase f = FASE_MENU;
     f = aplica(f, EV_INICIAR, &recomecos);
+    f = aplica(f, EV_NOME_CONFIRMADO, &recomecos);
     f = aplica(f, EV_INTRO_TERMINOU, &recomecos);
     f = aplica(f, EV_RODADA_CONCLUIDA, &recomecos);
     CHECK(f == FASE_S1);
@@ -126,6 +129,8 @@ static void testa_partida_com_recomecos(void) {
 // Eventos fora de hora são ignorados (nenhum softlock nem pulo indevido).
 static void testa_eventos_ignorados(void) {
     CHECK(regras_proxima_fase(FASE_MENU, EV_PEGO) == FASE_MENU);
+    CHECK(regras_proxima_fase(FASE_NOME, EV_INTRO_TERMINOU) == FASE_NOME);
+    CHECK(regras_proxima_fase(FASE_MENU, EV_NOME_CONFIRMADO) == FASE_MENU);
     CHECK(regras_proxima_fase(FASE_R1, EV_SAIDA_CONCLUIDA) == FASE_R1);
     CHECK(regras_proxima_fase(FASE_S2, EV_RODADA_CONCLUIDA) == FASE_S2);
     CHECK(regras_proxima_fase(FASE_FIM_BOM, EV_INICIAR) == FASE_FIM_BOM);
