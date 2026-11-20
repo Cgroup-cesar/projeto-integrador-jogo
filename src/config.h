@@ -129,6 +129,22 @@
 #define MAX_NOS_LOGICA  64
 #define MAX_CAMINHO     128
 
+// ---------------------------------------------------------------- texturas do mapa (procedurais; override
+// opcional em assets/texturas/<material>.png). Geradas uma vez ao abrir o jogo, com semente fixa.
+#define TEXTURA_LADO_PX         256   // lado das texturas quadradas (piso, teto, oliva, metal, porta)
+#define TEXTURA_CONCRETO_PX     512   // o concreto é 512 × 256: cobre 6 m × 3 m sem repetir à vista
+#define TEXTURA_SEMENTE         1985u // mesma semente → mesma imagem em toda execução
+#define TEXTURA_SUJEIRA         0.8f  // 0 = limpo; 1 = manchas, escorridos e descascado no máximo
+#define TEXTURA_METROS_CONCRETO 6.0f  // metros por repetição na horizontal (na vertical: PE_DIREITO)
+#define TEXTURA_METROS_PISO     2.0f  // 4 × 4 placas de 0,5 m
+#define TEXTURA_METROS_TETO     2.0f  // 3 × 3 placas de forro
+#define TEXTURA_METROS_METAL    1.0f
+#define TEXTURA_ARQUIVO_MAX_PX  1024  // PNG maior que isso (ou fora de potência de 2) é redimensionado
+#define BARRADO_ALTURA          1.2f  // tinta oliva do chão até aqui (acima: concreto aparente)
+#define DECALQUE_PX             256   // manchas: 256 × 256; placas: 512 × 128
+#define HALO_LAMPADA_M          1.3f  // tamanho do brilho em volta das lâmpadas
+#define HALO_LAMPADA_ALFA       0.35f // força do brilho (some com a névoa)
+
 // ---------------------------------------------------------------- luz e névoa
 #define LUZ_AMBIENTE    0.06f
 #define NEVOA_DENSIDADE 0.085f
