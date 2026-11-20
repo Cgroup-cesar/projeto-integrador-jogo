@@ -374,6 +374,30 @@ static void testa_ruido_materiais(void) {
     CHECK(salto < 0.02f);
 }
 
+// Brilho médio perto de 1 (a cor da paleta continua sendo a cor do material: nada fica escuro demais) e
+// mistura em [0, 1]; mesma semente, mesmo pixel.
+static void testa_materiais(void) {
+    for (int m = 0; m < MATERIAL_TOTAL; m++) {
+        float soma = 0.0f;
+        int invalidos = 0;
+        // padrão FOLD: soma do brilho numa grade de 48 × 48 pixels
+        for (int i = 0; i < 48 * 48; i++) {
+            PixelMaterial p =
+                materiais_pixel((TipoMaterial)m, (i % 48 + 0.5f) / 48, (i / 48 + 0.5f) / 48, 0.8f, 1985u);
+            soma += p.brilho;
+            invalidos += p.brilho < 0.15f || p.brilho > 2.0f || p.mistura < 0.0f || p.mistura > 1.0f;
+        }
+        float media = soma / (48 * 48);
+        CHECK(invalidos == 0);
+        CHECK(media > 0.7f && media < 1.15f);
+    }
+    PixelMaterial a = materiais_pixel(MATERIAL_CONCRETO, 0.3f, 0.6f, 0.8f, 1985u);
+    PixelMaterial b = materiais_pixel(MATERIAL_CONCRETO, 0.3f, 0.6f, 0.8f, 1985u);
+    CHECK(a.brilho == b.brilho && a.mistura == b.mistura);
+    PixelMaterial limpo = materiais_pixel(MATERIAL_OLIVA, 0.3f, 0.6f, 0.0f, 1985u); // sujeira 0: sem mistura
+    CHECK(limpo.mistura >= 0.0f && limpo.mistura <= 1.0f);
+}
+
 int main(void) {
     SetTraceLogLevel(LOG_ERROR); // o aviso de vetor cheio é esperado aqui
     testa_movimento();
@@ -397,5 +421,6 @@ int main(void) {
     testa_nome_padrao();
     testa_nome_digitacao();
     testa_ruido_materiais();
+    testa_materiais();
     return resultado_final("test_regras");
 }
