@@ -266,7 +266,10 @@ static void testa_nome_normaliza(void) {
     CHECK(regras_nome_normaliza("a\tb", s, sizeof(s)) == 2 && strcmp(s, "ab") == 0);
     CHECK(regras_nome_normaliza("Z\xC3\xA9\xF0\x9F\x98\x80", s, sizeof(s)) == 2);
     CHECK(strcmp(s, "Z\xC3\xA9") == 0);
-    CHECK(regras_nome_normaliza("2\xC3\x97" "2", s, sizeof(s)) == 2 && strcmp(s, "22") == 0);
+    CHECK(regras_nome_normaliza("2\xC3\x97"
+                                "2",
+                                s, sizeof(s)) == 2 &&
+          strcmp(s, "22") == 0);
     CHECK(regras_nome_normaliza("A\xC3", s, sizeof(s)) == 1 && strcmp(s, "A") == 0);
     CHECK(regras_nome_normaliza("\xC3(B", s, sizeof(s)) == 1 && strcmp(s, "B") == 0);
     CHECK(regras_nome_normaliza("!!! ", s, sizeof(s)) == 0 && s[0] == '\0');

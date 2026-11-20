@@ -190,8 +190,8 @@ const char *dialogo_texto(TextoId id) {
 
 const char *dialogo_nome_fase(int fase) {
     static const char *const nomes[FASE_TOTAL] = {
-        "",        "Nome",     "Intro",    "Rodada 1",       "Saída 1", "Rodada 2",
-        "Saída 2", "Rodada 3", "Resposta final", "Final",   "Final",
+        "",        "Nome",     "Intro",          "Rodada 1", "Saída 1", "Rodada 2",
+        "Saída 2", "Rodada 3", "Resposta final", "Final",    "Final",
     };
     return (fase >= 0 && fase < FASE_TOTAL) ? nomes[fase] : "";
 }

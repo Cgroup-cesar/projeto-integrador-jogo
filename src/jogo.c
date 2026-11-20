@@ -307,8 +307,7 @@ void jogo_atualiza(Estado *e, float dt) {
         return;
     }
     bool anda_livre = e->fase != FASE_MENU && e->fase != FASE_NOME && e->fase != FASE_FIM_BOM &&
-                      e->fase != FASE_FIM_RUIM &&
-                      !(e->fase == FASE_INTRO && !e->intro.interfone);
+                      e->fase != FASE_FIM_RUIM && !(e->fase == FASE_INTRO && !e->intro.interfone);
     if (e->in.voltar && anda_livre && e->jog.modo == MODO_ANDANDO) {
         e->pausado = true;
         e->menu.cursor = 0;

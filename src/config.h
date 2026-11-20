@@ -150,8 +150,8 @@
 // ---------------------------------------------------------------- lanterna (tecla F, sem bateria)
 #define LANTERNA_ABERTURA_GRAUS 22.0f // meia-abertura do cone
 #define LANTERNA_INTENSIDADE    3.1f
-#define LANTERNA_QUEDA          0.4f // perda de força com a distância (lâmpadas = 1): menor = alcança mais longe
-#define LANTERNA_COMPRIMENTO_M  0.24f // o modelo na mão é escalado para esse comprimento
+#define LANTERNA_QUEDA 0.4f // perda de força com a distância (lâmpadas = 1): menor = alcança mais longe
+#define LANTERNA_COMPRIMENTO_M 0.24f // o modelo na mão é escalado para esse comprimento
 
 // ---------------------------------------------------------------- paleta (só use onde a raylib já foi
 // incluída)
