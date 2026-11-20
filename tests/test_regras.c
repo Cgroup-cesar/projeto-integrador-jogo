@@ -398,6 +398,21 @@ static void testa_materiais(void) {
     CHECK(limpo.mistura >= 0.0f && limpo.mistura <= 1.0f);
 }
 
+static void testa_decalques(void) {
+    CHECK(materiais_mancha(DECALQUE_UMIDADE, 0.0f, 0.5f, 1u) == 0.0f); // some na borda
+    CHECK(materiais_mancha(DECALQUE_ARRASTO, 0.5f, 1.0f, 1u) == 0.0f);
+    CHECK(materiais_mancha(DECALQUE_UMIDADE, 0.5f, 0.35f, 1u) > 0.3f); // e existe no meio
+    CHECK(materiais_mancha(DECALQUE_POSTO, 0.5f, 0.5f, 1u) == 0.0f);   // placa de texto não é mancha
+    float minimo = 1.0f, maximo = 0.0f;
+    // padrão FOLD: faixa do desgaste da tinta de estêncil
+    for (int i = 0; i < 256; i++) {
+        float d = materiais_desgaste((i % 16 + 0.5f) / 16, (i / 16 + 0.5f) / 16, 5u);
+        minimo = fminf(minimo, d);
+        maximo = fmaxf(maximo, d);
+    }
+    CHECK(minimo >= 0.0f && maximo <= 1.0f && maximo > 0.5f);
+}
+
 int main(void) {
     SetTraceLogLevel(LOG_ERROR); // o aviso de vetor cheio é esperado aqui
     testa_movimento();
@@ -422,5 +437,6 @@ int main(void) {
     testa_nome_digitacao();
     testa_ruido_materiais();
     testa_materiais();
+    testa_decalques();
     return resultado_final("test_regras");
 }

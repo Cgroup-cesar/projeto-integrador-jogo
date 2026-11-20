@@ -18,6 +18,18 @@ typedef enum {
     MATERIAL_TOTAL
 } TipoMaterial;
 
+// Decalques: placas de estêncil (texto de dialogo.c, desenhado com a fonte) e manchas procedurais.
+typedef enum {
+    DECALQUE_POSTO,    // "POSTO 7"
+    DECALQUE_RESTRITA, // "ÁREA RESTRITA"
+    DECALQUE_ARQUIVO,  // "ARQUIVO"
+    DECALQUE_UMIDADE,  // mancha de umidade com escorridos (parede)
+    DECALQUE_ARRASTO,  // marcas de arrasto saindo do duto (chão)
+    DECALQUE_TOTAL
+} Decalque;
+
+#define DECALQUES_ESTENCIL 3 // os primeiros DECALQUES_ESTENCIL do enum são texto
+
 typedef struct {
     float brilho;  // multiplica a cor base (≈1 = a cor da paleta)
     float mistura; // 0 = cor base, 1 = cor secundária
@@ -34,5 +46,12 @@ float materiais_fbm(float u, float v, int freq_x, int freq_y, int oitavas, unsig
 // O pixel (u, v) ∈ [0, 1)² de cada material; `sujeira` (0..1) dosa manchas, escorridos e desgaste.
 // No concreto e na oliva, v = 0 é o teto e v = 1 é o chão.
 PixelMaterial materiais_pixel(TipoMaterial m, float u, float v, float sujeira, unsigned semente);
+
+// Alfa (0..1) das manchas que viram decalque (DECALQUE_UMIDADE, DECALQUE_ARRASTO); some nas bordas.
+// No arrasto, u segue o comprimento (u = 1 na boca do duto) e v a largura.
+float materiais_mancha(Decalque d, float u, float v, unsigned semente);
+
+// Desgaste da tinta de estêncil (as placas): 0 = tinta sumiu, 1 = tinta inteira.
+float materiais_desgaste(float u, float v, unsigned semente);
 
 #endif

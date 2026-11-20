@@ -154,3 +154,46 @@ PixelMaterial materiais_pixel(TipoMaterial m, float u, float v, float sujeira, u
     }
 }
 
+// Janela que zera o alfa perto das bordas do decalque (sem quina visível).
+static float janela(float u, float v) {
+    return passo(0.0f, 0.1f, u) * passo(0.0f, 0.1f, 1.0f - u) * passo(0.0f, 0.1f, v) *
+           passo(0.0f, 0.1f, 1.0f - v);
+}
+
+// Mancha de umidade: borrão irregular com borda mais escura e escorridos descendo.
+static float umidade(float u, float v, unsigned s) {
+    float du = u - 0.5f, dv = (v - 0.35f) * 1.3f;
+    float borda = sqrtf(du * du + dv * dv) + 0.3f * (materiais_fbm(u, v, 4, 4, 4, s) - 0.5f);
+    float corpo = 1.0f - passo(0.22f, 0.36f, borda);
+    float anel = fmaxf(0.0f, passo(0.28f, 0.33f, borda) - passo(0.33f, 0.38f, borda));
+    float coluna = passo(0.66f, 0.86f, materiais_ruido(u * 18.0f, 0.0f, 18, 1, s + 3u));
+    float pinga = coluna * passo(0.3f, 0.45f, v) * (1.0f - passo(0.45f, 0.95f, v));
+    return fminf(1.0f, 0.7f * corpo + 0.4f * anel + 0.6f * pinga * (1.0f - corpo));
+}
+
+// Marcas de arrasto: quatro trilhas paralelas que somem longe do duto, falhando no caminho.
+static float arrasto(float u, float v, unsigned s) {
+    static const float TRILHAS[4] = {0.25f, 0.4f, 0.6f, 0.75f};
+    float alfa = 0.0f;
+    // padrão FOLD: as trilhas somadas num alfa só
+    for (int i = 0; i < 4; i++) {
+        float centro = TRILHAS[i] + 0.03f * (materiais_ruido(u * 6.0f, (float)i, 6, 4, s + 5u) - 0.5f);
+        alfa += 1.0f - passo(0.025f, 0.05f, fabsf(v - centro));
+    }
+    float falha = passo(0.3f, 0.5f, materiais_fbm(u, v, 8, 2, 3, s + 7u));
+    return fminf(1.0f, alfa) * passo(0.0f, 0.9f, u) * falha;
+}
+
+float materiais_mancha(Decalque d, float u, float v, unsigned semente) {
+    float alfa = d == DECALQUE_UMIDADE   ? umidade(u, v, semente)
+                 : d == DECALQUE_ARRASTO ? arrasto(u, v, semente)
+                                         : 0.0f;
+    return alfa * janela(u, v);
+}
+
+float materiais_desgaste(float u, float v, unsigned semente) {
+    float manchas = 0.35f + 0.65f * passo(0.22f, 0.4f, materiais_fbm(fracao(u), fracao(v), 8, 4, 4, semente));
+    float spray = materiais_hash((int)(u * 256.0f), (int)(v * 64.0f), semente + 1u) > 0.12f ? 1.0f : 0.4f;
+    return manchas * spray;
+}
+
