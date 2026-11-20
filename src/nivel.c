@@ -2,6 +2,7 @@
 // O mapa é texto para a equipe editar. 1 célula = 2 m; pé-direito 3 m.
 #include "nivel.h"
 #include "texturas.h"
+#include "cenario.h"
 #include <math.h>
 #include <string.h>
 
@@ -478,9 +479,14 @@ void nivel_desenha_emissivos(const Estado *e) {
         DrawSphereEx((Vector3){n->diario.x, PE_DIREITO - 0.3f, n->diario.z}, 0.08f, 6, 6, COR_LAMPADA);
     }
     float sala = brilho_sala(e);
-    if (!saida && sala > 0.5f)
-        DrawSphereEx((Vector3){8.0f, PE_DIREITO - 0.25f, 11.0f}, 0.11f, 8, 8,
-                     e->alarme_t > 0 ? COR_ALARME : lamp);
+    Vector3 lampada_sala = {8.0f, PE_DIREITO - 0.25f, 11.0f};
+    Color cor_sala = e->alarme_t > 0 ? COR_ALARME : lamp;
+    if (!saida && sala > 0.5f) DrawSphereEx(lampada_sala, 0.11f, 8, 8, cor_sala);
+    cenario_comeca_halos();
+    for (int i = 0; saida && i < n->n_lampadas; i++) // laço de desenho: o halo de cada lâmpada acesa
+        cenario_halo(e, n->lampadas[i], lamp);
+    if (!saida && sala > 0.5f) cenario_halo(e, lampada_sala, cor_sala);
+    cenario_termina_halos();
     bool menu = e->fase == FASE_MENU || e->fase == FASE_NOME || e->fase == FASE_INTRO;
     bool a_acesa = menu || e->rod.luz_a || nivel_piscada_cela(e) > 0.0f;
     if (a_acesa && e->apagao_t <= 0.0f) DrawSphereEx(HOLOFOTE_A, 0.1f, 8, 8, COR_VIDRO);

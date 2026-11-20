@@ -9,4 +9,10 @@
 // Dentro do shader de luz, depois de nivel_desenha (as paredes já estão no buffer de profundidade).
 void cenario_desenha(const Estado *e);
 
+// Halo das lâmpadas (soma de luz, sem escrever profundidade): chame cenario_halo entre comeca e termina,
+// fora do shader de luz (junto dos emissivos).
+void cenario_comeca_halos(void);
+void cenario_halo(const Estado *e, Vector3 posicao, Color cor);
+void cenario_termina_halos(void);
+
 #endif

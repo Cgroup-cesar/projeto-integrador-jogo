@@ -114,3 +114,21 @@ void cenario_desenha(const Estado *e) {
     desenha_decalques(e);
 }
 
+// ------------------------------------------------------------------ halo das lâmpadas
+void cenario_comeca_halos(void) {
+    BeginBlendMode(BLEND_ADDITIVE);
+    rlDisableDepthMask();
+}
+
+// O halo some com a névoa, como a luz: de longe, a lâmpada não "fura" o escuro.
+void cenario_halo(const Estado *e, Vector3 posicao, Color cor) {
+    float distancia = Vector3Distance(e->camera.position, posicao);
+    float alfa = HALO_LAMPADA_ALFA * expf(-NEVOA_DENSIDADE * distancia);
+    DrawBillboard(e->camera, e->rec.halo, posicao, HALO_LAMPADA_M, Fade(cor, alfa));
+}
+
+void cenario_termina_halos(void) {
+    rlDrawRenderBatchActive();
+    rlEnableDepthMask();
+    EndBlendMode();
+}
