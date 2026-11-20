@@ -44,12 +44,12 @@ else
     endif
 endif
 
-FONTES = $(filter-out src/test_menu.c, $(wildcard src/*.c))
+FONTES = $(wildcard src/*.c)
 OBJETOS = $(patsubst src/%.c,obj/%.o,$(FONTES))
 JOGO = bin/precursor$(EXE)
+# teste visual do menu (abre janela; fica fora do make test): make test-menu
 TEST_MENU = bin/test_menu$(EXE)
 
-TEST_MENU = bin/test_menu$(EXE)
 TESTES = bin/test_logica$(EXE) bin/test_regras$(EXE) bin/test_fluxo$(EXE)
 
 .PHONY: all run test smoke readme-check clean test-menu
@@ -78,9 +78,6 @@ bin/test_regras$(EXE): obj/test_regras.o obj/regras.o obj/logica.o obj/colecoes.
 
 $(TEST_MENU): obj/test_menu.o obj/menu_inicial.o | bin
 	$(CC) $^ -o $@ $(RAYLIB_LIBS)
-
-obj/test_menu.o: src/test_menu.c | obj
-	$(CC) $(CFLAGS) $(RAYLIB_CFLAGS) -c $< -o $@
 
 test-menu: $(TEST_MENU)
 	./$(TEST_MENU)
