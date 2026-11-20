@@ -9,6 +9,49 @@
 #define DESCOLA      0.012f                 // o decalque fica 1,2 cm à frente da superfície (sem z-fighting)
 #define ALTURA_DUTOS (PE_DIREITO - 0.18f)
 
+// ------------------------------------------------------------------ decalques
+typedef struct {
+    Decalque tipo;
+    Vector3 centro;
+    Vector3 direita, cima; // semieixos inteiros; a frente do decalque é direita × cima
+    Color tinta;
+} Placa;
+
+static const Placa PLACAS[] = {
+    // corredor norte (linha 5): parede de cima (z = 10), vista do corredor (+z)
+    {DECALQUE_POSTO, {19.0f, 2.0f, BORDA(5) + DESCOLA}, {2.0f, 0, 0}, {0, 0.5f, 0}, {0xc8, 0xc0, 0xa8, 190}},
+    {DECALQUE_RESTRITA,
+     {35.0f, 2.0f, BORDA(5) + DESCOLA},
+     {2.4f, 0, 0},
+     {0, 0.6f, 0},
+     {0xd9, 0xa4, 0x41, 180}},
+    // corredor oeste (coluna 8): parede da esquerda (x = 16), junto da porta do Arquivo, vista de +x
+    {DECALQUE_ARQUIVO,
+     {BORDA(8) + DESCOLA, 2.0f, 19.0f},
+     {0, 0, -1.6f},
+     {0, 0.4f, 0},
+     {0xc8, 0xc0, 0xa8, 190}},
+    // umidade: corredor norte (parede de baixo), corredor leste e parede norte do Arquivo
+    {DECALQUE_UMIDADE, {27.0f, 1.7f, BORDA(6) - DESCOLA}, {-1.8f, 0, 0}, {0, 2.2f, 0}, {255, 255, 255, 230}},
+    {DECALQUE_UMIDADE, {BORDA(22) - DESCOLA, 1.5f, 17.0f}, {0, 0, 1.6f}, {0, 2.0f, 0}, {255, 255, 255, 230}},
+    {DECALQUE_UMIDADE, {9.0f, 1.8f, BORDA(9) + DESCOLA}, {1.8f, 0, 0}, {0, 2.2f, 0}, {255, 255, 255, 230}},
+    // marcas de arrasto no chão, saindo da boca do duto (coluna 14, linha 11) para oeste
+    {DECALQUE_ARRASTO, {26.15f, DESCOLA * 0.5f, 23.0f}, {4.5f, 0, 0}, {0, 0, -1.2f}, {255, 255, 255, 255}},
+};
+
+// Decalques com alfa e sem escrever profundidade: a criatura e as partículas passam por cima.
+static void desenha_decalques(const Estado *e) {
+    rlDrawRenderBatchActive();
+    rlDisableDepthMask();
+    // laço de desenho: só percorre a tabela para desenhar (não é map/filter/fold)
+    for (size_t i = 0; i < sizeof(PLACAS) / sizeof(PLACAS[0]); i++) {
+        const Placa *p = &PLACAS[i];
+        texturas_quadro(e->rec.decalque[p->tipo], p->centro, p->direita, p->cima, p->tinta);
+    }
+    rlDrawRenderBatchActive();
+    rlEnableDepthMask();
+}
+
 // ------------------------------------------------------------------ eletrodutos, grelhas e fiação
 // Um anel de eletroduto pelo teto dos corredores (linha 5, coluna 8, coluna 21 e linha 11).
 static const Vector3 DUTOS[][2] = {
@@ -68,5 +111,6 @@ void cenario_desenha(const Estado *e) {
     desenha_dutos(e);
     desenha_grelhas(e);
     desenha_fios();
+    desenha_decalques(e);
 }
 
