@@ -64,7 +64,7 @@
 // ---------------------------------------------------------------- jogador
 #define JOGADOR_RAIO            0.30f
 #define JOGADOR_VEL_ANDAR       2.5f
-#define JOGADOR_VEL_CORRER      4.2f
+#define JOGADOR_VEL_CORRER      4.6f // +10% (era 4,2)
 #define JOGADOR_FOLEGO_MAX      4.0f // segundos de corrida
 #define JOGADOR_FOLEGO_RECUPERA 0.8f // fôlego recuperado por segundo andando/parado
 #define SENSIBILIDADE_MOUSE     0.0025f
