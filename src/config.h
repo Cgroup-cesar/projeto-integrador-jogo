@@ -33,7 +33,7 @@
     {0.06f, 0.8f, 0.10f, 0.45f, 2.0f, 1.5f, 0.50f, 0.15f, -0.60f, 0.06f, 0.02f, 0.50f, 1.00f}, /* câmera de vigilância */ \
 }
 // clang-format on
-#define VHS_UNIFORMES (VHS_PARAMETROS + 3) // + tempo, resolução e interferência
+#define VHS_UNIFORMES (VHS_PARAMETROS + 4) // + tempo, resolução, interferência e insanidade (grão)
 // Interferência: uma sombra escura e semitransparente passa pela tela quando a criatura chega perto (só nos
 // corredores, com o VHS ligado). Pensada para ser percebida, não para atrapalhar: aparece de uma vez a LONGE e cresce até PERTO.
 #define VHS_INTERFERENCIA_LONGE  10.0f // metros: a partir daqui já aparece
@@ -41,6 +41,25 @@
 #define VHS_INTERFERENCIA_INICIO 0.25f // 0..1: o nível ao cruzar LONGE (já dá para notar)
 #define VHS_INTERFERENCIA_MAX    0.6f  // 0..1: o teto (colado na criatura)
 #define VHS_INTERFERENCIA_VEL    3.0f  // quão rápido acompanha (1/s)
+
+// ---------------------------------------------------------------- sanidade (granulado na tela)
+// Memória do medo: cai com a criatura perto (só nos corredores), volta devagar e volta muito ao concluir
+// tarefas. Não mata nem muda regras: só deixa a tela granulada (sentida, não lida; sem barra no HUD).
+// Diferente da interferência, que segue a distância NA HORA, o grão fica depois da fuga e some aos poucos.
+#define SANIDADE_MAX             100.0f
+#define SANIDADE_RAIO            10.0f // metros: além daqui a criatura não abala (= VHS_INTERFERENCIA_LONGE)
+#define SANIDADE_PERTO           2.5f  // metros: a partir daqui a queda é a máxima
+#define SANIDADE_QUEDA_MAX       12.0f // pontos/s colado nela (× p², p = proximidade 0..1): 100 → 0 em ~8 s
+#define SANIDADE_FATOR_ARMARIO   0.5f  // escondido no armário a queda cai pela metade
+#define SANIDADE_REGEN           0.8f  // pontos/s enquanto joga: +50 em ~1 min
+#define SANIDADE_ESPERA_REGEN    3.0f  // s sem a criatura no raio antes de voltar a subir (corredores)
+#define SANIDADE_BONUS_RODADA    35.0f // decifrou e traduziu (EV_RODADA_CONCLUIDA)
+#define SANIDADE_BONUS_SAIDA     40.0f // religou a energia e voltou à sala (EV_SAIDA_CONCLUIDA)
+#define SANIDADE_BONUS_CONECTIVO 10.0f // cada conectivo decifrado pela primeira vez
+#define SANIDADE_PISO_RECOMECO   60.0f // pego ou vidro rompido: recomeça com pelo menos isso (sem espiral)
+#define SANIDADE_GRAO_INICIO     75.0f // acima disso, nenhum grão
+#define SANIDADE_GRAO_MAX        0.16f // amplitude do grão (luminância) com sanidade 0: o teto jogável
+#define SANIDADE_GRAO_VEL        2.5f  // quão rápido o grão na tela acompanha a sanidade (1/s): sem saltos
 
 // ---------------------------------------------------------------- debug e modos
 #define TECLAS_DEBUG                                                                                         \

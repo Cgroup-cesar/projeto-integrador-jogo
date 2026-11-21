@@ -150,6 +150,19 @@ int regras_integridade_vidro(const Rachadura *rachaduras, int n, int vidas_max);
 EventoFase regras_evento_do_erro(int vidas_restantes);
 bool regras_interativo_ativo(TipoInterativo tipo, int fase);
 
+// ------------------------------------------------------------------ sanidade (regras_sanidade.c)
+// Um quadro de sanidade (0..SANIDADE_MAX). Nos corredores (`fase_saida`), cai com a criatura a menos de
+// SANIDADE_RAIO (mais quanto mais perto, × `surgindo`, metade se `escondido`) e só volta a subir depois de
+// SANIDADE_ESPERA_REGEN s longe dela (`tempo_longe`). Nas outras fases de jogo, sobe sempre devagar.
+float regras_sanidade_passo(float s, float dist, float surgindo, bool escondido, float tempo_longe,
+                            bool fase_saida, float dt);
+// Efeito de um evento de fase: partida nova → cheia; tarefa concluída → bônus; recomeço → piso.
+float regras_sanidade_bonus(float s, EventoFase ev);
+// Bônus dos conectivos decifrados neste quadro (`agora` − `antes`, se cresceu).
+float regras_sanidade_conectivos(float s, int antes, int agora);
+// Intensidade do grão (0..1): 0 com sanidade ≥ SANIDADE_GRAO_INICIO, 1 com sanidade 0, suave no meio.
+float regras_sanidade_grao(float s);
+
 // ------------------------------------------------------------------ circuitos dos painéis
 typedef enum { PORTA_E, PORTA_OU, PORTA_XOU, PORTA_NE, PORTA_NAO, PORTA_TOTAL } TipoPorta;
 
