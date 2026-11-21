@@ -76,28 +76,33 @@ static const char *const UNIFORMES[VHS_UNIFORMES] = {
 
 // O corpo é o mesmo nas duas versões: AMOSTRA e SAIDA trocam texture/texture2D e finalColor/gl_FragColor.
 // As scanlines compensam o brilho médio que tiram (o escuro não fica mais escuro do que sem filtro).
-// rodape: a faixa de troca de cabeça (3% de baixo); rola: uma faixa fraca de ruído que sobe devagar
-// (rolagem; a interferência da criatura também a liga).
+// rodape: a faixa de troca de cabeça (3% de baixo); rola: uma faixa fraca de ruído que sobe devagar.
+// Interferência (criatura perto): "chiado" de linhas finas que piscam e tremem de leve; quanto maior, mais
+// linhas por quadro (no máximo ~4% delas). Não rola faixa, não escurece e não cobre a criatura.
 #define VHS_CORPO_GLSL                                                                                       \
     "void main() {\n"                                                                                        \
     "    vec2 uv = curva(fragTexCoord);\n"                                                                   \
     "    vec2 fora = step(vec2(0.0), uv) * step(uv, vec2(1.0));\n"                                           \
     "    float linha = floor(uv.y * resolucao.y);\n"                                                         \
-    "    float janela = step(0.97 - 0.3 * interferencia, hash(vec2(floor(tempo * 3.0), 7.0)));\n"            \
+    "    float janela = step(0.97, hash(vec2(floor(tempo * 3.0), 7.0)));\n"                                  \
     "    float faixa = smoothstep(0.0, 0.08, 0.08 - abs(uv.y - fract(tempo * 0.37)));\n"                     \
     "    float rodape = tracking * smoothstep(0.97, 1.0, 1.0 - uv.y);\n"                                     \
     "    float altura_rola = abs(uv.y - fract(-tempo * 0.06));\n"                                            \
-    "    float rola = (rolagem + interferencia) * smoothstep(0.015, 0.0, altura_rola);\n"                    \
-    "    uv.x += janela * faixa * (wobble + 4.0 * interferencia) / resolucao.x;\n"                           \
+    "    float rola = rolagem * smoothstep(0.015, 0.0, altura_rola);\n"                                      \
+    "    float quadro = floor(tempo * 24.0);\n"                                                              \
+    "    float chiado = step(1.0 - 0.07 * interferencia, hash(vec2(linha * 0.37, quadro)));\n"               \
+    "    uv.x += janela * faixa * wobble / resolucao.x;\n"                                                   \
     "    float tremor = hash(vec2(linha, floor(tempo * 30.0))) - 0.5;\n"                                     \
-    "    uv.x += (rodape * 14.0 + rola * 2.0) * tremor / resolucao.x;\n"                                     \
-    "    float px = (aberracao + 1.5 * interferencia) / resolucao.x;\n"                                      \
+    "    float empurra = rodape * 14.0 + rola * 2.0 + chiado * 6.0 + interferencia * 1.5;\n"                 \
+    "    uv.x += empurra * tremor / resolucao.x;\n"                                                          \
+    "    float px = (aberracao + 1.0 * interferencia) / resolucao.x;\n"                                      \
     "    vec3 c = vec3(AMOSTRA(texture0, uv + vec2(px, 0.0)).r, AMOSTRA(texture0, uv).g,\n"                  \
     "                  AMOSTRA(texture0, uv - vec2(px, 0.0)).b);\n"                                          \
     "    c = sangra(c, uv);\n"                                                                               \
     "    c = tinge(mix(vec3(luma(c)), c, saturacao));\n"                                                     \
     "    float n = hash(uv * resolucao + vec2(tempo * 61.0, tempo * 17.0)) - 0.5;\n"                         \
-    "    c += n * (ruido * (0.3 + 0.7 * luma(c)) + rodape * 0.6 + rola * 0.12 + interferencia * 0.05);\n"    \
+    "    c += n * (ruido * (0.3 + 0.7 * luma(c)) + rodape * 0.6 + rola * 0.12 + interferencia * 0.03);\n"    \
+    "    c += chiado * (0.06 + 0.12 * hash(vec2(linha, quadro + 5.0)));\n"                                   \
     "    float listra = 0.5 + 0.5 * sin(uv.y * resolucao.y * 3.14159);\n"                                    \
     "    c *= (1.0 + scanlines * 0.5) * (1.0 - scanlines * listra);\n"                                       \
     "    vec2 d = uv - 0.5;\n"                                                                               \
@@ -152,12 +157,16 @@ void vhs_escolhe(Estado *e, int preset) {
     e->vhs_rotulo_t = VHS_ROTULO_S;
 }
 
-// Alvo da interferência: 0 longe da criatura, VHS_INTERFERENCIA_MAX colado nela (só nos corredores).
+// Alvo da interferência (só nos corredores): 0 além de VHS_INTERFERENCIA_LONGE; ao cruzar essa distância já
+// aparece (VHS_INTERFERENCIA_INICIO) e cresce em linha reta até VHS_INTERFERENCIA_MAX em
+// VHS_INTERFERENCIA_PERTO.
 static float interferencia_alvo(const Estado *e) {
     if (!e->cri.ativo || !regras_fase_eh_saida(e->fase)) return 0.0f;
     float d = Vector3Distance(e->cri.pos, e->jog.pos);
+    if (d > VHS_INTERFERENCIA_LONGE) return 0.0f;
     float perto = (VHS_INTERFERENCIA_LONGE - d) / (VHS_INTERFERENCIA_LONGE - VHS_INTERFERENCIA_PERTO);
-    return Clamp(perto, 0.0f, 1.0f) * e->cri.surgindo * VHS_INTERFERENCIA_MAX;
+    float nivel = Lerp(VHS_INTERFERENCIA_INICIO, VHS_INTERFERENCIA_MAX, Clamp(perto, 0.0f, 1.0f));
+    return nivel * e->cri.surgindo;
 }
 
 void vhs_atualiza(Estado *e, float dt) {
