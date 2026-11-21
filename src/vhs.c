@@ -19,7 +19,8 @@ typedef enum {
     VHS_TOM,
     VHS_CURVATURA,
     VHS_CINTILACAO,
-    VHS_ROLAGEM
+    VHS_ROLAGEM,
+    VHS_BRILHO
 } ParametroVhs;
 
 static const float PRESETS[][VHS_PARAMETROS] = VHS_PRESETS;
@@ -31,8 +32,8 @@ static const TextoId NOMES[] = {TXT_VHS_DESLIGADO,  TXT_VHS_ORIGINAL,    TXT_VHS
 typedef char cada_preset_tem_um_nome[(sizeof(NOMES) / sizeof(NOMES[0]) == N_PRESETS) ? 1 : -1];
 
 static const char *const UNIFORMES[VHS_UNIFORMES] = {
-    "tempo",    "resolucao", "ruido", "aberracao", "scanlines",  "vinheta", "wobble",       "sangramento",
-    "tracking", "saturacao", "tom",   "curvatura", "cintilacao", "rolagem", "interferencia"};
+    "tempo",    "resolucao", "ruido", "aberracao", "scanlines",  "vinheta", "wobble", "sangramento",
+    "tracking", "saturacao", "tom",   "curvatura", "cintilacao", "rolagem", "brilho", "interferencia"};
 
 #define VHS_ROTULO_S 2.5f
 
@@ -45,7 +46,7 @@ static const char *const UNIFORMES[VHS_UNIFORMES] = {
     "uniform float ruido; uniform float aberracao; uniform float scanlines; uniform float vinheta;\n"        \
     "uniform float wobble; uniform float sangramento; uniform float tracking; uniform float saturacao;\n"    \
     "uniform float tom; uniform float curvatura; uniform float cintilacao; uniform float interferencia;\n"   \
-    "uniform float rolagem;\n"                                                                               \
+    "uniform float rolagem; uniform float brilho;\n"                                                         \
     "float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }\n"                \
     "float luma(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }\n"
 
@@ -101,7 +102,7 @@ static const char *const UNIFORMES[VHS_UNIFORMES] = {
     "    c *= (1.0 + scanlines * 0.5) * (1.0 - scanlines * listra);\n"                                       \
     "    vec2 d = uv - 0.5;\n"                                                                               \
     "    c *= 1.0 - vinheta * dot(d, d) * 2.0;\n"                                                            \
-    "    c *= 1.0 - cintilacao * hash(vec2(floor(tempo * 20.0), 3.0));\n"                                    \
+    "    c *= brilho * (1.0 - cintilacao * hash(vec2(floor(tempo * 20.0), 3.0)));\n"                         \
     "    SAIDA = vec4(c * fora.x * fora.y, 1.0) * colDiffuse * fragColor;\n"                                 \
     "}\n"
 

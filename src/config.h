@@ -20,17 +20,17 @@
 // Limites para não atrapalhar o jogo: ruído ≤ 0,08, cintilação ≤ 0,05 e curvatura ≤ 0,15 (cantos só).
 // Colunas: ruído · aberração cromática (px) · scanlines · vinheta · wobble (px) · sangramento de cor (px) ·
 //          tracking (0..1) · saturação (1 = normal) · tom (+ quente, − verde) · curvatura · cintilação ·
-//          rolagem (faixa de ruído que sobe pela tela, 0..1)
+//          rolagem (faixa de ruído que sobe pela tela, 0..1) · brilho (1 = normal; ≥ 0,85 para não sumir nada)
 #define VHS_PRESET_PADRAO 1 // com qual preset o jogo abre (F1 alterna entre eles)
-#define VHS_PARAMETROS    12
+#define VHS_PARAMETROS    13
 // clang-format off
 #define VHS_PRESETS {                                                                                        \
-    {0.00f, 0.0f, 0.00f, 0.00f, 0.0f, 0.0f, 0.00f, 1.00f,  0.00f, 0.00f, 0.00f, 0.00f}, /* desligado (sem shader) */ \
-    {0.04f, 1.5f, 0.06f, 0.35f, 2.5f, 0.0f, 0.00f, 1.00f,  0.00f, 0.00f, 0.00f, 0.00f}, /* original (v0) */         \
-    {0.05f, 1.8f, 0.05f, 0.40f, 3.0f, 2.5f, 0.60f, 0.85f,  0.60f, 0.00f, 0.02f, 0.00f}, /* fita caseira */ \
-    {0.08f, 2.5f, 0.07f, 0.45f, 5.0f, 3.5f, 1.00f, 0.65f,  0.25f, 0.00f, 0.05f, 1.00f}, /* fita gasta */           \
-    {0.03f, 1.0f, 0.14f, 0.50f, 1.5f, 1.0f, 0.00f, 0.90f,  0.00f, 0.12f, 0.03f, 0.00f}, /* monitor CRT */          \
-    {0.06f, 0.8f, 0.10f, 0.45f, 2.0f, 1.5f, 0.50f, 0.15f, -0.60f, 0.06f, 0.02f, 0.50f}, /* câmera de vigilância */ \
+    {0.00f, 0.0f, 0.00f, 0.00f, 0.0f, 0.0f, 0.00f, 1.00f,  0.00f, 0.00f, 0.00f, 0.00f, 1.00f}, /* desligado (sem shader) */ \
+    {0.04f, 1.5f, 0.06f, 0.35f, 2.5f, 0.0f, 0.00f, 1.00f,  0.00f, 0.00f, 0.00f, 0.00f, 1.00f}, /* original (v0) */         \
+    {0.05f, 1.2f, 0.05f, 0.40f, 3.0f, 1.2f, 0.60f, 0.85f,  0.60f, 0.00f, 0.02f, 0.00f, 0.88f}, /* fita caseira */ \
+    {0.08f, 2.5f, 0.07f, 0.45f, 5.0f, 3.5f, 1.00f, 0.65f,  0.25f, 0.00f, 0.05f, 1.00f, 1.00f}, /* fita gasta */           \
+    {0.03f, 1.0f, 0.14f, 0.50f, 1.5f, 1.0f, 0.00f, 0.90f,  0.00f, 0.12f, 0.03f, 0.00f, 1.00f}, /* monitor CRT */          \
+    {0.06f, 0.8f, 0.10f, 0.45f, 2.0f, 1.5f, 0.50f, 0.15f, -0.60f, 0.06f, 0.02f, 0.50f, 1.00f}, /* câmera de vigilância */ \
 }
 // clang-format on
 #define VHS_UNIFORMES (VHS_PARAMETROS + 3) // + tempo, resolução e interferência
