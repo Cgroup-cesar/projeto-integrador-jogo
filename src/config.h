@@ -32,7 +32,12 @@
     {0.06f, 0.8f, 0.10f, 0.45f, 2.0f, 1.5f, 0.50f, 0.15f, -0.60f, 0.06f, 0.02f}, /* câmera de vigilância */ \
 }
 // clang-format on
-#define VHS_UNIFORMES (VHS_PARAMETROS + 2) // + tempo e resolução
+#define VHS_UNIFORMES (VHS_PARAMETROS + 3) // + tempo, resolução e interferência
+// Interferência: a imagem treme mais quando a criatura chega perto (só nos corredores e com o VHS ligado).
+#define VHS_INTERFERENCIA_LONGE 9.0f // metros: começa a aparecer
+#define VHS_INTERFERENCIA_PERTO 2.5f // metros: no máximo
+#define VHS_INTERFERENCIA_MAX   0.7f // 0..1: teto, para não esconder a criatura
+#define VHS_INTERFERENCIA_VEL   2.5f // quão rápido acompanha (1/s)
 
 // ---------------------------------------------------------------- debug e modos
 #define TECLAS_DEBUG                                                                                         \

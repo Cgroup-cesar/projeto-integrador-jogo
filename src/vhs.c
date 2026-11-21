@@ -2,6 +2,8 @@
 #include "vhs.h"
 #include "ui.h"
 #include "rlgl.h"
+#include "raymath.h"
+#include <math.h>
 #include <stdio.h>
 
 // A ordem é a das colunas de VHS_PRESETS (config.h) e a dos uniformes depois de tempo e resolução.
@@ -29,7 +31,8 @@ typedef char cada_preset_tem_um_nome[(sizeof(NOMES) / sizeof(NOMES[0]) == N_PRES
 
 static const char *const UNIFORMES[VHS_UNIFORMES] = {
     "tempo",       "resolucao", "ruido",     "aberracao", "scanlines", "vinheta",
-    "wobble",      "sangramento", "tracking", "saturacao", "tom",       "curvatura", "cintilacao"};
+    "wobble",      "sangramento", "tracking", "saturacao", "tom",       "curvatura", "cintilacao",
+    "interferencia"};
 
 #define VHS_ROTULO_S 2.5f
 
@@ -41,7 +44,7 @@ static const char *const UNIFORMES[VHS_UNIFORMES] = {
     "uniform float tempo; uniform vec2 resolucao;\n"                                                         \
     "uniform float ruido; uniform float aberracao; uniform float scanlines; uniform float vinheta;\n"        \
     "uniform float wobble; uniform float sangramento; uniform float tracking; uniform float saturacao;\n"    \
-    "uniform float tom; uniform float curvatura; uniform float cintilacao;\n"                                \
+    "uniform float tom; uniform float curvatura; uniform float cintilacao; uniform float interferencia;\n"     \
     "float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }\n"                \
     "float luma(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }\n"
 
@@ -77,19 +80,19 @@ static const char *const UNIFORMES[VHS_UNIFORMES] = {
     "    vec2 uv = curva(fragTexCoord);\n"                                                                   \
     "    vec2 fora = step(vec2(0.0), uv) * step(uv, vec2(1.0));\n"                                           \
     "    float linha = floor(uv.y * resolucao.y);\n"                                                         \
-    "    float janela = step(0.97, hash(vec2(floor(tempo * 3.0), 7.0)));\n"                                  \
+    "    float janela = step(0.97 - 0.3 * interferencia, hash(vec2(floor(tempo * 3.0), 7.0)));\n"            \
     "    float faixa = smoothstep(0.0, 0.08, 0.08 - abs(uv.y - fract(tempo * 0.37)));\n"                     \
     "    float rodape = tracking * smoothstep(0.97, 1.0, 1.0 - uv.y);\n"                                     \
-    "    float rola = tracking * smoothstep(0.015, 0.0, abs(uv.y - fract(-tempo * 0.06)));\n"                \
-    "    uv.x += janela * faixa * wobble / resolucao.x;\n"                                                   \
+    "    float rola = (tracking + interferencia) * smoothstep(0.015, 0.0, abs(uv.y - fract(-tempo * 0.06)));\n"                \
+    "    uv.x += janela * faixa * (wobble + 4.0 * interferencia) / resolucao.x;\n"                                                   \
     "    uv.x += (rodape * 14.0 + rola * 2.0) * (hash(vec2(linha, floor(tempo * 30.0))) - 0.5) / resolucao.x;\n" \
-    "    float px = aberracao / resolucao.x;\n"                                                              \
+    "    float px = (aberracao + 1.5 * interferencia) / resolucao.x;\n"                                     \
     "    vec3 c = vec3(AMOSTRA(texture0, uv + vec2(px, 0.0)).r, AMOSTRA(texture0, uv).g,\n"                  \
     "                  AMOSTRA(texture0, uv - vec2(px, 0.0)).b);\n"                                          \
     "    c = sangra(c, uv);\n"                                                                               \
     "    c = tinge(mix(vec3(luma(c)), c, saturacao));\n"                                                     \
     "    float n = hash(uv * resolucao + vec2(tempo * 61.0, tempo * 17.0)) - 0.5;\n"                         \
-    "    c += n * (ruido * (0.3 + 0.7 * luma(c)) + rodape * 0.6 + rola * 0.12);\n"                           \
+    "    c += n * (ruido * (0.3 + 0.7 * luma(c)) + rodape * 0.6 + rola * 0.12 + interferencia * 0.05);\n"                           \
     "    c *= (1.0 + scanlines * 0.5) * (1.0 - scanlines * (0.5 + 0.5 * sin(uv.y * resolucao.y * 3.14159)));\n" \
     "    vec2 d = uv - 0.5;\n"                                                                               \
     "    c *= 1.0 - vinheta * dot(d, d) * 2.0;\n"                                                            \
@@ -143,7 +146,17 @@ void vhs_escolhe(Estado *e, int preset) {
     e->vhs_rotulo_t = VHS_ROTULO_S;
 }
 
+// Alvo da interferência: 0 longe da criatura, VHS_INTERFERENCIA_MAX colado nela (só nos corredores).
+static float interferencia_alvo(const Estado *e) {
+    if (!e->cri.ativo || !regras_fase_eh_saida(e->fase)) return 0.0f;
+    float d = Vector3Distance(e->cri.pos, e->jog.pos);
+    float perto = (VHS_INTERFERENCIA_LONGE - d) / (VHS_INTERFERENCIA_LONGE - VHS_INTERFERENCIA_PERTO);
+    return Clamp(perto, 0.0f, 1.0f) * e->cri.surgindo * VHS_INTERFERENCIA_MAX;
+}
+
 void vhs_atualiza(Estado *e, float dt) {
+    float alvo = interferencia_alvo(e);
+    e->vhs_interferencia += (alvo - e->vhs_interferencia) * fminf(1.0f, dt * VHS_INTERFERENCIA_VEL);
     e->vhs_rotulo_t = e->vhs_rotulo_t > dt ? e->vhs_rotulo_t - dt : 0.0f;
 #if TECLAS_DEBUG
     if (e->in.f1 && !e->modo_feira) vhs_escolhe(e, e->vhs_preset + 1);
@@ -161,6 +174,7 @@ bool vhs_comeca(const Estado *e) {
     const float *p = PRESETS[e->vhs_preset];
     for (int i = 0; i < VHS_PARAMETROS; i++) // padrão MAP: coluna do preset → uniforme do shader
         SetShaderValue(r->vhs, r->loc_vhs[i + 2], &p[i], SHADER_UNIFORM_FLOAT);
+    SetShaderValue(r->vhs, r->loc_vhs[VHS_UNIFORMES - 1], &e->vhs_interferencia, SHADER_UNIFORM_FLOAT);
     BeginShaderMode(r->vhs);
     return true;
 }

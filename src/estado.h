@@ -233,6 +233,7 @@ typedef struct Estado {
     bool sair, pausado, debug_criatura, pedir_captura;
     int vhs_preset;    // filtro VHS em uso (0 = desligado; ver vhs.c e VHS_PRESETS em config.h)
     float vhs_rotulo_t; // > 0: mostra o nome do preset (acabou de trocar)
+    float vhs_interferencia; // 0..1: a criatura está perto (vhs.c)
     bool modo_smoke, modo_feira;
     float tempo_inativo;
 
