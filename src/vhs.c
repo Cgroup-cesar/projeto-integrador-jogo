@@ -5,7 +5,19 @@
 #include <stdio.h>
 
 // A ordem é a das colunas de VHS_PRESETS (config.h) e a dos uniformes depois de tempo e resolução.
-typedef enum { VHS_RUIDO, VHS_ABERRACAO, VHS_SCANLINES, VHS_VINHETA, VHS_WOBBLE } ParametroVhs;
+typedef enum {
+    VHS_RUIDO,
+    VHS_ABERRACAO,
+    VHS_SCANLINES,
+    VHS_VINHETA,
+    VHS_WOBBLE,
+    VHS_SANGRAMENTO,
+    VHS_TRACKING,
+    VHS_SATURACAO,
+    VHS_TOM,
+    VHS_CURVATURA,
+    VHS_CINTILACAO
+} ParametroVhs;
 
 static const float PRESETS[][VHS_PARAMETROS] = VHS_PRESETS;
 #define N_PRESETS ((int)(sizeof(PRESETS) / sizeof(PRESETS[0])))
@@ -14,49 +26,88 @@ static const TextoId NOMES[] = {TXT_VHS_DESLIGADO, TXT_VHS_ORIGINAL};
 // C99 não tem _Static_assert: um vetor de tamanho negativo não compila se faltar (ou sobrar) nome.
 typedef char cada_preset_tem_um_nome[(sizeof(NOMES) / sizeof(NOMES[0]) == N_PRESETS) ? 1 : -1];
 
-static const char *const UNIFORMES[VHS_UNIFORMES] = {"tempo",     "resolucao", "ruido", "aberracao",
-                                                     "scanlines", "vinheta",   "wobble"};
+static const char *const UNIFORMES[VHS_UNIFORMES] = {
+    "tempo",       "resolucao", "ruido",     "aberracao", "scanlines", "vinheta",
+    "wobble",      "sangramento", "tracking", "saturacao", "tom",       "curvatura", "cintilacao"};
 
 #define VHS_ROTULO_S 2.5f
 
 // ------------------------------------------------------------------ shaders
-// Ruído, aberração cromática, scanlines, vinheta e um "wobble" horizontal raro.
+// Pensado para ser sentido, não visto: a curvatura só arredonda os cantos, a faixa de tracking fica no
+// rodapé (fora da área de jogo) e o ruído quase não clareia o preto (o escuro continua escuro).
 #define VHS_UNIFORMES_GLSL                                                                                   \
     "uniform sampler2D texture0; uniform vec4 colDiffuse;\n"                                                 \
     "uniform float tempo; uniform vec2 resolucao;\n"                                                         \
     "uniform float ruido; uniform float aberracao; uniform float scanlines; uniform float vinheta;\n"        \
-    "uniform float wobble;\n"                                                                                \
-    "float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }\n"
+    "uniform float wobble; uniform float sangramento; uniform float tracking; uniform float saturacao;\n"    \
+    "uniform float tom; uniform float curvatura; uniform float cintilacao;\n"                                \
+    "float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }\n"                \
+    "float luma(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }\n"
+
+// Curvatura de tubo: o centro fica parado e os cantos saem da imagem (viram preto, arredondados).
+#define VHS_CURVA_GLSL                                                                                       \
+    "vec2 curva(vec2 uv) {\n"                                                                                \
+    "    vec2 d = uv - 0.5;\n"                                                                               \
+    "    return 0.5 + d * (1.0 + curvatura * dot(d, d));\n"                                                  \
+    "}\n"
+
+// Sangramento: a cor (não o brilho) é borrada na horizontal, como na fita; o contorno continua nítido.
+#define VHS_SANGRA_GLSL                                                                                      \
+    "vec3 sangra(vec3 c, vec2 uv) {\n"                                                                       \
+    "    float px = sangramento / resolucao.x;\n"                                                            \
+    "    vec3 b = vec3(0.0);\n"                                                                              \
+    "    for (int i = -2; i <= 2; i++) b += AMOSTRA(texture0, uv + vec2(float(i) * px, 0.0)).rgb;\n"         \
+    "    b *= 0.2;\n"                                                                                        \
+    "    return mix(c, vec3(luma(c)) + b - vec3(luma(b)), step(0.01, sangramento));\n"                       \
+    "}\n"
+
+// Tom: positivo = quente (fita caseira), negativo = esverdeado (monitor de fósforo).
+#define VHS_TOM_GLSL                                                                                         \
+    "vec3 tinge(vec3 c) {\n"                                                                                 \
+    "    vec3 t = tom > 0.0 ? vec3(1.08, 1.0, 0.84) : vec3(0.82, 1.06, 0.88);\n"                             \
+    "    return mix(c, c * t, abs(tom));\n"                                                                  \
+    "}\n"
 
 // O corpo é o mesmo nas duas versões: AMOSTRA e SAIDA trocam texture/texture2D e finalColor/gl_FragColor.
+// rodape: a faixa de troca de cabeça (3% de baixo); rola: uma faixa fraca de ruído que sobe devagar.
 #define VHS_CORPO_GLSL                                                                                       \
     "void main() {\n"                                                                                        \
-    "    vec2 uv = fragTexCoord;\n"                                                                          \
+    "    vec2 uv = curva(fragTexCoord);\n"                                                                   \
+    "    vec2 fora = step(vec2(0.0), uv) * step(uv, vec2(1.0));\n"                                           \
+    "    float linha = floor(uv.y * resolucao.y);\n"                                                         \
     "    float janela = step(0.97, hash(vec2(floor(tempo * 3.0), 7.0)));\n"                                  \
     "    float faixa = smoothstep(0.0, 0.08, 0.08 - abs(uv.y - fract(tempo * 0.37)));\n"                     \
+    "    float rodape = tracking * smoothstep(0.97, 1.0, 1.0 - uv.y);\n"                                     \
+    "    float rola = tracking * smoothstep(0.015, 0.0, abs(uv.y - fract(-tempo * 0.06)));\n"                \
     "    uv.x += janela * faixa * wobble / resolucao.x;\n"                                                   \
+    "    uv.x += (rodape * 14.0 + rola * 2.0) * (hash(vec2(linha, floor(tempo * 30.0))) - 0.5) / resolucao.x;\n" \
     "    float px = aberracao / resolucao.x;\n"                                                              \
     "    vec3 c = vec3(AMOSTRA(texture0, uv + vec2(px, 0.0)).r, AMOSTRA(texture0, uv).g,\n"                  \
     "                  AMOSTRA(texture0, uv - vec2(px, 0.0)).b);\n"                                          \
-    "    c += (hash(uv * resolucao + vec2(tempo * 61.0, tempo * 17.0)) - 0.5) * ruido;\n"                    \
+    "    c = sangra(c, uv);\n"                                                                               \
+    "    c = tinge(mix(vec3(luma(c)), c, saturacao));\n"                                                     \
+    "    float n = hash(uv * resolucao + vec2(tempo * 61.0, tempo * 17.0)) - 0.5;\n"                         \
+    "    c += n * (ruido * (0.3 + 0.7 * luma(c)) + rodape * 0.6 + rola * 0.12);\n"                           \
     "    c *= 1.0 - scanlines * (0.5 + 0.5 * sin(uv.y * resolucao.y * 3.14159));\n"                          \
     "    vec2 d = uv - 0.5;\n"                                                                               \
     "    c *= 1.0 - vinheta * dot(d, d) * 2.0;\n"                                                            \
-    "    SAIDA = vec4(c, 1.0) * colDiffuse * fragColor;\n"                                                   \
+    "    c *= 1.0 - cintilacao * hash(vec2(floor(tempo * 20.0), 3.0));\n"                                    \
+    "    SAIDA = vec4(c * fora.x * fora.y, 1.0) * colDiffuse * fragColor;\n"                                 \
     "}\n"
+
+#define VHS_FUNCOES_GLSL VHS_UNIFORMES_GLSL VHS_CURVA_GLSL VHS_SANGRA_GLSL VHS_TOM_GLSL VHS_CORPO_GLSL
 
 static const char *VHS_FS_330 = "#version 330\n"
                                 "#define AMOSTRA texture\n"
                                 "#define SAIDA finalColor\n"
                                 "in vec2 fragTexCoord; in vec4 fragColor;\n"
-                                "out vec4 finalColor;\n" VHS_UNIFORMES_GLSL VHS_CORPO_GLSL;
+                                "out vec4 finalColor;\n" VHS_FUNCOES_GLSL;
 
 static const char *VHS_FS_100 = "#version 100\n"
                                 "precision mediump float;\n"
                                 "#define AMOSTRA texture2D\n"
                                 "#define SAIDA gl_FragColor\n"
-                                "varying vec2 fragTexCoord; varying vec4 fragColor;\n" VHS_UNIFORMES_GLSL
-                                    VHS_CORPO_GLSL;
+                                "varying vec2 fragTexCoord; varying vec4 fragColor;\n" VHS_FUNCOES_GLSL;
 
 // ------------------------------------------------------------------ carga
 void vhs_carrega(Recursos *rec) {

@@ -17,14 +17,16 @@
 
 // ---------------------------------------------------------------- filtro VHS (sentido, não visto)
 // Cada preset é uma linha; a ordem das colunas é a de ParametroVhs em vhs.c. O preset 0 é "desligado".
-// Colunas: ruído · aberração cromática (px) · scanlines · vinheta · wobble (px)
+// Colunas: ruído · aberração cromática (px) · scanlines · vinheta · wobble (px) · sangramento de cor (px) ·
+//          tracking (0..1) · saturação (1 = normal) · tom (+ quente, − verde) · curvatura · cintilação
 #define VHS_PRESET_PADRAO 1 // com qual preset o jogo abre (F1 alterna entre eles)
-#define VHS_PARAMETROS    5
-#define VHS_PRESETS                                                                                          \
-    {                                                                                                        \
-        {0.00f, 0.0f, 0.00f, 0.00f, 0.0f},     /* desligado (não chega ao shader) */                       \
-            {0.04f, 1.5f, 0.06f, 0.35f, 2.5f}, /* original: o filtro da v0 */                              \
-    }
+#define VHS_PARAMETROS    11
+// clang-format off
+#define VHS_PRESETS {                                                                                        \
+    {0.00f, 0.0f, 0.00f, 0.00f, 0.0f, 0.0f, 0.00f, 1.00f,  0.00f, 0.00f, 0.00f}, /* desligado (sem shader) */ \
+    {0.04f, 1.5f, 0.06f, 0.35f, 2.5f, 0.0f, 0.00f, 1.00f,  0.00f, 0.00f, 0.00f}, /* original (v0) */         \
+}
+// clang-format on
 #define VHS_UNIFORMES (VHS_PARAMETROS + 2) // + tempo e resolução
 
 // ---------------------------------------------------------------- debug e modos
