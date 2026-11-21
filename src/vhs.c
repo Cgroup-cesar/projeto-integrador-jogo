@@ -22,7 +22,8 @@ typedef enum {
 static const float PRESETS[][VHS_PARAMETROS] = VHS_PRESETS;
 #define N_PRESETS ((int)(sizeof(PRESETS) / sizeof(PRESETS[0])))
 
-static const TextoId NOMES[] = {TXT_VHS_DESLIGADO, TXT_VHS_ORIGINAL};
+static const TextoId NOMES[] = {TXT_VHS_DESLIGADO,    TXT_VHS_ORIGINAL,    TXT_VHS_FITA_CASEIRA,
+                                TXT_VHS_FITA_GASTA,   TXT_VHS_MONITOR_CRT, TXT_VHS_VIGILANCIA};
 // C99 não tem _Static_assert: um vetor de tamanho negativo não compila se faltar (ou sobrar) nome.
 typedef char cada_preset_tem_um_nome[(sizeof(NOMES) / sizeof(NOMES[0]) == N_PRESETS) ? 1 : -1];
 

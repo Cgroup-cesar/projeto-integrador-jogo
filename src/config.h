@@ -17,6 +17,7 @@
 
 // ---------------------------------------------------------------- filtro VHS (sentido, não visto)
 // Cada preset é uma linha; a ordem das colunas é a de ParametroVhs em vhs.c. O preset 0 é "desligado".
+// Limites para não atrapalhar o jogo: ruído ≤ 0,08, cintilação ≤ 0,05 e curvatura ≤ 0,15 (cantos só).
 // Colunas: ruído · aberração cromática (px) · scanlines · vinheta · wobble (px) · sangramento de cor (px) ·
 //          tracking (0..1) · saturação (1 = normal) · tom (+ quente, − verde) · curvatura · cintilação
 #define VHS_PRESET_PADRAO 1 // com qual preset o jogo abre (F1 alterna entre eles)
@@ -25,6 +26,10 @@
 #define VHS_PRESETS {                                                                                        \
     {0.00f, 0.0f, 0.00f, 0.00f, 0.0f, 0.0f, 0.00f, 1.00f,  0.00f, 0.00f, 0.00f}, /* desligado (sem shader) */ \
     {0.04f, 1.5f, 0.06f, 0.35f, 2.5f, 0.0f, 0.00f, 1.00f,  0.00f, 0.00f, 0.00f}, /* original (v0) */         \
+    {0.05f, 1.8f, 0.05f, 0.40f, 3.0f, 2.5f, 0.60f, 0.80f,  0.35f, 0.00f, 0.02f}, /* fita caseira (1985) */  \
+    {0.08f, 2.5f, 0.07f, 0.45f, 5.0f, 3.5f, 1.00f, 0.65f,  0.25f, 0.00f, 0.05f}, /* fita gasta */           \
+    {0.03f, 1.0f, 0.14f, 0.50f, 1.5f, 1.0f, 0.00f, 0.90f,  0.00f, 0.12f, 0.03f}, /* monitor CRT */          \
+    {0.06f, 0.8f, 0.10f, 0.45f, 2.0f, 1.5f, 0.50f, 0.15f, -0.60f, 0.06f, 0.02f}, /* câmera de vigilância */ \
 }
 // clang-format on
 #define VHS_UNIFORMES (VHS_PARAMETROS + 2) // + tempo e resolução
