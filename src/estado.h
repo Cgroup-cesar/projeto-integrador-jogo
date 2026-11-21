@@ -50,8 +50,7 @@ typedef struct {
     bool tem_fonte; // false = fonte padrão da raylib + translitera()
     Shader vhs;
     bool vhs_ok;
-    int loc_vhs_tempo, loc_vhs_resolucao, loc_vhs_ruido, loc_vhs_aberracao;
-    int loc_vhs_scanlines, loc_vhs_vinheta, loc_vhs_wobble;
+    int loc_vhs[VHS_UNIFORMES]; // vhs.c: tempo, resolução e os parâmetros do preset
     Shader luz;
     bool luz_ok;
     int loc_luz_pos, loc_luz_cor, loc_luz_ambiente, loc_luz_nevoa, loc_luz_camera, loc_luz_modelo;
@@ -231,7 +230,9 @@ typedef struct Estado {
     float tempo_partida;
     float tempo_total;
     EventoFase evento; // pedido de mudança de fase feito neste quadro (aplicado no fim do atualiza)
-    bool sair, pausado, vhs_ligado, debug_criatura, pedir_captura;
+    bool sair, pausado, debug_criatura, pedir_captura;
+    int vhs_preset;    // filtro VHS em uso (0 = desligado; ver vhs.c e VHS_PRESETS em config.h)
+    float vhs_rotulo_t; // > 0: mostra o nome do preset (acabou de trocar)
     bool modo_smoke, modo_feira;
     float tempo_inativo;
 

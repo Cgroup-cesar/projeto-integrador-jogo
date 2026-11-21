@@ -12,6 +12,7 @@
 #include "nivel.h"
 #include <math.h>
 #include "posfx.h"
+#include "vhs.h"
 #include "audio_sintese.h"
 #include "ui.h"
 #include "texturas.h"
@@ -304,6 +305,7 @@ static void piloto_entrada(Estado *e, Entrada *in, float dt) {
 static void atualiza(Estado *e, float dt) {
     e->tempo_total += dt;
     posfx_atualiza(e, dt);
+    vhs_atualiza(e, dt);
     jogo_atualiza(e, dt);
     audio_atualiza(e, dt);
 }
@@ -319,6 +321,7 @@ static void desenha(const Estado *e) {
     ClearBackground(BLACK);
     posfx_desenha(e);
     jogo_desenha_interface(e);
+    vhs_desenha(e);
     EndDrawing();
 }
 
@@ -429,7 +432,7 @@ int main(int argc, char **argv) {
     }
     // [REQ:RF1] janela e game loop a 60 FPS: entrada → atualiza → desenha
     SetTargetFPS(estado.modo_smoke ? 0 : FPS_ALVO);
-    estado.vhs_ligado = VHS_LIGADO_AO_INICIAR;
+    estado.vhs_preset = VHS_PRESET_PADRAO;
     carrega_recursos();
     if (estado.modo_smoke) {
         SetRandomSeed(1985); // o smoke é determinístico: mesmo resultado em toda execução

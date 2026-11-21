@@ -16,12 +16,16 @@
 #define DT_MAXIMO      0.05f // limita o dt para um travamento não teletransportar ninguém
 
 // ---------------------------------------------------------------- filtro VHS (sentido, não visto)
-#define VHS_LIGADO_AO_INICIAR 1
-#define VHS_RUIDO             0.04f
-#define VHS_ABERRACAO_PX      1.5f
-#define VHS_SCANLINES         0.06f
-#define VHS_VINHETA           0.35f
-#define VHS_WOBBLE_PX         2.5f
+// Cada preset é uma linha; a ordem das colunas é a de ParametroVhs em vhs.c. O preset 0 é "desligado".
+// Colunas: ruído · aberração cromática (px) · scanlines · vinheta · wobble (px)
+#define VHS_PRESET_PADRAO 1 // com qual preset o jogo abre (F1 alterna entre eles)
+#define VHS_PARAMETROS    5
+#define VHS_PRESETS                                                                                          \
+    {                                                                                                        \
+        {0.00f, 0.0f, 0.00f, 0.00f, 0.0f},     /* desligado (não chega ao shader) */                       \
+            {0.04f, 1.5f, 0.06f, 0.35f, 2.5f}, /* original: o filtro da v0 */                              \
+    }
+#define VHS_UNIFORMES (VHS_PARAMETROS + 2) // + tempo e resolução
 
 // ---------------------------------------------------------------- debug e modos
 #define TECLAS_DEBUG                                                                                         \

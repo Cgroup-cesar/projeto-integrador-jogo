@@ -7,7 +7,7 @@
 void posfx_inicia(Recursos *rec);
 void posfx_finaliza(Recursos *rec);
 
-// Recria o render target quando a janela muda de tamanho; liga/desliga o VHS (F1).
+// Recria o render target quando a janela muda de tamanho.
 void posfx_atualiza(Estado *e, float dt);
 
 // Tudo que for desenhado entre estas duas chamadas vai para o render target (e recebe o VHS).
