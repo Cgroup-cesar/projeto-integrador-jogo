@@ -16,6 +16,7 @@
 #include "ui.h"
 #include "tela_nome.h"
 #include "cenario.h"
+#include "sanidade.h"
 #include <string.h>
 
 // ================================================================== início e fim
@@ -92,6 +93,7 @@ static void entra_menu(Estado *e) {
     criatura_contem(e);
     jogador_teleporta(e, e->nivel.inicio, PI);
     e->menu.cursor = 0;
+    e->sanidade = SANIDADE_MAX;
 }
 
 static void entra_resposta_final(Estado *e) {
@@ -119,6 +121,7 @@ static void entra_fase(Estado *e, Fase fase, bool reinicio) {
         e->erros_na_fase = 0;
         e->pegos_na_fase = 0;
     }
+    e->sanidade_longe_t = 0.0f;
     prepara_mundo(e, fase);
     switch (fase) {
     case FASE_MENU:
@@ -156,6 +159,7 @@ void jogo_aplica_evento(Estado *e, EventoFase evento) {
     if (evento == EV_NENHUM) return;
     Fase atual = e->fase;
     pontua_evento(e, atual, evento);
+    e->sanidade = regras_sanidade_bonus(e->sanidade, evento); // tarefas concluídas, recomeço, partida nova
     Fase proxima = regras_proxima_fase(atual, evento);
     bool reinicia = regras_reinicia_fase(atual, evento);
     if (proxima != atual || reinicia) entra_fase(e, proxima, reinicia);
@@ -323,6 +327,7 @@ void jogo_atualiza(Estado *e, float dt) {
     nivel_atualiza(e, dt);
     atualiza_fase(e, dt);
     criatura_atualiza(e, dt);
+    sanidade_atualiza(e, dt); // depois da criatura e do jogador: usa a distância deste quadro
     glifos_atualiza(e, dt);
     col_ruidos_atualiza(&e->ruidos, dt);
     col_particulas_atualiza(
