@@ -15,7 +15,7 @@ void vhs_escolhe(Estado *e, int preset); // troca de preset (dá a volta) e most
 void vhs_atualiza(Estado *e, float dt);
 
 // Em volta do DrawTexturePro do render target: liga o shader com o preset atual. Devolve false (e não liga
-// nada) se o preset for "desligado" ou se o shader não compilou.
+// nada) se o shader não compilou, ou se o preset for "desligado" e não houver grão de sanidade.
 bool vhs_comeca(const Estado *e);
 void vhs_termina(const Estado *e);
 
