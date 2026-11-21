@@ -70,6 +70,7 @@ static const char *const UNIFORMES[VHS_UNIFORMES] = {
     "}\n"
 
 // O corpo é o mesmo nas duas versões: AMOSTRA e SAIDA trocam texture/texture2D e finalColor/gl_FragColor.
+// As scanlines compensam o brilho médio que tiram (o escuro não fica mais escuro do que sem filtro).
 // rodape: a faixa de troca de cabeça (3% de baixo); rola: uma faixa fraca de ruído que sobe devagar.
 #define VHS_CORPO_GLSL                                                                                       \
     "void main() {\n"                                                                                        \
@@ -89,7 +90,7 @@ static const char *const UNIFORMES[VHS_UNIFORMES] = {
     "    c = tinge(mix(vec3(luma(c)), c, saturacao));\n"                                                     \
     "    float n = hash(uv * resolucao + vec2(tempo * 61.0, tempo * 17.0)) - 0.5;\n"                         \
     "    c += n * (ruido * (0.3 + 0.7 * luma(c)) + rodape * 0.6 + rola * 0.12);\n"                           \
-    "    c *= 1.0 - scanlines * (0.5 + 0.5 * sin(uv.y * resolucao.y * 3.14159));\n"                          \
+    "    c *= (1.0 + scanlines * 0.5) * (1.0 - scanlines * (0.5 + 0.5 * sin(uv.y * resolucao.y * 3.14159)));\n" \
     "    vec2 d = uv - 0.5;\n"                                                                               \
     "    c *= 1.0 - vinheta * dot(d, d) * 2.0;\n"                                                            \
     "    c *= 1.0 - cintilacao * hash(vec2(floor(tempo * 20.0), 3.0));\n"                                    \
