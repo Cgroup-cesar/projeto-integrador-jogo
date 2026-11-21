@@ -24,15 +24,14 @@ typedef enum {
 static const float PRESETS[][VHS_PARAMETROS] = VHS_PRESETS;
 #define N_PRESETS ((int)(sizeof(PRESETS) / sizeof(PRESETS[0])))
 
-static const TextoId NOMES[] = {TXT_VHS_DESLIGADO,    TXT_VHS_ORIGINAL,    TXT_VHS_FITA_CASEIRA,
-                                TXT_VHS_FITA_GASTA,   TXT_VHS_MONITOR_CRT, TXT_VHS_VIGILANCIA};
+static const TextoId NOMES[] = {TXT_VHS_DESLIGADO,  TXT_VHS_ORIGINAL,    TXT_VHS_FITA_CASEIRA,
+                                TXT_VHS_FITA_GASTA, TXT_VHS_MONITOR_CRT, TXT_VHS_VIGILANCIA};
 // C99 não tem _Static_assert: um vetor de tamanho negativo não compila se faltar (ou sobrar) nome.
 typedef char cada_preset_tem_um_nome[(sizeof(NOMES) / sizeof(NOMES[0]) == N_PRESETS) ? 1 : -1];
 
 static const char *const UNIFORMES[VHS_UNIFORMES] = {
-    "tempo",       "resolucao", "ruido",     "aberracao", "scanlines", "vinheta",
-    "wobble",      "sangramento", "tracking", "saturacao", "tom",       "curvatura", "cintilacao",
-    "interferencia"};
+    "tempo",       "resolucao", "ruido",     "aberracao", "scanlines", "vinheta",    "wobble",
+    "sangramento", "tracking",  "saturacao", "tom",       "curvatura", "cintilacao", "interferencia"};
 
 #define VHS_ROTULO_S 2.5f
 
@@ -44,7 +43,7 @@ static const char *const UNIFORMES[VHS_UNIFORMES] = {
     "uniform float tempo; uniform vec2 resolucao;\n"                                                         \
     "uniform float ruido; uniform float aberracao; uniform float scanlines; uniform float vinheta;\n"        \
     "uniform float wobble; uniform float sangramento; uniform float tracking; uniform float saturacao;\n"    \
-    "uniform float tom; uniform float curvatura; uniform float cintilacao; uniform float interferencia;\n"     \
+    "uniform float tom; uniform float curvatura; uniform float cintilacao; uniform float interferencia;\n"   \
     "float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }\n"                \
     "float luma(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }\n"
 
@@ -83,17 +82,20 @@ static const char *const UNIFORMES[VHS_UNIFORMES] = {
     "    float janela = step(0.97 - 0.3 * interferencia, hash(vec2(floor(tempo * 3.0), 7.0)));\n"            \
     "    float faixa = smoothstep(0.0, 0.08, 0.08 - abs(uv.y - fract(tempo * 0.37)));\n"                     \
     "    float rodape = tracking * smoothstep(0.97, 1.0, 1.0 - uv.y);\n"                                     \
-    "    float rola = (tracking + interferencia) * smoothstep(0.015, 0.0, abs(uv.y - fract(-tempo * 0.06)));\n"                \
-    "    uv.x += janela * faixa * (wobble + 4.0 * interferencia) / resolucao.x;\n"                                                   \
-    "    uv.x += (rodape * 14.0 + rola * 2.0) * (hash(vec2(linha, floor(tempo * 30.0))) - 0.5) / resolucao.x;\n" \
-    "    float px = (aberracao + 1.5 * interferencia) / resolucao.x;\n"                                     \
+    "    float altura_rola = abs(uv.y - fract(-tempo * 0.06));\n"                                            \
+    "    float rola = (tracking + interferencia) * smoothstep(0.015, 0.0, altura_rola);\n"                   \
+    "    uv.x += janela * faixa * (wobble + 4.0 * interferencia) / resolucao.x;\n"                           \
+    "    float tremor = hash(vec2(linha, floor(tempo * 30.0))) - 0.5;\n"                                     \
+    "    uv.x += (rodape * 14.0 + rola * 2.0) * tremor / resolucao.x;\n"                                     \
+    "    float px = (aberracao + 1.5 * interferencia) / resolucao.x;\n"                                      \
     "    vec3 c = vec3(AMOSTRA(texture0, uv + vec2(px, 0.0)).r, AMOSTRA(texture0, uv).g,\n"                  \
     "                  AMOSTRA(texture0, uv - vec2(px, 0.0)).b);\n"                                          \
     "    c = sangra(c, uv);\n"                                                                               \
     "    c = tinge(mix(vec3(luma(c)), c, saturacao));\n"                                                     \
     "    float n = hash(uv * resolucao + vec2(tempo * 61.0, tempo * 17.0)) - 0.5;\n"                         \
-    "    c += n * (ruido * (0.3 + 0.7 * luma(c)) + rodape * 0.6 + rola * 0.12 + interferencia * 0.05);\n"                           \
-    "    c *= (1.0 + scanlines * 0.5) * (1.0 - scanlines * (0.5 + 0.5 * sin(uv.y * resolucao.y * 3.14159)));\n" \
+    "    c += n * (ruido * (0.3 + 0.7 * luma(c)) + rodape * 0.6 + rola * 0.12 + interferencia * 0.05);\n"    \
+    "    float listra = 0.5 + 0.5 * sin(uv.y * resolucao.y * 3.14159);\n"                                    \
+    "    c *= (1.0 + scanlines * 0.5) * (1.0 - scanlines * listra);\n"                                       \
     "    vec2 d = uv - 0.5;\n"                                                                               \
     "    c *= 1.0 - vinheta * dot(d, d) * 2.0;\n"                                                            \
     "    c *= 1.0 - cintilacao * hash(vec2(floor(tempo * 20.0), 3.0));\n"                                    \

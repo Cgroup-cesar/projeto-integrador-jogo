@@ -101,10 +101,10 @@ typedef struct {
     bool recupera_total; // saiu do armario: so corre de novo com a barra cheia
     bool correndo;
     ModoJogador modo;
-    int armario; // índice em Nivel.armarios quando escondido
-    float armario_t; // segundos escondido no armario (zera ao entrar)
+    int armario;       // índice em Nivel.armarios quando escondido
+    float armario_t;   // segundos escondido no armario (zera ao entrar)
     float armario_yaw; // direção da porta: centro do cone de visão enquanto escondido
-    int mira;    // índice do interativo na mira (−1 = nenhum)
+    int mira;          // índice do interativo na mira (−1 = nenhum)
     float tempo_passo;
     float balanco;     // balanço da câmera ao andar
     int ultima_celula; // para notar quando ele cruza uma porta
@@ -231,8 +231,8 @@ typedef struct Estado {
     float tempo_total;
     EventoFase evento; // pedido de mudança de fase feito neste quadro (aplicado no fim do atualiza)
     bool sair, pausado, debug_criatura, pedir_captura;
-    int vhs_preset;    // filtro VHS em uso (0 = desligado; ver vhs.c e VHS_PRESETS em config.h)
-    float vhs_rotulo_t; // > 0: mostra o nome do preset (acabou de trocar)
+    int vhs_preset;          // filtro VHS em uso (0 = desligado; ver vhs.c e VHS_PRESETS em config.h)
+    float vhs_rotulo_t;      // > 0: mostra o nome do preset (acabou de trocar)
     float vhs_interferencia; // 0..1: a criatura está perto (vhs.c)
     bool modo_smoke, modo_feira;
     float tempo_inativo;
