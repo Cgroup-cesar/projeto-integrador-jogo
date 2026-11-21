@@ -35,10 +35,10 @@
 // clang-format on
 #define VHS_UNIFORMES (VHS_PARAMETROS + 3) // + tempo, resolução e interferência
 // Interferência: a imagem treme mais quando a criatura chega perto (só nos corredores e com o VHS ligado).
-#define VHS_INTERFERENCIA_LONGE 11.0f// metros: começa a aparecer
-#define VHS_INTERFERENCIA_PERTO 3.0f // metros: no máximo
-#define VHS_INTERFERENCIA_MAX   0.9f // 0..1: teto, para não esconder a criatura
-#define VHS_INTERFERENCIA_VEL   3.0f // quão rápido acompanha (1/s)
+#define VHS_INTERFERENCIA_LONGE 11.0f // metros: começa a aparecer
+#define VHS_INTERFERENCIA_PERTO 3.0f  // metros: no máximo
+#define VHS_INTERFERENCIA_MAX   0.9f  // 0..1: teto, para não esconder a criatura
+#define VHS_INTERFERENCIA_VEL   3.0f  // quão rápido acompanha (1/s)
 
 // ---------------------------------------------------------------- debug e modos
 #define TECLAS_DEBUG                                                                                         \
