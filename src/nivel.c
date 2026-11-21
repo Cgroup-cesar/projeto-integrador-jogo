@@ -275,9 +275,10 @@ static int luzes_saida(const Estado *e, Vector3 *pos, Vector3 *cor) {
         candidatos[melhor] = troca;
         pos[k] = candidatos[k];
         bool diario = candidatos[k].x == n->diario.x && candidatos[k].z == n->diario.z;
-        cor[k] = diario    ? cor_luz(COR_LAMPADA, 1.4f * corte)
-                 : energia ? cor_luz(COR_LAMPADA, 1.5f)
-                           : cor_luz(COR_ALARME, 1.7f * corte);
+        float g = LUZ_CORREDOR_GANHO;
+        cor[k] = diario    ? cor_luz(COR_LAMPADA, 1.4f * g * corte)
+                 : energia ? cor_luz(COR_LAMPADA, 1.5f * g)
+                           : cor_luz(COR_ALARME, 1.7f * g * corte);
     }
     pos[3] = (Vector3){e->jog.pos.x, ALTURA_OLHOS + 0.3f, e->jog.pos.z};
     cor[3] = cor_luz(COR_LAMPADA, 0.32f);

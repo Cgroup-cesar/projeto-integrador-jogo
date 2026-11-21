@@ -20,7 +20,7 @@
 // Limites para não atrapalhar o jogo: ruído ≤ 0,08, cintilação ≤ 0,05 e curvatura ≤ 0,15 (cantos só).
 // Colunas: ruído · aberração cromática (px) · scanlines · vinheta · wobble (px) · sangramento de cor (px) ·
 //          tracking (0..1) · saturação (1 = normal) · tom (+ quente, − verde) · curvatura · cintilação ·
-//          rolagem (faixa de ruído que sobe pela tela, 0..1) · brilho (1 = normal; ≥ 0,85 para não sumir nada)
+//          rolagem (faixa de ruído que sobe pela tela, 0..1) · brilho (1 = normal; ≥ 0,85)
 #define VHS_PRESET_PADRAO 1 // com qual preset o jogo abre (F1 alterna entre eles)
 #define VHS_PARAMETROS    13
 // clang-format off
@@ -163,8 +163,9 @@
 #define HALO_LAMPADA_ALFA       0.35f // força do brilho (some com a névoa)
 
 // ---------------------------------------------------------------- luz e névoa
-#define LUZ_AMBIENTE    0.06f
-#define NEVOA_DENSIDADE 0.085f
+#define LUZ_AMBIENTE       0.045f // era 0,06: o escuro pesa mais, mas a lanterna e os holofotes não mudaram
+#define NEVOA_DENSIDADE    0.095f // era 0,085: o fundo do corredor some um pouco antes
+#define LUZ_CORREDOR_GANHO 0.8f   // força das lâmpadas dos corredores (a luz fraca no jogador fica igual)
 // Holofotes da cela (luzes A e B): ficam à frente e acima do Precursor, apontados para o peito dele.
 #define HOLOFOTE_ABERTURA_GRAUS 30.0f // meia-abertura do cone; fora dele sobram 15% (a cela não fica preta)
 #define HOLOFOTE_GANHO          1.6f  // compensa a luz que deixou de se espalhar pela cela
