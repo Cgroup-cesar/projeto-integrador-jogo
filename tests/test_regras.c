@@ -433,6 +433,65 @@ static void testa_uv_mundo(void) {
     CHECK(perto(sem_metros.x, 3.0f));
 }
 
+// [REQ:SANIDADE] testa a queda pela distância, o armário, a espera da recuperação, os bônus e o grão
+static void testa_sanidade_queda(void) {
+    float longe = regras_sanidade_passo(50.0f, 10.5f, 1.0f, false, 0.0f, true, 1.0f);
+    CHECK(perto(longe, 50.0f)); // fora do raio e ainda esperando: não muda
+    float a9 = regras_sanidade_passo(50.0f, 9.0f, 1.0f, false, 0.0f, true, 1.0f);
+    float a5 = regras_sanidade_passo(50.0f, 5.0f, 1.0f, false, 0.0f, true, 1.0f);
+    float a2 = regras_sanidade_passo(50.0f, 2.0f, 1.0f, false, 0.0f, true, 1.0f);
+    CHECK(a9 < 50.0f && a5 < a9 && a2 < a5);      // mais perto, cai mais
+    CHECK(50.0f - a9 < 0.5f);                     // a 9 m mal se mexe
+    CHECK(perto(a2, 50.0f - SANIDADE_QUEDA_MAX)); // colado: a queda máxima
+    float escondido = regras_sanidade_passo(50.0f, 5.0f, 1.0f, true, 0.0f, true, 1.0f);
+    CHECK(escondido > a5 && escondido < 50.0f); // no armário cai menos, mas cai
+    float surgindo = regras_sanidade_passo(50.0f, 2.0f, 0.0f, false, 0.0f, true, 1.0f);
+    CHECK(perto(surgindo, 50.0f)); // ainda dentro do duto: nada
+    CHECK(perto(regras_sanidade_passo(1.0f, 1.0f, 1.0f, false, 0.0f, true, 1.0f), 0.0f)); // nunca < 0
+    float s = SANIDADE_MAX;
+    for (int i = 0; i < 480; i++) // padrão FOLD: 8 s colado nela a 60 FPS
+        s = regras_sanidade_passo(s, SANIDADE_PERTO, 1.0f, false, 0.0f, true, 1.0f / 60.0f);
+    CHECK(s < 5.0f);
+}
+
+static void testa_sanidade_recupera(void) {
+    float esperando = regras_sanidade_passo(50.0f, 20.0f, 1.0f, false, 1.0f, true, 1.0f);
+    CHECK(perto(esperando, 50.0f)); // corredor: ainda dentro da espera
+    float depois = regras_sanidade_passo(50.0f, 20.0f, 1.0f, false, SANIDADE_ESPERA_REGEN, true, 1.0f);
+    CHECK(perto(depois, 50.0f + SANIDADE_REGEN));
+    float sala = regras_sanidade_passo(50.0f, 2.0f, 1.0f, false, 0.0f, false, 1.0f);
+    CHECK(perto(sala, 50.0f + SANIDADE_REGEN)); // na rodada sobe na hora (a criatura está contida)
+    CHECK(perto(regras_sanidade_passo(99.9f, 20.0f, 1.0f, false, 10.0f, false, 1.0f), SANIDADE_MAX));
+}
+
+static void testa_sanidade_bonus(void) {
+    CHECK(perto(regras_sanidade_bonus(10.0f, EV_RODADA_CONCLUIDA), 10.0f + SANIDADE_BONUS_RODADA));
+    CHECK(perto(regras_sanidade_bonus(10.0f, EV_SAIDA_CONCLUIDA), 10.0f + SANIDADE_BONUS_SAIDA));
+    CHECK(perto(regras_sanidade_bonus(90.0f, EV_SAIDA_CONCLUIDA), SANIDADE_MAX)); // limita em 100
+    CHECK(perto(regras_sanidade_bonus(10.0f, EV_PEGO), SANIDADE_PISO_RECOMECO));
+    CHECK(perto(regras_sanidade_bonus(10.0f, EV_VIDRO_ROMPEU), SANIDADE_PISO_RECOMECO));
+    CHECK(perto(regras_sanidade_bonus(80.0f, EV_PEGO), 80.0f)); // o piso não baixa ninguém
+    CHECK(perto(regras_sanidade_bonus(3.0f, EV_INICIAR), SANIDADE_MAX));
+    CHECK(perto(regras_sanidade_bonus(3.0f, EV_NENHUM), 3.0f));
+    CHECK(perto(regras_sanidade_conectivos(20.0f, 1, 2), 20.0f + SANIDADE_BONUS_CONECTIVO));
+    CHECK(perto(regras_sanidade_conectivos(20.0f, 2, 0), 20.0f)); // partida nova zerou: sem bônus
+    CHECK(perto(regras_sanidade_conectivos(20.0f, 2, 2), 20.0f));
+}
+
+static void testa_sanidade_grao(void) {
+    CHECK(perto(regras_sanidade_grao(SANIDADE_MAX), 0.0f));
+    CHECK(perto(regras_sanidade_grao(SANIDADE_GRAO_INICIO), 0.0f));
+    CHECK(perto(regras_sanidade_grao(0.0f), 1.0f));
+    float antes = 0.0f;
+    bool monotona = true;
+    for (int s = 100; s >= 0; s--) { // padrão FOLD: o grão nunca diminui quando a sanidade cai
+        float g = regras_sanidade_grao((float)s);
+        monotona = monotona && g >= antes - 1e-6f;
+        antes = g;
+    }
+    CHECK(monotona);
+}
+
 int main(void) {
     SetTraceLogLevel(LOG_ERROR); // o aviso de vetor cheio é esperado aqui
     testa_movimento();
@@ -459,5 +518,9 @@ int main(void) {
     testa_materiais();
     testa_decalques();
     testa_uv_mundo();
+    testa_sanidade_queda();
+    testa_sanidade_recupera();
+    testa_sanidade_bonus();
+    testa_sanidade_grao();
     return resultado_final("test_regras");
 }
