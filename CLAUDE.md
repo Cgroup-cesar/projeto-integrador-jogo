@@ -31,7 +31,7 @@ make readme-check   confere as referências     make clean         apaga obj/ e 
 Alternativa: `cmake -B build && cmake --build build && ctest --test-dir build` (`--target smoke` também existe).
 Debug no jogo (`TECLAS_DEBUG` em `src/config.h`): F1 troca o preset do VHS · F2 pula fase · F3 estado e caminho da criatura ·
 F5 reinicia a fase · F9 resposta final · F12 captura em `docs/img/`. Linha de comando: `--fase S2`, `--mudo`,
-`--feira`, `--captura arquivo.png --captura-em 2 [--captura-fase R1]`, `--exporta-sons pasta`, `--vhs N`, `--vitrine-vhs [s]`, `--galeria-vhs pasta`.
+`--feira`, `--captura arquivo.png --captura-em 2 [--captura-fase R1]`, `--exporta-sons pasta`, `--vhs N`, `--sanidade N`, `--vitrine-vhs [s]`, `--galeria-vhs pasta`.
 No macOS, a janela só abre com a tela acordada (`caffeinate -u -t 5` antes de rodar testes automáticos).
 
 ## Fluxo Git
@@ -53,5 +53,5 @@ Só humanos movem para **Feito**, depois de revisar o PR. Trabalho novo descober
 ## Onde mexer
 Textos: `src/dialogo.c` · balanceamento e cores: `src/config.h` · mapa: `src/nivel.c` (texto ASCII) ·
 rodadas: `src/rodadas.c` · painéis: `src/circuito.c` · criatura: `src/criatura.c` · lanterna: `src/lanterna.c` · sons: `src/audio_sintese.c` ·
-filtro VHS: `src/vhs.c` (presets em `VHS_PRESETS`, `src/config.h`).
+filtro VHS: `src/vhs.c` (presets em `VHS_PRESETS`, `src/config.h`) · sanidade e grão: `src/sanidade.c`, `src/regras_sanidade.c` (`SANIDADE_*` em `src/config.h`).
 Arquitetura e fluxo de um quadro: `docs/ARQUITETURA.md`. Progresso da v0: `docs/PROGRESSO.md`.
