@@ -18,7 +18,8 @@ typedef enum {
     VHS_SATURACAO,
     VHS_TOM,
     VHS_CURVATURA,
-    VHS_CINTILACAO
+    VHS_CINTILACAO,
+    VHS_ROLAGEM
 } ParametroVhs;
 
 static const float PRESETS[][VHS_PARAMETROS] = VHS_PRESETS;
@@ -30,8 +31,8 @@ static const TextoId NOMES[] = {TXT_VHS_DESLIGADO,  TXT_VHS_ORIGINAL,    TXT_VHS
 typedef char cada_preset_tem_um_nome[(sizeof(NOMES) / sizeof(NOMES[0]) == N_PRESETS) ? 1 : -1];
 
 static const char *const UNIFORMES[VHS_UNIFORMES] = {
-    "tempo",       "resolucao", "ruido",     "aberracao", "scanlines", "vinheta",    "wobble",
-    "sangramento", "tracking",  "saturacao", "tom",       "curvatura", "cintilacao", "interferencia"};
+    "tempo",    "resolucao", "ruido", "aberracao", "scanlines",  "vinheta", "wobble",       "sangramento",
+    "tracking", "saturacao", "tom",   "curvatura", "cintilacao", "rolagem", "interferencia"};
 
 #define VHS_ROTULO_S 2.5f
 
@@ -44,6 +45,7 @@ static const char *const UNIFORMES[VHS_UNIFORMES] = {
     "uniform float ruido; uniform float aberracao; uniform float scanlines; uniform float vinheta;\n"        \
     "uniform float wobble; uniform float sangramento; uniform float tracking; uniform float saturacao;\n"    \
     "uniform float tom; uniform float curvatura; uniform float cintilacao; uniform float interferencia;\n"   \
+    "uniform float rolagem;\n"                                                                               \
     "float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }\n"                \
     "float luma(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }\n"
 
@@ -73,7 +75,8 @@ static const char *const UNIFORMES[VHS_UNIFORMES] = {
 
 // O corpo é o mesmo nas duas versões: AMOSTRA e SAIDA trocam texture/texture2D e finalColor/gl_FragColor.
 // As scanlines compensam o brilho médio que tiram (o escuro não fica mais escuro do que sem filtro).
-// rodape: a faixa de troca de cabeça (3% de baixo); rola: uma faixa fraca de ruído que sobe devagar.
+// rodape: a faixa de troca de cabeça (3% de baixo); rola: uma faixa fraca de ruído que sobe devagar
+// (rolagem; a interferência da criatura também a liga).
 #define VHS_CORPO_GLSL                                                                                       \
     "void main() {\n"                                                                                        \
     "    vec2 uv = curva(fragTexCoord);\n"                                                                   \
@@ -83,7 +86,7 @@ static const char *const UNIFORMES[VHS_UNIFORMES] = {
     "    float faixa = smoothstep(0.0, 0.08, 0.08 - abs(uv.y - fract(tempo * 0.37)));\n"                     \
     "    float rodape = tracking * smoothstep(0.97, 1.0, 1.0 - uv.y);\n"                                     \
     "    float altura_rola = abs(uv.y - fract(-tempo * 0.06));\n"                                            \
-    "    float rola = (tracking + interferencia) * smoothstep(0.015, 0.0, altura_rola);\n"                   \
+    "    float rola = (rolagem + interferencia) * smoothstep(0.015, 0.0, altura_rola);\n"                    \
     "    uv.x += janela * faixa * (wobble + 4.0 * interferencia) / resolucao.x;\n"                           \
     "    float tremor = hash(vec2(linha, floor(tempo * 30.0))) - 0.5;\n"                                     \
     "    uv.x += (rodape * 14.0 + rola * 2.0) * tremor / resolucao.x;\n"                                     \
