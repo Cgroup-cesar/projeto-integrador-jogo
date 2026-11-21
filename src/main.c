@@ -328,6 +328,11 @@ static void desenha(const Estado *e) {
 // Lê o quadro que acabou de ser desenhado e salva em PNG.
 static void salva_captura(const char *caminho) {
     Image quadro = LoadImageFromScreen();
+    // Tela com escala (Wayland, HiDPI): a imagem vem maior que a janela e o jogo fica no canto de baixo à
+    // esquerda; recorta só ele.
+    int w = GetScreenWidth(), h = GetScreenHeight();
+    if (quadro.width > w && quadro.height > h)
+        ImageCrop(&quadro, (Rectangle){0, (float)(quadro.height - h), (float)w, (float)h});
     if (ExportImage(quadro, caminho)) TraceLog(LOG_INFO, "PRECURSOR: captura salva em %s", caminho);
     UnloadImage(quadro);
 }
