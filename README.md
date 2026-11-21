@@ -47,11 +47,13 @@ Projeto Integrador da disciplina **Programação Imperativa e Funcional (PIF)**,
 | Escolher no terminal, nos painéis e nas fichas | setas e ENTER |
 | Tela de nome: digitar (até 16 letras, com acento), apagar, confirmar, voltar ao menu | teclado · Backspace · ENTER · Esc |
 
-**Teclas de debug:** F1 liga/desliga o VHS · F2 pula a fase · F3 mostra o estado e o caminho da criatura · F5 reinicia a fase · F9 vai à resposta final · F12 salva uma captura em `docs/img/`. Para desligá-las, mude `#define TECLAS_DEBUG 1` para `0` em `src/config.h`; no modo feira (`--feira`) elas ficam desligadas sozinhas.
+**Teclas de debug:** F1 troca o filtro VHS (desligado, original, fita caseira, fita gasta, monitor CRT, câmera de vigilância; o nome aparece no canto) · F2 pula a fase · F3 mostra o estado e o caminho da criatura · F5 reinicia a fase · F9 vai à resposta final · F12 salva uma captura em `docs/img/`. Para desligá-las, mude `#define TECLAS_DEBUG 1` para `0` em `src/config.h`; no modo feira (`--feira`) elas ficam desligadas sozinhas.
 
 **Nome de quem joga (pensado para a feira):** fica só na memória, durante a partida. Aparece em três lugares: no terminal (`OPERADOR(A): <NOME>`), numa fala do Cel. Varela pelo interfone e na tela final. Nada vai para o disco (nem save, nem log, nem ranking) e o nome não é impresso no terminal. Ele é apagado ao voltar ao menu (fim de jogo, pausa, Esc na tela de nome, inatividade no modo feira) e ao fechar o jogo; recomeçar uma fase não o apaga. **Atenção:** uma captura (F12 ou `--captura`) do terminal, da intro ou da tela final grava o nome na imagem.
 
-**Linha de comando:** `--feira` (sem SAIR no menu, sem debug, volta ao menu após 90 s sem ninguém mexer, inclusive na tela de nome e na pausa) · `--mudo` · `--fase S2` (começa direto numa fase) · `--smoke` (pula a tela de nome e usa o nome padrão) · `--captura arquivo.png --captura-em 2 [--captura-fase R1]` · `--exporta-sons pasta` (grava os sons sintetizados em WAV).
+**Linha de comando:** `--feira` (sem SAIR no menu, sem debug, volta ao menu após 90 s sem ninguém mexer, inclusive na tela de nome e na pausa) · `--mudo` · `--fase S2` (começa direto numa fase) · `--smoke` (pula a tela de nome e usa o nome padrão) · `--captura arquivo.png --captura-em 2 [--captura-fase R1]` · `--exporta-sons pasta` (grava os sons sintetizados em WAV) · `--vhs N` (abre com o preset N do filtro VHS; 0 = desligado) · `--vitrine-vhs [s]` (troca de preset sozinho a cada s segundos, padrão 4) · `--galeria-vhs pasta` (salva `pasta/vhs_<N>.png` com o mesmo quadro em cada preset e fecha; combine com `--fase S1 --captura-fase S1 --captura-em 5`).
+
+**Escolher o filtro VHS:** rode `--galeria-vhs` (ou `--vitrine-vhs`) para comparar, depois mude `VHS_PRESET_PADRAO` em `src/config.h`. Os valores de cada preset ficam em `VHS_PRESETS`, uma linha por preset.
 
 ## Como compilar e rodar
 
@@ -98,7 +100,7 @@ Para trocar uma delas, ponha um PNG em `assets/texturas/` com um destes nomes: `
 
 - **raylib não encontrada** (`raylib.h: No such file` ou `cannot find -lraylib`): confira o PATH e o `RAYLIB_PATH` no Windows, o `pkg-config raylib` no Linux e no macOS, ou use o CMake.
 - **Texto sem acentos:** é o fallback sem fonte externa; rode `tools/baixa_fonte`.
-- **Tela preta ou janela que fecha:** o jogo pede OpenGL 3.3; atualize o driver de vídeo. F1 desliga o filtro VHS. As mensagens do jogo no terminal começam com `PRECURSOR:`.
+- **Tela preta ou janela que fecha:** o jogo pede OpenGL 3.3; atualize o driver de vídeo. F1 troca o filtro VHS (o preset 0 é desligado). As mensagens do jogo no terminal começam com `PRECURSOR:`.
 - **macOS, testes automáticos:** a janela só abre com a tela acordada (`caffeinate -u -t 5` antes do `make smoke`).
 
 ## Estrutura do projeto
@@ -130,7 +132,8 @@ src/criatura.c/.h        o Precursor: IA, A*, placeholder procedural, captura
 src/susto.c/.h           o jumpscare: o rosto do modelo pula até a câmera e treme; dura o trecho alto do som
 src/dialogo.c/.h         todos os textos do jogo
 src/audio_sintese.c/.h   sons gerados em código (e substituição por .ogg, .wav ou .mp3)
-src/posfx.c/.h           render target, luz e névoa, filtro VHS
+src/posfx.c/.h           render target, luz e névoa
+src/vhs.c/.h             filtro VHS: shader, presets (F1), interferência perto da criatura
 src/ui.c/.h              fonte com fallback, menu, HUD, legendas, diário, tela de fim
 src/tela_nome.c/.h       tela de nome de quem joga (só em memória, só na partida)
 src/materiais.c/.h       desenho das texturas procedurais e UV de mundo (puro, testado sem janela)
@@ -244,7 +247,7 @@ Cada laço leva o comentário `// padrão MAP`, `// padrão FILTER` ou `// padr�
 | RNF2 Modularização | [src/estado.h#L226-L281](src/estado.h#L226-L281) | `[REQ:RNF2]` | Uma struct por objeto, uma função por responsabilidade, um módulo por sistema; o maior arquivo tem menos de 500 linhas. |
 | RNF3 Separação update/render | [src/main.c#L316-L329](src/main.c#L316-L329) | `[REQ:RNF3]` | Todo módulo tem `xxx_atualiza(Estado *e, float dt)` e `xxx_desenha(const Estado *e)`; o `const` garante que desenhar não muda nada; nenhum `Draw*` em `*_atualiza` (auditado com grep). |
 | RNF4 Robustez | [src/colecoes.c#L9-L14](src/colecoes.c#L9-L14)<br>[src/main.c#L416-L425](src/main.c#L416-L425)<br>[src/nivel.c#L38-L42](src/nivel.c#L38-L42)<br>[src/ui.c#L27-L54](src/ui.c#L27-L54)<br>[src/criatura.c#L24-L40](src/criatura.c#L24-L40) | `[REQ:RNF4]` | Vetor cheio descarta com `TraceLog`, sem travar; listas vazias (sem ruídos, sem eventos) testadas; `dt` limitado; fora do mapa conta como parede; sem fonte, som ou modelo, entra o placeholder. |
-| RNF5 Documentação | [README.md#L183-L183](README.md#L183-L183) | `[REQ:RNF5]` | Este README, `docs/ARQUITETURA.md`, `docs/DECISOES.md` (as escolhas e por quê), `docs/PROGRESSO.md` e `CLAUDE.md`. |
+| RNF5 Documentação | [README.md#L188-L188](README.md#L188-L188) | `[REQ:RNF5]` | Este README, `docs/ARQUITETURA.md`, `docs/DECISOES.md` (as escolhas e por quê), `docs/PROGRESSO.md` e `CLAUDE.md`. |
 | RNF6 Versionamento + Makefile | [Makefile#L1-L2](Makefile#L1-L2) | `[REQ:RNF6]` | `Makefile` como build principal (com `test`, `smoke`, `readme-check`); um commit por marco na v0 (M0 a M9) e, daqui em diante, branch por card e PR (ver Metodologia). |
 
 ### Critérios de avaliação
