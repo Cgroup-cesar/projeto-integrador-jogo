@@ -34,8 +34,8 @@
 }
 // clang-format on
 #define VHS_UNIFORMES (VHS_PARAMETROS + 3) // + tempo, resolução e interferência
-// Interferência: um chiado de linhas finas quando a criatura chega perto (só nos corredores, com o VHS
-// ligado). Pensada para ser percebida, não para atrapalhar: aparece de uma vez a LONGE e cresce até PERTO.
+// Interferência: uma sombra escura e semitransparente passa pela tela quando a criatura chega perto (só nos
+// corredores, com o VHS ligado). Pensada para ser percebida, não para atrapalhar: aparece de uma vez a LONGE e cresce até PERTO.
 #define VHS_INTERFERENCIA_LONGE  10.0f // metros: a partir daqui já aparece
 #define VHS_INTERFERENCIA_PERTO  2.5f  // metros: no máximo
 #define VHS_INTERFERENCIA_INICIO 0.25f // 0..1: o nível ao cruzar LONGE (já dá para notar)

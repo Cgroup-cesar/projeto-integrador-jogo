@@ -77,8 +77,8 @@ static const char *const UNIFORMES[VHS_UNIFORMES] = {
 // O corpo é o mesmo nas duas versões: AMOSTRA e SAIDA trocam texture/texture2D e finalColor/gl_FragColor.
 // As scanlines compensam o brilho médio que tiram (o escuro não fica mais escuro do que sem filtro).
 // rodape: a faixa de troca de cabeça (3% de baixo); rola: uma faixa fraca de ruído que sobe devagar.
-// Interferência (criatura perto): "chiado" de linhas finas que piscam e tremem de leve; quanto maior, mais
-// linhas por quadro (no máximo ~4% delas). Não rola faixa, não escurece e não cobre a criatura.
+// Interferência (criatura perto): uma sombra escura e semitransparente que passa pela tela; quanto mais
+// perto, mais escura (até ~33%) e mais larga. Sem linhas claras, sem cobrir a criatura.
 #define VHS_CORPO_GLSL                                                                                       \
     "void main() {\n"                                                                                        \
     "    vec2 uv = curva(fragTexCoord);\n"                                                                   \
@@ -89,25 +89,26 @@ static const char *const UNIFORMES[VHS_UNIFORMES] = {
     "    float rodape = tracking * smoothstep(0.97, 1.0, 1.0 - uv.y);\n"                                     \
     "    float altura_rola = abs(uv.y - fract(-tempo * 0.06));\n"                                            \
     "    float rola = rolagem * smoothstep(0.015, 0.0, altura_rola);\n"                                      \
-    "    float quadro = floor(tempo * 24.0);\n"                                                              \
-    "    float chiado = step(1.0 - 0.07 * interferencia, hash(vec2(linha * 0.37, quadro)));\n"               \
+    "    float altura_sombra = abs(uv.y - fract(-tempo * 0.09));\n"                                          \
+    "    float largura_sombra = 0.02 + 0.04 * interferencia;\n"                                              \
+    "    float sombra = interferencia * smoothstep(largura_sombra, 0.0, altura_sombra);\n"                   \
     "    uv.x += janela * faixa * wobble / resolucao.x;\n"                                                   \
     "    float tremor = hash(vec2(linha, floor(tempo * 30.0))) - 0.5;\n"                                     \
-    "    float empurra = rodape * 14.0 + rola * 2.0 + chiado * 6.0 + interferencia * 1.5;\n"                 \
+    "    float empurra = rodape * 14.0 + rola * 2.0 + sombra * 3.0;\n"                                       \
     "    uv.x += empurra * tremor / resolucao.x;\n"                                                          \
-    "    float px = (aberracao + 1.0 * interferencia) / resolucao.x;\n"                                      \
+    "    float px = (aberracao + 0.5 * interferencia) / resolucao.x;\n"                                      \
     "    vec3 c = vec3(AMOSTRA(texture0, uv + vec2(px, 0.0)).r, AMOSTRA(texture0, uv).g,\n"                  \
     "                  AMOSTRA(texture0, uv - vec2(px, 0.0)).b);\n"                                          \
     "    c = sangra(c, uv);\n"                                                                               \
     "    c = tinge(mix(vec3(luma(c)), c, saturacao));\n"                                                     \
     "    float n = hash(uv * resolucao + vec2(tempo * 61.0, tempo * 17.0)) - 0.5;\n"                         \
-    "    c += n * (ruido * (0.3 + 0.7 * luma(c)) + rodape * 0.6 + rola * 0.12 + interferencia * 0.03);\n"    \
-    "    c += chiado * (0.06 + 0.12 * hash(vec2(linha, quadro + 5.0)));\n"                                   \
+    "    c += n * (ruido * (0.3 + 0.7 * luma(c)) + rodape * 0.6 + rola * 0.12);\n"                           \
     "    float listra = 0.5 + 0.5 * sin(uv.y * resolucao.y * 3.14159);\n"                                    \
     "    c *= (1.0 + scanlines * 0.5) * (1.0 - scanlines * listra);\n"                                       \
     "    vec2 d = uv - 0.5;\n"                                                                               \
     "    c *= 1.0 - vinheta * dot(d, d) * 2.0;\n"                                                            \
     "    c *= brilho * (1.0 - cintilacao * hash(vec2(floor(tempo * 20.0), 3.0)));\n"                         \
+    "    c *= 1.0 - 0.55 * sombra;\n"                                                                        \
     "    SAIDA = vec4(c * fora.x * fora.y, 1.0) * colDiffuse * fragColor;\n"                                 \
     "}\n"
 
