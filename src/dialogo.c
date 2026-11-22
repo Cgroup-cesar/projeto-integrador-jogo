@@ -173,7 +173,8 @@ static const char *const TEXTOS[TXT_TOTAL] = {
     [TXT_PAINEL_CHAVE_DESLIGADA] = "DESLIGADA",
     [TXT_DIARIO] = // o bilhete do Varela verdadeiro, no Arquivo: a pista do final bom
     "Ele aprende as nossas vozes. Eu nunca te chamo só pelo nome: se o rádio te chamar assim, não sou eu. "
-    "Ele só age sobre o que PODE ser verdade. Dê a ele uma frase que nunca possa ser. — V.",
+    "Ele só age sobre o que PODE ser verdade. Dê a ele uma frase que nunca possa ser. "
+    "Algo como: você fala e você não fala (P ∧ ¬P). — V.",
     [TXT_DIARIO_FECHAR] = "E ou Esc — fechar",
     [TXT_FIM_RUIM_ACEITA] = "TRANSMISSÃO ACEITA.",
     [TXT_FIM_RUIM_OBRIGADO] = "OBRIGADO, {NOME}.", // só o nome, sem o título: como o rádio falso

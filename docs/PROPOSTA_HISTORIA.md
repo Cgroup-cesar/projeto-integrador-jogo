@@ -117,7 +117,8 @@ história para quem quiser.
 - **S2, bilhete do Varela** (no Arquivo, no caminho do painel 2, com luz de destaque). Substitui o diário da
   Dra. Sampaio:
   > "Ele aprende as nossas vozes. Eu nunca te chamo só pelo nome: se o rádio te chamar assim, não sou eu. Ele só age
-  > sobre o que PODE ser verdade. Dê a ele uma frase que nunca possa ser. — V."
+  > sobre o que PODE ser verdade. Dê a ele uma frase que nunca possa ser. Algo como: você fala e você não fala
+  > (P ∧ ¬P). — V."
 
   Lido o bilhete, o terminal passa a mostrar no canto:
   `ANOTAÇÃO RECUPERADA: "uma frase que nunca possa ser verdade"`.
