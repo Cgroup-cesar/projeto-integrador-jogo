@@ -274,6 +274,14 @@
 #define COR_CONTRALUZ (Color){0x7a, 0xb0, 0xe0, 255}
 #define COR_AMBAR     (Color){0xd9, 0xa4, 0x41, 255}
 #define COR_LANTERNA  (Color){0xf2, 0xe8, 0xd0, 255}
+// Telas de tarefa (analisador, painéis, manual): o monitor de fósforo (crt.c).
+#define COR_CRT_FUNDO    (Color){0x07, 0x11, 0x0f, 250} // quase opaco: a sala 3D não atrapalha a leitura
+#define COR_CRT_LINHA    (Color){0x1c, 0x4a, 0x36, 255} // borda das caixas
+#define COR_CRT_GRADE    (Color){0x0f, 0x2a, 0x1e, 255} // linhas entre as linhas da tabela
+#define COR_CRT_TEXTO    (Color){0xb9, 0xf3, 0xcf, 255}
+#define COR_CRT_APAGADO  (Color){0x4f, 0x8a, 0x69, 255} // legendas, opções não escolhidas
+#define COR_AMBAR_ESCURO (Color){0x5a, 0x43, 0x18, 255} // o anel em volta da lâmpada acesa
+#define CRT_VARREDURA_S  7.0f // quanto a faixa clara leva para descer a tela do analisador
 
 // Folego no armario: expulso aos 12 s; saindo com 8 s ou mais escondido, ofega.
 #define ARMARIO_TEMPO_MAX   12.0f
