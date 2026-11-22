@@ -3,6 +3,7 @@
 #include "identidade.h"
 #include "audio_sintese.h"
 #include "dialogo.h"
+#include "falha.h"
 #include "ui.h"
 #include <math.h>
 #include <stdio.h>
@@ -29,6 +30,7 @@ static void avanca(Estado *e, EtapaIntro proxima) {
 static void atualiza_genero(Estado *e, bool segue_sozinho) {
     if (e->in.esquerda || e->in.direita || e->in.cima || e->in.baixo) {
         e->ident.feminino = !e->ident.feminino;
+        e->menu.troca_t = e->tempo_total; // a opção nova entra com a falha (falha.c)
         audio_toca(e, SOM_INTERRUPTOR, 0.4f, 1.3f);
     }
     if (e->in.confirmar || segue_sozinho) avanca(e, INTRO_NOME);
@@ -62,7 +64,15 @@ static void desenha_opcao_genero(const Estado *e, TextoId texto, float centro_x,
     float s = ui_escala();
     const char *t = dialogo_texto(texto);
     Vector2 m = ui_mede(e, t, 30 * s);
-    ui_opcao(e, t, (Vector2){centro_x - m.x * 0.5f - 6 * s, y}, m.x + 32 * s, 30 * s, ativa, COR_FOSFORO);
+    if (!ativa) {
+        ui_opcao(e, t, (Vector2){centro_x - m.x * 0.5f - 6 * s, y}, m.x + 32 * s, 30 * s, false, COR_FOSFORO);
+        return;
+    }
+    float forca = 0.0f, dx = falha_deslocamento(e, MENU_FALHA_LEVE, &forca);
+    Rectangle r = {centro_x - m.x * 0.5f - 16 * s + dx, y - 4 * s, m.x + 32 * s, 38 * s};
+    DrawRectangleRounded(r, 0.25f, 6, Fade(COR_FOSFORO, 0.16f));
+    DrawRectangle((int)r.x, (int)r.y, (int)(3 * s), (int)r.height, COR_FOSFORO);
+    falha_texto(e, t, (Vector2){r.x + 16 * s, y}, 30 * s, COR_FOSFORO, forca, r);
 }
 
 static void desenha_genero(const Estado *e) {
@@ -91,6 +101,7 @@ static void desenha_nome(const Estado *e) {
 void identidade_desenha(const Estado *e) {
     if (e->fase != FASE_INTRO || e->intro.etapa > INTRO_NOME) return;
     DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), BLACK);
+    falha_chuvisco(e, TELAS_ESTATICA_ALFA, TELAS_ESTATICA_PICO, false); // bem fraco: só um grão de fita
     if (e->intro.etapa == INTRO_GENERO)
         desenha_genero(e);
     else

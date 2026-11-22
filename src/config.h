@@ -5,10 +5,21 @@
 
 // ---------------------------------------------------------------- título
 // Trocar o nome do jogo no futuro exige mudar só estas duas linhas.
-#define TITULO_JOGO       "PROJETO PRECURSOR"
-#define TITULO_PROVISORIO 1
+#define TITULO_JOGO       "PRECURSOR"
+#define TITULO_PROVISORIO 0
 #define MENU_SUBLIMINARES                                                                                    \
     1 // frases que piscam por ~0,1 s na tela de início (0 desliga; ex.: pedido da banca)
+// Chuvisco de TV da tela de início (estilo menu de terror dos anos 2010): a cena continua visível por trás.
+#define MENU_ESTATICA_ALFA   0.09f // força base do chuvisco (0 desliga; acima de ~0,3 a cena some)
+#define MENU_ESTATICA_PICO   0.07f // reforço nos surtos de interferência
+#define MENU_ESTATICA_GRAO   3.0f  // tamanho do grão em px (antes da escala da UI)
+#define MENU_ESTATICA_QUADROS 30.0f // quantas vezes por segundo o chuvisco muda
+#define MENU_FALHA_TROCA_S    0.35f // quanto dura a falha da opção logo depois de escolhida
+#define MENU_BALANCO_PX       3.0f  // amplitude do balanço lento da opção escolhida (px, antes da escala)
+#define MENU_FALHA_LEVE       0.4f  // intensidade da falha nas opções da pausa e das perguntas (1 = a do menu)
+#define TELAS_ESTATICA_ALFA   0.03f // chuvisco da pausa e das perguntas da intro: bem mínimo
+#define TELAS_ESTATICA_PICO   0.02f
+#define TECLAS_ESCALA_JOGO    0.88f // tamanho da barra de teclas e do minimapa durante a partida (1 = original)
 
 // ---------------------------------------------------------------- janela e tempo
 #define LARGURA_JANELA 1280

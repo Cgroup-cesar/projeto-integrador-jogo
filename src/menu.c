@@ -5,6 +5,7 @@
 #include "teclas.h"
 #include "ui.h"
 #include "dialogo.h"
+#include "falha.h"
 #include <math.h>
 #include <stdio.h>
 
@@ -17,6 +18,7 @@ void menu_atualiza(Estado *e) {
         return;
     }
     int opcoes = e->modo_feira ? 2 : 3;
+    if (e->in.cima || e->in.baixo) e->menu.troca_t = e->tempo_total;
     if (e->in.cima) e->menu.cursor = (e->menu.cursor + opcoes - 1) % opcoes;
     if (e->in.baixo) e->menu.cursor = (e->menu.cursor + 1) % opcoes;
     if (!e->in.confirmar) return;
@@ -35,15 +37,6 @@ static float ciclo(const Estado *e, float periodo) { // 0..1 dentro de um ciclo 
     return fmodf(e->tempo_total / periodo, 1.0f);
 }
 
-// Sorteio repetível (o mesmo número dá sempre o mesmo resultado), de 0 a 1.
-static float sorteio(int n) {
-    unsigned h = (unsigned)n * 2654435761u;
-    h ^= h >> 15;
-    h *= 2246822519u;
-    h ^= h >> 13;
-    return (h & 0xFFFFu) / 65535.0f;
-}
-
 // Texto de OSD da fita: branco com franjas vermelha e ciana, como o vídeo de um VHS velho.
 static void texto_osd(const Estado *e, const char *texto, Vector2 pos, float tamanho) {
     float s = ui_escala();
@@ -52,13 +45,13 @@ static void texto_osd(const Estado *e, const char *texto, Vector2 pos, float tam
     ui_texto(e, texto, pos, tamanho, (Color){232, 255, 240, 255});
 }
 
-// A tela de início é uma gravação do SNI: ▶ PLAY e SP ●●● no alto, ● REC com o contador e a data da fita.
+// A tela de início é uma gravação do SNI: ▶ PLAY e PE ●●● no alto, ● REC com o contador e a data da fita.
 static void marcas_da_fita(const Estado *e) {
     float s = ui_escala(), w = GetScreenWidth(), t = 20 * s, m = 34 * s;
     DrawTriangle((Vector2){m, m + 2 * s}, (Vector2){m, m + t - 2 * s}, (Vector2){m + t * 0.7f, m + t * 0.5f},
                  (Color){232, 255, 240, 255});
     texto_osd(e, "PLAY", (Vector2){m + t, m}, t);
-    texto_osd(e, "SP", (Vector2){m + t + 90 * s, m}, t);
+    texto_osd(e, "PE", (Vector2){m + t + 90 * s, m}, t);
     for (int i = 0; i < 3; i++) // padrão MAP: as três bolinhas da velocidade da fita
         DrawCircleV((Vector2){m + t + 126 * s + i * 14 * s, m + t * 0.5f}, 4 * s, Fade(RAYWHITE, 0.85f));
     char contador[16];
@@ -80,14 +73,14 @@ static void subliminar(const Estado *e) {
                                      TXT_SUBLIMINAR_5};
     float janela = 10.5f;
     int n = (int)(e->tempo_total / janela);
-    float dentro = e->tempo_total - n * janela, quando = 1.5f + sorteio(n) * 7.5f;
-    float dura = 0.07f + sorteio(n + 7) * 0.09f;
+    float dentro = e->tempo_total - n * janela, quando = 1.5f + falha_sorteio(n) * 7.5f;
+    float dura = 0.07f + falha_sorteio(n + 7) * 0.09f;
     if (dentro < quando || dentro > quando + dura) return;
     float s = ui_escala(), tamanho = 96 * s;
-    const char *frase = dialogo_texto(frases[(int)(sorteio(n + 13) * 4.999f)]);
+    const char *frase = dialogo_texto(frases[(int)(falha_sorteio(n + 13) * 4.999f)]);
     Vector2 m = ui_mede(e, frase, tamanho);
-    Vector2 pos = {GetScreenWidth() * (0.42f + sorteio(n + 21) * 0.3f) - m.x * 0.5f,
-                   GetScreenHeight() * (0.3f + sorteio(n + 29) * 0.35f)};
+    Vector2 pos = {GetScreenWidth() * (0.42f + falha_sorteio(n + 21) * 0.3f) - m.x * 0.5f,
+                   GetScreenHeight() * (0.3f + falha_sorteio(n + 29) * 0.35f)};
     BeginBlendMode(BLEND_ADDITIVE);
     ui_texto(e, frase, (Vector2){pos.x + 4 * s, pos.y}, tamanho, (Color){40, 220, 255, 115});
     ui_texto(e, frase, pos, tamanho, (Color){255, 30, 30, 255});
@@ -129,9 +122,11 @@ static void titulo(const Estado *e, Vector2 pos, float tamanho) {
     ui_texto(e, texto, pos, tamanho, Fade(COR_FOSFORO, luz));
 }
 
-// Uma opção como faixa: a cor vai sumindo para a direita. A escolhida acende inteira e ganha a borda.
+// Uma opção como faixa: a cor vai sumindo para a direita. A escolhida acende inteira, ganha a borda,
+// balança e falha (cópias vermelha e ciana deslocadas e uma fatia do texto fora do lugar).
 static void faixa(const Estado *e, const char *texto, Rectangle r, Color cor, bool ativa) {
-    float s = ui_escala();
+    float s = ui_escala(), forca = 0.0f;
+    if (ativa) r.x += falha_deslocamento(e, 1.0f, &forca);
     DrawRectangleGradientH((int)r.x, (int)r.y, (int)r.width, (int)r.height, Fade(cor, ativa ? 0.75f : 0.18f),
                            Fade(cor, 0.0f));
     if (ativa) DrawRectangle((int)r.x, (int)r.y, (int)(4 * s), (int)r.height, cor);
@@ -140,7 +135,8 @@ static void faixa(const Estado *e, const char *texto, Rectangle r, Color cor, bo
         DrawTriangle((Vector2){x, cy - 8 * s}, (Vector2){x, cy + 8 * s}, (Vector2){x + 12 * s, cy}, cor);
     }
     Color letra = ativa ? (Color){240, 250, 242, 255} : Fade(cor, 0.75f);
-    ui_texto(e, texto, (Vector2){r.x + 20 * s, r.y + (r.height - 26 * s) * 0.5f}, 26 * s, letra);
+    Vector2 p = {r.x + 20 * s, r.y + (r.height - 26 * s) * 0.5f};
+    falha_texto(e, texto, p, 26 * s, letra, forca, r);
 }
 
 // O convite no canto: quem está em 1º e "você pode ser o próximo". A borda respira devagar.
@@ -174,6 +170,7 @@ void menu_desenha(const Estado *e) {
     float s = ui_escala(), w = GetScreenWidth(), h = GetScreenHeight(), x = 90 * s;
     DrawRectangleGradientH(0, 0, (int)(w * 0.62f), (int)h, Fade(BLACK, 0.88f), Fade(BLACK, 0.0f));
     DrawRectangleGradientV(0, (int)(h * 0.6f), (int)w, (int)(h * 0.4f), Fade(BLACK, 0.0f), Fade(BLACK, 0.7f));
+    falha_chuvisco(e, MENU_ESTATICA_ALFA, MENU_ESTATICA_PICO, true);
     titulo(e, (Vector2){x, 130 * s}, 76 * s);
     ui_texto_quebrado(e, dialogo_texto(TXT_MENU_GANCHO), (Vector2){x + 4 * s, 248 * s}, 720 * s, 20 * s,
                       Fade(RAYWHITE, 0.75f));

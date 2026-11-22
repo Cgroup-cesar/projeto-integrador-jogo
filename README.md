@@ -1,6 +1,6 @@
-# PROJETO PRECURSOR
+# PRECURSOR
 
-> **Nome provisório.** O título final ainda vai ser definido; para trocar, mudam só duas linhas em `src/config.h` (`TITULO_JOGO` e `TITULO_PROVISORIO`).
+> O nome do jogo fica em `src/config.h` (`TITULO_JOGO`); `TITULO_PROVISORIO` em 1 volta a mostrar o aviso de nome provisório.
 
 Terror em primeira pessoa: em 1985, numa base secreta do SNI, você é o lógico chamado para traduzir uma criatura cuja língua é lógica pura, e cada tradução certa a deixa mais perto de sair.
 
@@ -219,7 +219,7 @@ Cada trecho que cumpre um requisito tem, logo acima, um comentário-âncora `// 
 | RF2 Controle do jogador por teclado/mouse | [src/main.c#L37-L73](src/main.c#L37-L73)<br>[src/jogador.c#L51-L69](src/jogador.c#L51-L69)<br>[src/jogador.c#L119-L127](src/jogador.c#L119-L127) | `[REQ:RF2]` | Câmera em 1ª pessoa pelo mouse; WASD, Shift (corrida com fôlego), E, 1/2/3, setas, ENTER e Esc, lidos uma vez por quadro numa `struct Entrada`. |
 | RF3 Coleção (vetor) de múltiplos objetos | [src/estado.h#L292-L297](src/estado.h#L292-L297) | `[REQ:RF3]` | Seis coleções de capacidade fixa com contador (ruídos, partículas, rachaduras, eventos, interativos, paredes), sem `malloc` por quadro; ver a tabela de map, filter e fold. |
 | RF4 Colisões com funções da Raylib | [src/jogador.c#L72-L79](src/jogador.c#L72-L79)<br>[src/colecoes.c#L186-L196](src/colecoes.c#L186-L196)<br>[src/colecoes.c#L145-L165](src/colecoes.c#L145-L165)<br>[src/criatura.c#L174-L175](src/criatura.c#L174-L175)<br>[src/criatura.c#L284-L291](src/criatura.c#L284-L291) | `[REQ:RF4]` | `CheckCollisionBoxes` (jogador × paredes, vidro, móveis e armários, eixo por eixo), `GetRayCollisionBox` (mira de interação e visão da criatura contra as paredes) e `CheckCollisionSpheres` (captura). |
-| RF5 Placar, vidas, telas de início e fim | [src/jogo.c#L54-L59](src/jogo.c#L54-L59)<br>[src/menu.c#L166-L194](src/menu.c#L166-L194)<br>[src/tela_fim.c#L74-L105](src/tela_fim.c#L74-L105) | `[REQ:RF5]` | Placar = fold dos eventos; vidas = integridade do vidro (fold das rachaduras), recalculados a cada quadro; tela de início com o título, o gancho, as opções INICIAR, RANKING e SAIR, o convite do 1º lugar ("você pode ser o próximo") e o aviso de nome provisório, intro e tela de fim só com o principal: resultado, placar e lugar no ranking, mais a avaliação do jogo em estrelas. |
+| RF5 Placar, vidas, telas de início e fim | [src/jogo.c#L54-L59](src/jogo.c#L54-L59)<br>[src/menu.c#L162-L191](src/menu.c#L162-L191)<br>[src/tela_fim.c#L74-L105](src/tela_fim.c#L74-L105) | `[REQ:RF5]` | Placar = fold dos eventos; vidas = integridade do vidro (fold das rachaduras), recalculados a cada quadro; tela de início com o título, o gancho, as opções INICIAR, RANKING e SAIR, o convite do 1º lugar ("você pode ser o próximo") e o aviso de nome provisório, intro e tela de fim só com o principal: resultado, placar e lugar no ranking, mais a avaliação do jogo em estrelas. |
 | RF6 Condição de vitória/derrota | [src/compositor.c#L61-L75](src/compositor.c#L61-L75)<br>[src/tela_fim.c#L74-L105](src/tela_fim.c#L74-L105) | `[REQ:RF6]` | A frase transmitida vai para `regras_avalia_transmissao`: contradição → final bom (VITÓRIA); satisfazível → final ruim (DERROTA); inválida → SINTAXE INVÁLIDA, sem penalidade. |
 
 ### Map, filter e fold nas coleções
@@ -277,7 +277,7 @@ Cada laço leva o comentário `// padrão MAP`, `// padrão FILTER` ou `// padr�
 | Requisito | Onde | Âncora | Como foi cumprido |
 | :---- | :---- | :---- | :---- |
 | RNF1 Legibilidade | [.clang-format#L1-L12](.clang-format#L1-L12) | `[REQ:RNF1]` | Nomes em português, claros e consistentes (`atualiza_…`, `desenha_…`, `colidiu_…`); funções de até ~40 linhas (a única exceção, em `audio_sintese.c`, está comentada); o código segue o `.clang-format` (`clang-format --dry-run` sem avisos). |
-| RNF2 Modularização | [src/estado.h#L253-L305](src/estado.h#L253-L305) | `[REQ:RNF2]` | Uma struct por objeto, uma função por responsabilidade, um módulo por sistema; o maior arquivo tem menos de 500 linhas. |
+| RNF2 Modularização | [src/estado.h#L254-L306](src/estado.h#L254-L306) | `[REQ:RNF2]` | Uma struct por objeto, uma função por responsabilidade, um módulo por sistema; o maior arquivo tem menos de 500 linhas. |
 | RNF3 Separação update/render | [src/main.c#L339-L351](src/main.c#L339-L351) | `[REQ:RNF3]` | Todo módulo tem `xxx_atualiza(Estado *e, float dt)` e `xxx_desenha(const Estado *e)`; o `const` garante que desenhar não muda nada; nenhum `Draw*` em `*_atualiza` (auditado com grep). |
 | RNF4 Robustez | [src/colecoes.c#L9-L14](src/colecoes.c#L9-L14)<br>[src/main.c#L440-L449](src/main.c#L440-L449)<br>[src/nivel.c#L38-L42](src/nivel.c#L38-L42)<br>[src/ui.c#L30-L57](src/ui.c#L30-L57)<br>[src/criatura.c#L24-L40](src/criatura.c#L24-L40) | `[REQ:RNF4]` | Vetor cheio descarta com `TraceLog`, sem travar; listas vazias (sem ruídos, sem eventos) testadas; `dt` limitado; fora do mapa conta como parede; sem fonte, som ou modelo, entra o placeholder. |
 | RNF5 Documentação | [README.md#L211-L211](README.md#L211-L211) | `[REQ:RNF5]` | Este README, `docs/ARQUITETURA.md`, `docs/DECISOES.md` (as escolhas e por quê), `docs/PROGRESSO.md` e `CLAUDE.md`. |
