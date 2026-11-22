@@ -233,7 +233,10 @@ static bool jogando(const Estado *e) {
 }
 
 static void atualiza_pausa(Estado *e) {
-    if (e->in.cima || e->in.baixo) e->menu.cursor = 1 - e->menu.cursor;
+    if (e->in.cima || e->in.baixo) {
+        e->menu.cursor = 1 - e->menu.cursor;
+        e->menu.troca_t = e->tempo_total; // a opção nova entra com a falha (falha.c)
+    }
     if (e->in.voltar || (e->in.confirmar && e->menu.cursor == 0))
         e->pausado = false;
     else if (e->in.confirmar && e->menu.cursor == 1) {

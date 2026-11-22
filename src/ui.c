@@ -5,6 +5,7 @@
 #include "trilhas.h"
 #include "tela_fim.h"
 #include "menu.h"
+#include "falha.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -332,17 +333,21 @@ void ui_atualiza(Estado *e, float dt) {
 }
 
 // ------------------------------------------------------------------ desenho: menu, intro, pausa
+// Opção da pausa. A ativa ganha fundo, barra na lateral e uma falha leve (falha.c, MENU_FALHA_LEVE).
 static void desenha_opcao(const Estado *e, const char *texto, float y, bool ativa) {
     float s = ui_escala();
     Vector2 m = ui_mede(e, texto, 30 * s);
     float x = (GetScreenWidth() - m.x) * 0.5f;
-    if (ativa) {
-        // Destaque do item ativo: fundo mais claro, cantos arredondados e barra na lateral.
-        Rectangle r = {x - 22 * s, y - 6 * s, m.x + 44 * s, m.y + 12 * s};
-        DrawRectangleRounded(r, 0.25f, 6, Fade(COR_FOSFORO, 0.12f));
-        DrawRectangle((int)r.x, (int)r.y, (int)(3 * s), (int)r.height, COR_FOSFORO);
+    if (!ativa) {
+        ui_texto(e, texto, (Vector2){x, y}, 30 * s, Fade(COR_FOSFORO, 0.5f));
+        return;
     }
-    ui_texto(e, texto, (Vector2){x, y}, 30 * s, ativa ? COR_FOSFORO : Fade(COR_FOSFORO, 0.5f));
+    float forca = 0.0f;
+    x += falha_deslocamento(e, MENU_FALHA_LEVE, &forca);
+    Rectangle r = {x - 22 * s, y - 6 * s, m.x + 44 * s, m.y + 12 * s};
+    DrawRectangleRounded(r, 0.25f, 6, Fade(COR_FOSFORO, 0.12f));
+    DrawRectangle((int)r.x, (int)r.y, (int)(3 * s), (int)r.height, COR_FOSFORO);
+    falha_texto(e, texto, (Vector2){x, y}, 30 * s, COR_FOSFORO, forca, r);
 }
 
 static void copia_letras(const char *texto, int letras, char *saida, size_t tamanho) {
@@ -379,6 +384,7 @@ static void desenha_intro(const Estado *e) {
 static void desenha_pausa(const Estado *e) {
     float s = ui_escala();
     DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(BLACK, 0.7f));
+    falha_chuvisco(e, TELAS_ESTATICA_ALFA, TELAS_ESTATICA_PICO, false); // bem fraco: só um grão de fita
     ui_texto_centro(e, dialogo_texto(TXT_PAUSA), 240 * s, 52 * s, COR_FOSFORO);
     desenha_opcao(e, dialogo_texto(TXT_PAUSA_CONTINUAR), 350 * s, e->menu.cursor == 0);
     desenha_opcao(e, dialogo_texto(TXT_PAUSA_MENU), 400 * s, e->menu.cursor == 1);
