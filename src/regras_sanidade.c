@@ -17,7 +17,9 @@ float regras_sanidade_passo(float s, float dist, float surgindo, bool escondido,
                             bool fase_saida, float dt) {
     if (fase_saida && dist < SANIDADE_RAIO) {
         float p = perto_de(dist);
-        float queda = Lerp(SANIDADE_QUEDA_MIN, SANIDADE_QUEDA_MAX, p * p) * Clamp(surgindo, 0.0f, 1.0f);
+        float acelera = Lerp(SANIDADE_ACELERA_LONGE, SANIDADE_ACELERA_PERTO, p); // mais perto, mais rápido
+        float queda = Lerp(SANIDADE_QUEDA_MIN, SANIDADE_QUEDA_MAX, p * p) * acelera;
+        queda *= Clamp(surgindo, 0.0f, 1.0f);
         if (escondido) queda *= SANIDADE_FATOR_ARMARIO;
         return limita(s - queda * dt);
     }

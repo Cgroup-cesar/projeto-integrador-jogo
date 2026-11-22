@@ -152,7 +152,8 @@ bool regras_interativo_ativo(TipoInterativo tipo, int fase);
 
 // ------------------------------------------------------------------ sanidade (regras_sanidade.c)
 // Um quadro de sanidade (0..SANIDADE_MAX). Nos corredores (`fase_saida`), cai com a criatura a menos de
-// SANIDADE_RAIO (de QUEDA_MIN na borda a QUEDA_MAX em SANIDADE_PERTO, × `surgindo`, metade se `escondido`) e
+// SANIDADE_RAIO (de QUEDA_MIN × ACELERA_LONGE na borda a QUEDA_MAX × ACELERA_PERTO em SANIDADE_PERTO,
+// × `surgindo`, metade se `escondido`) e
 // só volta a subir depois de SANIDADE_ESPERA_REGEN s longe dela (`tempo_longe`). Nas outras fases de jogo,
 // sobe sempre devagar.
 float regras_sanidade_passo(float s, float dist, float surgindo, bool escondido, float tempo_longe,

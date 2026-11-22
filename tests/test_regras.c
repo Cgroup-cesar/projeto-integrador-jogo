@@ -435,24 +435,24 @@ static void testa_uv_mundo(void) {
 
 // [REQ:SANIDADE] testa a queda pela distância, o armário, a espera da recuperação, os bônus e o grão
 static void testa_sanidade_queda(void) {
-    float longe = regras_sanidade_passo(50.0f, 10.5f, 1.0f, false, 0.0f, true, 1.0f);
+    float longe = regras_sanidade_passo(50.0f, SANIDADE_RAIO + 0.5f, 1.0f, false, 0.0f, true, 1.0f);
     CHECK(perto(longe, 50.0f)); // fora do raio e ainda esperando: não muda
+    float borda = regras_sanidade_passo(50.0f, SANIDADE_RAIO - 0.001f, 1.0f, false, 0.0f, true, 1.0f);
+    CHECK(fabsf((50.0f - borda) - SANIDADE_QUEDA_MIN * SANIDADE_ACELERA_LONGE) < 0.01f); // já desce, 1,5×
     float a9 = regras_sanidade_passo(50.0f, 9.0f, 1.0f, false, 0.0f, true, 1.0f);
     float a5 = regras_sanidade_passo(50.0f, 5.0f, 1.0f, false, 0.0f, true, 1.0f);
     float a2 = regras_sanidade_passo(50.0f, 2.0f, 1.0f, false, 0.0f, true, 1.0f);
-    CHECK(a9 < 50.0f && a5 < a9 && a2 < a5);        // mais perto, cai mais
-    CHECK(50.0f - a9 > SANIDADE_QUEDA_MIN - 0.01f); // já na borda do raio a barra desce
-    CHECK(50.0f - a9 < 2.5f);                       // ...mas devagar
-    CHECK(perto(a2, 50.0f - SANIDADE_QUEDA_MAX));   // colado: a queda máxima
+    CHECK(a9 < borda && a5 < a9 && a2 < a5);                               // mais perto, cai mais
+    CHECK(perto(a2, 50.0f - SANIDADE_QUEDA_MAX * SANIDADE_ACELERA_PERTO)); // colado: a queda máxima, 2×
     float escondido = regras_sanidade_passo(50.0f, 5.0f, 1.0f, true, 0.0f, true, 1.0f);
     CHECK(escondido > a5 && escondido < 50.0f); // no armário cai menos, mas cai
     float surgindo = regras_sanidade_passo(50.0f, 2.0f, 0.0f, false, 0.0f, true, 1.0f);
     CHECK(perto(surgindo, 50.0f)); // ainda dentro do duto: nada
     CHECK(perto(regras_sanidade_passo(1.0f, 1.0f, 1.0f, false, 0.0f, true, 1.0f), 0.0f)); // nunca < 0
     float s = SANIDADE_MAX;
-    for (int i = 0; i < 480; i++) // padrão FOLD: 8 s colado nela a 60 FPS
+    for (int i = 0; i < 270; i++) // padrão FOLD: 4,5 s colado nela a 60 FPS
         s = regras_sanidade_passo(s, SANIDADE_PERTO, 1.0f, false, 0.0f, true, 1.0f / 60.0f);
-    CHECK(s < 5.0f);
+    CHECK(s < 1.0f);
 }
 
 static void testa_sanidade_recupera(void) {

@@ -41,10 +41,12 @@
 // O efeito na tela (cansaço + fita VHS, em vhs.c) tem força linear: 1 − sanidade/100 (100% → 0, 99% → 0,01,
 // 20% → 0,8, 0% → 1). A criatura age por meio da sanidade, que já cai a partir de SANIDADE_RAIO.
 #define SANIDADE_MAX             100.0f
-#define SANIDADE_RAIO            10.0f // metros: daqui para dentro a criatura abala (e o grão aparece)
-#define SANIDADE_PERTO           2.5f  // metros: daqui para dentro, queda e grão no máximo
-#define SANIDADE_QUEDA_MIN       1.5f  // pontos/s na borda do raio (já se vê a barra descer)
-#define SANIDADE_QUEDA_MAX       12.0f // pontos/s colado nela (MIN→MAX com p², p = proximidade 0..1)
+#define SANIDADE_RAIO            15.0f // metros: daqui para dentro a criatura abala (e o efeito aparece)
+#define SANIDADE_PERTO           2.5f  // metros: daqui para dentro, queda no máximo
+#define SANIDADE_QUEDA_MIN       1.5f  // pontos/s base na borda do raio (MIN→MAX com p², p = proximidade 0..1)
+#define SANIDADE_QUEDA_MAX       12.0f // pontos/s base colado nela
+#define SANIDADE_ACELERA_LONGE   1.5f  // a base é multiplicada por 1,5× na borda do raio (2,25 pontos/s)...
+#define SANIDADE_ACELERA_PERTO   2.0f  // ...até 2× colado nela (24 pontos/s: 100 → 0 em ~4 s)
 #define SANIDADE_FATOR_ARMARIO   0.5f  // escondido no armário a queda cai pela metade
 #define SANIDADE_REGEN           0.8f  // pontos/s enquanto joga: +50 em ~1 min
 #define SANIDADE_ESPERA_REGEN    3.0f  // s sem a criatura no raio antes de voltar a subir (corredores)
