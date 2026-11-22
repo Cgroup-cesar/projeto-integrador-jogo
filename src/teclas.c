@@ -44,6 +44,7 @@ static int itens_do_painel(const Estado *e, TeclaAcao *t) {
         t[n++] = (TeclaAcao){"SETAS_H", TXT_TECLA_ENCAIXE};
         t[n++] = (TeclaAcao){"SETAS_V", TXT_TECLA_PORTA};
     }
+    t[n++] = (TeclaAcao){"H", e->ajuda_aberta ? TXT_TECLA_FECHAR_AJUDA : TXT_TECLA_AJUDA};
     t[n++] = (TeclaAcao){"ESC", TXT_TECLA_FECHAR};
     return n;
 }

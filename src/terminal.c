@@ -6,6 +6,7 @@
 #include "criatura.h"
 #include "susto.h"
 #include "ui.h"
+#include "manual.h"
 #include "dialogo.h"
 #include <math.h>
 #include <stdio.h>
@@ -68,32 +69,11 @@ static Rectangle moldura_da_rodada(const Estado *e) {
     return area;
 }
 
-// ------------------------------------------------------------------ ícones (desenhados: não dependem da
-// fonte)
-static void icone_lampada(Vector2 c, float r, bool acesa) {
-    if (acesa) DrawCircleV(c, r * 1.8f, Fade(COR_LAMPADA, 0.25f));
-    DrawCircleV(c, r, acesa ? COR_LAMPADA : (Color){24, 30, 26, 255});
-    DrawCircleLinesV(c, r, acesa ? COR_LAMPADA : Fade(COR_FOSFORO, 0.5f));
-}
-
-// ✓ verde ou ✗ vermelho; `alfa` < 1 apaga (a coluna que não está em análise).
-static void icone_marca(Vector2 c, float r, bool verdade, float alfa) {
-    float t = fmaxf(2.0f, r * 0.35f);
-    Color cor = Fade(verdade ? COR_FOSFORO : COR_ALARME, alfa);
-    if (verdade) {
-        DrawLineEx((Vector2){c.x - r, c.y}, (Vector2){c.x - r * 0.3f, c.y + r * 0.7f}, t, cor);
-        DrawLineEx((Vector2){c.x - r * 0.3f, c.y + r * 0.7f}, (Vector2){c.x + r, c.y - r * 0.8f}, t, cor);
-    } else {
-        DrawLineEx((Vector2){c.x - r * 0.8f, c.y - r * 0.8f}, (Vector2){c.x + r * 0.8f, c.y + r * 0.8f}, t,
-                   cor);
-        DrawLineEx((Vector2){c.x + r * 0.8f, c.y - r * 0.8f}, (Vector2){c.x - r * 0.8f, c.y + r * 0.8f}, t,
-                   cor);
-    }
-}
+// ------------------------------------------------------------------ ícones (em manual.c)
 
 // ✓ VERDADE ou ✗ FALSO: palavra, cor e símbolo juntos (não depende só da cor, nem do som).
 static float resposta(const Estado *e, Vector2 pos, float tamanho, bool verdade, float alfa) {
-    icone_marca((Vector2){pos.x + tamanho * 0.45f, pos.y + tamanho * 0.5f}, tamanho * 0.38f, verdade, alfa);
+    manual_marca((Vector2){pos.x + tamanho * 0.45f, pos.y + tamanho * 0.5f}, tamanho * 0.38f, verdade, alfa);
     const char *t = dialogo_texto(verdade ? TXT_TABELA_VERDADE : TXT_TABELA_FALSO);
     ui_texto(e, t, (Vector2){pos.x + tamanho * 1.1f, pos.y}, tamanho,
              Fade(verdade ? COR_FOSFORO : COR_ALARME, alfa));
@@ -142,7 +122,7 @@ static float desenha_luzes(const Estado *e, const DadosRodada *d, Vector2 pos) {
     float s = escala(), x = pos.x;
     for (int i = 0; i < d->n_luzes; i++) { // padrão MAP: cada luz com a lâmpada e o estado
         bool acesa = i == 0 ? e->rod.luz_a : e->rod.luz_b;
-        icone_lampada((Vector2){x + 9 * s, pos.y + 9 * s}, 8 * s, acesa);
+        manual_lampada((Vector2){x + 9 * s, pos.y + 9 * s}, 8 * s, acesa);
         char t[48];
         snprintf(t, sizeof(t), "%s: %s", dialogo_texto(i == 0 ? TXT_TABELA_LUZ_A : TXT_TABELA_LUZ_B),
                  dialogo_texto(acesa ? TXT_TERMINAL_LUZ_ACESA : TXT_TERMINAL_LUZ_APAGADA));
@@ -188,7 +168,7 @@ static float desenha_tabela(const Estado *e, const DadosRodada *d, Vector2 pos) 
                 4, Fade(COR_FOSFORO, 0.12f));
         for (int i = 0; i < d->n_luzes; i++) {
             bool acesa = d->n_luzes == 1 ? (l & 1) : i == 0 ? ((l >> 1) & 1) : (l & 1);
-            icone_lampada((Vector2){pos.x + i * col_luz + 18 * s, y + 9 * s}, 7 * s, acesa);
+            manual_lampada((Vector2){pos.x + i * col_luz + 18 * s, y + 9 * s}, 7 * s, acesa);
         }
         for (int c = 0; c < d->n_colunas; c++) {
             Vector2 p = {x_res + c * col_res, y};
@@ -252,13 +232,7 @@ static void desenha_rodape(const Estado *e, Rectangle area) {
     float s = escala();
     const Rodada *r = &e->rod;
     if (r->etapa != ETAPA_CONCLUIDA) { // o selo da ajuda, no alto, na linha do placar: sempre à vista
-        const char *selo =
-            dialogo_texto(e->ajuda_aberta ? TXT_TERMINAL_SELO_FECHAR : TXT_TERMINAL_SELO_AJUDA);
-        Vector2 m = ui_mede(e, selo, 16 * s);
-        Rectangle b = {area.x + area.width - m.x - 16 * s, area.y - 44 * s, m.x + 16 * s, 26 * s};
-        DrawRectangleRounded(b, 0.3f, 4, e->ajuda_aberta ? (Color){22, 34, 26, 255} : Fade(COR_AMBAR, 0.18f));
-        DrawRectangleRoundedLinesEx(b, 0.3f, 4, 1.5f * s, COR_AMBAR);
-        ui_texto(e, selo, (Vector2){b.x + 8 * s, b.y + 5 * s}, 16 * s, COR_AMBAR);
+        manual_selo_ajuda(e, area.x + area.width, area.y - 44 * s, s);
     }
     if (r->aviso_t > 0.0f) {
         bool erro = r->aviso == dialogo_texto(TXT_TERMINAL_ERRO);
@@ -268,36 +242,17 @@ static void desenha_rodape(const Estado *e, Rectangle area) {
 }
 
 // ------------------------------------------------------------------ a cola (R1 e R2)
-// Mini-tabela no formato da cola: as lâmpadas (A, e B se houver) e o resultado: ✓, ✗ ou "?" (ainda não
-// visto).
-static void mini_tabela(const Estado *e, Vector2 pos, bool unario, const int *valores, float s) {
-    for (int l = 0; l < (unario ? 2 : 4); l++) { // padrão MAP: cada linha da mini-tabela
-        bool a = unario ? (l & 1) : ((l >> 1) & 1), b = l & 1;
-        float y = pos.y + l * 25 * s;
-        // com uma luz só, a lâmpada fica na coluna ao lado do resultado (sem um buraco no meio)
-        if (!unario) icone_lampada((Vector2){pos.x + 8 * s, y + 8 * s}, 6 * s, a);
-        icone_lampada((Vector2){pos.x + 28 * s, y + 8 * s}, 6 * s, unario ? a : b);
-        if (valores[l] < 0)
-            ui_texto(e, "?", (Vector2){pos.x + 57 * s, y}, 15 * s, Fade(COR_FOSFORO, 0.4f));
-        else
-            icone_marca((Vector2){pos.x + 62 * s, y + 8 * s}, 7 * s, valores[l] != 0, 1.0f);
-    }
-}
 
 // Um conectivo: o nome, o que ele faz em palavras e a mini-tabela (lâmpadas → ✓/✗), para comparar.
 static void conectivo_da_cola(const Estado *e, int indice, Rectangle b, float s) {
     static const OpLogico ops[CONECTIVOS_ESCOLHA] = {OP_NAO, OP_E, OP_OU, OP_IMPLICA};
     static const TextoId descricao[CONECTIVOS_ESCOLHA] = {TXT_COLA_NAO, TXT_COLA_E, TXT_COLA_OU, TXT_COLA_SE};
-    DrawRectangleRoundedLinesEx(b, 0.1f, 4, 1.0f * s, Fade(COR_FOSFORO, 0.3f));
-    ui_texto(e, dialogo_conectivo(indice), (Vector2){b.x + 10 * s, b.y + 8 * s}, 18 * s, COR_FOSFORO);
-    ui_texto_quebrado(e, dialogo_texto(descricao[indice]), (Vector2){b.x + 10 * s, b.y + 32 * s},
-                      b.width - 104 * s, 13 * s, RAYWHITE);
     bool unario = ops[indice] == OP_NAO;
     int valores[4];
     for (int l = 0; l < 4; l++) // padrão MAP: o resultado do conectivo em cada linha
         valores[l] = logica_aplica(ops[indice], unario ? (l & 1) : ((l >> 1) & 1), l & 1);
-    mini_tabela(e, (Vector2){b.x + b.width - 84 * s, b.y + 14 * s}, unario, valores,
-                s); // presa à borda direita
+    manual_cartao(e, b, dialogo_conectivo(indice), dialogo_texto(descricao[indice]), unario, valores, false,
+                  s);
 }
 
 // A tabela da pessoa (a frase em análise) no mesmo formato dos cartões: comparar vira achar o cartão igual.
@@ -315,7 +270,8 @@ static void sua_tabela_na_cola(const Estado *e, Rectangle b, float s) {
     int valores[4];
     for (int l = 0; l < 4; l++) // padrão MAP: o que ele respondeu em cada linha (−1: ainda não visto)
         valores[l] = r->linha_vista[r->coluna][l] ? r->linha_valor[r->coluna][l] : -1;
-    mini_tabela(e, (Vector2){b.x + (b.width - 76 * s) * 0.5f, b.y + 44 * s}, d->n_luzes == 1, valores, s);
+    manual_mini_tabela(e, (Vector2){b.x + (b.width - 76 * s) * 0.5f, b.y + 44 * s}, d->n_luzes == 1, valores,
+                       s);
 }
 
 static void desenha_cola(const Estado *e) {

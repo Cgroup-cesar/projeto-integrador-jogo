@@ -6,6 +6,7 @@
 #include "criatura.h"
 #include "audio_sintese.h"
 #include "ui.h"
+#include "manual.h"
 #include "dialogo.h"
 #include <math.h>
 #include <stdio.h>
@@ -110,6 +111,7 @@ void circuito_atualiza(Estado *e, float dt) {
         e->jog.modo = MODO_ANDANDO;
         return;
     }
+    if (e->in.ajuda) e->ajuda_aberta = !e->ajuda_aberta; // H: os cartões das portas, como no terminal
     bool mexeu = p->numero == 1 ? atualiza_painel1(e) : atualiza_painel2(e);
     if (!mexeu) return;
     // Mexer no painel faz barulho: a criatura pode ouvir.
@@ -124,11 +126,34 @@ static Color cor_sinal(bool v) {
     return v ? COR_FOSFORO : (Color){0x2a, 0x40, 0x30, 255};
 }
 
-static void fio(Vector2 a, Vector2 b, bool v) {
-    Vector2 meio = {(a.x + b.x) * 0.5f, a.y};
-    DrawLineEx(a, meio, 2.0f, cor_sinal(v));
-    DrawLineEx(meio, (Vector2){meio.x, b.y}, 2.0f, cor_sinal(v));
-    DrawLineEx((Vector2){meio.x, b.y}, b, 2.0f, cor_sinal(v));
+// Pulsos de luz andando pelo fio ligado, de `p[0]` para `p[3]`: dá para ver por onde a corrente passa.
+static void pulsos(const Estado *e, const Vector2 *p) {
+    float s = ui_escala(), passo = 24 * s, total = 0.0f, trecho[3];
+    for (int i = 0; i < 3; i++) // padrão FOLD: o comprimento do fio é a soma dos trechos
+        total += trecho[i] = Vector2Distance(p[i], p[i + 1]);
+    for (float d = fmodf(e->tempo_total * 60 * s, passo); d < total; d += passo) { // padrão MAP: cada pulso
+        float resto = d;
+        int i = 0;
+        while (i < 2 && resto > trecho[i])
+            resto -= trecho[i++];
+        Vector2 c = trecho[i] > 0.0f ? Vector2Lerp(p[i], p[i + 1], resto / trecho[i]) : p[i];
+        DrawCircleV(c, 2.5f * s, (Color){210, 255, 220, 255});
+    }
+}
+
+// Um fio em três trechos (anda, sobe ou desce, anda). Ligado: grosso, com brilho e pulsos; desligado: fino
+// e escuro. `entra_em_porta`: na ponta, a lâmpada de entrada — a mesma da cola do terminal.
+static void fio(const Estado *e, Vector2 a, Vector2 b, bool v, bool entra_em_porta) {
+    float s = ui_escala(), largura = (v ? 3.0f : 2.0f) * s;
+    float meio = (a.x + b.x) * 0.5f;
+    Vector2 p[4] = {a, {meio, a.y}, {meio, b.y}, b};
+    for (int i = 0; i < 3; i++) { // padrão MAP: cada trecho do fio
+        if (v) DrawLineEx(p[i], p[i + 1], 9 * s, Fade(COR_FOSFORO, 0.14f));
+        DrawLineEx(p[i], p[i + 1], largura, cor_sinal(v));
+        if (i > 0) DrawCircleV(p[i], largura * 0.5f, cor_sinal(v)); // a quina sem falha
+    }
+    if (v) pulsos(e, p);
+    if (entra_em_porta) manual_lampada(b, 5 * s, v);
 }
 
 // Uma porta lógica: caixa com o nome e o LED da saída ao vivo. Devolve o ponto de saída.
@@ -162,7 +187,7 @@ static void desenha_painel1(const Estado *e, Rectangle r) {
     const char *nomes[3] = {"A", "B", "C"};
     Vector2 ent[3];
     for (int i = 0; i < 3; i++) {
-        ent[i] = (Vector2){r.x + 150 * s, r.y + (110 + i * 90) * s};
+        ent[i] = (Vector2){r.x + 150 * s, r.y + (100 + i * 75) * s};
         char rotulo[48];
         snprintf(rotulo, sizeof(rotulo), dialogo_texto(TXT_PAINEL_CHAVE), i + 1, nomes[i],
                  dialogo_texto(p->chaves[i] ? TXT_PAINEL_CHAVE_LIGADA : TXT_PAINEL_CHAVE_DESLIGADA));
@@ -171,16 +196,16 @@ static void desenha_painel1(const Estado *e, Rectangle r) {
         ent[i].x += 40 * s;
     }
     Vector2 nao = porta(e, (Vector2){r.x + 330 * s, ent[1].y}, dialogo_porta(PORTA_NAO), leds[0], false);
-    fio(ent[1], (Vector2){r.x + 260 * s, ent[1].y}, p->chaves[1]);
+    fio(e, ent[1], (Vector2){r.x + 260 * s, ent[1].y}, p->chaves[1], true);
     Vector2 e1 = porta(e, (Vector2){r.x + 500 * s, (ent[0].y + ent[1].y) * 0.5f}, dialogo_porta(PORTA_E),
                        leds[1], false);
-    fio(ent[0], (Vector2){r.x + 430 * s, e1.y - 10 * s}, p->chaves[0]);
-    fio(nao, (Vector2){r.x + 430 * s, e1.y + 10 * s}, leds[0]);
+    fio(e, ent[0], (Vector2){r.x + 430 * s, e1.y - 10 * s}, p->chaves[0], true);
+    fio(e, nao, (Vector2){r.x + 430 * s, e1.y + 10 * s}, leds[0], true);
     Vector2 e2 =
         porta(e, (Vector2){r.x + 660 * s, (e1.y + ent[2].y) * 0.5f}, dialogo_porta(PORTA_E), leds[2], false);
-    fio(e1, (Vector2){r.x + 590 * s, e2.y - 10 * s}, leds[1]);
-    fio(ent[2], (Vector2){r.x + 590 * s, e2.y + 10 * s}, p->chaves[2]);
-    fio(e2, (Vector2){r.x + 770 * s, e2.y}, saida);
+    fio(e, e1, (Vector2){r.x + 590 * s, e2.y - 10 * s}, leds[1], true);
+    fio(e, ent[2], (Vector2){r.x + 590 * s, e2.y + 10 * s}, p->chaves[2], true);
+    fio(e, e2, (Vector2){r.x + 770 * s, e2.y}, saida, false);
     lampada_saida(e, (Vector2){r.x + 790 * s, e2.y}, saida);
 }
 
@@ -220,17 +245,53 @@ static void desenha_painel2(const Estado *e, Rectangle r) {
     ui_texto(e, "B", (Vector2){b.x - 30 * s, b.y - 10 * s}, 20 * s, cor_sinal(ent[1]));
     Vector2 p1 = porta(e, (Vector2){r.x + 220 * s, (a.y + b.y) * 0.5f}, dialogo_porta(p->escolha[0]), leds[0],
                        p->cursor % 2 == 0);
-    fio(a, (Vector2){r.x + 150 * s, p1.y - 10 * s}, ent[0]);
-    fio(b, (Vector2){r.x + 150 * s, p1.y + 10 * s}, ent[1]);
+    fio(e, a, (Vector2){r.x + 150 * s, p1.y - 10 * s}, ent[0], true);
+    fio(e, b, (Vector2){r.x + 150 * s, p1.y + 10 * s}, ent[1], true);
     Vector2 nao = porta(e, (Vector2){r.x + 220 * s, r.y + 300 * s}, dialogo_porta(PORTA_NAO), leds[1], false);
-    fio((Vector2){a.x, a.y}, (Vector2){r.x + 150 * s, nao.y}, ent[0]);
+    fio(e, a, (Vector2){r.x + 150 * s, nao.y}, ent[0], true);
     Vector2 p2 = porta(e, (Vector2){r.x + 420 * s, (p1.y + nao.y) * 0.5f}, dialogo_porta(p->escolha[1]),
                        leds[2], p->cursor % 2 == 1);
-    fio(p1, (Vector2){r.x + 350 * s, p2.y - 10 * s}, leds[0]);
-    fio(nao, (Vector2){r.x + 350 * s, p2.y + 10 * s}, leds[1]);
-    fio(p2, (Vector2){r.x + 520 * s, p2.y}, saida);
+    fio(e, p1, (Vector2){r.x + 350 * s, p2.y - 10 * s}, leds[0], true);
+    fio(e, nao, (Vector2){r.x + 350 * s, p2.y + 10 * s}, leds[1], true);
+    fio(e, p2, (Vector2){r.x + 520 * s, p2.y}, saida, false);
     lampada_saida(e, (Vector2){r.x + 540 * s, p2.y}, p->resolvido || saida);
-    desenha_tabela_painel2(e, (Vector2){r.x + 620 * s, r.y + 110 * s});
+    desenha_tabela_painel2(e, (Vector2){r.x + 620 * s, r.y + 70 * s});
+}
+
+// ------------------------------------------------------------------ a ajuda (H): os cartões das portas
+// A tabela de uma porta sozinha, calculada pelo próprio circuito (um circuito de uma porta só): o cartão
+// mostra exatamente o que o painel faz.
+static void tabela_da_porta(TipoPorta tipo, int *valores) {
+    Circuito c = {.n_entradas = 2, .n_portas = 1};
+    c.portas[0] = (Porta){tipo, 0, 1};
+    for (int l = 0; l < 4; l++) { // padrão MAP: a saída da porta em cada linha (A, B)
+        bool ent[2] = {l & 1, false};
+        if (tipo != PORTA_NAO) logica_valores_da_linha(l, 2, ent);
+        valores[l] = regras_avaliar_circuito(&c, ent, NULL);
+    }
+}
+
+static void cartao_da_porta(const Estado *e, TipoPorta tipo, Rectangle b, bool destaque) {
+    static const TextoId descricao[PORTA_TOTAL] = {TXT_COLA_E, TXT_COLA_OU, TXT_COLA_XOU, TXT_COLA_NE,
+                                                   TXT_COLA_NAO};
+    int valores[4];
+    tabela_da_porta(tipo, valores);
+    manual_cartao(e, b, dialogo_porta(tipo), dialogo_texto(descricao[tipo]), tipo == PORTA_NAO, valores,
+                  destaque, ui_escala());
+}
+
+// Painel 1: as duas portas que ele tem (NÃO e E). Painel 2: a porta do encaixe escolhido, que muda junto
+// quando a pessoa troca — ela aprende a porta trocando a porta.
+static void desenha_ajuda(const Estado *e, Rectangle r) {
+    if (!e->ajuda_aberta || e->painel.resolvido) return;
+    float s = ui_escala();
+    if (e->painel.numero == 1) {
+        cartao_da_porta(e, PORTA_NAO, (Rectangle){r.x + 420 * s, r.y + 262 * s, 203 * s, 130 * s}, false);
+        cartao_da_porta(e, PORTA_E, (Rectangle){r.x + 633 * s, r.y + 262 * s, 203 * s, 130 * s}, false);
+    } else {
+        TipoPorta escolhida = (TipoPorta)e->painel.escolha[e->painel.cursor % 2];
+        cartao_da_porta(e, escolhida, (Rectangle){r.x + 620 * s, r.y + 222 * s, 216 * s, 130 * s}, true);
+    }
 }
 
 void circuito_desenha(const Estado *e) {
@@ -249,8 +310,11 @@ void circuito_desenha(const Estado *e) {
     TextoId rodape = p->resolvido     ? TXT_PAINEL_RESOLVIDO // as teclas ficam na barra do rodapé (teclas.c)
                      : p->numero == 1 ? TXT_PAINEL_OBJETIVO1
                                       : TXT_PAINEL_OBJETIVO2;
-    ui_texto(e, dialogo_texto(rodape), (Vector2){r.x + 24 * s, r.y + r.height - 40 * s}, 18 * s,
-             p->resolvido ? COR_AMBAR : Fade(COR_FOSFORO, 0.8f));
+    float largura = (p->numero == 1 ? 380 : 570) * s; // à esquerda dos cartões da ajuda
+    ui_texto_quebrado(e, dialogo_texto(rodape), (Vector2){r.x + 24 * s, r.y + r.height - 58 * s}, largura,
+                      18 * s, p->resolvido ? COR_AMBAR : Fade(COR_FOSFORO, 0.8f));
+    if (!p->resolvido) manual_selo_ajuda(e, r.x + r.width - 24 * s, r.y + 18 * s, s);
+    desenha_ajuda(e, r);
 }
 
 // ================================================================== desenho 3D: LEDs no gabinete

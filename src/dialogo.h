@@ -166,6 +166,8 @@ typedef enum {
     TXT_COLA_E,
     TXT_COLA_OU,
     TXT_COLA_SE,
+    TXT_COLA_XOU, // as duas portas que só existem no painel 2
+    TXT_COLA_NE,
     TXT_COLA_COMPARE,
     TXT_COLA_SUA_FRASE,
     TXT_COLA_SUA_TABELA,
