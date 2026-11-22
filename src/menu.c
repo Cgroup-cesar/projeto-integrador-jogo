@@ -52,13 +52,13 @@ static void texto_osd(const Estado *e, const char *texto, Vector2 pos, float tam
     ui_texto(e, texto, pos, tamanho, (Color){232, 255, 240, 255});
 }
 
-// A tela de início é uma gravação do SNI: ▶ PLAY e SP ●●● no alto, ● REC com o contador e a data da fita.
+// A tela de início é uma gravação do SNI: ▶ PLAY e PE ●●● no alto, ● REC com o contador e a data da fita.
 static void marcas_da_fita(const Estado *e) {
     float s = ui_escala(), w = GetScreenWidth(), t = 20 * s, m = 34 * s;
     DrawTriangle((Vector2){m, m + 2 * s}, (Vector2){m, m + t - 2 * s}, (Vector2){m + t * 0.7f, m + t * 0.5f},
                  (Color){232, 255, 240, 255});
     texto_osd(e, "PLAY", (Vector2){m + t, m}, t);
-    texto_osd(e, "SP", (Vector2){m + t + 90 * s, m}, t);
+    texto_osd(e, "PE", (Vector2){m + t + 90 * s, m}, t);
     for (int i = 0; i < 3; i++) // padrão MAP: as três bolinhas da velocidade da fita
         DrawCircleV((Vector2){m + t + 126 * s + i * 14 * s, m + t * 0.5f}, 4 * s, Fade(RAYWHITE, 0.85f));
     char contador[16];
