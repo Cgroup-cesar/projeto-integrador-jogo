@@ -207,6 +207,14 @@ static const char *const TEXTOS[TXT_TOTAL] = {
     [TXT_PLACA_POSTO] = "BLOCO 85", // placas pintadas em estêncil nas paredes (cenario.c)
     [TXT_PLACA_RESTRITA] = "ÁREA RESTRITA",
     [TXT_PLACA_ARQUIVO] = "ARQUIVO",
+    // Filtro VHS (F1 alterna): "%d/%d · nome" aparece no canto por alguns segundos.
+    [TXT_VHS_ROTULO] = "FILTRO VHS %d/%d · %s",
+    [TXT_VHS_DESLIGADO] = "DESLIGADO",
+    [TXT_VHS_ORIGINAL] = "ORIGINAL",
+    [TXT_VHS_FITA_CASEIRA] = "FITA CASEIRA (1985)",
+    [TXT_VHS_FITA_GASTA] = "FITA GASTA",
+    [TXT_VHS_MONITOR_CRT] = "MONITOR CRT",
+    [TXT_VHS_VIGILANCIA] = "CÂMERA DE VIGILÂNCIA",
 };
 
 const char *dialogo_texto(TextoId id) {

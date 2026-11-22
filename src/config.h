@@ -16,16 +16,35 @@
 #define DT_MAXIMO      0.05f // limita o dt para um travamento não teletransportar ninguém
 
 // ---------------------------------------------------------------- filtro VHS (sentido, não visto)
-#define VHS_LIGADO_AO_INICIAR 1
-#define VHS_RUIDO             0.04f
-#define VHS_ABERRACAO_PX      1.5f
-#define VHS_SCANLINES         0.06f
-#define VHS_VINHETA           0.35f
-#define VHS_WOBBLE_PX         2.5f
+// Cada preset é uma linha; a ordem das colunas é a de ParametroVhs em vhs.c. O preset 0 é "desligado".
+// Limites para não atrapalhar o jogo: ruído ≤ 0,08, cintilação ≤ 0,05 e curvatura ≤ 0,15 (cantos só).
+// Colunas: ruído · aberração cromática (px) · scanlines · vinheta · wobble (px) · sangramento de cor (px) ·
+//          tracking (0..1) · saturação (1 = normal) · tom (+ quente, − verde) · curvatura · cintilação ·
+//          rolagem (faixa de ruído que sobe pela tela, 0..1) · brilho (1 = normal; ≥ 0,85)
+#define VHS_PRESET_PADRAO 1 // com qual preset o jogo abre (F1 alterna entre eles)
+#define VHS_PARAMETROS    13
+// clang-format off
+#define VHS_PRESETS {                                                                                        \
+    {0.00f, 0.0f, 0.00f, 0.00f, 0.0f, 0.0f, 0.00f, 1.00f,  0.00f, 0.00f, 0.00f, 0.00f, 1.00f}, /* desligado (sem shader) */ \
+    {0.04f, 1.5f, 0.06f, 0.35f, 2.5f, 0.0f, 0.00f, 1.00f,  0.00f, 0.00f, 0.00f, 0.00f, 1.00f}, /* original (v0) */         \
+    {0.05f, 1.2f, 0.05f, 0.40f, 3.0f, 1.2f, 0.60f, 0.85f,  0.60f, 0.00f, 0.02f, 0.00f, 0.88f}, /* fita caseira */ \
+    {0.08f, 2.5f, 0.07f, 0.45f, 5.0f, 3.5f, 1.00f, 0.65f,  0.25f, 0.00f, 0.05f, 1.00f, 1.00f}, /* fita gasta */           \
+    {0.03f, 1.0f, 0.14f, 0.50f, 1.5f, 1.0f, 0.00f, 0.90f,  0.00f, 0.12f, 0.03f, 0.00f, 1.00f}, /* monitor CRT */          \
+    {0.06f, 0.8f, 0.10f, 0.45f, 2.0f, 1.5f, 0.50f, 0.15f, -0.60f, 0.06f, 0.02f, 0.50f, 1.00f}, /* câmera de vigilância */ \
+}
+// clang-format on
+#define VHS_UNIFORMES (VHS_PARAMETROS + 3) // + tempo, resolução e interferência
+// Interferência: uma sombra escura e semitransparente passa pela tela quando a criatura chega perto (só nos
+// corredores, com o VHS ligado). Pensada para ser percebida, não para atrapalhar: aparece de uma vez a LONGE e cresce até PERTO.
+#define VHS_INTERFERENCIA_LONGE  10.0f // metros: a partir daqui já aparece
+#define VHS_INTERFERENCIA_PERTO  2.5f  // metros: no máximo
+#define VHS_INTERFERENCIA_INICIO 0.25f // 0..1: o nível ao cruzar LONGE (já dá para notar)
+#define VHS_INTERFERENCIA_MAX    0.6f  // 0..1: o teto (colado na criatura)
+#define VHS_INTERFERENCIA_VEL    3.0f  // quão rápido acompanha (1/s)
 
 // ---------------------------------------------------------------- debug e modos
 #define TECLAS_DEBUG                                                                                         \
-    1 // F1 VHS · F2 pular fase · F3 estado da criatura · F5 reiniciar · F9 resposta · F12 captura
+    1 // F1 preset do VHS · F2 pular fase · F3 estado da criatura · F5 reiniciar · F9 resposta · F12 captura
 #define FEIRA_INATIVIDADE_S 90.0f // no modo feira (--feira), volta ao menu após esse tempo sem nenhuma tecla
 #define FIM_VOLTA_MENU_S    20.0f // a tela de fim volta sozinha ao menu
 #define FIM_RUIM_TEXTO_S    8.2f  // final ruim: quando o texto e o "por quê" aparecem (depois do susto)
@@ -43,7 +62,7 @@
 // ---------------------------------------------------------------- jogador
 #define JOGADOR_RAIO            0.30f
 #define JOGADOR_VEL_ANDAR       2.5f
-#define JOGADOR_VEL_CORRER      4.2f
+#define JOGADOR_VEL_CORRER      4.6f // +10% (era 4,2)
 #define JOGADOR_FOLEGO_MAX      4.0f // segundos de corrida
 #define JOGADOR_FOLEGO_RECUPERA 0.8f // fôlego recuperado por segundo andando/parado
 #define SENSIBILIDADE_MOUSE     0.0025f
@@ -145,8 +164,9 @@
 #define HALO_LAMPADA_ALFA       0.35f // força do brilho (some com a névoa)
 
 // ---------------------------------------------------------------- luz e névoa
-#define LUZ_AMBIENTE    0.06f
-#define NEVOA_DENSIDADE 0.085f
+#define LUZ_AMBIENTE       0.045f // era 0,06: o escuro pesa mais, mas a lanterna e os holofotes não mudaram
+#define NEVOA_DENSIDADE    0.095f // era 0,085: o fundo do corredor some um pouco antes
+#define LUZ_CORREDOR_GANHO 0.8f   // força das lâmpadas dos corredores (a luz fraca no jogador fica igual)
 // Holofotes da cela (luzes A e B): ficam à frente e acima do Precursor, apontados para o peito dele.
 #define HOLOFOTE_ABERTURA_GRAUS 30.0f // meia-abertura do cone; fora dele sobram 15% (a cela não fica preta)
 #define HOLOFOTE_GANHO          1.6f  // compensa a luz que deixou de se espalhar pela cela
