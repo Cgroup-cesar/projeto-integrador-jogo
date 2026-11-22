@@ -325,6 +325,11 @@ static void testa_nome_edita(void) {
     CHECK(regras_nome_edita(pequeno, sizeof(pequeno), 16, 'a') &&
           regras_nome_edita(pequeno, sizeof(pequeno), 16, 'b'));
     CHECK(!regras_nome_edita(pequeno, sizeof(pequeno), 16, 0xE7)); // o "ç" (2 bytes) não cabe mais
+    char minusculo[40] = "";
+    const int digitado[] = {'j', 'o', 0xE3, 'o', ' ', 0xE9, 'd', 'e', 'r'}; // "joão éder"
+    for (int i = 0; i < 9; i++) // padrão FOLD: cada letra digitada entra no nome
+        regras_nome_edita(minusculo, sizeof(minusculo), 16, digitado[i]);
+    CHECK(strcmp(minusculo, "Jo\xC3\xA3o \xC3\x89" "der") == 0); // "João Éder": só o começo de cada palavra
 }
 
 // ================================================================== texturas procedurais (materiais.c)

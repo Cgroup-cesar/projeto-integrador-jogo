@@ -4,56 +4,57 @@
 
 // ================================================================== falas (legendas)
 // Marcadores: {NOME}, {PROF}, {prof} e {masculino|feminino} (veja dialogo_personaliza).
-// O General Varela verdadeiro NUNCA diz o nome do jogador; quando uma fala do rádio usa {NOME}, é o
-// Precursor imitando a voz dele (o plot twist). Não use {NOME} nas falas do Varela verdadeiro.
+// O General Varela verdadeiro chama sempre pelo título e pelo nome: "{PROF} {NOME}" (Professora Inês).
+// Quando o rádio chama SÓ pelo nome ("{NOME}", sem o título), é o Precursor imitando a voz dele: é a pista do
+// plot twist (o bilhete do Arquivo avisa). Não use {NOME} sozinho nas falas do Varela verdadeiro.
 #define V FALANTE_VARELA
 #define J FALANTE_JOGADOR
 
 static const Legenda INTRO_INTERFONE[] = {
     // a carta de boas-vindas, pelo rádio
-    {"Olá, {prof}. General Varela. Bem-vind{o|a} ao Programa Precursor.", 4.5f, V},
+    {"Olá, {PROF} {NOME}. General Varela. Bem-vind{o|a} ao Programa Precursor.", 5.0f, V},
     {"Seu trabalho: entender o que ele diz. E nada de política, religião... muito menos futebol.", 5.5f, V},
     {"Ele aprende rápido. Rápido demais. Vai tentar te enganar.", 4.0f, V},
     {"Uma regra só: nunca deixe as luzes se apagarem. Estou no rádio. Qualquer coisa, grite.", 5.5f, V},
 };
 static const Legenda APOS_R1[] = {
-    {"'Nós não somos perigo.' ...É o que todos dizem.", 3.5f, V},
+    {"'Nós não somos perigo.' ...É o que todos dizem, {PROF} {NOME}.", 4.0f, V},
 };
 static const Legenda INICIO_S1[] = {
-    {"As luzes caíram. O gerador fica no fim do corredor.", 3.5f, V},
+    {"As luzes caíram, {PROF} {NOME}. O gerador fica no fim do corredor.", 4.0f, V},
     {"Vá. E não corra: ele ouve.", 3.0f, V},
 };
 static const Legenda FIM_S1[] = {
-    {"Luzes de volta. Ele está na cela, como se nunca tivesse saído. Volte.", 4.5f, V},
+    {"Luzes de volta, {PROF} {NOME}. Ele está na cela, como se nunca tivesse saído. Volte.", 5.0f, V},
 };
 static const Legenda APOS_R2[] = {
-    {"'Você e nós falamos'... {PROF}, ele está aprendendo a nossa língua.", 4.5f, V},
+    {"'Você e nós falamos'... {PROF} {NOME}, ele está aprendendo a nossa língua.", 5.0f, V},
 };
 static const Legenda INICIO_S2[] = {
-    {"De novo. O painel da contenção fica no Arquivo.", 3.5f, V},
+    {"De novo, {PROF} {NOME}. O painel da contenção fica no Arquivo.", 4.0f, V},
     {"Eu vou descer até a cela. Se eu não voltar...", 3.5f, V},
 };
 static const Legenda FIM_S2[] = {
-    // já é o Precursor imitando o Varela: diz o nome
+    // já é o Precursor imitando o Varela: só o nome, sem o título (a pista)
     {"Contenção estável, {NOME}. Pode voltar.", 3.5f, V},
 };
 static const Legenda APOS_R3[] = {
-    // o Precursor imitando o Varela
+    // o Precursor imitando o Varela: só o nome, sem o título (a pista)
     {"{NOME}, ele quer conversar. Transmita: se você falar, a porta abre.", 4.5f, V},
     {"Confie em mim.", 2.5f, V},
 };
 static const Legenda FIM_BOM_FALAS[] = {
-    {"...{PROF}? É o Varela. O de verdade. O que você disse a ele?", 4.5f, V},
+    {"...{PROF} {NOME}? É o Varela. O de verdade. O que você disse a ele?", 5.0f, V},
     {"Nada que pudesse ser verdade.", 3.5f, J},
 };
 static const Legenda PORTA_TRANCADA[] = {
-    {"A porta fica trancada enquanto você trabalha, {prof}. Volte ao console.", 4.0f, V},
+    {"A porta fica trancada enquanto você trabalha, {PROF} {NOME}. Volte ao console.", 4.5f, V},
 };
 static const Legenda RODADA_RECOMECA[] = {
-    {"Vidro substituído. Recomece a leitura, {prof}. Com mais cuidado.", 4.0f, V},
+    {"Vidro substituído. Recomece a leitura, {PROF} {NOME}. Com mais cuidado.", 4.5f, V},
 };
 static const Legenda PEGO_FALAS[] = {
-    {"...{PROF}? {PROF}! Responda! — Ele voltou ao começo do corredor. Tente de novo.", 4.5f, V},
+    {"...{PROF} {NOME}? Responda! — Ele voltou ao começo do corredor. Tente de novo.", 4.5f, V},
 };
 
 #undef V
@@ -85,7 +86,7 @@ const Legenda *dialogo_falas(BlocoFalas bloco, int *n) {
 static const char *const INTRO[INTRO_LINHAS] = {
     "CHÃ DE ALEGRIA, PERNAMBUCO — AGOSTO DE 1985.",
     "Há dois meses, algo desceu da nave que paira sobre a cidade.",
-    "Você é {prof} de linguística na UFPE. Nunca traduziu nada vivo.",
+    "Você é {o|a} {PROF} {NOME}, de linguística da UFPE. Nunca traduziu nada vivo.",
 };
 
 const char *dialogo_intro(int linha) {
@@ -171,11 +172,11 @@ static const char *const TEXTOS[TXT_TOTAL] = {
     [TXT_PAINEL_CHAVE_LIGADA] = "LIGADA",
     [TXT_PAINEL_CHAVE_DESLIGADA] = "DESLIGADA",
     [TXT_DIARIO] = // o bilhete do Varela verdadeiro, no Arquivo: a pista do final bom
-    "Ele aprende as nossas vozes. Eu nunca te chamo pelo nome: se ouvir seu nome no rádio, não sou eu. "
+    "Ele aprende as nossas vozes. Eu nunca te chamo só pelo nome: se o rádio te chamar assim, não sou eu. "
     "Ele só age sobre o que PODE ser verdade. Dê a ele uma frase que nunca possa ser. — V.",
     [TXT_DIARIO_FECHAR] = "E ou Esc — fechar",
     [TXT_FIM_RUIM_ACEITA] = "TRANSMISSÃO ACEITA.",
-    [TXT_FIM_RUIM_OBRIGADO] = "OBRIGADO, {NOME}.", // ele nunca ouviu esse nome de você
+    [TXT_FIM_RUIM_OBRIGADO] = "OBRIGADO, {NOME}.", // só o nome, sem o título: como o rádio falso
     [TXT_FIM_RUIM_TELA] = "FINAL 2 DE 3 — A PORTA. Você abriu a porta para ele. Você nunca saiu do bloco. "
                           "Em agosto de 1985, todas as TVs de Pernambuco exibiram o mesmo símbolo.",
     [TXT_FIM_BOM_TELA] =
@@ -189,6 +190,7 @@ static const char *const TEXTOS[TXT_TOTAL] = {
     [TXT_FIM_ENTER] = "Pressione ENTER",
     [TXT_FIM_RODAPE] = "Projeto Integrador PIF · nome provisório",
     [TXT_FIM_JOGADOR] = "{PROF} {NOME}",
+    [TXT_TERMINAL_OPERADOR] = "{OPERADOR|OPERADORA}: {PROF} {NOME}", // no alto do analisador
     [TXT_ID_AVISO_NOME] = "Seu nome fica só nesta partida: nada é gravado e ele é apagado ao voltar ao menu.",
     [TXT_PLACA_POSTO] = "BLOCO 85", // placas pintadas em estêncil nas paredes (cenario.c)
     [TXT_PLACA_RESTRITA] = "ÁREA RESTRITA",

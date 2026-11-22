@@ -35,7 +35,8 @@ não tem palavras: é estrutura pura, verdadeiro e falso. É lógica.
 
 **Twist.** Cada tradução correta ensina a nossa língua ao Precursor. No fim da S2 ele já sabe imitar vozes: quem
 fala no rádio não é mais o General Varela, é ele, empurrando o jogador para a frase que o liberta. O jogador pode
-perceber: o Varela verdadeiro **nunca** o chama pelo nome; o falso chama.
+perceber: o Varela verdadeiro chama **sempre** pelo título e pelo nome ("Professora Inês"); o falso chama **só
+pelo nome** ("Inês"), íntimo demais.
 
 **Fluxo de fases:**
 `MENU → INTRO → R1 → S1 → R2 → S2 → R3 → RESPOSTA_FINAL → FIM_SILENCIO | FIM_PORTA | FIM_VERDADE → (20 s) → MENU`.
@@ -47,8 +48,8 @@ perceber: o Varela verdadeiro **nunca** o chama pelo nome; o falso chama.
 - **{O professor|A professora}** (jogador): linguista da UFPE, civil, nunca traduziu nada vivo e nunca segurou uma
   arma; é por isso que não há combate. Gênero e nome são escolhidos no início. Não tem modelo visível.
 - **General Varela**: fala só pelo rádio (legenda `GEN. VARELA (rádio)` + voz gravada). Sobreviveu ao apagão de
-  15 de junho e é o único aliado do jogador. Seco, cansado, honesto. **Nunca diz o nome do jogador**, só
-  "professor" ou "professora".
+  15 de junho e é o único aliado do jogador. Seco, cansado, honesto, formal: chama **sempre** pelo título e
+  pelo nome ("Professora Inês", "Professor João"), nunca só pelo nome.
 - **O Precursor**: humanoide de ~2,6 m, magro demais, sem olhos, lâminas finas no lugar dos dedos. Move-se com
   pausas e trancos. "Parece que tenta se comunicar conosco. Ou parece que quer que acreditemos nisso." A partir do
   fim da S2, imita a voz do Varela no rádio (a voz fica mais grave, com canto ao fundo, e a legenda falha).
@@ -61,7 +62,9 @@ perceber: o Varela verdadeiro **nunca** o chama pelo nome; o falso chama.
 
 **Marcadores nos textos.** Os textos de `src/dialogo.c` podem ter marcadores, trocados na hora de mostrar:
 `{NOME}` (o nome digitado), `{PROF}` ("Professor"/"Professora"), `{prof}` ("professor"/"professora") e
-`{masculino|feminino}` para qualquer outra palavra que muda com o gênero (ex.: `viv{o|a}`).
+`{masculino|feminino}` para qualquer outra palavra que muda com o gênero (ex.: `viv{o|a}`). O nome aparece ao
+longo de toda a partida, sempre com o título (`{PROF} {NOME}`); só o rádio falso e a criatura usam o nome
+sozinho. O campo do nome põe a primeira letra de cada palavra em maiúscula ("inês" vira "Inês").
 
 **INTRO (~35 s).**
 
@@ -74,29 +77,32 @@ perceber: o Varela verdadeiro **nunca** o chama pelo nome; o falso chama.
 2. **Texto datilografado** (um clique de máquina de escrever por letra; ENTER pula):
    1. "CHÃ DE ALEGRIA, PERNAMBUCO — AGOSTO DE 1985."
    2. "Há dois meses, algo desceu da nave que paira sobre a cidade."
-   3. "Você é {prof} de linguística na UFPE. Nunca traduziu nada vivo."
+   3. "Você é {o|a} {PROF} {NOME}, de linguística da UFPE. Nunca traduziu nada vivo."
 3. **A carta** (fade para a sala; rádio, General Varela):
-   - "Olá, {prof}. General Varela. Bem-vind{o|a} ao Programa Precursor."
+   - "Olá, {PROF} {NOME}. General Varela. Bem-vind{o|a} ao Programa Precursor."
    - "Seu trabalho: entender o que ele diz. E nada de política, religião... muito menos futebol."
    - "Ele aprende rápido. Rápido demais. Vai tentar te enganar."
    - "Uma regra só: nunca deixe as luzes se apagarem. Estou no rádio. Qualquer coisa, grite."
 
 **Rodadas:** sem mudança (o mesmo terminal ANALISADOR SEMÂNTICO SNI-85, as mesmas frases e opções).
 
-**Falas entre fases.** (F) = o Varela falso: a voz do rádio mais grave, com canto ao fundo, e a legenda falhando.
+**Falas entre fases.** (F) = o Varela falso: chama só pelo nome, sem o título; a voz do rádio fica mais grave,
+com canto ao fundo, e a legenda falha.
 
-- Após R1: "'Nós não somos perigo.' ...É o que todos dizem." Apagão → S1.
-- Início de S1: "As luzes caíram. O gerador fica no fim do corredor. Vá. E não corra: ele ouve."
-- Fim de S1: "Luzes de volta. Ele está na cela, como se nunca tivesse saído. Volte."
-- Após R2: "'Você e nós falamos'... {PROF}, ele está aprendendo a nossa língua." Apagão maior → S2.
-- Início de S2: "De novo. O painel da contenção fica no Arquivo. Eu vou descer até a cela. Se eu não voltar..."
+- Após R1: "'Nós não somos perigo.' ...É o que todos dizem, {PROF} {NOME}." Apagão → S1.
+- Início de S1: "As luzes caíram, {PROF} {NOME}. O gerador fica no fim do corredor. Vá. E não corra: ele ouve."
+- Fim de S1: "Luzes de volta, {PROF} {NOME}. Ele está na cela, como se nunca tivesse saído. Volte."
+- Após R2: "'Você e nós falamos'... {PROF} {NOME}, ele está aprendendo a nossa língua." Apagão maior → S2.
+- Início de S2: "De novo, {PROF} {NOME}. O painel da contenção fica no Arquivo. Eu vou descer até a cela. Se eu
+  não voltar..."
   (chiado; o rádio cai).
 - Fim de S2 (F): "Contenção estável, {NOME}. Pode voltar."
 - Após R3 (F): "{NOME}, ele quer conversar. Transmita: se você falar, a porta abre. Confie em mim." O Precursor
   encosta a mão no vidro e o terminal mostra **RESPONDA.**
-- Porta trancada: "A porta fica trancada enquanto você trabalha, {prof}. Volte ao console."
-- Vidro rompido: "Vidro substituído. Recomece a leitura, {prof}. Com mais cuidado."
-- Pego: "...{PROF}? {PROF}! Responda! — Ele voltou ao começo do corredor. Tente de novo."
+- Porta trancada: "A porta fica trancada enquanto você trabalha, {PROF} {NOME}. Volte ao console."
+- Vidro rompido: "Vidro substituído. Recomece a leitura, {PROF} {NOME}. Com mais cuidado."
+- Pego: "...{PROF} {NOME}? Responda! — Ele voltou ao começo do corredor. Tente de novo."
+- No alto do terminal: "{OPERADOR|OPERADORA}: {PROF} {NOME}".
 
 ---
 
@@ -110,7 +116,7 @@ história para quem quiser.
   > governo nega que haja feridos no bloco militar."
 - **S2, bilhete do Varela** (no Arquivo, no caminho do painel 2, com luz de destaque). Substitui o diário da
   Dra. Sampaio:
-  > "Ele aprende as nossas vozes. Eu nunca te chamo pelo nome: se ouvir seu nome no rádio, não sou eu. Ele só age
+  > "Ele aprende as nossas vozes. Eu nunca te chamo só pelo nome: se o rádio te chamar assim, não sou eu. Ele só age
   > sobre o que PODE ser verdade. Dê a ele uma frase que nunca possa ser. — V."
 
   Lido o bilhete, o terminal passa a mostrar no canto:
@@ -134,12 +140,12 @@ história para quem quiser.
 Cada final diz claramente o que aconteceu com o jogador e mostra "FINAL n DE 3".
 
 **FINAL 1 DE 3, O SILÊNCIO.** Os símbolos se quebram, o Precursor congela e o canto para (2 s de silêncio total).
-O rádio volta com a voz normal: "...{PROF}? É o Varela. O de verdade. O que você disse a ele?" Jogador (texto):
+O rádio volta com a voz normal: "...{PROF} {NOME}? É o Varela. O de verdade. O que você disse a ele?" Jogador (texto):
 "Nada que pudesse ser verdade." Tela: "FINAL 1 DE 3 — O SILÊNCIO. Você calou o Precursor e saiu viv{o|a} de Chã de
 Alegria. Às 22:00, a nave foi embora. Oficialmente, nada desceu dela."
 
 **FINAL 2 DE 3, A PORTA.** "TRANSMISSÃO ACEITA." Os símbolos do vidro se reorganizam em português legível:
-"OBRIGADO, {NOME}." (ele nunca ouviu esse nome da sua boca). O vidro se dissolve, as luzes morrem, a silhueta fica
+"OBRIGADO, {NOME}." (só o nome, sem o título, como o rádio falso). O vidro se dissolve, as luzes morrem, a silhueta fica
 a 1 m do jogador e vem o jumpscare final. Tela: "FINAL 2 DE 3 — A PORTA. Você abriu a porta para ele. Você nunca
 saiu do bloco. Em agosto de 1985, todas as TVs de Pernambuco exibiram o mesmo símbolo."
 

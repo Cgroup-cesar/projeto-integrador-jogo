@@ -479,6 +479,14 @@ static int conta_letras(const char *texto) {
     return n;
 }
 
+// Primeira letra de cada palavra em maiúscula: "inês" vira "Inês" (o nome aparece como "Professora Inês").
+// No Latin-1, as minúsculas acentuadas (à a þ, menos ÷) ficam 0x20 acima das maiúsculas, como no ASCII.
+static int maiuscula(int codigo) {
+    if (codigo >= 'a' && codigo <= 'z') return codigo - 0x20;
+    if (codigo >= 0xE0 && codigo <= 0xFE && codigo != 0xF7) return codigo - 0x20;
+    return codigo;
+}
+
 // [REQ:PURA-regras_nome_edita] edita o nome digitado no início (letras com acento, Backspace e limite)
 bool regras_nome_edita(char *nome, size_t tamanho, int max_letras, int codigo) {
     size_t n = strlen(nome);
@@ -492,6 +500,7 @@ bool regras_nome_edita(char *nome, size_t tamanho, int max_letras, int codigo) {
     }
     bool espaco_sobrando = codigo == ' ' && (n == 0 || nome[n - 1] == ' ');
     if (!aceita_no_nome(codigo) || espaco_sobrando || conta_letras(nome) >= max_letras) return false;
+    if (n == 0 || nome[n - 1] == ' ') codigo = maiuscula(codigo); // começo de palavra
     char utf8[2] = {(char)codigo, 0};
     size_t b = 1;
     if (codigo >= 0x80) { // de U+0080 a U+07FF, o UTF-8 usa 2 bytes: 110xxxxx 10xxxxxx

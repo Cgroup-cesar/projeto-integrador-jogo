@@ -113,7 +113,7 @@ Não aplicado: "commits pequenos" (a especificação manda um commit por marco n
 
 **Falta:** testar a digitação à mão (acentos com teclado ABNT2, com e sem a fonte VT323), no Linux e no Windows; atualizar o fluxo de fases na especificação (só humanos editam).
 
-**Substituído na junção com a história nova (`feat/historia`):** a `FASE_NOME` e o `tela_nome.c` saíram. Na história nova quem joga é o professor ou a professora, e as perguntas ("Professor ou professora?" e o nome) viraram etapas da intro, em `src/identidade.c`. A regra de privacidade continua (zerado no menu e na partida nova, mantido nos recomeços, conferido no `--smoke`). O nome não aparece mais no terminal, por causa do plot twist do rádio. Ver as decisões 80 a 84.
+**Substituído na junção com a história nova (`feat/historia`):** a `FASE_NOME` e o `tela_nome.c` saíram. Na história nova quem joga é o professor ou a professora, e as perguntas ("Professor ou professora?" e o nome) viraram etapas da intro, em `src/identidade.c`. A regra de privacidade continua (zerado no menu e na partida nova, mantido nos recomeços, conferido no `--smoke`). O nome aparece sempre com o título ("Professora Inês"), inclusive no terminal; só o rádio falso chama pelo nome sozinho. Ver as decisões 80 a 84.
 
 ## Texturas e ambientação do mapa
 
