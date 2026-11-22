@@ -324,8 +324,12 @@ static void desenha_textos_fim(const Estado *e) {
             char texto[96];
             dialogo_personaliza(&e->ident, dialogo_texto(TXT_FIM_RUIM_OBRIGADO), texto, sizeof(texto));
             Vector2 m = ui_mede(e, texto, 44 * s);
-            float tremor = sinf(t * 30.0f) * 2.0f * s;
-            ui_texto(e, texto, (Vector2){tela.x - m.x * 0.5f + tremor, tela.y - m.y * 0.5f}, 44 * s,
+            float tremor = sinf(t * 30.0f) * 2.0f * s, margem = 40 * s;
+            // Segue a criatura, mas sem sair da tela: a projeção muda com o formato da tela (16:9, 16:10) e
+            // com para onde a câmera olha, e o texto chegava a ficar cortado no topo.
+            float x = Clamp(tela.x - m.x * 0.5f, margem, GetScreenWidth() - margem - m.x);
+            float y = Clamp(tela.y - m.y * 0.5f, 110 * s, GetScreenHeight() * 0.5f - m.y);
+            ui_texto(e, texto, (Vector2){x + tremor, y}, 44 * s,
                      Fade(COR_FOSFORO, fminf(1.0f, (t - 2.2f) * 1.5f)));
         }
         if (t > FIM_RUIM_TEXTO_S) desenha_texto_e_porque(e, tela, 220 * s);
