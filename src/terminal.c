@@ -313,8 +313,9 @@ static void conectivo_da_cola(const Estado *e, int indice, Rectangle b, float s)
 static void sua_tabela_na_cola(const Estado *e, Rectangle b, float s) {
     const Rodada *r = &e->rod;
     const DadosRodada *d = rodadas_dados(r->numero);
-    DrawRectangleRounded(b, 0.08f, 4, Fade(COR_AMBAR, 0.12f));
-    DrawRectangleRoundedLinesEx(b, 0.08f, 4, 2.0f * s, COR_AMBAR);
+    DrawRectangleGradientV((int)b.x, (int)b.y, (int)b.width, (int)b.height, Fade(COR_AMBAR, 0.16f),
+                           Fade(COR_AMBAR, 0.04f));
+    DrawRectangleLinesEx(b, 1.5f * s, COR_AMBAR);
     char titulo[48];
     if (d->n_colunas > 1)
         snprintf(titulo, sizeof(titulo), dialogo_texto(TXT_COLA_SUA_FRASE), r->coluna + 1);
@@ -338,7 +339,7 @@ static void desenha_cola(const Estado *e) {
     // junto.
     float g = escala(), livre = GetScreenWidth() - 680 * g, s = g * fminf(1.0f, livre / (600 * g));
     Rectangle c = {24 * g, 66 * g, livre, 360 * s}; // abaixo da barra de sanidade (vhs/sanidade.c)
-    ui_painel(c, COR_AMBAR);
+    crt_painel(e, c, COR_AMBAR, false); // o manual: mesma moldura de monitor, com a borda âmbar
     ui_texto(e, dialogo_texto(TXT_COLA_TITULO), (Vector2){c.x + 16 * s, c.y + 12 * s}, 17 * s, COR_AMBAR);
     float bh = 136 * s, faixa = 118 * s, x0 = c.x + 16 * s + faixa + 12 * s;
     float bw = (c.x + c.width - 16 * s - x0 - 12 * s) * 0.5f;
@@ -351,7 +352,7 @@ static void desenha_cola(const Estado *e) {
         const char *dica = dialogo_texto(TXT_COLA_COMPARE);
         float t = 15 * s, cabe = c.width - 32 * s, mede = ui_mede(e, dica, t).x;
         if (mede > cabe) t *= cabe / mede;
-        ui_texto(e, dica, (Vector2){c.x + 16 * s, c.y + c.height - 26 * s}, t, COR_FOSFORO);
+        ui_texto(e, dica, (Vector2){c.x + 16 * s, c.y + c.height - 26 * s}, t, COR_CRT_APAGADO);
     }
 }
 
