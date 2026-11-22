@@ -38,8 +38,8 @@
 // ---------------------------------------------------------------- sanidade (barra no topo e grão na tela)
 // Cai com a criatura perto (só nos corredores), volta devagar enquanto se joga e volta muito ao concluir
 // tarefas. Não mata nem muda regras. A barra fica fixa no topo (SANIDADE e a porcentagem).
-// O grão tem duas fontes, combinadas com teto: a PROXIMIDADE (na hora: um pouco já a SANIDADE_RAIO, cresce
-// até SANIDADE_PERTO) e a SANIDADE baixa (memória: fica depois da fuga e some quando ela volta).
+// O efeito na tela (cansaço + fita VHS, em vhs.c) tem força linear: 1 − sanidade/100 (100% → 0, 99% → 0,01,
+// 20% → 0,8, 0% → 1). A criatura age por meio da sanidade, que já cai a partir de SANIDADE_RAIO.
 #define SANIDADE_MAX             100.0f
 #define SANIDADE_RAIO            10.0f // metros: daqui para dentro a criatura abala (e o grão aparece)
 #define SANIDADE_PERTO           2.5f  // metros: daqui para dentro, queda e grão no máximo
@@ -52,11 +52,19 @@
 #define SANIDADE_BONUS_SAIDA     40.0f // religou a energia e voltou à sala (EV_SAIDA_CONCLUIDA)
 #define SANIDADE_BONUS_CONECTIVO 10.0f // cada conectivo decifrado pela primeira vez
 #define SANIDADE_PISO_RECOMECO   60.0f // pego ou vidro rompido: recomeça com pelo menos isso (sem espiral)
-#define SANIDADE_GRAO_INICIO     85.0f // sanidade abaixo disso já deixa grão (a memória do susto)
-#define SANIDADE_GRAO_BORDA      0.35f // 0..1: intensidade do grão ao cruzar SANIDADE_RAIO (já se nota)
-#define SANIDADE_GRAO_MAX        0.30f // amplitude do grão na intensidade 1: o teto jogável (ver vhs.c)
-#define SANIDADE_GRAO_SOBE       4.0f  // quão rápido o grão cresce (1/s): acompanha a aproximação
-#define SANIDADE_GRAO_DESCE      1.2f  // quão rápido ele some (1/s): nunca some de repente
+// Os tetos abaixo valem com força 1 (sanidade 0) e são o limite jogável.
+#define SANIDADE_CURVA           0.85f // só a percepção: o shader usa força^0,85 (50% → 0,55, 20% → 0,83)
+#define SANIDADE_DESFOQUE_PX     1.8f  // cansaço: raio do desfoque nas bordas (px do render target)
+#define SANIDADE_TUNEL           0.35f // cansaço: quanto a vinheta fecha a mais (visão de túnel)
+#define SANIDADE_DESSATURA       0.25f // cansaço: perda de saturação
+#define SANIDADE_PULSO_A_S       5.3f  // cansaço: períodos das duas ondas lentas que embaçam e desembaçam
+#define SANIDADE_PULSO_B_S       3.1f  //          (somadas para não ficar regular)
+#define SANIDADE_RUIDO           0.45f // fita: ruído de luminância, proporcional ao brilho (±45% nas estrias)
+#define SANIDADE_RUIDO_PRETO     0.035f // fita: piso aditivo no preto (±1,75% de brilho): mantém as silhuetas
+#define SANIDADE_RUIDO_LARGURA_PX 4.0f // fita: o ruído é esticado na horizontal (1 linha × isso)
+#define SANIDADE_CROMA           0.03f // fita: ruído de cor, só nas sombras
+#define SANIDADE_DROPOUT         1.0f  // fita: frequência dos riscos claros (1 ≈ 2 por quadro com força 1)
+#define SANIDADE_TRACKING_PX     5.0f  // fita: tremor horizontal das linhas, só abaixo de ~25% de sanidade
 #define SANIDADE_BARRA_SOBE      3.0f  // a barra enche suave com os bônus (1/s)
 #define SANIDADE_ECO_VEL         12.0f // pontos/s: o pedaço perdido (mais escuro) alcança a barra
 #define SANIDADE_ALERTA          30.0f // abaixo disso a barra fica vermelha e pulsa

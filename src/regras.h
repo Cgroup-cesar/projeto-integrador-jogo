@@ -161,13 +161,8 @@ float regras_sanidade_passo(float s, float dist, float surgindo, bool escondido,
 float regras_sanidade_bonus(float s, EventoFase ev);
 // Bônus dos conectivos decifrados neste quadro (`agora` − `antes`, se cresceu).
 float regras_sanidade_conectivos(float s, int antes, int agora);
-// Grão pela sanidade (0..1): 0 com sanidade ≥ SANIDADE_GRAO_INICIO, 1 com sanidade 0, suave no meio.
-float regras_sanidade_grao(float s);
-// Grão pela distância (0..1): 0 fora do raio; SANIDADE_GRAO_BORDA ao cruzá-lo; sobe em linha reta até 1 em
-// SANIDADE_PERTO.
-float regras_sanidade_proximidade(float dist);
-// As duas fontes juntas (0..1): 1 − (1 − a)(1 − b). Nunca passa de 1 e nunca é menor que a maior delas.
-float regras_sanidade_intensidade(float proximidade, float s);
+// Força do efeito na tela (0..1), linear no que falta de sanidade: 1 − s/SANIDADE_MAX.
+float regras_sanidade_intensidade(float s);
 
 // ------------------------------------------------------------------ circuitos dos painéis
 typedef enum { PORTA_E, PORTA_OU, PORTA_XOU, PORTA_NE, PORTA_NAO, PORTA_TOTAL } TipoPorta;

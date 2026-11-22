@@ -47,17 +47,6 @@ float regras_sanidade_conectivos(float s, int antes, int agora) {
     return limita(s + SANIDADE_BONUS_CONECTIVO * (float)(agora - antes));
 }
 
-float regras_sanidade_grao(float s) {
-    float t = Clamp((SANIDADE_GRAO_INICIO - s) / SANIDADE_GRAO_INICIO, 0.0f, 1.0f);
-    return t * t * (3.0f - 2.0f * t); // smoothstep(INICIO, 0, s)
-}
-
-float regras_sanidade_proximidade(float dist) {
-    if (dist >= SANIDADE_RAIO) return 0.0f;
-    return Lerp(SANIDADE_GRAO_BORDA, 1.0f, perto_de(dist));
-}
-
-float regras_sanidade_intensidade(float proximidade, float s) {
-    float a = Clamp(proximidade, 0.0f, 1.0f), b = regras_sanidade_grao(s);
-    return 1.0f - (1.0f - a) * (1.0f - b);
+float regras_sanidade_intensidade(float s) {
+    return 1.0f - limita(s) / SANIDADE_MAX;
 }

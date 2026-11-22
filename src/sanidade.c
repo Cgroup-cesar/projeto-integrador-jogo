@@ -24,12 +24,6 @@ static float segue(float atual, float alvo, float sobe, float desce, float dt) {
     return atual + (alvo - atual) * fminf(1.0f, dt * vel);
 }
 
-static void atualiza_grao(Estado *e, float dist, float dt) {
-    float proximidade = regras_sanidade_proximidade(dist) * Clamp(e->cri.surgindo, 0.0f, 1.0f);
-    float alvo = regras_sanidade_intensidade(proximidade, e->sanidade) * SANIDADE_GRAO_MAX;
-    e->sanidade_grao = segue(e->sanidade_grao, alvo, SANIDADE_GRAO_SOBE, SANIDADE_GRAO_DESCE, dt);
-}
-
 // A barra desce junto com a sanidade e sobe suave nos bônus; o eco (o que acabou de ser perdido) desce
 // devagar até ela, para quem joga ver quanto a criatura tirou.
 static void atualiza_barra(Estado *e, float dt) {
@@ -51,8 +45,9 @@ void sanidade_atualiza(Estado *e, float dt) {
         e->sanidade = regras_sanidade_passo(e->sanidade, dist, e->cri.surgindo, e->jog.modo == MODO_ARMARIO,
                                             e->sanidade_longe_t, saida, dt);
     }
-    atualiza_grao(e, dist, dt);
     atualiza_barra(e, dt);
+    // A força do efeito segue a barra (e não a sanidade crua): muda junto com a porcentagem, sem saltos.
+    e->sanidade_grao = regras_sanidade_intensidade(e->sanidade_barra);
 }
 
 // ------------------------------------------------------------------ desenho

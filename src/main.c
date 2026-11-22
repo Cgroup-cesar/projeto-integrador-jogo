@@ -489,7 +489,7 @@ int main(int argc, char **argv) {
     if (!estado.modo_smoke) jogo_vai_para_fase(&estado, fase_inicial);
     if (sanidade_inicial >= 0.0f) { // já com o grão no ponto (sem a subida suave), para a captura sair certa
         estado.sanidade = fminf(sanidade_inicial, SANIDADE_MAX);
-        estado.sanidade_grao = regras_sanidade_intensidade(0.0f, estado.sanidade) * SANIDADE_GRAO_MAX;
+        estado.sanidade_grao = regras_sanidade_intensidade(estado.sanidade);
         estado.sanidade_barra = estado.sanidade_eco = estado.sanidade;
     }
     while (!WindowShouldClose() && !estado.sair) {
