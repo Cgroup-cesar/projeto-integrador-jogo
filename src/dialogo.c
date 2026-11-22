@@ -169,7 +169,14 @@ static const char *const TEXTOS[TXT_TOTAL] = {
     [TXT_TERMINAL_TITULO] = "ANALISADOR SEMÂNTICO SNI-85",
     [TXT_TERMINAL_DICA_R1_1] = "Tabela-verdade: para cada combinação das luzes, ele diz VERDADEIRO ou FALSO.",
     [TXT_TERMINAL_DICA_R1_2] = "Teste todas as combinações; o padrão das respostas revela o conectivo.",
-    [TXT_TERMINAL_OBSERVE] = "Mude as luzes e ouça a resposta. A tabela se preenche sozinha.",
+    [TXT_TERMINAL_OBSERVE] =
+        "Aperte [1] para acender e apagar a LUZ A e veja o que ele responde. A tabela se preenche "
+        "sozinha.",
+    [TXT_TERMINAL_OBSERVE_DUAS] =
+        "Aperte [1] (LUZ A) e [2] (LUZ B) para testar todas as combinações de luzes. A "
+        "tabela se preenche sozinha.",
+    [TXT_TERMINAL_SELO_AJUDA] = "[H] AJUDA",
+    [TXT_TERMINAL_SELO_FECHAR] = "[H] FECHAR AJUDA",
     [TXT_TERMINAL_ESCOLHA_CONECTIVO] = "O que significa o glifo âmbar?  (setas + ENTER)",
     [TXT_TERMINAL_TRADUZA] = "Ele está falando. Qual é a tradução?  (setas + ENTER)",
     [TXT_TERMINAL_ERRO] = "INCORRETO. O VIDRO CEDE.",
@@ -233,6 +240,8 @@ static const char *const TEXTOS[TXT_TOTAL] = {
     [TXT_FIM_VER_PLACAR] = "ENTER — ver o placar  (%d)",
     // A barra de teclas (teclas.c): o que cada tecla faz agora, em poucas palavras
     [TXT_TECLA_LUZ_A] = "Luz A",
+    [TXT_TECLA_AJUDA] = "Ajuda",
+    [TXT_TECLA_FECHAR_AJUDA] = "Fechar ajuda",
     [TXT_TECLA_LUZ_B] = "Luz B",
     [TXT_TECLA_ESCOLHER] = "Escolher",
     [TXT_TECLA_CONFIRMAR] = "Confirmar",

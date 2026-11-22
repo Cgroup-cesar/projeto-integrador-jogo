@@ -24,6 +24,7 @@ typedef struct {
     bool cima, baixo, esquerda, direita;
     bool tecla1, tecla2, tecla3;
     bool lanterna; // F: liga e desliga a lanterna
+    bool ajuda;    // H: abre e fecha a ajuda dos conectivos no terminal
     bool f1, f2, f3, f5, f9, f12;
     bool alguma;                   // qualquer tecla ou movimento (modo feira)
     int letras[MAX_LETRAS_QUADRO]; // letras digitadas neste quadro (Unicode), para o campo do nome
@@ -283,8 +284,9 @@ typedef struct Estado {
 
     bool conectivo_decifrado[4]; // NÃO, E, OU, SE…ENTÃO
     bool diario_lido;
-    int vidas;  // cache do fold das rachaduras
-    int placar; // cache do fold dos eventos
+    bool ajuda_aberta; // a cola dos conectivos (tecla H), no terminal das rodadas
+    int vidas;         // cache do fold das rachaduras
+    int placar;        // cache do fold dos eventos
     int erros_na_fase, erros_totais;
     int pegos_na_fase;
     float apagao_t;    // > 0 durante um apagão

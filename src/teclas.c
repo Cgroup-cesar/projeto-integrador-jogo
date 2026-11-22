@@ -28,6 +28,8 @@ static int itens_do_terminal(const Estado *e, TeclaAcao *t) {
         t[n++] = (TeclaAcao){"SETAS_V", TXT_TECLA_ESCOLHER};
         t[n++] = (TeclaAcao){"ENTER", TXT_TECLA_CONFIRMAR};
     }
+    if (e->fase != FASE_RESPOSTA_FINAL && e->rod.etapa != ETAPA_CONCLUIDA)
+        t[n++] = (TeclaAcao){"H", e->ajuda_aberta ? TXT_TECLA_FECHAR_AJUDA : TXT_TECLA_AJUDA};
     t[n++] = (TeclaAcao){"ESC", TXT_TECLA_SAIR};
     return n;
 }
@@ -147,13 +149,15 @@ static const TeclaMapa MAPA[] = {
     {2.8f, 2, 1, "S", "WASD"},
     {3.8f, 2, 1, "D", "WASD"},
     {4.8f, 2, 1, "F", "F"},
+    {5.8f, 2, 1, "G", ""},
+    {6.8f, 2, 1, "H", "H"},
     {0, 3, 2.3f, "Shift", "SHIFT"},
     {2.3f, 3, 1, "Z", ""},
-    {6.6f, 1, 1.6f, "Enter", "ENTER"},
-    {7.6f, 2, 1, "", "SETAS_V"},
-    {6.6f, 3, 1, "", "SETAS_H"},
-    {7.6f, 3, 1, "", "SETAS_V"},
-    {8.6f, 3, 1, "", "SETAS_H"},
+    {8.2f, 1, 1.6f, "Enter", "ENTER"},
+    {9.2f, 2, 1, "", "SETAS_V"},
+    {8.2f, 3, 1, "", "SETAS_H"},
+    {9.2f, 3, 1, "", "SETAS_V"},
+    {10.2f, 3, 1, "", "SETAS_H"},
 };
 
 static bool acesa(const TeclaMapa *k, const TeclaAcao *itens, int n) {
@@ -194,7 +198,7 @@ void teclas_desenha(const Estado *e) {
     float s = ui_escala(), altura = 30 * s, y = GetScreenHeight() - altura - 12 * s;
     DrawRectangle(0, (int)(y - 10 * s), GetScreenWidth(), (int)(altura + 22 * s), (Color){4, 7, 5, 235});
     desenha_minimapa(e, itens, n, (Vector2){14 * s, y - 4 * 22 * s - 18 * s});
-    float x = 240 * s;
+    float x = 290 * s;
     for (int i = 0; i < n; i++) { // padrão MAP: cada tecla com o que ela faz agora
         x += tecla(e, itens[i].tecla, (Vector2){x, y}, altura) + 8 * s;
         const char *acao = dialogo_texto(itens[i].acao);

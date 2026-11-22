@@ -26,6 +26,7 @@ static void limpa_partida(Estado *e) {
     e->erros_totais = 0;
     e->tempo_partida = 0.0f;
     e->diario_lido = false;
+    e->ajuda_aberta = false;
     memset(e->conectivo_decifrado, 0, sizeof(e->conectivo_decifrado));
 }
 

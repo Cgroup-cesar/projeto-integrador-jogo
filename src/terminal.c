@@ -19,6 +19,7 @@ void terminal_atualiza(Estado *e, float dt) {
         e->jog.modo = MODO_ANDANDO;
         return;
     }
+    if (e->in.ajuda) e->ajuda_aberta = !e->ajuda_aberta; // H: a cola dos conectivos, quando a pessoa quiser
     int opcoes = r->etapa == ETAPA_ESCOLHER_CONECTIVO ? CONECTIVOS_ESCOLHA
                  : r->etapa == ETAPA_TRADUZIR         ? 3
                                                       : 0;
@@ -223,7 +224,10 @@ static void desenha_estado_decifrar(const Estado *e, Vector2 p, float largura) {
         resposta(e, (Vector2){p.x, p.y + 4 * s}, 38 * s, r->resposta_valor);
         return;
     }
-    TextoId t = r->resposta_t > 0.0f ? TXT_TERMINAL_RESPONDENDO : TXT_TERMINAL_OBSERVE;
+    bool duas = rodadas_dados(r->numero)->n_luzes == 2;
+    TextoId t = r->resposta_t > 0.0f ? TXT_TERMINAL_RESPONDENDO
+                : duas               ? TXT_TERMINAL_OBSERVE_DUAS
+                                     : TXT_TERMINAL_OBSERVE;
     ui_texto_quebrado(e, dialogo_texto(t), p, largura, 17 * s,
                       r->resposta_t > 0.0f ? COR_AMBAR : COR_FOSFORO);
 }
@@ -231,6 +235,15 @@ static void desenha_estado_decifrar(const Estado *e, Vector2 p, float largura) {
 static void desenha_rodape(const Estado *e, Rectangle area) {
     float s = escala();
     const Rodada *r = &e->rod;
+    if (r->etapa != ETAPA_CONCLUIDA) { // o selo da ajuda, no alto, na linha do placar: sempre à vista
+        const char *selo =
+            dialogo_texto(e->ajuda_aberta ? TXT_TERMINAL_SELO_FECHAR : TXT_TERMINAL_SELO_AJUDA);
+        Vector2 m = ui_mede(e, selo, 16 * s);
+        Rectangle b = {area.x + area.width - m.x - 16 * s, area.y - 44 * s, m.x + 16 * s, 26 * s};
+        DrawRectangleRounded(b, 0.3f, 4, e->ajuda_aberta ? (Color){22, 34, 26, 255} : Fade(COR_AMBAR, 0.18f));
+        DrawRectangleRoundedLinesEx(b, 0.3f, 4, 1.5f * s, COR_AMBAR);
+        ui_texto(e, selo, (Vector2){b.x + 8 * s, b.y + 5 * s}, 16 * s, COR_AMBAR);
+    }
     if (r->aviso_t > 0.0f) {
         bool erro = r->aviso == dialogo_texto(TXT_TERMINAL_ERRO);
         ui_texto(e, r->aviso, (Vector2){area.x, area.y + area.height - 34 * s}, 22 * s,
@@ -262,7 +275,9 @@ static void conectivo_da_cola(const Estado *e, int indice, Rectangle b) {
 
 static void desenha_cola(const Estado *e) {
     const Rodada *r = &e->rod;
-    if (r->numero > 2 || (r->etapa != ETAPA_DECIFRAR && r->etapa != ETAPA_ESCOLHER_CONECTIVO)) return;
+    // Só quando a pessoa pede (H). Enquanto ele fala, ela some: os símbolos dele aparecem desse lado do
+    // vidro.
+    if (!e->ajuda_aberta || e->cri.fala_t > 0.0f || r->etapa == ETAPA_CONCLUIDA) return;
     float s = escala();
     Rectangle c = {24 * s, 56 * s, GetScreenWidth() - 680 * s, 360 * s};
     ui_painel(c, COR_AMBAR);

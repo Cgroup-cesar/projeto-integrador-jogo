@@ -47,6 +47,7 @@ static void le_entrada(Entrada *in) {
     in->tecla2 = IsKeyPressed(KEY_TWO) || IsKeyPressed(KEY_KP_2);
     in->tecla3 = IsKeyPressed(KEY_THREE) || IsKeyPressed(KEY_KP_3);
     in->lanterna = IsKeyPressed(KEY_F);
+    in->ajuda = IsKeyPressed(KEY_H);
 #if TECLAS_DEBUG
     in->f1 = IsKeyPressed(KEY_F1);
     in->f2 = IsKeyPressed(KEY_F2);
