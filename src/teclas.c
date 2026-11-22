@@ -79,7 +79,8 @@ static int itens_do_menu(const Estado *e, TeclaAcao *t) {
     }
     t[0] = (TeclaAcao){"SETAS_V", TXT_TECLA_ESCOLHER};
     t[1] = (TeclaAcao){"ENTER", TXT_TECLA_CONFIRMAR};
-    return 2;
+    t[2] = (TeclaAcao){"WASD", TXT_TECLA_ANDAR}; // já avisa como se anda antes da partida começar
+    return 3;
 }
 
 static int itens_do_contexto(const Estado *e, TeclaAcao *t) {
