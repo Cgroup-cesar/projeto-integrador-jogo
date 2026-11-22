@@ -12,6 +12,7 @@
 #include "nivel.h"
 #include <math.h>
 #include "posfx.h"
+#include "vhs.h"
 #include "audio_sintese.h"
 #include "trilhas.h"
 #include "ui.h"
@@ -27,6 +28,10 @@ static float captura_em = 0.8f;            // --captura-em <segundos>
 static Fase fase_inicial = FASE_MENU;      // --fase <NOME> (debug): começa direto numa fase
 static Fase fase_captura = FASE_TOTAL;     // --captura-fase <NOME>: a captura espera essa fase
 static bool mudo = false;                  // --mudo: sem som
+static int vhs_inicial = -1;               // --vhs <N>: abre com esse preset de VHS (0 = desligado)
+static float vitrine_vhs_s = 0.0f;         // --vitrine-vhs [s]: troca de preset sozinho a cada s segundos
+static float sanidade_inicial = -1.0f;     // --sanidade <0..100>: começa com essa sanidade (capturas)
+static const char *pasta_galeria = NULL;   // --galeria-vhs <pasta>: uma captura por preset, depois sai
 
 // ================================================================== entrada
 // [REQ:RF2] controle por teclado e mouse: lido uma vez por quadro (WASD, mouse, Shift, E, 1/2/3, setas,
@@ -325,6 +330,7 @@ static void piloto_entrada(Estado *e, Entrada *in, float dt) {
 static void atualiza(Estado *e, float dt) {
     e->tempo_total += dt;
     posfx_atualiza(e, dt);
+    vhs_atualiza(e, dt);
     jogo_atualiza(e, dt);
     audio_atualiza(e, dt);
     trilhas_atualiza(e, dt);
@@ -341,12 +347,18 @@ static void desenha(const Estado *e) {
     ClearBackground(BLACK);
     posfx_desenha(e);
     jogo_desenha_interface(e);
+    vhs_desenha(e);
     EndDrawing();
 }
 
 // Lê o quadro que acabou de ser desenhado e salva em PNG.
 static void salva_captura(const char *caminho) {
     Image quadro = LoadImageFromScreen();
+    // Tela com escala (Wayland, HiDPI): a imagem vem maior que a janela e o jogo fica no canto de baixo à
+    // esquerda; recorta só ele.
+    int w = GetScreenWidth(), h = GetScreenHeight();
+    if (quadro.width > w && quadro.height > h)
+        ImageCrop(&quadro, (Rectangle){0, (float)(quadro.height - h), (float)w, (float)h});
     if (ExportImage(quadro, caminho)) TraceLog(LOG_INFO, "PRECURSOR: captura salva em %s", caminho);
     UnloadImage(quadro);
 }
@@ -367,6 +379,13 @@ static void le_argumentos(Estado *e, int argc, char **argv) {
         if (strcmp(argv[i], "--smoke") == 0) e->modo_smoke = true;
         if (strcmp(argv[i], "--feira") == 0) e->modo_feira = true;
         if (strcmp(argv[i], "--mudo") == 0) mudo = true;
+        if (strcmp(argv[i], "--vhs") == 0 && i + 1 < argc) sscanf(argv[++i], "%d", &vhs_inicial);
+        if (strcmp(argv[i], "--sanidade") == 0 && i + 1 < argc) sscanf(argv[++i], "%f", &sanidade_inicial);
+        if (strcmp(argv[i], "--galeria-vhs") == 0 && i + 1 < argc) pasta_galeria = argv[++i];
+        if (strcmp(argv[i], "--vitrine-vhs") == 0) {
+            vitrine_vhs_s = 4.0f;
+            if (i + 1 < argc && argv[i + 1][0] != '-') sscanf(argv[++i], "%f", &vitrine_vhs_s);
+        }
         if (strcmp(argv[i], "--captura") == 0 && i + 1 < argc) arquivo_captura = argv[++i];
         if (strcmp(argv[i], "--captura-em") == 0 && i + 1 < argc) sscanf(argv[++i], "%f", &captura_em);
         bool fase = strcmp(argv[i], "--fase") == 0, captura = strcmp(argv[i], "--captura-fase") == 0;
@@ -392,6 +411,31 @@ static void abre_janela(void) {
     SetExitKey(KEY_NULL); // Esc é do jogo (sair do terminal, pausar), não fecha a janela
 }
 
+// --galeria-vhs: desenha o mesmo quadro (tempo parado) com cada preset e salva pasta/vhs_<N>.png; o nome do
+// preset aparece no canto de cada imagem. Depois fecha o jogo.
+static void salva_galeria_vhs(Estado *e) {
+    MakeDirectory(pasta_galeria);
+    for (int i = 0; i < vhs_total(); i++) { // padrão MAP: preset → captura
+        vhs_escolhe(e, i);
+        desenha(e);
+        char caminho[512];
+        snprintf(caminho, sizeof(caminho), "%s/vhs_%d.png", pasta_galeria, i);
+        salva_captura(caminho);
+    }
+    printf("Galeria do VHS: %d capturas em %s\n", vhs_total(), pasta_galeria);
+    e->sair = true;
+}
+
+// --vitrine-vhs: passa para o próximo preset a cada vitrine_vhs_s segundos (para comparar sem jogar).
+static void avanca_vitrine_vhs(Estado *e, float dt) {
+    static float t = 0.0f;
+    if (vitrine_vhs_s <= 0.0f) return;
+    t += dt;
+    if (t < vitrine_vhs_s) return;
+    t = 0.0f;
+    vhs_escolhe(e, e->vhs_preset + 1);
+}
+
 static void quadro(Estado *e) {
     // [REQ:RF1] [REQ:RNF4] dt de GetFrameTime() limitado a DT_MAXIMO; no smoke, passo fixo (velocidade
     // acelerada)
@@ -405,6 +449,11 @@ static void quadro(Estado *e) {
     desenha(e);
     bool na_hora = fase_captura == FASE_TOTAL ? e->tempo_total > captura_em
                                               : (e->fase == fase_captura && e->tempo_fase > captura_em);
+    avanca_vitrine_vhs(e, dt);
+    if (pasta_galeria != NULL && na_hora) {
+        salva_galeria_vhs(e);
+        pasta_galeria = NULL;
+    }
     if (arquivo_captura != NULL && na_hora) {
         salva_captura(arquivo_captura);
         arquivo_captura = NULL;
@@ -454,7 +503,8 @@ int main(int argc, char **argv) {
     }
     // [REQ:RF1] janela e game loop a 60 FPS: entrada → atualiza → desenha
     SetTargetFPS(estado.modo_smoke ? 0 : FPS_ALVO);
-    estado.vhs_ligado = VHS_LIGADO_AO_INICIAR;
+    estado.vhs_preset = VHS_PRESET_PADRAO;
+    if (vhs_inicial >= 0) vhs_escolhe(&estado, vhs_inicial); // mostra o nome do preset ao abrir
     carrega_recursos();
     if (estado.modo_smoke) {
         SetRandomSeed(1985); // o smoke é determinístico: mesmo resultado em toda execução
@@ -462,6 +512,11 @@ int main(int argc, char **argv) {
     }
     jogo_inicia(&estado);
     if (!estado.modo_smoke) jogo_vai_para_fase(&estado, fase_inicial);
+    if (sanidade_inicial >= 0.0f) { // já com o grão no ponto (sem a subida suave), para a captura sair certa
+        estado.sanidade = fminf(sanidade_inicial, SANIDADE_MAX);
+        estado.sanidade_grao = regras_sanidade_intensidade(estado.sanidade);
+        estado.sanidade_barra = estado.sanidade_eco = estado.sanidade;
+    }
     while (!WindowShouldClose() && !estado.sair) {
         quadro(&estado);
         if (estado.modo_smoke && piloto.codigo_saida >= 0) break;

@@ -1,58 +1,9 @@
-// posfx.c — render target, filtro VHS (GLSL embutido, versões 330 e 100).
+// posfx.c — render target e luz e névoa (GLSL embutido, versões 330 e 100); o VHS fica em vhs.c.
 #include "posfx.h"
+#include "vhs.h"
 #include "rlgl.h"
 #include "raymath.h"
 #include <stddef.h>
-
-// ------------------------------------------------------------------ shaders do VHS
-// Ruído ~4%, aberração cromática ~1,5 px, scanlines ~6%, vinheta leve e um "wobble" horizontal raro.
-static const char *VHS_FS_330 =
-    "#version 330\n"
-    "in vec2 fragTexCoord; in vec4 fragColor;\n"
-    "uniform sampler2D texture0; uniform vec4 colDiffuse;\n"
-    "uniform float tempo; uniform vec2 resolucao;\n"
-    "uniform float ruido; uniform float aberracao; uniform float scanlines; uniform float vinheta; uniform "
-    "float wobble;\n"
-    "out vec4 finalColor;\n"
-    "float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }\n"
-    "void main() {\n"
-    "    vec2 uv = fragTexCoord;\n"
-    "    float janela = step(0.97, hash(vec2(floor(tempo * 3.0), 7.0)));\n"
-    "    float faixa = smoothstep(0.0, 0.08, 0.08 - abs(uv.y - fract(tempo * 0.37)));\n"
-    "    uv.x += janela * faixa * wobble / resolucao.x;\n"
-    "    float px = aberracao / resolucao.x;\n"
-    "    vec3 c = vec3(texture(texture0, uv + vec2(px, 0.0)).r, texture(texture0, uv).g,\n"
-    "                  texture(texture0, uv - vec2(px, 0.0)).b);\n"
-    "    c += (hash(uv * resolucao + vec2(tempo * 61.0, tempo * 17.0)) - 0.5) * ruido;\n"
-    "    c *= 1.0 - scanlines * (0.5 + 0.5 * sin(uv.y * resolucao.y * 3.14159));\n"
-    "    vec2 d = uv - 0.5;\n"
-    "    c *= 1.0 - vinheta * dot(d, d) * 2.0;\n"
-    "    finalColor = vec4(c, 1.0) * colDiffuse * fragColor;\n"
-    "}\n";
-
-static const char *VHS_FS_100 =
-    "#version 100\n"
-    "precision mediump float;\n"
-    "varying vec2 fragTexCoord; varying vec4 fragColor;\n"
-    "uniform sampler2D texture0; uniform vec4 colDiffuse;\n"
-    "uniform float tempo; uniform vec2 resolucao;\n"
-    "uniform float ruido; uniform float aberracao; uniform float scanlines; uniform float vinheta; uniform "
-    "float wobble;\n"
-    "float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }\n"
-    "void main() {\n"
-    "    vec2 uv = fragTexCoord;\n"
-    "    float janela = step(0.97, hash(vec2(floor(tempo * 3.0), 7.0)));\n"
-    "    float faixa = smoothstep(0.0, 0.08, 0.08 - abs(uv.y - fract(tempo * 0.37)));\n"
-    "    uv.x += janela * faixa * wobble / resolucao.x;\n"
-    "    float px = aberracao / resolucao.x;\n"
-    "    vec3 c = vec3(texture2D(texture0, uv + vec2(px, 0.0)).r, texture2D(texture0, uv).g,\n"
-    "                  texture2D(texture0, uv - vec2(px, 0.0)).b);\n"
-    "    c += (hash(uv * resolucao + vec2(tempo * 61.0, tempo * 17.0)) - 0.5) * ruido;\n"
-    "    c *= 1.0 - scanlines * (0.5 + 0.5 * sin(uv.y * resolucao.y * 3.14159));\n"
-    "    vec2 d = uv - 0.5;\n"
-    "    c *= 1.0 - vinheta * dot(d, d) * 2.0;\n"
-    "    gl_FragColor = vec4(c, 1.0) * colDiffuse * fragColor;\n"
-    "}\n";
 
 // ------------------------------------------------------------------ shaders de luz e névoa
 // O número de luzes entra no texto do shader a partir de LUZES_SHADER (config.h): um lugar só para mudar.
@@ -161,22 +112,6 @@ static void cria_alvo(Recursos *rec, int largura_janela, int altura_janela) {
     rec->alvo_altura = h;
 }
 
-static void carrega_vhs(Recursos *rec) {
-    rec->vhs = LoadShaderFromMemory(NULL, usa_glsl_100() ? VHS_FS_100 : VHS_FS_330);
-    rec->vhs_ok = IsShaderValid(rec->vhs);
-    if (!rec->vhs_ok) {
-        TraceLog(LOG_WARNING, "PRECURSOR: shader VHS não compilou; seguindo sem filtro");
-        return;
-    }
-    rec->loc_vhs_tempo = GetShaderLocation(rec->vhs, "tempo");
-    rec->loc_vhs_resolucao = GetShaderLocation(rec->vhs, "resolucao");
-    rec->loc_vhs_ruido = GetShaderLocation(rec->vhs, "ruido");
-    rec->loc_vhs_aberracao = GetShaderLocation(rec->vhs, "aberracao");
-    rec->loc_vhs_scanlines = GetShaderLocation(rec->vhs, "scanlines");
-    rec->loc_vhs_vinheta = GetShaderLocation(rec->vhs, "vinheta");
-    rec->loc_vhs_wobble = GetShaderLocation(rec->vhs, "wobble");
-}
-
 static void carrega_luz(Recursos *rec) {
     bool v100 = usa_glsl_100();
     rec->luz = LoadShaderFromMemory(v100 ? LUZ_VS_100 : LUZ_VS_330, v100 ? LUZ_FS_100 : LUZ_FS_330);
@@ -198,14 +133,14 @@ static void carrega_luz(Recursos *rec) {
 
 void posfx_inicia(Recursos *rec) {
     cria_alvo(rec, GetScreenWidth(), GetScreenHeight());
-    carrega_vhs(rec);
+    vhs_carrega(rec);
     carrega_luz(rec);
 }
 
 void posfx_finaliza(Recursos *rec) {
     UnloadRenderTexture(rec->alvo);
     UnloadRenderTexture(rec->alvo_susto);
-    if (rec->vhs_ok) UnloadShader(rec->vhs);
+    vhs_descarrega(rec);
     if (rec->luz_ok) UnloadShader(rec->luz);
 }
 
@@ -266,9 +201,6 @@ void posfx_atualiza(Estado *e, float dt) {
         UnloadRenderTexture(e->rec.alvo_susto);
         cria_alvo(&e->rec, GetScreenWidth(), GetScreenHeight());
     }
-#if TECLAS_DEBUG
-    if (e->in.f1) e->vhs_ligado = !e->vhs_ligado;
-#endif
 }
 
 void posfx_inicia_cena(const Estado *e) {
@@ -280,31 +212,12 @@ void posfx_termina_cena(const Estado *e) {
     EndTextureMode();
 }
 
-static void envia_uniformes_vhs(const Estado *e) {
-    const Recursos *r = &e->rec;
-    float tempo = e->tempo_total;
-    float resolucao[2] = {(float)r->alvo_largura, (float)r->alvo_altura};
-    float ruido = VHS_RUIDO, aberracao = VHS_ABERRACAO_PX, scan = VHS_SCANLINES;
-    float vinheta = VHS_VINHETA, wobble = VHS_WOBBLE_PX;
-    SetShaderValue(r->vhs, r->loc_vhs_tempo, &tempo, SHADER_UNIFORM_FLOAT);
-    SetShaderValue(r->vhs, r->loc_vhs_resolucao, resolucao, SHADER_UNIFORM_VEC2);
-    SetShaderValue(r->vhs, r->loc_vhs_ruido, &ruido, SHADER_UNIFORM_FLOAT);
-    SetShaderValue(r->vhs, r->loc_vhs_aberracao, &aberracao, SHADER_UNIFORM_FLOAT);
-    SetShaderValue(r->vhs, r->loc_vhs_scanlines, &scan, SHADER_UNIFORM_FLOAT);
-    SetShaderValue(r->vhs, r->loc_vhs_vinheta, &vinheta, SHADER_UNIFORM_FLOAT);
-    SetShaderValue(r->vhs, r->loc_vhs_wobble, &wobble, SHADER_UNIFORM_FLOAT);
-}
-
 void posfx_desenha(const Estado *e) {
     const Recursos *r = &e->rec;
     // A textura do render target fica de cabeça para baixo: altura negativa desvira.
     Rectangle origem = {0, 0, (float)r->alvo.texture.width, -(float)r->alvo.texture.height};
     Rectangle destino = {0, 0, (float)GetScreenWidth(), (float)GetScreenHeight()};
-    bool com_vhs = e->vhs_ligado && r->vhs_ok;
-    if (com_vhs) {
-        envia_uniformes_vhs(e);
-        BeginShaderMode(r->vhs);
-    }
+    bool com_vhs = vhs_comeca(e);
     DrawTexturePro(r->alvo.texture, origem, destino, (Vector2){0, 0}, 0.0f, WHITE);
-    if (com_vhs) EndShaderMode();
+    if (com_vhs) vhs_termina(e);
 }

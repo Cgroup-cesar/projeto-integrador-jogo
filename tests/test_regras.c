@@ -500,6 +500,70 @@ static void testa_ranking_linha(void) {
     CHECK(regras_ranking_escreve_linha(&a, linha, 8) == -1); // não coube
 }
 
+// [REQ:SANIDADE] testa a queda pela distância, o armário, a espera da recuperação, os bônus e o grão
+static void testa_sanidade_queda(void) {
+    float longe = regras_sanidade_passo(50.0f, SANIDADE_RAIO + 0.5f, 1.0f, false, 0.0f, true, 1.0f);
+    CHECK(perto(longe, 50.0f)); // fora do raio e ainda esperando: não muda
+    float borda = regras_sanidade_passo(50.0f, SANIDADE_RAIO - 0.001f, 1.0f, false, 0.0f, true, 1.0f);
+    CHECK(fabsf((50.0f - borda) - SANIDADE_QUEDA_MIN * SANIDADE_ACELERA_LONGE) < 0.01f); // já desce, 1,5×
+    float a9 = regras_sanidade_passo(50.0f, 9.0f, 1.0f, false, 0.0f, true, 1.0f);
+    float a5 = regras_sanidade_passo(50.0f, 5.0f, 1.0f, false, 0.0f, true, 1.0f);
+    float a2 = regras_sanidade_passo(50.0f, 2.0f, 1.0f, false, 0.0f, true, 1.0f);
+    CHECK(a9 < borda && a5 < a9 && a2 < a5);                               // mais perto, cai mais
+    CHECK(perto(a2, 50.0f - SANIDADE_QUEDA_MAX * SANIDADE_ACELERA_PERTO)); // colado: a queda máxima, 2×
+    float escondido = regras_sanidade_passo(50.0f, 5.0f, 1.0f, true, 0.0f, true, 1.0f);
+    CHECK(escondido > a5 && escondido < 50.0f); // no armário cai menos, mas cai
+    float surgindo = regras_sanidade_passo(50.0f, 2.0f, 0.0f, false, 0.0f, true, 1.0f);
+    CHECK(perto(surgindo, 50.0f)); // ainda dentro do duto: nada
+    CHECK(perto(regras_sanidade_passo(1.0f, 1.0f, 1.0f, false, 0.0f, true, 1.0f), 0.0f)); // nunca < 0
+    float s = SANIDADE_MAX;
+    for (int i = 0; i < 270; i++) // padrão FOLD: 4,5 s colado nela a 60 FPS
+        s = regras_sanidade_passo(s, SANIDADE_PERTO, 1.0f, false, 0.0f, true, 1.0f / 60.0f);
+    CHECK(s < 1.0f);
+}
+
+static void testa_sanidade_recupera(void) {
+    float esperando = regras_sanidade_passo(50.0f, 20.0f, 1.0f, false, 1.0f, true, 1.0f);
+    CHECK(perto(esperando, 50.0f)); // corredor: ainda dentro da espera
+    float depois = regras_sanidade_passo(50.0f, 20.0f, 1.0f, false, SANIDADE_ESPERA_REGEN, true, 1.0f);
+    CHECK(perto(depois, 50.0f + SANIDADE_REGEN));
+    float sala = regras_sanidade_passo(50.0f, 2.0f, 1.0f, false, 0.0f, false, 1.0f);
+    CHECK(perto(sala, 50.0f + SANIDADE_REGEN)); // na rodada sobe na hora (a criatura está contida)
+    CHECK(perto(regras_sanidade_passo(99.9f, 20.0f, 1.0f, false, 10.0f, false, 1.0f), SANIDADE_MAX));
+}
+
+static void testa_sanidade_bonus(void) {
+    CHECK(perto(regras_sanidade_bonus(10.0f, EV_RODADA_CONCLUIDA), 10.0f + SANIDADE_BONUS_RODADA));
+    CHECK(perto(regras_sanidade_bonus(10.0f, EV_SAIDA_CONCLUIDA), 10.0f + SANIDADE_BONUS_SAIDA));
+    CHECK(perto(regras_sanidade_bonus(90.0f, EV_SAIDA_CONCLUIDA), SANIDADE_MAX)); // limita em 100
+    CHECK(perto(regras_sanidade_bonus(10.0f, EV_PEGO), SANIDADE_PISO_RECOMECO));
+    CHECK(perto(regras_sanidade_bonus(10.0f, EV_VIDRO_ROMPEU), SANIDADE_PISO_RECOMECO));
+    CHECK(perto(regras_sanidade_bonus(80.0f, EV_PEGO), 80.0f)); // o piso não baixa ninguém
+    CHECK(perto(regras_sanidade_bonus(3.0f, EV_INICIAR), SANIDADE_MAX));
+    CHECK(perto(regras_sanidade_bonus(3.0f, EV_NENHUM), 3.0f));
+    CHECK(perto(regras_sanidade_conectivos(20.0f, 1, 2), 20.0f + SANIDADE_BONUS_CONECTIVO));
+    CHECK(perto(regras_sanidade_conectivos(20.0f, 2, 0), 20.0f)); // partida nova zerou: sem bônus
+    CHECK(perto(regras_sanidade_conectivos(20.0f, 2, 2), 20.0f));
+}
+
+static void testa_sanidade_intensidade(void) {
+    CHECK(perto(regras_sanidade_intensidade(100.0f), 0.0f)); // cheia: nada na tela
+    CHECK(perto(regras_sanidade_intensidade(99.0f), 0.01f));
+    CHECK(perto(regras_sanidade_intensidade(50.0f), 0.5f));
+    CHECK(perto(regras_sanidade_intensidade(20.0f), 0.8f));
+    CHECK(perto(regras_sanidade_intensidade(0.0f), 1.0f));
+    CHECK(perto(regras_sanidade_intensidade(-5.0f), 1.0f)); // sempre entre 0 e 1
+    CHECK(perto(regras_sanidade_intensidade(140.0f), 0.0f));
+    float antes = 0.0f;
+    bool linear = true;
+    for (int s = 100; s >= 0; s--) { // padrão FOLD: cada ponto perdido soma 0,01, sem curva
+        float g = regras_sanidade_intensidade((float)s);
+        linear = linear && perto(g - antes, s == 100 ? 0.0f : 0.01f);
+        antes = g;
+    }
+    CHECK(linear);
+}
+
 int main(void) {
     SetTraceLogLevel(LOG_ERROR); // o aviso de vetor cheio é esperado aqui
     testa_movimento();
@@ -529,5 +593,9 @@ int main(void) {
     testa_materiais();
     testa_decalques();
     testa_uv_mundo();
+    testa_sanidade_queda();
+    testa_sanidade_recupera();
+    testa_sanidade_bonus();
+    testa_sanidade_intensidade();
     return resultado_final("test_regras");
 }

@@ -455,7 +455,7 @@ static void desenha_mira(const Estado *e) {
 static void desenha_hud(const Estado *e) {
     float s = ui_escala();
     if (e->jog.modo == MODO_ANDANDO || e->jog.modo == MODO_ARMARIO)
-        ui_texto(e, dialogo_texto(objetivo(e)), (Vector2){24 * s, 20 * s}, 18 * s, Fade(COR_FOSFORO, 0.7f));
+        ui_texto(e, dialogo_texto(objetivo(e)), (Vector2){24 * s, 66 * s}, 18 * s, Fade(COR_FOSFORO, 0.7f));
     if (e->jog.modo != MODO_TERMINAL && e->jog.modo != MODO_PAINEL)
         desenha_vidro_e_placar(e); // o terminal já mostra
     desenha_folego(e);
@@ -507,10 +507,12 @@ static void desenha_diario(const Estado *e) {
 
 static void desenha_debug(const Estado *e) {
     if (!e->debug_criatura) return;
-    char texto[160];
-    snprintf(texto, sizeof(texto), "fase %s  t=%.1f  criatura %s%s  pos %.1f %.1f  ruidos %d  %d fps",
+    char texto[200];
+    snprintf(texto, sizeof(texto),
+             "fase %s  t=%.1f  criatura %s%s  pos %.1f %.1f  ruidos %d  sanidade %.0f grao %.3f  %d fps",
              regras_nome_fase(e->fase), e->tempo_fase, regras_nome_estado_criatura(e->cri.estado),
-             e->cri.ativo ? "" : " (inativa)", e->jog.pos.x, e->jog.pos.z, e->ruidos.n, GetFPS());
+             e->cri.ativo ? "" : " (inativa)", e->jog.pos.x, e->jog.pos.z, e->ruidos.n, e->sanidade,
+             e->sanidade_grao, GetFPS());
     ui_texto(e, texto, (Vector2){10, GetScreenHeight() - 24.0f}, 16, YELLOW);
 }
 

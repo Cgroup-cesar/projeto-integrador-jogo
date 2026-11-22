@@ -283,7 +283,7 @@ static void desenha_cola(const Estado *e) {
     // estreito que o desenho dela (600 unidades): então tudo nela — cartões, lâmpadas e letras — encolhe
     // junto.
     float g = escala(), livre = GetScreenWidth() - 680 * g, s = g * fminf(1.0f, livre / (600 * g));
-    Rectangle c = {24 * g, 56 * g, livre, 360 * s};
+    Rectangle c = {24 * g, 66 * g, livre, 360 * s}; // abaixo da barra de sanidade (vhs/sanidade.c)
     ui_painel(c, COR_AMBAR);
     ui_texto(e, dialogo_texto(TXT_COLA_TITULO), (Vector2){c.x + 16 * s, c.y + 12 * s}, 17 * s, COR_AMBAR);
     float bh = 136 * s, faixa = 118 * s, x0 = c.x + 16 * s + faixa + 12 * s;

@@ -7,9 +7,9 @@ flowchart TB
     subgraph LOOP["Game loop imperativo (o como): usa a raylib"]
         main["main.c: entrada → atualiza → desenha; --smoke; modo feira"]
         jogo["jogo.c: aplica a máquina de fases e despacha por fase"]
-        mods["jogador.c · lanterna.c · criatura.c · rodadas.c · circuito.c · compositor.c · nivel.c · glifos.c"]
+        mods["jogador.c · lanterna.c · criatura.c · sanidade.c · rodadas.c · circuito.c · compositor.c · nivel.c · glifos.c"]
         arte["texturas.c · cenario.c: texturas do mapa (geradas uma vez) e ambientação sem colisão"]
-        tela["terminal.c · ui.c · posfx.c · audio_sintese.c · dialogo.c"]
+        tela["terminal.c · ui.c · posfx.c · vhs.c · audio_sintese.c · dialogo.c"]
     end
     subgraph DECIDE["Lógica funcional (o o quê): sem raylib.h, testável sem janela"]
         logica["logica.c: árvore, avaliação, tabela-verdade, parser, contradição"]
@@ -38,8 +38,8 @@ flowchart TB
 ## Um quadro
 
 1. **Entrada** (`main.c`): lê teclado e mouse uma vez e preenche `Estado.in`. No `--smoke`, quem preenche é o piloto automático; o resto do jogo não sabe a diferença.
-2. **Atualiza** (`jogo_atualiza` e os `xxx_atualiza(Estado *e, float dt)`): cada módulo muda o estado e, quando a fase precisa mudar, só **pede** um evento (`e->evento = EV_RODADA_CONCLUIDA`). No fim do quadro, `jogo_aplica_evento` pergunta à função pura `regras_proxima_fase(fase, evento)` qual é a próxima fase e prepara o mundo. O `dt` vem de `GetFrameTime()`, limitado a 0,05 s, e multiplica todo movimento, temporizador e animação.
-3. **Desenha** (`xxx_desenha(const Estado *e)`): o `const` garante que desenhar não muda o estado. A cena 3D vai para um render target a 60% da janela (`posfx.c`), recebe luz e névoa por shader e o filtro VHS; a interface (terminal, painéis, HUD, legendas) é desenhada por cima, na resolução da janela.
+2. **Atualiza** (`jogo_atualiza` e os `xxx_atualiza(Estado *e, float dt)`): cada módulo muda o estado e, quando a fase precisa mudar, só **pede** um evento (`e->evento = EV_RODADA_CONCLUIDA`). No fim do quadro, `jogo_aplica_evento` pergunta à função pura `regras_proxima_fase(fase, evento)` qual é a próxima fase e prepara o mundo. O `dt` vem de `GetFrameTime()`, limitado a 0,05 s, e multiplica todo movimento, temporizador e animação. `sanidade_atualiza` roda logo depois de `criatura_atualiza` (usa a distância deste quadro para a queda e o grão); os bônus de sanidade das tarefas entram em `jogo_aplica_evento`, junto com o placar. A barra (`sanidade_desenha`) é desenhada na interface, depois do shader; o grão vai para o shader do VHS.
+3. **Desenha** (`xxx_desenha(const Estado *e)`): o `const` garante que desenhar não muda o estado. A cena 3D vai para um render target a 60% da janela (`posfx.c`), recebe luz e névoa por shader e o filtro VHS (`vhs.c`); a interface (terminal, painéis, HUD, legendas) é desenhada por cima, na resolução da janela.
    Dentro do shader de luz, a ordem é: `nivel_desenha` (piso, teto, paredes em passadas por material, móveis) → `cenario_desenha` (eletrodutos, grelhas, fios e, por último, os decalques com alfa, sem escrever profundidade) → criatura → lanterna. Fora do shader, `nivel_desenha_emissivos` desenha as lâmpadas e os halos (soma de luz, sem profundidade).
 
 ## Recursos carregados uma vez
@@ -107,7 +107,9 @@ stateDiagram-v2
 | `dialogo.c` | todos os textos; `dialogo_personaliza` troca `{NOME}`, `{PROF}` e `{x\|y}` (regra em `regras_monta_texto`) |
 | `audio_sintese.c` | os sons curtos gerados em código (ou lidos de `assets/audio/`) |
 | `trilhas.c` | os sons longos gravados: trilha do menu, vozes, coração e passos (o volume vem de `regras_volumes_trilhas`) |
-| `posfx.c` | render target, luz e névoa, VHS |
+| `posfx.c` | render target, luz e névoa |
+| `vhs.c` | filtro VHS: shader, presets (`VHS_PRESETS`), troca com F1 e o efeito de sanidade (cansaço + fita) |
+| `sanidade.c` | sanidade: queda pela distância da criatura, recuperação, bônus e a barra no topo (regras em `regras_sanidade.c`) |
 | `ui.c` | fonte com fallback, HUD, legendas, diário, pausa |
 | `menu.c` | a tela de início como gravação de fita (▶ PLAY, ● REC, AGO 1985): título que pifa, gancho, frases subliminares, opções em faixas, convite do 1º lugar e a tabela do ranking por cima |
 | `tela_fim.c` | depois do final: desempenho (resultado, placar, lugar no ranking), avaliação em estrelas e a tabela do ranking |
