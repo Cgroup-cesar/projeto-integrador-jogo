@@ -24,6 +24,8 @@ static const Legenda APOS_R1[] = {
 static const Legenda INICIO_S1[] = {
     {"As luzes caíram, {PROF} {NOME}. O gerador fica no fim do corredor.", 4.0f, V},
     {"Vá. E não corra: ele ouve.", 3.0f, V},
+    // apresenta o armário (respiracao.c): o jogador fica sabendo antes de precisar
+    {"Se ele vier, entre num armário e segure a respiração. Nem um suspiro, {PROF} {NOME}.", 5.5f, V},
 };
 static const Legenda FIM_S1[] = {
     {"Luzes de volta, {PROF} {NOME}. Ele está na cela, como se nunca tivesse saído. Volte.", 5.0f, V},
