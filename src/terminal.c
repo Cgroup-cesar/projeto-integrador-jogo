@@ -270,8 +270,7 @@ static void desenha_rodape(const Estado *e, Rectangle area) {
 // ------------------------------------------------------------------ a cola (R1 e R2)
 // Mini-tabela no formato da cola: as lâmpadas (A, e B se houver) e o resultado: ✓, ✗ ou "?" (ainda não
 // visto).
-static void mini_tabela(const Estado *e, Vector2 pos, bool unario, const int *valores) {
-    float s = escala();
+static void mini_tabela(const Estado *e, Vector2 pos, bool unario, const int *valores, float s) {
     for (int l = 0; l < (unario ? 2 : 4); l++) { // padrão MAP: cada linha da mini-tabela
         bool a = unario ? (l & 1) : ((l >> 1) & 1), b = l & 1;
         float y = pos.y + l * 25 * s;
@@ -286,26 +285,25 @@ static void mini_tabela(const Estado *e, Vector2 pos, bool unario, const int *va
 }
 
 // Um conectivo: o nome, o que ele faz em palavras e a mini-tabela (lâmpadas → ✓/✗), para comparar.
-static void conectivo_da_cola(const Estado *e, int indice, Rectangle b) {
+static void conectivo_da_cola(const Estado *e, int indice, Rectangle b, float s) {
     static const OpLogico ops[CONECTIVOS_ESCOLHA] = {OP_NAO, OP_E, OP_OU, OP_IMPLICA};
     static const TextoId descricao[CONECTIVOS_ESCOLHA] = {TXT_COLA_NAO, TXT_COLA_E, TXT_COLA_OU, TXT_COLA_SE};
-    float s = escala();
     DrawRectangleRoundedLinesEx(b, 0.1f, 4, 1.0f * s, Fade(COR_FOSFORO, 0.3f));
     ui_texto(e, dialogo_conectivo(indice), (Vector2){b.x + 10 * s, b.y + 8 * s}, 18 * s, COR_FOSFORO);
     ui_texto_quebrado(e, dialogo_texto(descricao[indice]), (Vector2){b.x + 10 * s, b.y + 32 * s},
-                      b.width * 0.52f, 13 * s, RAYWHITE);
+                      b.width - 104 * s, 13 * s, RAYWHITE);
     bool unario = ops[indice] == OP_NAO;
     int valores[4];
     for (int l = 0; l < 4; l++) // padrão MAP: o resultado do conectivo em cada linha
         valores[l] = logica_aplica(ops[indice], unario ? (l & 1) : ((l >> 1) & 1), l & 1);
-    mini_tabela(e, (Vector2){b.x + b.width * 0.6f, b.y + 14 * s}, unario, valores);
+    mini_tabela(e, (Vector2){b.x + b.width - 84 * s, b.y + 14 * s}, unario, valores,
+                s); // presa à borda direita
 }
 
 // A tabela da pessoa (a frase em análise) no mesmo formato dos cartões: comparar vira achar o cartão igual.
-static void sua_tabela_na_cola(const Estado *e, Rectangle b) {
+static void sua_tabela_na_cola(const Estado *e, Rectangle b, float s) {
     const Rodada *r = &e->rod;
     const DadosRodada *d = rodadas_dados(r->numero);
-    float s = escala();
     DrawRectangleRounded(b, 0.08f, 4, Fade(COR_AMBAR, 0.12f));
     DrawRectangleRoundedLinesEx(b, 0.08f, 4, 2.0f * s, COR_AMBAR);
     char titulo[48];
@@ -317,7 +315,7 @@ static void sua_tabela_na_cola(const Estado *e, Rectangle b) {
     int valores[4];
     for (int l = 0; l < 4; l++) // padrão MAP: o que ele respondeu em cada linha (−1: ainda não visto)
         valores[l] = r->linha_vista[r->coluna][l] ? r->linha_valor[r->coluna][l] : -1;
-    mini_tabela(e, (Vector2){b.x + (b.width - 76 * s) * 0.5f, b.y + 44 * s}, d->n_luzes == 1, valores);
+    mini_tabela(e, (Vector2){b.x + (b.width - 76 * s) * 0.5f, b.y + 44 * s}, d->n_luzes == 1, valores, s);
 }
 
 static void desenha_cola(const Estado *e) {
@@ -325,16 +323,20 @@ static void desenha_cola(const Estado *e) {
     // Só quando a pessoa pede (H). Enquanto ele fala, ela some: os símbolos dele aparecem desse lado do
     // vidro.
     if (!e->ajuda_aberta || e->cri.fala_t > 0.0f || r->etapa == ETAPA_CONCLUIDA) return;
-    float s = escala();
-    Rectangle c = {24 * s, 56 * s, GetScreenWidth() - 680 * s, 360 * s};
+    // A cola ocupa o espaço à esquerda do terminal. Em telas mais altas (16:10) esse espaço fica mais
+    // estreito que o desenho dela (600 unidades): então tudo nela — cartões, lâmpadas e letras — encolhe
+    // junto.
+    float g = escala(), livre = GetScreenWidth() - 680 * g, s = g * fminf(1.0f, livre / (600 * g));
+    Rectangle c = {24 * g, 56 * g, livre, 360 * s};
     ui_painel(c, COR_AMBAR);
     ui_texto(e, dialogo_texto(TXT_COLA_TITULO), (Vector2){c.x + 16 * s, c.y + 12 * s}, 17 * s, COR_AMBAR);
     float bh = 136 * s, faixa = 118 * s, x0 = c.x + 16 * s + faixa + 12 * s;
     float bw = (c.x + c.width - 16 * s - x0 - 12 * s) * 0.5f;
-    sua_tabela_na_cola(e, (Rectangle){c.x + 16 * s, c.y + 42 * s, faixa, 2 * bh + 10 * s});
+    sua_tabela_na_cola(e, (Rectangle){c.x + 16 * s, c.y + 42 * s, faixa, 2 * bh + 10 * s}, s);
     for (int i = 0; i < CONECTIVOS_ESCOLHA; i++) // padrão MAP: os quatro conectivos, em 2 × 2
         conectivo_da_cola(
-            e, i, (Rectangle){x0 + (i % 2) * (bw + 12 * s), c.y + 42 * s + (i / 2) * (bh + 10 * s), bw, bh});
+            e, i, (Rectangle){x0 + (i % 2) * (bw + 12 * s), c.y + 42 * s + (i / 2) * (bh + 10 * s), bw, bh},
+            s);
     if (r->etapa == ETAPA_ESCOLHER_CONECTIVO) { // encolhe a letra até caber na largura do painel
         const char *dica = dialogo_texto(TXT_COLA_COMPARE);
         float t = 15 * s, cabe = c.width - 32 * s, mede = ui_mede(e, dica, t).x;
