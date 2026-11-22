@@ -5,10 +5,16 @@
 #include "dialogo.h"
 #include <math.h>
 
+// Acesa: o bulbo âmbar com um anel escuro em volta e o brilho por fora. Apagada: um botão verde-escuro.
 void manual_lampada(Vector2 c, float r, bool acesa) {
-    if (acesa) DrawCircleV(c, r * 1.8f, Fade(COR_LAMPADA, 0.25f));
-    DrawCircleV(c, r, acesa ? COR_LAMPADA : (Color){24, 30, 26, 255});
-    DrawCircleLinesV(c, r, acesa ? COR_LAMPADA : Fade(COR_FOSFORO, 0.5f));
+    if (!acesa) {
+        DrawCircleV(c, r, (Color){16, 36, 28, 255});
+        DrawCircleLinesV(c, r, (Color){29, 61, 46, 255});
+        return;
+    }
+    DrawCircleV(c, r * 2.1f, Fade(COR_LAMPADA, 0.18f));
+    DrawCircleV(c, r * 1.45f, COR_AMBAR_ESCURO);
+    DrawCircleV(c, r, COR_LAMPADA);
 }
 
 // `alfa` < 1 apaga (a coluna que não está em análise).
@@ -43,19 +49,20 @@ void manual_mini_tabela(const Estado *e, Vector2 pos, bool unario, const int *va
 void manual_cartao(const Estado *e, Rectangle b, const char *nome, const char *descricao, bool unario,
                    const int *valores, bool destaque, float s) {
     Color cor = destaque ? COR_AMBAR : COR_FOSFORO;
-    if (destaque) DrawRectangleRounded(b, 0.1f, 4, Fade(COR_AMBAR, 0.12f));
-    DrawRectangleRoundedLinesEx(b, 0.1f, 4, (destaque ? 2.0f : 1.0f) * s, destaque ? cor : Fade(cor, 0.3f));
+    DrawRectangleRec(b, destaque ? Fade(COR_AMBAR, 0.12f) : Fade(BLACK, 0.28f));
+    DrawRectangleLinesEx(b, (destaque ? 1.5f : 1.0f) * s, destaque ? cor : COR_CRT_LINHA);
     ui_texto(e, nome, (Vector2){b.x + 10 * s, b.y + 8 * s}, 18 * s, cor);
     ui_texto_quebrado(e, descricao, (Vector2){b.x + 10 * s, b.y + 32 * s}, b.width - 104 * s, 13 * s,
-                      RAYWHITE);
+                      COR_CRT_TEXTO);
     manual_mini_tabela(e, (Vector2){b.x + b.width - 84 * s, b.y + 14 * s}, unario, valores, s);
 }
 
 void manual_selo_ajuda(const Estado *e, float direita, float topo, float s) {
     const char *selo = dialogo_texto(e->ajuda_aberta ? TXT_TERMINAL_SELO_FECHAR : TXT_TERMINAL_SELO_AJUDA);
     Vector2 m = ui_mede(e, selo, 16 * s);
-    Rectangle b = {direita - m.x - 16 * s, topo, m.x + 16 * s, 26 * s};
-    DrawRectangleRounded(b, 0.3f, 4, e->ajuda_aberta ? (Color){22, 34, 26, 255} : Fade(COR_AMBAR, 0.18f));
-    DrawRectangleRoundedLinesEx(b, 0.3f, 4, 1.5f * s, COR_AMBAR);
-    ui_texto(e, selo, (Vector2){b.x + 8 * s, b.y + 5 * s}, 16 * s, COR_AMBAR);
+    Rectangle b = {direita - m.x - 24 * s, topo, m.x + 24 * s, 30 * s};
+    // o botão âmbar do analisador: véu leve fechado, mais aceso com a ajuda aberta
+    DrawRectangleRec(b, Fade(COR_AMBAR, e->ajuda_aberta ? 0.2f : 0.08f));
+    DrawRectangleLinesEx(b, 1.0f * s, COR_AMBAR);
+    ui_texto(e, selo, (Vector2){b.x + 12 * s, b.y + 7 * s}, 16 * s, COR_AMBAR);
 }
