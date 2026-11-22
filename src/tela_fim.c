@@ -156,5 +156,5 @@ void tela_fim_desenha(const Estado *e) {
     } else {
         tela_fim_desenha_ranking(e, e->fim.posicao, TXT_RANKING_CTA_FIM);
     }
-    teclas_desenha_placar(e);
+    teclas_desenha_tela_cheia(e);
 }

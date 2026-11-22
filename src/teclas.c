@@ -72,9 +72,20 @@ static int itens_do_placar(const Estado *e, TeclaAcao *t) {
     return 3;
 }
 
+static int itens_do_menu(const Estado *e, TeclaAcao *t) {
+    if (e->menu.ranking_aberto) {
+        t[0] = (TeclaAcao){"ENTER", TXT_TECLA_FECHAR}; // o ESC também fecha
+        return 1;
+    }
+    t[0] = (TeclaAcao){"SETAS_V", TXT_TECLA_ESCOLHER};
+    t[1] = (TeclaAcao){"ENTER", TXT_TECLA_CONFIRMAR};
+    return 2;
+}
+
 static int itens_do_contexto(const Estado *e, TeclaAcao *t) {
     bool fim = e->fase == FASE_FIM_BOM || e->fase == FASE_FIM_RUIM;
     if (fim) return itens_do_placar(e, t);
+    if (e->fase == FASE_MENU) return itens_do_menu(e, t);
     switch (e->jog.modo) {
     case MODO_TERMINAL:
         return itens_do_terminal(e, t);
@@ -204,14 +215,14 @@ static void desenha_minimapa(const Estado *e, const TeclaAcao *itens, int n, Vec
 }
 
 // ================================================================== a barra
-static void desenha_barra(const Estado *e) {
+static void desenha_barra(const Estado *e, bool minimapa) {
     TeclaAcao itens[MAX_ITENS];
     int n = itens_do_contexto(e, itens);
     float s = ui_escala(), altura = 30 * s, y = GetScreenHeight() - altura - 12 * s;
     DrawRectangle(0, (int)(y - 10 * s), GetScreenWidth(), (int)(altura + 22 * s), (Color){4, 7, 5, 235});
-    desenha_minimapa(e, itens, n, (Vector2){14 * s, y - 4 * 22 * s - 18 * s});
-    float x = 290 * s;
-    for (int i = 0; i < n; i++) { // padrão MAP: cada tecla com o que ela faz agora
+    if (minimapa) desenha_minimapa(e, itens, n, (Vector2){14 * s, y - 4 * 22 * s - 18 * s});
+    float x = minimapa ? 290 * s : 90 * s; // sem o minimapa (menu), a barra começa na margem do texto
+    for (int i = 0; i < n; i++) {          // padrão MAP: cada tecla com o que ela faz agora
         x += tecla(e, itens[i].tecla, (Vector2){x, y}, altura) + 8 * s;
         const char *acao = dialogo_texto(itens[i].acao);
         ui_texto(e, acao, (Vector2){x, y + altura * 0.22f}, 17 * s, RAYWHITE);
@@ -222,10 +233,12 @@ static void desenha_barra(const Estado *e) {
 void teclas_desenha(const Estado *e) {
     bool jogando =
         e->fase != FASE_MENU && e->fase != FASE_INTRO && e->fase != FASE_FIM_BOM && e->fase != FASE_FIM_RUIM;
-    if (jogando && !e->pausado && !susto_ativo(e)) desenha_barra(e);
+    if (jogando && !e->pausado && !susto_ativo(e)) desenha_barra(e, true);
 }
 
-// As telas depois do final cobrem a tela inteira: elas chamam a barra por cima de si (tela_fim.c).
-void teclas_desenha_placar(const Estado *e) {
-    if ((e->fase == FASE_FIM_BOM || e->fase == FASE_FIM_RUIM) && e->fim.tela_final) desenha_barra(e);
+// O menu e as telas depois do final cobrem a tela inteira: elas chamam a barra por cima de si. No menu, sem
+// o minimapa (a tela de início fica limpa).
+void teclas_desenha_tela_cheia(const Estado *e) {
+    if (e->fase == FASE_MENU) desenha_barra(e, false);
+    if ((e->fase == FASE_FIM_BOM || e->fase == FASE_FIM_RUIM) && e->fim.tela_final) desenha_barra(e, true);
 }

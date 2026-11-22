@@ -4,6 +4,7 @@
 #include "audio_sintese.h"
 #include "trilhas.h"
 #include "tela_fim.h"
+#include "menu.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -322,28 +323,11 @@ static void atualiza_legendas(Estado *e, float dt) {
     if (f->tempo >= f->fila[0].duracao) ui_legenda_pula(e);
 }
 
-// ------------------------------------------------------------------ menu e fim (lógica)
-// INICIAR, RANKING e SAIR (no modo feira, sem SAIR). O ranking abre por cima até ENTER ou ESC.
-static void atualiza_menu(Estado *e) {
-    if (e->menu.ranking_aberto) {
-        if (e->in.confirmar || e->in.voltar) e->menu.ranking_aberto = false;
-        return;
-    }
-    int opcoes = e->modo_feira ? 2 : 3;
-    if (e->in.cima) e->menu.cursor = (e->menu.cursor + opcoes - 1) % opcoes;
-    if (e->in.baixo) e->menu.cursor = (e->menu.cursor + 1) % opcoes;
-    if (!e->in.confirmar) return;
-    if (e->menu.cursor == 0)
-        e->evento = EV_INICIAR;
-    else if (e->menu.cursor == 1)
-        e->menu.ranking_aberto = true;
-    else
-        e->sair = true;
-}
+// ------------------------------------------------------------------ menu e fim (lógica: menu.c, tela_fim.c)
 
 void ui_atualiza(Estado *e, float dt) {
     atualiza_legendas(e, dt);
-    if (e->fase == FASE_MENU) atualiza_menu(e);
+    menu_atualiza(e); // a tela de início (menu.c)
     tela_fim_atualiza(e, dt);
 }
 
@@ -359,45 +343,6 @@ static void desenha_opcao(const Estado *e, const char *texto, float y, bool ativ
         DrawRectangle((int)r.x, (int)r.y, (int)(3 * s), (int)r.height, COR_FOSFORO);
     }
     ui_texto(e, texto, (Vector2){x, y}, 30 * s, ativa ? COR_FOSFORO : Fade(COR_FOSFORO, 0.5f));
-}
-
-// A chamada do menu: quem está em 1º e o convite ("você pode ser o próximo"); sem ranking, o convite.
-static void desenha_chamada(const Estado *e, float y) {
-    float s = ui_escala();
-    if (e->ranking.n == 0) {
-        ui_texto_centro(e, dialogo_texto(TXT_MENU_CTA_VAZIO), y, 20 * s, COR_AMBAR);
-        return;
-    }
-    const EntradaRanking *lider = &e->ranking.itens[0];
-    Identidade id = {.feminino = lider->feminino};
-    snprintf(id.nome, sizeof(id.nome), "%s", lider->nome);
-    char nome[96], texto[160];
-    dialogo_personaliza(&id, dialogo_texto(TXT_FIM_JOGADOR), nome, sizeof(nome));
-    snprintf(texto, sizeof(texto), dialogo_texto(TXT_MENU_LIDER), nome, lider->placar);
-    ui_texto_centro(e, texto, y, 20 * s, COR_AMBAR);
-    ui_texto_centro(e, dialogo_texto(TXT_MENU_CTA), y + 30 * s, 22 * s, COR_FOSFORO);
-}
-
-// [REQ:RF5] tela de início: título (com o aviso de nome provisório), INICIAR, RANKING e SAIR
-static void desenha_menu(const Estado *e) {
-    float s = ui_escala();
-    if (e->menu.ranking_aberto) { // só a tabela: o menu por trás aparecia fantasma
-        tela_fim_desenha_ranking(e, -1, TXT_MENU_CTA);
-        ui_texto_centro(e, dialogo_texto(TXT_RANKING_VOLTAR), GetScreenHeight() - 90 * s, 20 * s, COR_AMBAR);
-        return;
-    }
-    int w = GetScreenWidth(), h = GetScreenHeight();
-    DrawRectangleGradientV(0, 0, w, h, Fade(BLACK, 0.35f), Fade(BLACK, 0.85f));
-    ui_texto_centro(e, TITULO_JOGO, 190 * s, 76 * s, COR_FOSFORO);
-#if TITULO_PROVISORIO
-    ui_texto_centro(e, dialogo_texto(TXT_MENU_AVISO_PROVISORIO), 278 * s, 22 * s, COR_AMBAR);
-#endif
-    desenha_opcao(e, dialogo_texto(TXT_MENU_INICIAR), 360 * s, e->menu.cursor == 0);
-    desenha_opcao(e, dialogo_texto(TXT_MENU_RANKING), 405 * s, e->menu.cursor == 1);
-    if (!e->modo_feira) desenha_opcao(e, dialogo_texto(TXT_MENU_SAIR), 450 * s, e->menu.cursor == 2);
-    desenha_chamada(e, 515 * s);
-    ui_texto_centro(e, dialogo_texto(TXT_MENU_DICA), 600 * s, 18 * s, Fade(COR_VIDRO, 0.8f));
-    ui_texto_centro(e, dialogo_texto(TXT_MENU_CONTROLES), 650 * s, 18 * s, Fade(COR_FOSFORO, 0.55f));
 }
 
 static void copia_letras(const char *texto, int letras, char *saida, size_t tamanho) {
@@ -572,7 +517,7 @@ static void desenha_debug(const Estado *e) {
 void ui_desenha(const Estado *e) {
     bool jogando =
         e->fase != FASE_MENU && e->fase != FASE_INTRO && e->fase != FASE_FIM_BOM && e->fase != FASE_FIM_RUIM;
-    if (e->fase == FASE_MENU) desenha_menu(e);
+    menu_desenha(e);
     if (e->fase == FASE_INTRO) desenha_intro(e);
     if (jogando && e->jumpscare_t <= 0.0f) desenha_hud(e);
     desenha_diario(e);

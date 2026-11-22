@@ -7,6 +7,6 @@
 #include "estado.h"
 
 void teclas_desenha(const Estado *e);
-void teclas_desenha_placar(const Estado *e); // por cima das telas depois do final
+void teclas_desenha_tela_cheia(const Estado *e); // por cima do menu e das telas depois do final
 
 #endif

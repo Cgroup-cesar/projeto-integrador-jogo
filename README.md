@@ -136,7 +136,8 @@ src/dialogo.c/.h         todos os textos do jogo
 src/audio_sintese.c/.h   sons curtos gerados em código (e substituição por .ogg, .wav ou .mp3)
 src/trilhas.c/.h         sons longos gravados (assets/audio): trilha do menu, vozes, coração e passos
 src/posfx.c/.h           render target, luz e névoa, filtro VHS
-src/ui.c/.h              fonte com fallback, menu (com o botão RANKING), HUD, legendas, diário
+src/ui.c/.h              fonte com fallback, HUD, legendas, diário, pausa
+src/menu.c/.h            a tela de início: título à esquerda, o Precursor à vista, opções em faixas, convite do ranking
 src/tela_fim.c/.h        depois do final: desempenho, avaliação do jogo em estrelas e o ranking
 src/ranking.c/.h         ranking.txt e avaliacoes.csv no disco do estande (nada no --smoke)
 src/identidade.c/.h      "Professor ou professora?" e o nome, no começo da intro (só em memória, só na partida)
@@ -200,7 +201,7 @@ Cada trecho que cumpre um requisito tem, logo acima, um comentário-âncora `// 
 | RF2 Controle do jogador por teclado/mouse | [src/main.c#L32-L68](src/main.c#L32-L68)<br>[src/jogador.c#L51-L69](src/jogador.c#L51-L69)<br>[src/jogador.c#L119-L127](src/jogador.c#L119-L127) | `[REQ:RF2]` | Câmera em 1ª pessoa pelo mouse; WASD, Shift (corrida com fôlego), E, 1/2/3, setas, ENTER e Esc, lidos uma vez por quadro numa `struct Entrada`. |
 | RF3 Coleção (vetor) de múltiplos objetos | [src/estado.h#L285-L290](src/estado.h#L285-L290) | `[REQ:RF3]` | Seis coleções de capacidade fixa com contador (ruídos, partículas, rachaduras, eventos, interativos, paredes), sem `malloc` por quadro; ver a tabela de map, filter e fold. |
 | RF4 Colisões com funções da Raylib | [src/jogador.c#L72-L79](src/jogador.c#L72-L79)<br>[src/colecoes.c#L186-L196](src/colecoes.c#L186-L196)<br>[src/colecoes.c#L145-L165](src/colecoes.c#L145-L165)<br>[src/criatura.c#L174-L175](src/criatura.c#L174-L175)<br>[src/criatura.c#L284-L291](src/criatura.c#L284-L291) | `[REQ:RF4]` | `CheckCollisionBoxes` (jogador × paredes, vidro, móveis e armários, eixo por eixo), `GetRayCollisionBox` (mira de interação e visão da criatura contra as paredes) e `CheckCollisionSpheres` (captura). |
-| RF5 Placar, vidas, telas de início e fim | [src/jogo.c#L53-L58](src/jogo.c#L53-L58)<br>[src/ui.c#L381-L401](src/ui.c#L381-L401)<br>[src/tela_fim.c#L74-L105](src/tela_fim.c#L74-L105) | `[REQ:RF5]` | Placar = fold dos eventos; vidas = integridade do vidro (fold das rachaduras), recalculados a cada quadro; menu com o aviso de nome provisório, o botão RANKING e o convite ("você pode ser o próximo"), intro e tela de fim só com o principal: resultado, placar e lugar no ranking, mais a avaliação do jogo em estrelas. |
+| RF5 Placar, vidas, telas de início e fim | [src/jogo.c#L53-L58](src/jogo.c#L53-L58)<br>[src/menu.c#L76-L102](src/menu.c#L76-L102)<br>[src/tela_fim.c#L74-L105](src/tela_fim.c#L74-L105) | `[REQ:RF5]` | Placar = fold dos eventos; vidas = integridade do vidro (fold das rachaduras), recalculados a cada quadro; tela de início com o título, o gancho, as opções INICIAR, RANKING e SAIR, o convite do 1º lugar ("você pode ser o próximo") e o aviso de nome provisório, intro e tela de fim só com o principal: resultado, placar e lugar no ranking, mais a avaliação do jogo em estrelas. |
 | RF6 Condição de vitória/derrota | [src/compositor.c#L61-L75](src/compositor.c#L61-L75)<br>[src/tela_fim.c#L74-L105](src/tela_fim.c#L74-L105) | `[REQ:RF6]` | A frase transmitida vai para `regras_avalia_transmissao`: contradição → final bom (VITÓRIA); satisfazível → final ruim (DERROTA); inválida → SINTAXE INVÁLIDA, sem penalidade. |
 
 ### Map, filter e fold nas coleções
