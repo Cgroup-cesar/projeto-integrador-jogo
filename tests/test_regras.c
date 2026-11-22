@@ -133,6 +133,13 @@ static void testa_volumes_trilhas(void) {
     SituacaoSom presa = {.criatura_solta = false, .distancia_criatura = 3.0f};
     regras_volumes_trilhas(presa, v);
     CHECK(perto(v[TRILHA_CORACAO_RAPIDO], 0.0f)); // na cela: sem coração
+    SituacaoSom verdadeiro = {.radio_falando = true}, falso = {.radio_falando = true, .radio_falso = true};
+    regras_volumes_trilhas(verdadeiro, v);
+    CHECK(v[TRILHA_VOZ_RADIO] > 0.0f &&
+          perto(v[TRILHA_VOZ_PRECURSOR], 0.0f)); // o Varela de verdade: só o rádio
+    regras_volumes_trilhas(falso, v);
+    CHECK(v[TRILHA_VOZ_RADIO] > 0.0f && v[TRILHA_VOZ_PRECURSOR] > 0.0f); // o falso: o canto dele por baixo
+    CHECK(v[TRILHA_VOZ_PRECURSOR] < VOL_VOZ_PRECURSOR);                  // ...e baixo
 }
 
 // [REQ:PURA-regras_quadro_susto] testa o pulo até a câmera, o tremor e o clarão
@@ -329,7 +336,8 @@ static void testa_nome_edita(void) {
     const int digitado[] = {'j', 'o', 0xE3, 'o', ' ', 0xE9, 'd', 'e', 'r'}; // "joão éder"
     for (int i = 0; i < 9; i++) // padrão FOLD: cada letra digitada entra no nome
         regras_nome_edita(minusculo, sizeof(minusculo), 16, digitado[i]);
-    CHECK(strcmp(minusculo, "Jo\xC3\xA3o \xC3\x89" "der") == 0); // "João Éder": só o começo de cada palavra
+    CHECK(strcmp(minusculo, "Jo\xC3\xA3o \xC3\x89"
+                            "der") == 0); // "João Éder": só o começo de cada palavra
 }
 
 // ================================================================== texturas procedurais (materiais.c)
@@ -415,6 +423,35 @@ static void testa_uv_mundo(void) {
     CHECK(perto(sem_metros.x, 3.0f));
 }
 
+// [REQ:PURA-regras_falha_texto] testa a legenda com defeito: rara, curta, repetível, sem quebrar acentos
+static void testa_falha_texto(void) {
+    const char *rotulo = "GEN. VARELA (r\xC3\xA1"
+                         "dio)"; // "GEN. VARELA (rádio)"
+    char s[64], de_novo[64];
+    int falhas = 0, inicios = 0;
+    bool antes = false, acento_intacto = true, calma_igual = true, falha_muda = false;
+    for (int i = 0; i < 1000; i++) { // padrão FOLD: 10 s, a cada 0,01 s, contando as falhas
+        bool f = regras_falha_texto(rotulo, i * 0.01f, s, sizeof(s));
+        falhas += f;
+        inicios += f && !antes;
+        antes = f;
+        if (strlen(s) != strlen(rotulo) || strstr(s, "\xC3\xA1") == NULL) acento_intacto = false;
+        if (!f && strcmp(s, rotulo) != 0) calma_igual = false;
+        if (f && strcmp(s, rotulo) != 0) falha_muda = true;
+    }
+    CHECK(falhas > 0 && falhas < 250); // falha às vezes, mas fica legível quase o tempo todo
+    CHECK(inicios >= 4);               // várias vezes em 10 s (mais ou menos uma a cada 1,4 s)
+    CHECK(acento_intacto && calma_igual && falha_muda);
+    regras_falha_texto(rotulo, 3.21f, s, sizeof(s));
+    regras_falha_texto(rotulo, 3.21f, de_novo, sizeof(de_novo));
+    CHECK(strcmp(s, de_novo) == 0); // repetível: o mesmo instante, a mesma falha
+    char curto[5];
+    regras_falha_texto(rotulo, 0.0f, curto, sizeof(curto));
+    CHECK(strlen(curto) == 4); // nunca passa do tamanho
+    CHECK(!regras_falha_texto(rotulo, -1.0f, s, sizeof(s)) &&
+          strcmp(s, rotulo) == 0); // tempo negativo: calmo
+}
+
 int main(void) {
     SetTraceLogLevel(LOG_ERROR); // o aviso de vetor cheio é esperado aqui
     testa_movimento();
@@ -430,6 +467,7 @@ int main(void) {
     testa_evento_do_erro();
     testa_monta_texto();
     testa_nome_edita();
+    testa_falha_texto();
     testa_colecao_ruidos();
     testa_colecao_eventos();
     testa_colecao_particulas();

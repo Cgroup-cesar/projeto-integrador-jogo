@@ -61,6 +61,10 @@ int regras_roteiro_partida(bool final_bom, EventoFase *saida, int maximo);
 // volta ao menu (EV_VOLTAR_MENU). Fora do modo feira, no menu e no fim (que já volta sozinho): nada.
 EventoFase regras_evento_inatividade(bool modo_feira, Fase fase, float tempo_inativo);
 
+// O plot twist: a partir da S2 o Varela de verdade desceu até a cela, e quem fala no rádio é o Precursor
+// imitando a voz dele (S2, R3 e resposta final). ui_fala usa isto para trocar as falas pela versão falsa.
+bool regras_radio_falso(Fase fase);
+
 // ------------------------------------------------------------------ resposta final
 #define ATOMO_P 0 // [VOCÊ FALAR]
 #define ATOMO_Q 1 // [PORTA ABRIR]
@@ -132,7 +136,8 @@ typedef struct {
     bool criatura_solta;      // nos corredores, fora da cela
     float distancia_criatura; // metros até o jogador
     bool andando, correndo;
-    bool silencio; // os 0,2 s antes do susto, o próprio susto e o silêncio do final bom
+    bool silencio;    // os 0,2 s antes do susto, o próprio susto e o silêncio do final bom
+    bool radio_falso; // a fala do rádio é do Varela falso: o canto do Precursor entra baixo, por baixo dela
 } SituacaoSom;
 
 // Volume alvo (0..1) de cada trilha. Coração: nada além de CORACAO_LONGE_M, normal (mais alto quanto mais
@@ -190,5 +195,10 @@ void regras_monta_texto(const char *modelo, const Marcador *marcadores, int n, b
 // Devolve true se o nome mudou.
 #define NOME_APAGAR 8
 bool regras_nome_edita(char *nome, size_t tamanho, int max_letras, int codigo);
+
+// Legenda com defeito (o nome do falante no rádio falso): em janelas curtas e irregulares, algumas letras
+// viram símbolos. Copia `texto` para `saida` e devolve true enquanto está falhando. Determinística (o mesmo
+// `t` dá sempre o mesmo resultado) e só troca letras ASCII: acentos (UTF-8) passam intactos.
+bool regras_falha_texto(const char *texto, float t, char *saida, size_t tamanho);
 
 #endif

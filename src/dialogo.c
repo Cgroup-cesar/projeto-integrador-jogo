@@ -8,6 +8,7 @@
 // Quando o rádio chama SÓ pelo nome ("{NOME}", sem o título), é o Precursor imitando a voz dele: é a pista do
 // plot twist (o bilhete do Arquivo avisa). Não use {NOME} sozinho nas falas do Varela verdadeiro.
 #define V FALANTE_VARELA
+#define F FALANTE_VARELA_FALSO // o Precursor imitando o Varela
 #define J FALANTE_JOGADOR
 
 static const Legenda INTRO_INTERFONE[] = {
@@ -36,12 +37,12 @@ static const Legenda INICIO_S2[] = {
 };
 static const Legenda FIM_S2[] = {
     // já é o Precursor imitando o Varela: só o nome, sem o título (a pista)
-    {"Contenção estável, {NOME}. Pode voltar.", 3.5f, V},
+    {"Contenção estável, {NOME}. Pode voltar.", 3.5f, F},
 };
 static const Legenda APOS_R3[] = {
     // o Precursor imitando o Varela: só o nome, sem o título (a pista)
-    {"{NOME}, ele quer conversar. Transmita: se você falar, a porta abre.", 4.5f, V},
-    {"Confie em mim.", 2.5f, V},
+    {"{NOME}, ele quer conversar. Transmita: se você falar, a porta abre.", 4.5f, F},
+    {"Confie em mim.", 2.5f, F},
 };
 static const Legenda FIM_BOM_FALAS[] = {
     {"...{PROF} {NOME}? É o Varela. O de verdade. O que você disse a ele?", 5.0f, V},
@@ -56,8 +57,19 @@ static const Legenda RODADA_RECOMECA[] = {
 static const Legenda PEGO_FALAS[] = {
     {"...{PROF} {NOME}? Responda! — Ele voltou ao começo do corredor. Tente de novo.", 4.5f, V},
 };
+// As mesmas situações depois que o Varela desceu (regras_radio_falso): quem fala é o Precursor, só pelo nome.
+static const Legenda PORTA_TRANCADA_FALSO[] = {
+    {"A porta fica trancada, {NOME}. Fique comigo.", 3.5f, F},
+};
+static const Legenda RODADA_RECOMECA_FALSO[] = {
+    {"Vidro substituído, {NOME}. Recomece. Com cuidado: eu preciso de você.", 4.5f, F},
+};
+static const Legenda PEGO_FALSO[] = {
+    {"...{NOME}. Você voltou ao começo do corredor. Tente de novo. Eu espero.", 4.5f, F},
+};
 
 #undef V
+#undef F
 #undef J
 
 typedef struct {
@@ -68,10 +80,35 @@ typedef struct {
 #define BLOCO(vetor) {vetor, (int)(sizeof(vetor) / sizeof(vetor[0]))}
 
 static const Bloco BLOCOS[FALAS_TOTAL] = {
-    BLOCO(INTRO_INTERFONE), BLOCO(APOS_R1),        BLOCO(INICIO_S1),       BLOCO(FIM_S1),
-    BLOCO(APOS_R2),         BLOCO(INICIO_S2),      BLOCO(FIM_S2),          BLOCO(APOS_R3),
-    BLOCO(FIM_BOM_FALAS),   BLOCO(PORTA_TRANCADA), BLOCO(RODADA_RECOMECA), BLOCO(PEGO_FALAS),
+    BLOCO(INTRO_INTERFONE),
+    BLOCO(APOS_R1),
+    BLOCO(INICIO_S1),
+    BLOCO(FIM_S1),
+    BLOCO(APOS_R2),
+    BLOCO(INICIO_S2),
+    BLOCO(FIM_S2),
+    BLOCO(APOS_R3),
+    BLOCO(FIM_BOM_FALAS),
+    BLOCO(PORTA_TRANCADA),
+    BLOCO(RODADA_RECOMECA),
+    BLOCO(PEGO_FALAS),
+    BLOCO(PORTA_TRANCADA_FALSO),
+    BLOCO(RODADA_RECOMECA_FALSO),
+    BLOCO(PEGO_FALSO),
 };
+
+BlocoFalas dialogo_versao_falsa(BlocoFalas bloco) {
+    switch (bloco) {
+    case FALAS_PORTA_TRANCADA:
+        return FALAS_PORTA_TRANCADA_FALSO;
+    case FALAS_RODADA_RECOMECA:
+        return FALAS_RODADA_RECOMECA_FALSO;
+    case FALAS_PEGO:
+        return FALAS_PEGO_FALSO;
+    default:
+        return bloco; // as outras falas já são de quem tem que ser
+    }
+}
 
 const Legenda *dialogo_falas(BlocoFalas bloco, int *n) {
     if (bloco < 0 || bloco >= FALAS_TOTAL) {

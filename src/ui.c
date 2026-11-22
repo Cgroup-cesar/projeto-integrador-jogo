@@ -275,10 +275,13 @@ float ui_quadrados_vidro(int vidas, Vector2 pos, float lado, Color cor) {
 // Com a gravação da voz do rádio (assets/audio/voz_radio.wav), ela é que soa nas falas (trilhas.c); o bip
 // sintetizado com chiado só toca quando o arquivo não existe.
 static void bip_do_radio(const Estado *e) {
-    if (!trilhas_tem(e, TRILHA_VOZ_RADIO)) audio_toca(e, SOM_BIP_INTERFONE, 0.6f, 1.0f);
+    bool falso = e->legendas.n > 0 && e->legendas.fila[0].falante == FALANTE_VARELA_FALSO;
+    if (!trilhas_tem(e, TRILHA_VOZ_RADIO))
+        audio_toca(e, SOM_BIP_INTERFONE, 0.6f, falso ? RADIO_FALSO_TOM : 1.0f);
 }
 
 void ui_fala(Estado *e, BlocoFalas bloco) {
+    if (regras_radio_falso(e->fase)) bloco = dialogo_versao_falsa(bloco); // o Varela desceu: é o Precursor
     int n = 0;
     const Legenda *falas = dialogo_falas(bloco, &n);
     bool estava_vazia = e->legendas.n == 0;
@@ -496,15 +499,21 @@ static void desenha_legenda(const Estado *e) {
         largura = GetScreenWidth() - 680 * s;
         x = 24 * s;
     }
-    const char *quem = l->falante == FALANTE_VARELA    ? dialogo_texto(TXT_FALANTE_VARELA)
-                       : l->falante == FALANTE_JOGADOR ? dialogo_texto(TXT_FALANTE_JOGADOR)
-                                                       : "";
-    char nome_falante[96],
-        fala[512]; // [REQ:NOME-USO] {NOME}, {PROF} e {x|y} trocados pelo que o jogador escolheu
+    bool falso = l->falante == FALANTE_VARELA_FALSO; // o mesmo rótulo do Varela: ele está imitando
+    const char *quem = (l->falante == FALANTE_VARELA || falso) ? dialogo_texto(TXT_FALANTE_VARELA)
+                       : l->falante == FALANTE_JOGADOR         ? dialogo_texto(TXT_FALANTE_JOGADOR)
+                                                               : "";
+    // [REQ:NOME-USO] {NOME}, {PROF} e {x|y} trocados pelo que o jogador escolheu
+    char nome_falante[96], fala[512], com_defeito[96];
     dialogo_personaliza(&e->ident, quem, nome_falante, sizeof(nome_falante));
     dialogo_personaliza(&e->ident, l->texto, fala, sizeof(fala));
+    // O rádio falso: o rótulo falha de leve (letras viram símbolos, treme e avermelha por um instante).
+    bool falhando =
+        falso && regras_falha_texto(nome_falante, e->tempo_total, com_defeito, sizeof(com_defeito));
+    float tremor = falhando ? 2.5f * s : 0.0f;
     ui_painel((Rectangle){x - 16 * s, y - 34 * s, largura + 32 * s, 104 * s}, COR_AMBAR);
-    ui_texto(e, nome_falante, (Vector2){x, y - 26 * s}, 16 * s, COR_AMBAR);
+    ui_texto(e, falso ? com_defeito : nome_falante, (Vector2){x + tremor, y - 26 * s}, 16 * s,
+             falhando ? COR_ALARME : COR_AMBAR);
     ui_texto_quebrado(e, fala, (Vector2){x, y}, largura, 22 * s, RAYWHITE);
 }
 

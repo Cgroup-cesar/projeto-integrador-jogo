@@ -67,7 +67,9 @@ static SituacaoSom situacao(const Estado *e) {
     SituacaoSom s;
     s.tela_inicial = e->fase == FASE_MENU || (e->fase == FASE_INTRO && e->intro.etapa != INTRO_RADIO);
     s.precursor_falando = precursor_falando(e);
-    s.radio_falando = e->legendas.n > 0 && e->legendas.fila[0].falante == FALANTE_VARELA;
+    Falante quem = e->legendas.n > 0 ? e->legendas.fila[0].falante : FALANTE_SISTEMA;
+    s.radio_falando = quem == FALANTE_VARELA || quem == FALANTE_VARELA_FALSO;
+    s.radio_falso = quem == FALANTE_VARELA_FALSO;
     s.criatura_solta = regras_fase_eh_saida(e->fase) && c->ativo && c->distorcao <= 0.0f;
     s.distancia_criatura = Vector3Distance(c->pos, e->jog.pos);
     s.andando = andando(e);
@@ -133,7 +135,10 @@ void trilhas_atualiza(Estado *e, float dt) {
     SituacaoSom s = situacao(e);
     float alvo[TRILHA_TOTAL];
     regras_volumes_trilhas(s, alvo);
-    if (e->rec.tem_trilha[TRILHA_VOZ_RADIO]) acompanha_radio(e);
+    if (e->rec.tem_trilha[TRILHA_VOZ_RADIO]) { // o rádio falso fala mais grave
+        acompanha_radio(e);
+        SetMusicPitch(e->rec.trilhas[TRILHA_VOZ_RADIO], s.radio_falso ? RADIO_FALSO_TOM : 1.0f);
+    }
     for (int t = 0; t < TRILHA_TOTAL; t++) // padrão MAP: cada trilha segue o seu volume alvo
         if (e->rec.tem_trilha[t]) aplica(e, (IdTrilha)t, alvo[t], s.silencio, dt);
 }

@@ -103,6 +103,10 @@ com canto ao fundo, e a legenda falha.
 - Vidro rompido: "Vidro substituído. Recomece a leitura, {PROF} {NOME}. Com mais cuidado."
 - Pego: "...{PROF} {NOME}? Responda! — Ele voltou ao começo do corredor. Tente de novo."
 - No alto do terminal: "{OPERADOR|OPERADORA}: {PROF} {NOME}".
+- Depois que o Varela desceu (S2, R3 e resposta final), as mesmas situações são do Varela falso (F):
+  - Pego (F): "...{NOME}. Você voltou ao começo do corredor. Tente de novo. Eu espero."
+  - Vidro rompido (F): "Vidro substituído, {NOME}. Recomece. Com cuidado: eu preciso de você."
+  - Porta trancada (F): "A porta fica trancada, {NOME}. Fique comigo."
 
 ---
 

@@ -155,6 +155,15 @@ static void testa_voltar_ao_menu_e_inatividade(void) {
     CHECK(regras_evento_inatividade(true, FASE_FIM_BOM, FEIRA_INATIVIDADE_S + 1.0f) == EV_NENHUM);
 }
 
+// [REQ:PURA-regras_radio_falso] testa quando o rádio é o Precursor imitando o Varela (o plot twist)
+static void testa_radio_falso(void) {
+    CHECK(!regras_radio_falso(FASE_INTRO) && !regras_radio_falso(FASE_R1) && !regras_radio_falso(FASE_S1));
+    CHECK(!regras_radio_falso(FASE_R2));
+    CHECK(regras_radio_falso(FASE_S2) && regras_radio_falso(FASE_R3)); // o Varela desceu até a cela
+    CHECK(regras_radio_falso(FASE_RESPOSTA_FINAL));
+    CHECK(!regras_radio_falso(FASE_FIM_BOM)); // no final bom, o Varela de verdade volta ao rádio
+}
+
 int main(void) {
     testa_partidas_completas();
     testa_ordem_das_fases();
@@ -164,5 +173,6 @@ int main(void) {
     testa_eventos_ignorados();
     testa_debug();
     testa_voltar_ao_menu_e_inatividade();
+    testa_radio_falso();
     return resultado_final("test_fluxo");
 }

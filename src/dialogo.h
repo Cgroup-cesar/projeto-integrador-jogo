@@ -18,10 +18,17 @@ typedef enum {
     FALAS_PORTA_TRANCADA,
     FALAS_RODADA_RECOMECA,
     FALAS_PEGO,
+    FALAS_PORTA_TRANCADA_FALSO, // as três de cima depois que o Varela desceu (o Precursor no rádio)
+    FALAS_RODADA_RECOMECA_FALSO,
+    FALAS_PEGO_FALSO,
     FALAS_TOTAL
 } BlocoFalas;
 
 const Legenda *dialogo_falas(BlocoFalas bloco, int *n);
+// A versão do Precursor imitando o Varela, para as falas que podem acontecer depois que ele desceu (pego,
+// vidro rompido, porta trancada). Sem versão falsa, devolve o próprio bloco. Quem decide quando é
+// regras_radio_falso.
+BlocoFalas dialogo_versao_falsa(BlocoFalas bloco);
 
 // Linhas datilografadas da intro (tela preta). Podem ter marcadores: passe por dialogo_personaliza.
 #define INTRO_LINHAS 3

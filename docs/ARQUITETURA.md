@@ -89,7 +89,7 @@ stateDiagram-v2
 | `main.c` | janela, game loop, leitura da entrada, capturas, `--smoke` (piloto automático) |
 | `jogo.c` | aplica `regras_proxima_fase`, prepara cada fase, pontua, pausa, debug, modo feira |
 | `config.h` · `estado.h` | constantes · todo o estado do jogo |
-| `logica.c` · `regras.c` · `funcional.h` · `colecoes.c` | a camada pura |
+| `logica.c` · `regras.c` · `regras_texto.c` · `funcional.h` · `colecoes.c` | a camada pura (`regras_texto.c`: marcadores do roteiro, nome digitado e legenda com defeito do rádio falso) |
 | `nivel.c` | mapa ASCII → paredes, móveis, interativos, luzes; desenho do bloco de contenção com as texturas |
 | `materiais.c` | puro: ruído contínuo nas bordas, o desenho de cada material (`materiais_pixel`), manchas, desgaste do estêncil e `materiais_uv` (UV em metros) |
 | `texturas.c` | gera ou carrega as texturas uma vez, libera ao sair; `texturas_caixa` (6 faces, UV de mundo ou local) e `texturas_quadro` (decalque) |
@@ -108,7 +108,7 @@ stateDiagram-v2
 | `posfx.c` | render target, luz e névoa, VHS |
 | `ui.c` | fonte com fallback, menu, HUD, legendas, diário, tela de fim |
 
-Módulos sem nada para desenhar (`audio_sintese.c`) ou puros (`logica.c`, `regras.c`, `colecoes.c`, `dialogo.c`, `materiais.c`) não têm `xxx_desenha`. `texturas.c` e `cenario.c` só desenham a partir do estado e não têm nada para atualizar por quadro, então não têm `xxx_atualiza`.
+Módulos sem nada para desenhar (`audio_sintese.c`) ou puros (`logica.c`, `regras.c`, `regras_texto.c`, `colecoes.c`, `dialogo.c`, `materiais.c`) não têm `xxx_desenha`. `texturas.c` e `cenario.c` só desenham a partir do estado e não têm nada para atualizar por quadro, então não têm `xxx_atualiza`.
 
 ## Como estender
 

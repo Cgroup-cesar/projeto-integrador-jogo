@@ -192,7 +192,8 @@ typedef struct {
 } Compositor;
 
 // ------------------------------------------------------------------ intro, legendas e fim
-typedef enum { FALANTE_VARELA, FALANTE_JOGADOR, FALANTE_SISTEMA } Falante;
+// FALANTE_VARELA_FALSO: o Precursor imitando o Varela no rádio (mesmo rótulo, voz grave e legenda falhando).
+typedef enum { FALANTE_VARELA, FALANTE_VARELA_FALSO, FALANTE_JOGADOR, FALANTE_SISTEMA } Falante;
 
 typedef struct {
     const char *texto;
