@@ -14,6 +14,7 @@
 #include "audio_sintese.h"
 #include "dialogo.h"
 #include "identidade.h"
+#include "teclas.h"
 #include "ui.h"
 #include "cenario.h"
 #include <string.h>
@@ -381,5 +382,6 @@ void jogo_desenha_interface(const Estado *e) {
         circuito_desenha(e);
     }
     identidade_desenha(e);
+    teclas_desenha(e); // a barra de teclas do rodapé, por baixo das legendas e da pausa
     ui_desenha(e);
 }

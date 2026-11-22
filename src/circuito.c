@@ -237,8 +237,8 @@ void circuito_desenha(const Estado *e) {
     if (e->jog.modo != MODO_PAINEL) return;
     float s = ui_escala();
     const Painel *p = &e->painel;
-    Rectangle r = {GetScreenWidth() * 0.5f - 430 * s, 64 * s, 860 * s,
-                   430 * s}; // acima da legenda do interfone
+    Rectangle r = {GetScreenWidth() * 0.5f - 430 * s, 56 * s, 860 * s,
+                   404 * s}; // acima da legenda do rádio e da barra de teclas
     ui_painel(r, COR_AMBAR);
     ui_texto(e, dialogo_texto(p->numero == 1 ? TXT_PAINEL1_TITULO : TXT_PAINEL2_TITULO),
              (Vector2){r.x + 24 * s, r.y + 18 * s}, 24 * s, COR_AMBAR);
@@ -246,9 +246,9 @@ void circuito_desenha(const Estado *e) {
         desenha_painel1(e, r);
     else
         desenha_painel2(e, r);
-    TextoId rodape = p->resolvido     ? TXT_PAINEL_RESOLVIDO
-                     : p->numero == 1 ? TXT_PAINEL_INSTRUCOES1
-                                      : TXT_PAINEL_INSTRUCOES2;
+    TextoId rodape = p->resolvido     ? TXT_PAINEL_RESOLVIDO // as teclas ficam na barra do rodapé (teclas.c)
+                     : p->numero == 1 ? TXT_PAINEL_OBJETIVO1
+                                      : TXT_PAINEL_OBJETIVO2;
     ui_texto(e, dialogo_texto(rodape), (Vector2){r.x + 24 * s, r.y + r.height - 40 * s}, 18 * s,
              p->resolvido ? COR_AMBAR : Fade(COR_FOSFORO, 0.8f));
 }

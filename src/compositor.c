@@ -191,8 +191,7 @@ void compositor_desenha(const Estado *e) {
         ui_texto(e, c->mensagem, (Vector2){area.x, area.y + 330 * s}, 26 * s, COR_ALARME);
         ui_texto_quebrado(e, c->detalhe, (Vector2){area.x, area.y + 364 * s}, area.width, 16 * s, COR_AMBAR);
     }
-    ui_texto(e, dialogo_texto(TXT_TERMINAL_SAIR), (Vector2){area.x, area.y + area.height - 24 * s}, 15 * s,
-             Fade(COR_FOSFORO, 0.45f));
+    // Esc sai do terminal: está na barra de teclas do rodapé (teclas.c)
 }
 
 // ================================================================== piloto automático (--smoke)

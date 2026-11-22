@@ -176,6 +176,7 @@ static void termina_resposta(Estado *e) {
     r->linha_vista[r->resposta_coluna][linha] = true;
     r->linha_valor[r->resposta_coluna][linha] = valor;
     r->resposta_valor = valor;
+    r->clarao_t = CLARAO_RESPOSTA_S; // a resposta também aparece grande na tela: na feira, o som se perde
     audio_toca(e, valor ? SOM_VERDADEIRO : SOM_FALSO, 0.9f, 1.0f);
     if (++r->resposta_coluna < d->n_colunas) {
         r->resposta_t = 0.7f;
@@ -268,6 +269,7 @@ static void atualiza_conclusao(Estado *e, float dt) {
 void rodadas_atualiza(Estado *e, float dt) {
     Rodada *r = &e->rod;
     r->aviso_t = fmaxf(0.0f, r->aviso_t - dt);
+    r->clarao_t = fmaxf(0.0f, r->clarao_t - dt);
     col_rachaduras_atualiza(&e->rachaduras, dt);
     if (r->rompendo || e->jumpscare_t > 0.0f || e->silencio_t > 0.0f) return;
     if (r->etapa == ETAPA_CONCLUIDA) {

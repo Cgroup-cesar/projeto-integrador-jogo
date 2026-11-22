@@ -161,6 +161,7 @@ typedef struct {
     int resposta_linha;
     int resposta_coluna; // na R2 ele responde às duas frases, uma depois da outra
     bool resposta_valor;
+    float clarao_t; // > 0 logo depois que ele responde: o VERDADE/FALSO grande no terminal
     float aviso_t;
     const char *aviso;
     float concluida_t;

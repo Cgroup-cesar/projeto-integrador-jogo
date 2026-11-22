@@ -37,6 +37,7 @@
 #define FALHA_INTERVALO_S  1.4f  // a legenda falha mais ou menos uma vez a cada intervalo...
 #define FALHA_DURACAO_S    0.18f // ...por este tempo
 #define FALHA_LETRAS       0.35f // fração das letras trocadas por símbolos enquanto falha
+#define CLARAO_RESPOSTA_S  1.2f  // o VERDADE/FALSO grande no terminal depois de cada resposta dele
 #define IDENTIDADE_FEIRA_S 20.0f // no modo feira, "professor ou professora?" e o nome seguem sozinhos
 #define SMOKE_LIMITE_FASE_S                                                                                  \
     180.0f // no --smoke, uma fase que demora mais que isso (tempo simulado) é travamento

@@ -10,6 +10,7 @@
 static const char *const FONTES_CANDIDATAS[] = {
     "fontes/VT323-Regular.ttf",
     "fontes/IBMPlexMono-Regular.ttf",
+    "fonts/ShareTechMono-Regular.ttf", // a fonte que já vem no repositório (tem os acentos)
 };
 
 // Símbolos além do Latin-1 que o jogo usa (setas, conectivos lógicos, quadradinhos do HUD).
@@ -245,7 +246,7 @@ float ui_texto_quebrado(const Estado *e, const char *texto, Vector2 pos, float l
 }
 
 void ui_painel(Rectangle r, Color borda) {
-    DrawRectangleRec(r, (Color){6, 10, 8, 215});
+    DrawRectangleRec(r, (Color){6, 10, 8, 250}); // opaco: a sala 3D não atrapalha a leitura
     DrawRectangleLinesEx(r, 1.5f, Fade(borda, 0.65f));
 }
 
@@ -439,7 +440,8 @@ static void desenha_folego(const Estado *e) {
     if (!escondido && (!regras_fase_eh_saida(e->fase) || j->folego >= JOGADOR_FOLEGO_MAX - 0.01f)) return;
     float s = ui_escala();
     float fracao = j->folego / JOGADOR_FOLEGO_MAX;
-    Rectangle r = {30 * s, GetScreenHeight() - 50 * s, 200 * s, 8 * s};
+    Rectangle r = {260 * s, GetScreenHeight() - 84 * s, 200 * s,
+                   8 * s}; // acima da barra, ao lado do minimapa
     Color cor = j->exausto ? COR_ALARME : COR_FOSFORO;
     Color cor_texto = Fade(COR_FOSFORO, 0.7f);
     // A partir de 8 s escondido: vermelha e piscando, cada vez mais rapido ate os 12 s (3 Hz -> 8 Hz).
@@ -494,10 +496,12 @@ static void desenha_legenda(const Estado *e) {
     float s = ui_escala();
     const Legenda *l = &e->legendas.fila[0];
     float largura = 900 * s;
-    float x = (GetScreenWidth() - largura) * 0.5f, y = GetScreenHeight() - 150 * s;
-    if (e->jog.modo == MODO_TERMINAL) { // o terminal ocupa a direita: a legenda vai para a esquerda
+    float x = (GetScreenWidth() - largura) * 0.5f,
+          y = GetScreenHeight() - 216 * s; // acima da barra de teclas e do minimapa
+    if (e->jog.modo == MODO_TERMINAL) {    // o terminal ocupa a direita: a legenda vai para a esquerda
         largura = GetScreenWidth() - 680 * s;
         x = 24 * s;
+        y = GetScreenHeight() - 270 * s; // entre a cola (no alto) e o minimapa do teclado
     }
     bool falso = l->falante == FALANTE_VARELA_FALSO; // o mesmo rótulo do Varela: ele está imitando
     const char *quem = (l->falante == FALANTE_VARELA || falso) ? dialogo_texto(TXT_FALANTE_VARELA)
