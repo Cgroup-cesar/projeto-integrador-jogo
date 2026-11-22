@@ -9,6 +9,13 @@
 #define TITULO_PROVISORIO 0
 #define MENU_SUBLIMINARES                                                                                    \
     1 // frases que piscam por ~0,1 s na tela de início (0 desliga; ex.: pedido da banca)
+// Chuvisco de TV da tela de início (estilo menu de terror dos anos 2010): a cena continua visível por trás.
+#define MENU_ESTATICA_ALFA   0.09f // força base do chuvisco (0 desliga; acima de ~0,3 a cena some)
+#define MENU_ESTATICA_PICO   0.07f // reforço nos surtos de interferência
+#define MENU_ESTATICA_GRAO   3.0f  // tamanho do grão em px (antes da escala da UI)
+#define MENU_ESTATICA_QUADROS 30.0f // quantas vezes por segundo o chuvisco muda
+#define MENU_FALHA_TROCA_S    0.35f // quanto dura a falha da opção logo depois de escolhida
+#define MENU_BALANCO_PX       3.0f  // amplitude do balanço lento da opção escolhida (px, antes da escala)
 
 // ---------------------------------------------------------------- janela e tempo
 #define LARGURA_JANELA 1280

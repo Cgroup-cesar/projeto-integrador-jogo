@@ -250,6 +250,7 @@ typedef struct {
 typedef struct {
     int cursor;
     bool ranking_aberto; // a opção RANKING do menu: a tabela por cima, até ENTER ou ESC
+    float troca_t;       // tempo_total da última troca de opção (menu, pausa, gênero): dispara a falha
 } Menu;
 
 // ------------------------------------------------------------------ o estado inteiro
