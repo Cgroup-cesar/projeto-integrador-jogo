@@ -19,7 +19,7 @@
 #define MENU_FALHA_LEVE       0.4f // intensidade da falha nas opções da pausa e das perguntas (1 = a do menu)
 #define TELAS_ESTATICA_ALFA   0.03f // chuvisco da pausa e das perguntas da intro: bem mínimo
 #define TELAS_ESTATICA_PICO   0.02f
-#define TECLAS_ESCALA_JOGO    0.88f // tamanho da barra de teclas e do minimapa durante a partida (1 = original)
+#define TECLAS_ESCALA_JOGO 0.88f // tamanho da barra de teclas e do minimapa durante a partida (1 = original)
 
 // ---------------------------------------------------------------- janela e tempo
 #define LARGURA_JANELA 1280
@@ -274,6 +274,15 @@
 #define COR_CONTRALUZ (Color){0x7a, 0xb0, 0xe0, 255}
 #define COR_AMBAR     (Color){0xd9, 0xa4, 0x41, 255}
 #define COR_LANTERNA  (Color){0xf2, 0xe8, 0xd0, 255}
+// Telas de tarefa (analisador, painéis, manual): o monitor de fósforo (crt.c).
+#define COR_CRT_FUNDO    (Color){0x07, 0x11, 0x0f, 250} // quase opaco: a sala 3D não atrapalha a leitura
+#define COR_CRT_LINHA    (Color){0x1c, 0x4a, 0x36, 255} // borda das caixas
+#define COR_CRT_GRADE    (Color){0x0f, 0x2a, 0x1e, 255} // linhas entre as linhas da tabela
+#define COR_CRT_TEXTO    (Color){0xb9, 0xf3, 0xcf, 255}
+#define COR_CRT_APAGADO  (Color){0x4f, 0x8a, 0x69, 255} // legendas, opções não escolhidas
+#define COR_AMBAR_ESCURO (Color){0x5a, 0x43, 0x18, 255} // o anel em volta da lâmpada acesa
+#define CRT_VARREDURA_S  7.0f        // quanto a faixa clara leva para descer a tela do analisador
+#define TERMINAL_TREMIDA_ERRO_S 1.5f // aviso_t acima disto: a opção errada treme (o aviso dura 1,8 s)
 
 // Folego no armario: expulso aos 12 s; saindo com 8 s ou mais escondido, ofega.
 // Segurar a respiração no armário: a linha vermelha vai e volta e a pessoa aperta ESPAÇO sobre a faixa

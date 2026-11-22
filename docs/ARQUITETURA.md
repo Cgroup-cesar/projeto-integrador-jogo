@@ -101,6 +101,7 @@ stateDiagram-v2
 | `susto.c` | o jumpscare: silêncio, grito e o rosto do modelo pulando até a câmera e tremendo (movimento em `regras_quadro_susto`); dura o trecho alto do `jumpscare.mp3` |
 | `rodadas.c` · `terminal.c` · `glifos.c` | as 3 rodadas (o ENTER decide), o analisador SNI-85 (setas, H e Esc), a língua dos glifos |
 | `manual.c` | o manual dos conectivos que o terminal e os painéis compartilham: lâmpada, ✓/✗, mini-tabela e cartão |
+| `crt.c` | a cara de monitor de fósforo das telas de tarefa (analisador, painéis, manual): moldura com quinas, scanlines, varredura descendo, caixas com legenda e opções em faixa |
 | `teclas.c` | a barra de teclas do rodapé e o minimapa do teclado: só as teclas que valem no contexto |
 | `circuito.c` | os painéis 1 e 2: corrente nos fios, o ponto que trava (`regras_circuito_bloqueio`), barulho e movimentos |
 | `compositor.c` | a resposta final por fichas e os dois finais |

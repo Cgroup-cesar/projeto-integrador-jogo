@@ -141,6 +141,7 @@ src/glifos.c/.h          os glifos da língua do Precursor e a projeção no vid
 src/rodadas.c/.h         dados e fluxo das 3 rodadas
 src/terminal.c/.h        interface do ANALISADOR SEMÂNTICO SNI-85
 src/manual.c/.h          o manual dos conectivos (lâmpada, ✓/✗, mini-tabela, cartão), do terminal e dos painéis
+src/crt.c/.h             a cara de monitor das telas de tarefa: moldura com quinas, scanlines, varredura, caixas e faixas
 src/teclas.c/.h          a barra de teclas do rodapé e o minimapa do teclado (só as teclas que valem agora)
 src/compositor.c/.h      resposta final por fichas e os dois finais
 src/circuito.c/.h        painéis de circuito 1 e 2
@@ -282,8 +283,8 @@ Cada laço leva o comentário `// padrão MAP`, `// padrão FILTER` ou `// padr�
 | RNF1 Legibilidade | [.clang-format#L1-L12](.clang-format#L1-L12) | `[REQ:RNF1]` | Nomes em português, claros e consistentes (`atualiza_…`, `desenha_…`, `colidiu_…`); funções de até ~40 linhas (a única exceção, em `audio_sintese.c`, está comentada); o código segue o `.clang-format` (`clang-format --dry-run` sem avisos). |
 | RNF2 Modularização | [src/estado.h#L281-L342](src/estado.h#L281-L342) | `[REQ:RNF2]` | Uma struct por objeto, uma função por responsabilidade, um módulo por sistema; o maior arquivo tem menos de 500 linhas. |
 | RNF3 Separação update/render | [src/main.c#L349-L361](src/main.c#L349-L361) | `[REQ:RNF3]` | Todo módulo tem `xxx_atualiza(Estado *e, float dt)` e `xxx_desenha(const Estado *e)`; o `const` garante que desenhar não muda nada; nenhum `Draw*` em `*_atualiza` (auditado com grep). |
-| RNF4 Robustez | [src/colecoes.c#L9-L14](src/colecoes.c#L9-L14)<br>[src/main.c#L450-L459](src/main.c#L450-L459)<br>[src/nivel.c#L38-L42](src/nivel.c#L38-L42)<br>[src/ui.c#L30-L57](src/ui.c#L30-L57)<br>[src/criatura.c#L24-L40](src/criatura.c#L24-L40) | `[REQ:RNF4]` | Vetor cheio descarta com `TraceLog`, sem travar; listas vazias (sem ruídos, sem eventos) testadas; `dt` limitado; fora do mapa conta como parede; sem fonte, som ou modelo, entra o placeholder. |
-| RNF5 Documentação | [README.md#L213-L213](README.md#L213-L213) | `[REQ:RNF5]` | Este README, `docs/ARQUITETURA.md`, `docs/DECISOES.md` (as escolhas e por quê), `docs/PROGRESSO.md` e `CLAUDE.md`. |
+| RNF4 Robustez | [src/colecoes.c#L9-L14](src/colecoes.c#L9-L14)<br>[src/main.c#L450-L459](src/main.c#L450-L459)<br>[src/nivel.c#L38-L42](src/nivel.c#L38-L42)<br>[src/ui.c#L31-L58](src/ui.c#L31-L58)<br>[src/criatura.c#L24-L40](src/criatura.c#L24-L40) | `[REQ:RNF4]` | Vetor cheio descarta com `TraceLog`, sem travar; listas vazias (sem ruídos, sem eventos) testadas; `dt` limitado; fora do mapa conta como parede; sem fonte, som ou modelo, entra o placeholder. |
+| RNF5 Documentação | [README.md#L214-L214](README.md#L214-L214) | `[REQ:RNF5]` | Este README, `docs/ARQUITETURA.md`, `docs/DECISOES.md` (as escolhas e por quê), `docs/PROGRESSO.md` e `CLAUDE.md`. |
 | RNF6 Versionamento + Makefile | [Makefile#L1-L2](Makefile#L1-L2) | `[REQ:RNF6]` | `Makefile` como build principal (com `test`, `smoke`, `readme-check`); um commit por marco na v0 (M0 a M9) e, daqui em diante, branch por card e PR (ver Metodologia). |
 
 ### Critérios de avaliação

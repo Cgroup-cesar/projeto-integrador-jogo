@@ -6,6 +6,7 @@
 #include "tela_fim.h"
 #include "menu.h"
 #include "falha.h"
+#include "crt.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -255,13 +256,9 @@ void ui_painel(Rectangle r, Color borda) {
 
 void ui_opcao(const Estado *e, const char *texto, Vector2 pos, float largura, float tamanho, bool ativa,
               Color cor) {
-    float s = ui_escala();
-    Rectangle r = {pos.x - 10 * s, pos.y - 4 * s, largura, tamanho + 8 * s};
-    if (ativa) {
-        DrawRectangleRounded(r, 0.25f, 6, Fade(cor, 0.16f));
-        DrawRectangle((int)r.x, (int)r.y, (int)(3 * s), (int)r.height, cor);
-    }
-    ui_texto(e, texto, (Vector2){pos.x + 6 * s, pos.y}, tamanho, ativa ? cor : Fade(cor, 0.55f));
+    float s = ui_escala(); // a faixa das telas de tarefa (crt.c), sem a seta e sem o tremido de erro
+    crt_opcao(e, texto, (Rectangle){pos.x - 10 * s, pos.y - 4 * s, largura, tamanho + 8 * s}, tamanho, ativa,
+              false, false, cor);
 }
 
 float ui_quadrados_vidro(int vidas, Vector2 pos, float lado, Color cor) {
