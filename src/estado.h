@@ -25,11 +25,10 @@ typedef struct {
     bool tecla1, tecla2, tecla3;
     bool lanterna; // F: liga e desliga a lanterna
     bool f1, f2, f3, f5, f9, f12;
-    bool alguma; // qualquer tecla ou movimento (modo feira)
-    // Tela de nome: caracteres digitados neste quadro (GetCharPressed) e Backspace (com repetição).
-    int digitados[ENTRADA_MAX_CARACTERES];
-    int n_digitados;
-    bool apagar;
+    bool alguma;                   // qualquer tecla ou movimento (modo feira)
+    int letras[MAX_LETRAS_QUADRO]; // letras digitadas neste quadro (Unicode), para o campo do nome
+    int n_letras;
+    bool apagar; // Backspace (repete se ficar apertado)
 } Entrada;
 
 // ------------------------------------------------------------------ recursos carregados uma vez
@@ -66,6 +65,8 @@ typedef struct {
     BocaModelo boca;       // a mandíbula animada no susto (susto_carrega_boca)
     Model modelo_lanterna; // opcional: assets/modelos/lanterna.glb
     bool tem_lanterna;
+    Music trilhas[TRILHA_TOTAL]; // opcionais: sons longos de assets/audio (trilhas.c)
+    bool tem_trilha[TRILHA_TOTAL];
     // Texturas do mapa (texturas.c): criadas uma vez em carrega_recursos, liberadas em descarrega_recursos.
     Texture2D material[MATERIAL_TOTAL];
     bool material_de_arquivo[MATERIAL_TOTAL]; // true = assets/texturas/<nome>.png; false = procedural
@@ -190,7 +191,7 @@ typedef struct {
 } Compositor;
 
 // ------------------------------------------------------------------ intro, legendas e fim
-typedef enum { FALANTE_VARELA, FALANTE_ELIAS, FALANTE_SISTEMA } Falante;
+typedef enum { FALANTE_VARELA, FALANTE_JOGADOR, FALANTE_SISTEMA } Falante;
 
 typedef struct {
     const char *texto;
@@ -198,22 +199,39 @@ typedef struct {
     Falante falante;
 } Legenda;
 
+// Os sons longos (trilhas.c): o volume que cada um tem agora e a fala do rádio que está tocando.
+typedef struct {
+    float volume[TRILHA_TOTAL];
+    const char *fala_no_radio; // muda a cada legenda nova do Varela: a voz recomeça de outro trecho
+} Mixagem;
+
 typedef struct {
     Legenda fila[MAX_LEGENDAS];
     int n;
     float tempo; // tempo da legenda da frente
 } FilaLegendas;
 
+// A intro em etapas: as duas perguntas, o texto datilografado e a carta do Varela pelo rádio (já na sala).
+typedef enum { INTRO_GENERO, INTRO_NOME, INTRO_DATILOGRAFA, INTRO_RADIO } EtapaIntro;
+
 typedef struct {
+    EtapaIntro etapa;
+    float tempo_etapa; // no modo feira, cada pergunta segue sozinha depois de IDENTIDADE_FEIRA_S
     int linha;
     float letras; // quantas letras da linha atual já apareceram
     float espera;
-    bool interfone; // terminou o texto datilografado; agora são as falas do Varela
 } Intro;
+
+// Quem o jogador é: escolhido no início da partida e usado nos marcadores {NOME}, {PROF} e {x|y} das falas.
+typedef struct {
+    bool feminino;             // false = professor, true = professora
+    char nome[NOME_MAX_BYTES]; // UTF-8, até NOME_MAX_LETRAS letras
+} Identidade;
 
 typedef struct {
     float tempo; // tempo da cinemática
     int etapa;
+    float leitura;    // tempo com o texto do final na tela (espera o ENTER, até FIM_LEITURA_MAX_S)
     bool tela_final;  // a cinemática acabou: mostra o placar
     float tempo_tela; // tempo na tela de placar (volta ao menu em 20 s)
 } Fim;
@@ -248,13 +266,11 @@ typedef struct Estado {
     Painel painel;
     Compositor comp;
     Intro intro;
+    Identidade ident;
     FilaLegendas legendas;
+    Mixagem mix;
     Fim fim;
     Menu menu;
-
-    // Nome de quem está jogando: só em memória, só nesta partida (zerado no menu; ver regras_nome_ao_entrar).
-    // Não vai para disco nem para o log. Usado no terminal, numa fala do Varela e na tela final.
-    char nome_jogador[NOME_CAPACIDADE];
 
     // [REQ:RF3] as seis coleções: struct por objeto, vetor de capacidade fixa e contador (sem malloc por
     // quadro)

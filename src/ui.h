@@ -33,7 +33,7 @@ void ui_opcao(const Estado *e, const char *texto, Vector2 pos, float largura, fl
 // Quadradinhos de integridade do vidro (desenhados; não dependem da fonte). Devolve a largura usada.
 float ui_quadrados_vidro(int vidas, Vector2 pos, float lado, Color cor);
 
-// ------------------------------------------------------------------ legendas do interfone
+// ------------------------------------------------------------------ legendas do rádio
 void ui_fala(Estado *e, BlocoFalas bloco);
 bool ui_legendas_vazias(const Estado *e);
 void ui_legenda_pula(Estado *e);

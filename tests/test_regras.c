@@ -100,6 +100,41 @@ static void testa_piscada_cela(void) {
     CHECK(regras_piscada_cela(12.34f) == regras_piscada_cela(12.34f)); // repetível
 }
 
+// [REQ:PURA-regras_volumes_trilhas] testa silêncio, menu, passos e o coração por distância
+static void testa_volumes_trilhas(void) {
+    float v[TRILHA_TOTAL];
+    SituacaoSom tudo = {true, true, true, true, 3.0f, true, true, true}; // silêncio vence tudo
+    regras_volumes_trilhas(tudo, v);
+    bool mudo = true;
+    for (int i = 0; i < TRILHA_TOTAL; i++) // padrão FOLD: algum volume ficou acima de zero?
+        if (v[i] > 0.0f) mudo = false;
+    CHECK(mudo);
+    SituacaoSom menu = {.tela_inicial = true};
+    regras_volumes_trilhas(menu, v);
+    CHECK(v[TRILHA_MENU] > 0.0f && perto(v[TRILHA_PASSO_ANDAR], 0.0f));
+    SituacaoSom anda = {.andando = true}, corre = {.andando = true, .correndo = true};
+    regras_volumes_trilhas(anda, v);
+    CHECK(v[TRILHA_PASSO_ANDAR] > 0.0f && perto(v[TRILHA_PASSO_CORRER], 0.0f)); // andar: passo devagar
+    regras_volumes_trilhas(corre, v);
+    CHECK(v[TRILHA_PASSO_CORRER] > 0.0f && perto(v[TRILHA_PASSO_ANDAR], 0.0f)); // correr: passo rápido
+    SituacaoSom longe = {.criatura_solta = true, .distancia_criatura = 20.0f};
+    regras_volumes_trilhas(longe, v);
+    CHECK(perto(v[TRILHA_CORACAO_NORMAL], 0.0f) && perto(v[TRILHA_CORACAO_RAPIDO], 0.0f)); // longe: nada
+    SituacaoSom meio = {.criatura_solta = true, .distancia_criatura = 10.0f};
+    regras_volumes_trilhas(meio, v);
+    float normal_10m = v[TRILHA_CORACAO_NORMAL];
+    CHECK(normal_10m > 0.0f && perto(v[TRILHA_CORACAO_RAPIDO], 0.0f)); // um pouco longe: coração normal
+    SituacaoSom quase = {.criatura_solta = true, .distancia_criatura = 7.0f};
+    regras_volumes_trilhas(quase, v);
+    CHECK(v[TRILHA_CORACAO_NORMAL] > normal_10m); // mais perto, mais alto
+    SituacaoSom colado = {.criatura_solta = true, .distancia_criatura = 3.0f};
+    regras_volumes_trilhas(colado, v);
+    CHECK(v[TRILHA_CORACAO_RAPIDO] > 0.0f && perto(v[TRILHA_CORACAO_NORMAL], 0.0f)); // muito perto: rápido
+    SituacaoSom presa = {.criatura_solta = false, .distancia_criatura = 3.0f};
+    regras_volumes_trilhas(presa, v);
+    CHECK(perto(v[TRILHA_CORACAO_RAPIDO], 0.0f)); // na cela: sem coração
+}
+
 // [REQ:PURA-regras_quadro_susto] testa o pulo até a câmera, o tremor e o clarão
 static void testa_quadro_susto(void) {
     QuadroSusto inicio = regras_quadro_susto(0.0f);
@@ -250,104 +285,51 @@ static void testa_colecao_interativos(void) {
     CHECK(c.n == 0);
 }
 
-// ================================================================== nome de quem joga
-// [REQ:PURA-regras_nome] testa a normalização: vazio, espaços, inválidos, acentos, limite e UTF-8 inteiro
-static void testa_nome_normaliza(void) {
-    char s[NOME_CAPACIDADE];
-    CHECK(regras_nome_normaliza("", s, sizeof(s)) == 0 && s[0] == '\0');
-    CHECK(regras_nome_normaliza("     ", s, sizeof(s)) == 0 && s[0] == '\0');
-    CHECK(regras_nome_normaliza(NULL, s, sizeof(s)) == 0 && s[0] == '\0');
-    CHECK(regras_nome_normaliza("  Ana   Maria  ", s, sizeof(s)) == 9 && strcmp(s, "Ana Maria") == 0);
-    // acentos, hífen e apóstrofo valem: "João D'Ávila-Sá" tem 15 letras e 18 bytes
-    CHECK(regras_nome_normaliza("Jo\xC3\xA3o D'\xC3\x81vila-S\xC3\xA1", s, sizeof(s)) == 15);
-    CHECK(strcmp(s, "Jo\xC3\xA3o D'\xC3\x81vila-S\xC3\xA1") == 0);
-    CHECK(regras_nome_normaliza("R2-D2", s, sizeof(s)) == 5 && strcmp(s, "R2-D2") == 0);
-    // inválidos somem: pontuação, tabulação, emoji (4 bytes), × e ÷, UTF-8 quebrado
-    CHECK(regras_nome_normaliza("Ana!@#$%<>", s, sizeof(s)) == 3 && strcmp(s, "Ana") == 0);
-    CHECK(regras_nome_normaliza("a\tb", s, sizeof(s)) == 2 && strcmp(s, "ab") == 0);
-    CHECK(regras_nome_normaliza("Z\xC3\xA9\xF0\x9F\x98\x80", s, sizeof(s)) == 2);
-    CHECK(strcmp(s, "Z\xC3\xA9") == 0);
-    CHECK(regras_nome_normaliza("2\xC3\x97"
-                                "2",
-                                s, sizeof(s)) == 2 &&
-          strcmp(s, "22") == 0);
-    CHECK(regras_nome_normaliza("A\xC3", s, sizeof(s)) == 1 && strcmp(s, "A") == 0);
-    CHECK(regras_nome_normaliza("\xC3(B", s, sizeof(s)) == 1 && strcmp(s, "B") == 0);
-    CHECK(regras_nome_normaliza("!!! ", s, sizeof(s)) == 0 && s[0] == '\0');
+// [REQ:PURA-regras_monta_texto] testa {NOME}, {PROF}, {x|y}, marcador desconhecido e o corte sem quebrar
+// acento
+static void testa_monta_texto(void) {
+    Marcador m[] = {{"NOME", "Inês"}, {"PROF", "Professora"}};
+    char s[64];
+    regras_monta_texto("Olá, {PROF} {NOME}. Bem-vind{o|a}.", m, 2, true, s, sizeof(s));
+    CHECK(strcmp(s, "Olá, Professora Inês. Bem-vinda.") == 0);
+    regras_monta_texto("Saiu viv{o|a}.", m, 2, false, s, sizeof(s));
+    CHECK(strcmp(s, "Saiu vivo.") == 0); // masculino: a primeira opção
+    regras_monta_texto("{XYZ} e {sem fim", m, 2, false, s, sizeof(s));
+    CHECK(strcmp(s, "{XYZ} e {sem fim") == 0); // desconhecido e chave aberta ficam como estão
+    regras_monta_texto("sem marcador", NULL, 0, false, s, sizeof(s));
+    CHECK(strcmp(s, "sem marcador") == 0);
+    char curto[4]; // cabem 3 bytes: "In" e o "ê" (2 bytes) não cabe inteiro
+    regras_monta_texto("{NOME}", m, 2, false, curto, sizeof(curto));
+    CHECK(strcmp(curto, "In") == 0);
 }
 
-static void testa_nome_limite(void) {
-    char s[NOME_CAPACIDADE];
-    CHECK(regras_nome_normaliza("ABCDEFGHIJKLMNOP", s, sizeof(s)) == NOME_MAX_CHARS); // no limite
-    CHECK(strcmp(s, "ABCDEFGHIJKLMNOP") == 0);
-    CHECK(regras_nome_normaliza("ABCDEFGHIJKLMNOPQRS", s, sizeof(s)) == NOME_MAX_CHARS); // acima: corta
-    CHECK(strcmp(s, "ABCDEFGHIJKLMNOP") == 0);
-    CHECK(regras_nome_normaliza("ABCDEFGHIJKLMNO PQ", s, sizeof(s)) == 15); // não termina em espaço
-    CHECK(strcmp(s, "ABCDEFGHIJKLMNO") == 0);
-    // 17 letras de 2 bytes: ficam 16 letras inteiras (32 bytes), nenhuma partida ao meio
-    const char *acentos = "\xC3\x81\xC3\x89\xC3\x8D\xC3\x93\xC3\x9A\xC3\x82\xC3\x8A\xC3\x94"
-                          "\xC3\x83\xC3\x95\xC3\x87\xC3\x80\xC3\x9C\xC3\x91\xC3\xA1\xC3\xA9\xC3\xAD";
-    CHECK(regras_nome_normaliza(acentos, s, sizeof(s)) == NOME_MAX_CHARS);
-    CHECK(strlen(s) == 32 && strncmp(s, acentos, 32) == 0);
-    CHECK(regras_nome_conta_letras(s) == NOME_MAX_CHARS);
-    // cap pequeno: só cabe o que cabe inteiro
-    char p[4];
-    CHECK(regras_nome_normaliza("\xC3\x81\xC3\x89\xC3\x8D", p, sizeof(p)) == 1 && strcmp(p, "\xC3\x81") == 0);
-    CHECK(regras_nome_normaliza("Ana", p, 3) == 2 && strcmp(p, "An") == 0);
-    CHECK(regras_nome_normaliza("\xC3\x89", p, 2) == 0 && p[0] == '\0');
-    CHECK(regras_nome_normaliza("Ana", p, 1) == 0 && p[0] == '\0');
-    CHECK(regras_nome_normaliza("Ana", p, 0) == 0); // cap zero: não escreve nada
-}
-
-static void testa_nome_padrao(void) {
-    char s[NOME_CAPACIDADE];
-    regras_nome_define("", s, sizeof(s), "VISITANTE");
-    CHECK(strcmp(s, "VISITANTE") == 0);
-    regras_nome_define("    ", s, sizeof(s), "VISITANTE");
-    CHECK(strcmp(s, "VISITANTE") == 0);
-    regras_nome_define("@#!", s, sizeof(s), "VISITANTE");
-    CHECK(strcmp(s, "VISITANTE") == 0);
-    regras_nome_define(" Bia ", s, sizeof(s), "VISITANTE");
-    CHECK(strcmp(s, "Bia") == 0);
-    // no mesmo buffer (como em jogo.c): o que sobrou depois do '\0' é zerado
-    memset(s, 0, sizeof(s));
-    strcpy(s, "   Lu   Mar   ");
-    regras_nome_define(s, s, sizeof(s), "VISITANTE");
-    CHECK(strcmp(s, "Lu Mar") == 0);
-    int sujos = 0;
-    // padrão FOLD
-    for (size_t i = strlen(s); i < sizeof(s); i++)
-        sujos += s[i] != '\0';
-    CHECK(sujos == 0);
-}
-
-static void testa_nome_digitacao(void) {
-    CHECK(regras_nome_caractere_valido('a') && regras_nome_caractere_valido('Z'));
-    CHECK(regras_nome_caractere_valido('7') && regras_nome_caractere_valido(' '));
-    CHECK(regras_nome_caractere_valido('-') && regras_nome_caractere_valido('\''));
-    CHECK(regras_nome_caractere_valido(0xE7) && regras_nome_caractere_valido(0xC3)); // ç, Ã
-    CHECK(!regras_nome_caractere_valido('!') && !regras_nome_caractere_valido('.'));
-    CHECK(!regras_nome_caractere_valido('_'));
-    CHECK(!regras_nome_caractere_valido(0xD7) && !regras_nome_caractere_valido(0xF7)); // × ÷
-    CHECK(!regras_nome_caractere_valido(0x1F600) && !regras_nome_caractere_valido(-1));
-    char s[NOME_CAPACIDADE] = "";
-    CHECK(regras_nome_acrescenta(s, sizeof(s), 'A'));
-    CHECK(regras_nome_acrescenta(s, sizeof(s), 0xE7));
-    CHECK(strcmp(s, "A\xC3\xA7") == 0);
-    CHECK(!regras_nome_acrescenta(s, sizeof(s), '!'));
-    regras_nome_apaga_ultimo(s); // o ç sai inteiro (2 bytes)
-    CHECK(strcmp(s, "A") == 0);
-    regras_nome_apaga_ultimo(s);
-    regras_nome_apaga_ultimo(s); // apagar com o campo vazio não quebra nada
-    CHECK(s[0] == '\0');
-    int aceitos = 0;
-    // padrão FOLD: digita 20 "É"; só NOME_MAX_CHARS entram
-    for (int i = 0; i < 20; i++)
-        aceitos += regras_nome_acrescenta(s, sizeof(s), 0xC9);
-    CHECK(aceitos == NOME_MAX_CHARS && regras_nome_conta_letras(s) == NOME_MAX_CHARS && strlen(s) == 32);
-    char p[4] = "";
-    CHECK(regras_nome_acrescenta(p, sizeof(p), 0xC9));  // 2 bytes + '\0' cabem
-    CHECK(!regras_nome_acrescenta(p, sizeof(p), 0xC9)); // mais 2 não
+// [REQ:PURA-regras_nome_edita] testa letras com acento, o limite de letras, o Backspace e os espaços
+// recusados
+static void testa_nome_edita(void) {
+    char nome[40] = "";
+    CHECK(!regras_nome_edita(nome, sizeof(nome), 16, ' ')); // não começa com espaço
+    CHECK(regras_nome_edita(nome, sizeof(nome), 16, 'J'));
+    CHECK(regras_nome_edita(nome, sizeof(nome), 16, 0xE3)); // ã
+    CHECK(strcmp(nome, "Jã") == 0);
+    CHECK(regras_nome_edita(nome, sizeof(nome), 16, ' '));
+    CHECK(!regras_nome_edita(nome, sizeof(nome), 16, ' ')); // dois espaços seguidos
+    CHECK(!regras_nome_edita(nome, sizeof(nome), 16, '7')); // número
+    CHECK(regras_nome_edita(nome, sizeof(nome), 16, NOME_APAGAR));
+    CHECK(regras_nome_edita(nome, sizeof(nome), 16, NOME_APAGAR)); // apaga o "ã" inteiro (2 bytes)
+    CHECK(strcmp(nome, "J") == 0);
+    for (int i = 0; i < 20; i++) // tenta digitar 20 "é"; só cabem 15 (16 letras com o J)
+        regras_nome_edita(nome, sizeof(nome), 16, 0xE9);
+    CHECK(strlen(nome) == 1 + 15 * 2);
+    char pequeno[4] = "";
+    CHECK(!regras_nome_edita(pequeno, sizeof(pequeno), 16, NOME_APAGAR)); // apagar o vazio não faz nada
+    CHECK(regras_nome_edita(pequeno, sizeof(pequeno), 16, 'a') &&
+          regras_nome_edita(pequeno, sizeof(pequeno), 16, 'b'));
+    CHECK(!regras_nome_edita(pequeno, sizeof(pequeno), 16, 0xE7)); // o "ç" (2 bytes) não cabe mais
+    char minusculo[40] = "";
+    const int digitado[] = {'j', 'o', 0xE3, 'o', ' ', 0xE9, 'd', 'e', 'r'}; // "joão éder"
+    for (int i = 0; i < 9; i++) // padrão FOLD: cada letra digitada entra no nome
+        regras_nome_edita(minusculo, sizeof(minusculo), 16, digitado[i]);
+    CHECK(strcmp(minusculo, "Jo\xC3\xA3o \xC3\x89" "der") == 0); // "João Éder": só o começo de cada palavra
 }
 
 // ================================================================== texturas procedurais (materiais.c)
@@ -441,20 +423,19 @@ int main(void) {
     testa_estados_criatura();
     testa_postura_criatura();
     testa_piscada_cela();
+    testa_volumes_trilhas();
     testa_quadro_susto();
     testa_placar();
     testa_vidro();
     testa_evento_do_erro();
+    testa_monta_texto();
+    testa_nome_edita();
     testa_colecao_ruidos();
     testa_colecao_eventos();
     testa_colecao_particulas();
     testa_colecao_rachaduras();
     testa_colecao_paredes();
     testa_colecao_interativos();
-    testa_nome_normaliza();
-    testa_nome_limite();
-    testa_nome_padrao();
-    testa_nome_digitacao();
     testa_ruido_materiais();
     testa_materiais();
     testa_decalques();

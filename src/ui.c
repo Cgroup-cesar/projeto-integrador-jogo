@@ -2,6 +2,7 @@
 #include "ui.h"
 #include <math.h>
 #include "audio_sintese.h"
+#include "trilhas.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -64,22 +65,93 @@ typedef struct {
 } Troca;
 
 static const Troca TROCAS[] = {
-    {0xE1, "a"},    {0xE0, "a"},     {0xE2, "a"},     {0xE3, "a"},    {0xE4, "a"},   {0xC1, "A"},
-    {0xC0, "A"},    {0xC2, "A"},     {0xC3, "A"},     {0xC4, "A"},    {0xE9, "e"},   {0xE8, "e"},
-    {0xEA, "e"},    {0xEB, "e"},     {0xC9, "E"},     {0xC8, "E"},    {0xCA, "E"},   {0xCB, "E"},
-    {0xED, "i"},    {0xEC, "i"},     {0xEE, "i"},     {0xEF, "i"},    {0xCD, "I"},   {0xCC, "I"},
-    {0xCE, "I"},    {0xF3, "o"},     {0xF2, "o"},     {0xF4, "o"},    {0xF5, "o"},   {0xF6, "o"},
-    {0xD3, "O"},    {0xD2, "O"},     {0xD4, "O"},     {0xD5, "O"},    {0xD6, "O"},   {0xFA, "u"},
-    {0xF9, "u"},    {0xFB, "u"},     {0xFC, "u"},     {0xDA, "U"},    {0xD9, "U"},   {0xDB, "U"},
-    {0xDC, "U"},    {0xE7, "c"},     {0xC7, "C"},     {0xF1, "n"},    {0xD1, "N"},   {0xBA, "o"},
-    {0xAA, "a"},    {0xB7, "|"},     {0xAC, "~"},     {0xAB, "\""},   {0xBB, "\""},  {0xB0, "o"},
-    {0x2014, "-"},  {0x2013, "-"},   {0x2026, "..."}, {0x2190, "<-"}, {0x2191, "^"}, {0x2193, "v"},
-    {0x2192, "->"}, {0x2194, "<->"}, {0x2227, "^"},   {0x2228, "v"},  {0x25A0, "#"}, {0x25A1, "o"},
-    {0x201C, "\""}, {0x201D, "\""},  {0x2018, "'"},   {0x2019, "'"},  {0x2713, "*"}, {0x2714, "*"},
+    {0xE1, "a"},
+    {0xE0, "a"},
+    {0xE2, "a"},
+    {0xE3, "a"},
+    {0xE4, "a"},
+    {0xC1, "A"},
+    {0xC0, "A"},
+    {0xC2, "A"},
+    {0xC3, "A"},
+    {0xC4, "A"},
+    {0xE9, "e"},
+    {0xE8, "e"},
+    {0xEA, "e"},
+    {0xEB, "e"},
+    {0xC9, "E"},
+    {0xC8, "E"},
+    {0xCA, "E"},
+    {0xCB, "E"},
+    {0xED, "i"},
+    {0xEC, "i"},
+    {0xEE, "i"},
+    {0xEF, "i"},
+    {0xCD, "I"},
+    {0xCC, "I"},
+    {0xCE, "I"},
+    {0xF3, "o"},
+    {0xF2, "o"},
+    {0xF4, "o"},
+    {0xF5, "o"},
+    {0xF6, "o"},
+    {0xD3, "O"},
+    {0xD2, "O"},
+    {0xD4, "O"},
+    {0xD5, "O"},
+    {0xD6, "O"},
+    {0xFA, "u"},
+    {0xF9, "u"},
+    {0xFB, "u"},
+    {0xFC, "u"},
+    {0xDA, "U"},
+    {0xD9, "U"},
+    {0xDB, "U"},
+    {0xDC, "U"},
+    {0xE7, "c"},
+    {0xC7, "C"},
+    {0xF1, "n"},
+    {0xD1, "N"},
+    {0xBA, "o"},
+    {0xAA, "a"},
+    {0xB7, "|"},
+    {0xAC, "~"},
+    {0xAB, "\""},
+    {0xBB, "\""},
+    {0xB0, "o"},
+    {0x2014, "-"},
+    {0x2013, "-"},
+    {0x2026, "..."},
+    {0x2190, "<-"},
+    {0x2191, "^"},
+    {0x2193, "v"},
+    {0x2192, "->"},
+    {0x2194, "<->"},
+    {0x2227, "^"},
+    {0x2228, "v"},
+    {0x25A0, "#"},
+    {0x25A1, "o"},
+    {0x201C, "\""},
+    {0x201D, "\""},
+    {0x2018, "'"},
+    {0x2019, "'"},
+    {0x2713, "*"},
+    {0x2714, "*"},
     // o resto das letras do Latin-1 (podem aparecer no nome de quem joga)
-    {0xC5, "A"},    {0xE5, "a"},     {0xC6, "AE"},    {0xE6, "ae"},   {0xD8, "O"},   {0xF8, "o"},
-    {0xDD, "Y"},    {0xFD, "y"},     {0xFF, "y"},     {0xDF, "ss"},   {0xD0, "D"},   {0xF0, "d"},
-    {0xDE, "TH"},   {0xFE, "th"},
+    {0xC5, "A"},
+    {0xE5, "a"},
+    {0xC6, "AE"},
+    {0xE6, "ae"},
+    {0xD8, "O"},
+    {0xF8, "o"},
+    {0xDD, "Y"},
+    {0xFD, "y"},
+    {0xFF, "y"},
+    {0xDF, "ss"},
+    {0xD0, "D"},
+    {0xF0, "d"},
+    {0xDE, "TH"},
+    {0xFE, "th"},
 };
 
 static const char *ascii_de(int codigo) {
@@ -200,6 +272,12 @@ float ui_quadrados_vidro(int vidas, Vector2 pos, float lado, Color cor) {
 }
 
 // ------------------------------------------------------------------ legendas
+// Com a gravação da voz do rádio (assets/audio/voz_radio.wav), ela é que soa nas falas (trilhas.c); o bip
+// sintetizado com chiado só toca quando o arquivo não existe.
+static void bip_do_radio(const Estado *e) {
+    if (!trilhas_tem(e, TRILHA_VOZ_RADIO)) audio_toca(e, SOM_BIP_INTERFONE, 0.6f, 1.0f);
+}
+
 void ui_fala(Estado *e, BlocoFalas bloco) {
     int n = 0;
     const Legenda *falas = dialogo_falas(bloco, &n);
@@ -213,7 +291,7 @@ void ui_fala(Estado *e, BlocoFalas bloco) {
     }
     if (estava_vazia && e->legendas.n > 0) {
         e->legendas.tempo = 0.0f;
-        audio_toca(e, SOM_BIP_INTERFONE, 0.6f, 1.0f);
+        bip_do_radio(e);
     }
 }
 
@@ -229,7 +307,7 @@ void ui_legenda_pula(Estado *e) {
         f->fila[i - 1] = f->fila[i];
     f->n--;
     f->tempo = 0.0f;
-    if (f->n > 0) audio_toca(e, SOM_BIP_INTERFONE, 0.6f, 1.0f);
+    if (f->n > 0) bip_do_radio(e);
 }
 
 static void atualiza_legendas(Estado *e, float dt) {
@@ -304,12 +382,12 @@ static void copia_letras(const char *texto, int letras, char *saida, size_t tama
 
 static void desenha_intro(const Estado *e) {
     float s = ui_escala();
-    if (e->intro.interfone) return; // a sala aparece; as falas vêm pelas legendas
+    if (e->intro.etapa != INTRO_DATILOGRAFA) return; // perguntas: identidade.c; rádio: as legendas
     DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), BLACK);
     float y = 230 * s;
     for (int i = 0; i <= e->intro.linha && i < INTRO_LINHAS; i++) {
-        char parcial[256];
-        const char *linha = dialogo_intro(i);
+        char parcial[256], linha[256];
+        dialogo_personaliza(&e->ident, dialogo_intro(i), linha, sizeof(linha));
         if (i == e->intro.linha)
             copia_letras(linha, (int)e->intro.letras, parcial, sizeof(parcial));
         else
@@ -353,7 +431,8 @@ static void desenha_vidro_e_placar(const Estado *e) {
 static void desenha_folego(const Estado *e) {
     const Jogador *j = &e->jog;
     bool escondido = j->modo == MODO_ARMARIO;
-    // Escondido a barra aparece sempre (ela esvazia ali dentro); fora, so nas saidas e enquanto nao esta cheia.
+    // Escondido a barra aparece sempre (ela esvazia ali dentro); fora, so nas saidas e enquanto nao esta
+    // cheia.
     if (!escondido && (!regras_fase_eh_saida(e->fase) || j->folego >= JOGADOR_FOLEGO_MAX - 0.01f)) return;
     float s = ui_escala();
     float fracao = j->folego / JOGADOR_FOLEGO_MAX;
@@ -417,18 +496,16 @@ static void desenha_legenda(const Estado *e) {
         largura = GetScreenWidth() - 680 * s;
         x = 24 * s;
     }
-    const char *quem = l->falante == FALANTE_VARELA  ? dialogo_texto(TXT_FALANTE_VARELA)
-                       : l->falante == FALANTE_ELIAS ? dialogo_texto(TXT_FALANTE_ELIAS)
-                                                     : "";
-    // [REQ:NOME-USO] a fala com %s (dialogo.c) chama quem joga pelo nome
-    char texto[256];
-    if (strstr(l->texto, "%s") != NULL)
-        snprintf(texto, sizeof(texto), l->texto, e->nome_jogador);
-    else
-        snprintf(texto, sizeof(texto), "%s", l->texto);
+    const char *quem = l->falante == FALANTE_VARELA    ? dialogo_texto(TXT_FALANTE_VARELA)
+                       : l->falante == FALANTE_JOGADOR ? dialogo_texto(TXT_FALANTE_JOGADOR)
+                                                       : "";
+    char nome_falante[96],
+        fala[512]; // [REQ:NOME-USO] {NOME}, {PROF} e {x|y} trocados pelo que o jogador escolheu
+    dialogo_personaliza(&e->ident, quem, nome_falante, sizeof(nome_falante));
+    dialogo_personaliza(&e->ident, l->texto, fala, sizeof(fala));
     ui_painel((Rectangle){x - 16 * s, y - 34 * s, largura + 32 * s, 104 * s}, COR_AMBAR);
-    ui_texto(e, quem, (Vector2){x, y - 26 * s}, 16 * s, COR_AMBAR);
-    ui_texto_quebrado(e, texto, (Vector2){x, y}, largura, 22 * s, RAYWHITE);
+    ui_texto(e, nome_falante, (Vector2){x, y - 26 * s}, 16 * s, COR_AMBAR);
+    ui_texto_quebrado(e, fala, (Vector2){x, y}, largura, 22 * s, RAYWHITE);
 }
 
 static void desenha_diario(const Estado *e) {
@@ -453,7 +530,7 @@ static void desenha_tela_final(const Estado *e) {
     DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), (Color){4, 6, 5, 240});
     ui_texto_centro(e, dialogo_texto(vitoria ? TXT_FIM_VITORIA : TXT_FIM_DERROTA), 90 * s, 64 * s,
                     vitoria ? COR_FOSFORO : COR_ALARME);
-    snprintf(texto, sizeof(texto), dialogo_texto(TXT_FIM_OPERADOR), e->nome_jogador); // [REQ:NOME-USO]
+    dialogo_personaliza(&e->ident, dialogo_texto(TXT_FIM_JOGADOR), texto, sizeof(texto)); // [REQ:NOME-USO]
     ui_texto_centro(e, texto, 166 * s, 22 * s, COR_AMBAR);
     snprintf(texto, sizeof(texto), "%s  %d", dialogo_texto(TXT_FIM_PLACAR), e->placar);
     ui_texto_centro(e, texto, 200 * s, 30 * s, COR_FOSFORO);
@@ -496,8 +573,8 @@ static void desenha_debug(const Estado *e) {
 }
 
 void ui_desenha(const Estado *e) {
-    bool jogando = e->fase != FASE_MENU && e->fase != FASE_NOME && e->fase != FASE_INTRO &&
-                   e->fase != FASE_FIM_BOM && e->fase != FASE_FIM_RUIM;
+    bool jogando =
+        e->fase != FASE_MENU && e->fase != FASE_INTRO && e->fase != FASE_FIM_BOM && e->fase != FASE_FIM_RUIM;
     if (e->fase == FASE_MENU) desenha_menu(e);
     if (e->fase == FASE_INTRO) desenha_intro(e);
     if (jogando && e->jumpscare_t <= 0.0f) desenha_hud(e);

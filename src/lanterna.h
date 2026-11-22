@@ -1,4 +1,4 @@
-// lanterna.h — a lanterna do Prof. Elias: F liga e desliga (sem bateria), a luz em cone saindo dos olhos e o
+// lanterna.h — a lanterna de quem joga: F liga e desliga (sem bateria), a luz em cone saindo dos olhos e o
 // modelo na mão, no canto inferior direito.
 #ifndef LANTERNA_H
 #define LANTERNA_H

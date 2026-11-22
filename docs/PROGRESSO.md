@@ -113,6 +113,8 @@ Não aplicado: "commits pequenos" (a especificação manda um commit por marco n
 
 **Falta:** testar a digitação à mão (acentos com teclado ABNT2, com e sem a fonte VT323), no Linux e no Windows; atualizar o fluxo de fases na especificação (só humanos editam).
 
+**Substituído na junção com a história nova (`feat/historia`):** a `FASE_NOME` e o `tela_nome.c` saíram. Na história nova quem joga é o professor ou a professora, e as perguntas ("Professor ou professora?" e o nome) viraram etapas da intro, em `src/identidade.c`. A regra de privacidade continua (zerado no menu e na partida nova, mantido nos recomeços, conferido no `--smoke`). O nome aparece sempre com o título ("Professora Inês"), inclusive no terminal; só o rádio falso chama pelo nome sozinho. Ver as decisões 80 a 84.
+
 ## Texturas e ambientação do mapa
 
 **Pronto:** seis materiais procedurais (`materiais.c`, puro) com override por `assets/texturas/<material>.png`; `texturas.c` gera/carrega uma vez e libera ao sair; `texturas_caixa` com UV em metros; paredes em concreto aparente com barrado oliva, piso de granilite, forro, móveis e armários em metal pintado, porta com almofadas; `cenario.c` com placas em estêncil, umidade, arrasto, eletrodutos, grelhas, fios e halo das lâmpadas. Ver decisões 69–76.

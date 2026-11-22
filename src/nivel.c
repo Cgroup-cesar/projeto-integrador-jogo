@@ -1,4 +1,4 @@
-// nivel.c — o Posto 7: mapa ASCII → paredes, móveis, interativos e luzes.
+// nivel.c — o bloco de contenção: mapa ASCII → paredes, móveis, interativos e luzes.
 // O mapa é texto para a equipe editar. 1 célula = 2 m; pé-direito 3 m.
 #include "nivel.h"
 #include "texturas.h"
@@ -234,7 +234,7 @@ float nivel_piscada_cela(const Estado *e) {
 }
 
 static int luzes_sala(const Estado *e, Vector3 *pos, Vector3 *cor, Vector4 *cone) {
-    bool menu = e->fase == FASE_MENU || e->fase == FASE_NOME || e->fase == FASE_INTRO;
+    bool menu = e->fase == FASE_MENU || e->fase == FASE_INTRO;
     bool luz_a = menu ? true : e->rod.luz_a;
     bool luz_b = menu ? false : e->rod.luz_b;
     float cela = (menu ? 0.9f : 2.2f) * HOLOFOTE_GANHO * (e->apagao_t > 0.0f ? 0.0f : 1.0f);
@@ -488,7 +488,7 @@ void nivel_desenha_emissivos(const Estado *e) {
         cenario_halo(e, n->lampadas[i], lamp);
     if (!saida && sala > 0.5f) cenario_halo(e, lampada_sala, cor_sala);
     cenario_termina_halos();
-    bool menu = e->fase == FASE_MENU || e->fase == FASE_NOME || e->fase == FASE_INTRO;
+    bool menu = e->fase == FASE_MENU || e->fase == FASE_INTRO;
     bool a_acesa = menu || e->rod.luz_a || nivel_piscada_cela(e) > 0.0f;
     if (a_acesa && e->apagao_t <= 0.0f) DrawSphereEx(HOLOFOTE_A, 0.1f, 8, 8, COR_VIDRO);
     if (!menu && e->rod.luz_b && e->apagao_t <= 0.0f) DrawSphereEx(HOLOFOTE_B, 0.1f, 8, 8, COR_VIDRO);
