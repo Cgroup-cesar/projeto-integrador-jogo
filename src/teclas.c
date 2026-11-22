@@ -5,6 +5,7 @@
 #include "susto.h"
 #include "ui.h"
 #include "dialogo.h"
+#include "respiracao.h"
 #include <string.h>
 
 // Uma tecla e o que ela faz agora. Rótulos especiais: "SETAS_V" (↑↓), "SETAS_H" (←→), "SETAS" (as quatro).
@@ -93,7 +94,9 @@ static int itens_do_contexto(const Estado *e, TeclaAcao *t) {
     case MODO_PAINEL:
         return itens_do_painel(e, t);
     case MODO_ARMARIO:
-        t[0] = (TeclaAcao){"E", TXT_TECLA_SAIR_ARMARIO};
+        if (e->resp.etapa == RESP_ALIVIO) return 0; // ele está indo embora: espere
+        t[0] = respiracao_ativa(e) ? (TeclaAcao){"ESPAÇO", TXT_TECLA_RESPIRAR}
+                                   : (TeclaAcao){"E", TXT_TECLA_SAIR_ARMARIO};
         return 1;
     case MODO_DIARIO:
         t[0] = (TeclaAcao){"E", TXT_TECLA_FECHAR};
@@ -180,6 +183,7 @@ static const TeclaMapa MAPA[] = {
     {6.8f, 2, 1, "H", "H"},
     {0, 3, 2.3f, "Shift", "SHIFT"},
     {2.3f, 3, 1, "Z", ""},
+    {3.4f, 3, 3.6f, "Espaço", "ESPAÇO"},
     {8.2f, 1, 1.6f, "Enter", "ENTER"},
     {9.2f, 2, 1, "", "SETAS_V"},
     {8.2f, 3, 1, "", "SETAS_H"},

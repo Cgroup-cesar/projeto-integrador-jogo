@@ -306,6 +306,15 @@ static const char *const TEXTOS[TXT_TOTAL] = {
     [TXT_TECLA_ESTRELAS] = "Estrelas",
     [TXT_TECLA_ENVIAR] = "Enviar e ver o ranking",
     [TXT_TECLA_MENU] = "Menu",
+    [TXT_RESP_TITULO] = "SEGURE A RESPIRAÇÃO",
+    [TXT_RESP_TUTORIAL] =
+        "Ele vai parar na porta do armário, ouvindo. Aperte ESPAÇO quando a linha vermelha passar "
+        "sobre a faixa branca. Você tem 3 chances: a cada erro, ele chega mais perto.",
+    [TXT_RESP_ASSIM] = "assim!",
+    [TXT_RESP_COMECAR] = "Aperte ESPAÇO para começar",
+    [TXT_RESP_OUVIU] = "ELE OUVIU!",
+    [TXT_RESP_FOI] = "Ele foi embora...",
+    [TXT_TECLA_RESPIRAR] = "Segurar a respiração",
     [TXT_PAINEL_BARULHO] = "BARULHO",
     [TXT_PAINEL_MOVIMENTOS] = "MOVIMENTOS: %d",
     [TXT_PAINEL_BONUS] = "%d MOVIMENTOS · BÔNUS +%d",

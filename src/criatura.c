@@ -290,6 +290,48 @@ static void tenta_capturar(Estado *e) {
         criatura_captura(e);
 }
 
+// A porta do armário em que o jogador está: dela para fora (unitário).
+static Vector3 para_fora_do_armario(const Estado *e) {
+    int a = e->jog.armario;
+    Vector3 fora = Vector3Subtract(e->nivel.armario_saida[a], e->nivel.armarios[a]);
+    fora.y = 0.0f;
+    return Vector3Normalize(fora);
+}
+
+void criatura_na_porta_do_armario(Estado *e) {
+    Criatura *c = &e->cri;
+    Vector3 fora = para_fora_do_armario(e);
+    c->contido = false;
+    c->ativo = true;
+    c->surgindo = 1.0f;
+    c->distorcao = 0.0f;
+    c->estado = CRIATURA_PROCURA;
+    c->caminho_n = 0;
+    c->pos = Vector3Add(e->nivel.armario_saida[e->jog.armario], Vector3Scale(fora, 0.6f));
+    c->yaw = atan2f(-fora.x, -fora.z); // de frente para a porta
+    audio_toca(e, SOM_PASSO_CRIATURA, 1.0f, 0.6f);
+}
+
+void criatura_chega_mais_perto(Estado *e) {
+    Criatura *c = &e->cri;
+    c->pos = Vector3Subtract(c->pos, Vector3Scale(para_fora_do_armario(e), 0.3f));
+    audio_toca(e, SOM_DISTORCAO, 0.6f, 0.5f); // ouviu alguma coisa: um rosnado grave
+}
+
+void criatura_desiste(Estado *e) {
+    Criatura *c = &e->cri;
+    int longe = 0;
+    float maior = -1.0f;
+    for (int i = 0; i < N_PATRULHA; i++) { // padrão FOLD: o ponto de patrulha mais longe do jogador
+        float d = Vector3Distance(nivel_centro_celula(PATRULHA[i][0], PATRULHA[i][1]), e->jog.pos);
+        if (d > maior) maior = d, longe = i;
+    }
+    c->estado = CRIATURA_PATRULHA;
+    c->patrulha_i = longe;
+    c->ve_jogador = false;
+    c->tempo_replanejar = 99.0f; // replaneja já, rumo ao ponto longe
+}
+
 void criatura_captura(Estado *e) {
     if (susto_ativo(e)) return;
     e->pegos_na_fase++;

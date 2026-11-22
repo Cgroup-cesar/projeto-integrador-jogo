@@ -25,6 +25,7 @@ typedef struct {
     bool tecla1, tecla2, tecla3;
     bool lanterna; // F: liga e desliga a lanterna
     bool ajuda;    // H: abre e fecha a ajuda dos conectivos no terminal
+    bool respirar; // ESPAÇO: segura a respiração no armário
     bool f1, f2, f3, f5, f9, f12;
     bool alguma;                   // qualquer tecla ou movimento (modo feira)
     int letras[MAX_LETRAS_QUADRO]; // letras digitadas neste quadro (Unicode), para o campo do nome
@@ -100,11 +101,9 @@ typedef struct {
     float yaw, pitch;
     float folego;
     bool exausto;
-    bool recupera_total; // saiu do armario: so corre de novo com a barra cheia
     bool correndo;
     ModoJogador modo;
     int armario;       // índice em Nivel.armarios quando escondido
-    float armario_t;   // segundos escondido no armario (zera ao entrar)
     float armario_yaw; // direção da porta: centro do cone de visão enquanto escondido
     int mira;          // índice do interativo na mira (−1 = nenhum)
     float tempo_passo;
@@ -253,6 +252,25 @@ typedef struct {
     float troca_t;       // tempo_total da última troca de opção (menu, pausa, gênero): dispara a falha
 } Menu;
 
+// ------------------------------------------------------------------ segurar a respiração (armário)
+typedef enum {
+    RESP_NADA,
+    RESP_TUTORIAL, // 1ª vez na partida: o mundo para e a barrinha mostra como faz
+    RESP_DESAFIO,  // o Precursor parado na porta; ESPAÇO na hora certa
+    RESP_ALIVIO    // acertou: ele vai embora e, no fim, a pessoa solta o ar
+} EtapaRespiracao;
+
+typedef struct {
+    EtapaRespiracao etapa;
+    float t;             // tempo na etapa (move a linha vermelha)
+    float zona;          // centro da faixa branca (0..1)
+    int erros;           // nesta visita ao armário
+    bool tutorial_visto; // por partida (cada pessoa da feira vê uma vez)
+    float demo_t;        // tutorial: quando a demonstração "acertou" (−1: ainda não)
+    float demo_linha;    // onde a linha parou na demonstração
+    float aviso_t;       // "ELE OUVIU!" depois de um erro
+} Respiracao;
+
 // ------------------------------------------------------------------ o estado inteiro
 // [REQ:RNF2] uma struct por objeto (Jogador, Criatura, Rodada, Painel...) e um módulo .c por sistema
 typedef struct Estado {
@@ -285,6 +303,7 @@ typedef struct Estado {
     Compositor comp;
     Intro intro;
     Identidade ident;
+    Respiracao resp; // o desafio de segurar a respiração no armário (respiracao.c)
     Ranking ranking; // carregado do disco ao abrir o jogo (ranking.c); vazio no --smoke
     FilaLegendas legendas;
     Mixagem mix;

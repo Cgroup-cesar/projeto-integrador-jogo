@@ -10,13 +10,13 @@
 #define MENU_SUBLIMINARES                                                                                    \
     1 // frases que piscam por ~0,1 s na tela de início (0 desliga; ex.: pedido da banca)
 // Chuvisco de TV da tela de início (estilo menu de terror dos anos 2010): a cena continua visível por trás.
-#define MENU_ESTATICA_ALFA   0.09f // força base do chuvisco (0 desliga; acima de ~0,3 a cena some)
-#define MENU_ESTATICA_PICO   0.07f // reforço nos surtos de interferência
-#define MENU_ESTATICA_GRAO   3.0f  // tamanho do grão em px (antes da escala da UI)
+#define MENU_ESTATICA_ALFA    0.09f // força base do chuvisco (0 desliga; acima de ~0,3 a cena some)
+#define MENU_ESTATICA_PICO    0.07f // reforço nos surtos de interferência
+#define MENU_ESTATICA_GRAO    3.0f  // tamanho do grão em px (antes da escala da UI)
 #define MENU_ESTATICA_QUADROS 30.0f // quantas vezes por segundo o chuvisco muda
 #define MENU_FALHA_TROCA_S    0.35f // quanto dura a falha da opção logo depois de escolhida
 #define MENU_BALANCO_PX       3.0f  // amplitude do balanço lento da opção escolhida (px, antes da escala)
-#define MENU_FALHA_LEVE       0.4f  // intensidade da falha nas opções da pausa e das perguntas (1 = a do menu)
+#define MENU_FALHA_LEVE       0.4f // intensidade da falha nas opções da pausa e das perguntas (1 = a do menu)
 #define TELAS_ESTATICA_ALFA   0.03f // chuvisco da pausa e das perguntas da intro: bem mínimo
 #define TELAS_ESTATICA_PICO   0.02f
 #define TECLAS_ESCALA_JOGO    0.88f // tamanho da barra de teclas e do minimapa durante a partida (1 = original)
@@ -56,7 +56,7 @@
 #define SANIDADE_MAX             100.0f
 #define SANIDADE_RAIO            15.0f // metros: daqui para dentro a criatura abala (e o efeito aparece)
 #define SANIDADE_PERTO           2.5f  // metros: daqui para dentro, queda no máximo
-#define SANIDADE_QUEDA_MIN       1.5f  // pontos/s base na borda do raio (MIN→MAX com p², p = proximidade 0..1)
+#define SANIDADE_QUEDA_MIN       1.5f // pontos/s base na borda do raio (MIN→MAX com p², p = proximidade 0..1)
 #define SANIDADE_QUEDA_MAX       12.0f // pontos/s base colado nela
 #define SANIDADE_ACELERA_LONGE   1.5f  // a base é multiplicada por 1,5× na borda do raio (2,25 pontos/s)...
 #define SANIDADE_ACELERA_PERTO   2.0f  // ...até 2× colado nela (24 pontos/s: 100 → 0 em ~4 s)
@@ -68,21 +68,21 @@
 #define SANIDADE_BONUS_CONECTIVO 10.0f // cada conectivo decifrado pela primeira vez
 #define SANIDADE_PISO_RECOMECO   60.0f // pego ou vidro rompido: recomeça com pelo menos isso (sem espiral)
 // Os tetos abaixo valem com força 1 (sanidade 0) e são o limite jogável.
-#define SANIDADE_CURVA           0.85f // só a percepção: o shader usa força^0,85 (50% → 0,55, 20% → 0,83)
-#define SANIDADE_DESFOQUE_PX     1.8f  // cansaço: raio do desfoque nas bordas (px do render target)
-#define SANIDADE_TUNEL           0.35f // cansaço: quanto a vinheta fecha a mais (visão de túnel)
-#define SANIDADE_DESSATURA       0.25f // cansaço: perda de saturação
-#define SANIDADE_PULSO_A_S       5.3f  // cansaço: períodos das duas ondas lentas que embaçam e desembaçam
-#define SANIDADE_PULSO_B_S       3.1f  //          (somadas para não ficar regular)
-#define SANIDADE_RUIDO           0.45f // fita: ruído de luminância, proporcional ao brilho (±45% nas estrias)
-#define SANIDADE_RUIDO_PRETO     0.035f // fita: piso aditivo no preto (±1,75% de brilho): mantém as silhuetas
-#define SANIDADE_RUIDO_LARGURA_PX 4.0f // fita: o ruído é esticado na horizontal (1 linha × isso)
-#define SANIDADE_CROMA           0.03f // fita: ruído de cor, só nas sombras
-#define SANIDADE_DROPOUT         1.0f  // fita: frequência dos riscos claros (1 ≈ 2 por quadro com força 1)
-#define SANIDADE_TRACKING_PX     5.0f  // fita: tremor horizontal das linhas, só abaixo de ~25% de sanidade
-#define SANIDADE_BARRA_SOBE      3.0f  // a barra enche suave com os bônus (1/s)
-#define SANIDADE_ECO_VEL         12.0f // pontos/s: o pedaço perdido (mais escuro) alcança a barra
-#define SANIDADE_ALERTA          30.0f // abaixo disso a barra fica vermelha e pulsa
+#define SANIDADE_CURVA            0.85f // só a percepção: o shader usa força^0,85 (50% → 0,55, 20% → 0,83)
+#define SANIDADE_DESFOQUE_PX      1.8f  // cansaço: raio do desfoque nas bordas (px do render target)
+#define SANIDADE_TUNEL            0.35f // cansaço: quanto a vinheta fecha a mais (visão de túnel)
+#define SANIDADE_DESSATURA        0.25f // cansaço: perda de saturação
+#define SANIDADE_PULSO_A_S        5.3f  // cansaço: períodos das duas ondas lentas que embaçam e desembaçam
+#define SANIDADE_PULSO_B_S        3.1f  //          (somadas para não ficar regular)
+#define SANIDADE_RUIDO            0.45f // fita: ruído de luminância, proporcional ao brilho (±45% nas estrias)
+#define SANIDADE_RUIDO_PRETO      0.035f // fita: piso aditivo no preto (±1,75% de brilho): mantém as silhuetas
+#define SANIDADE_RUIDO_LARGURA_PX 4.0f   // fita: o ruído é esticado na horizontal (1 linha × isso)
+#define SANIDADE_CROMA            0.03f  // fita: ruído de cor, só nas sombras
+#define SANIDADE_DROPOUT          1.0f   // fita: frequência dos riscos claros (1 ≈ 2 por quadro com força 1)
+#define SANIDADE_TRACKING_PX      5.0f   // fita: tremor horizontal das linhas, só abaixo de ~25% de sanidade
+#define SANIDADE_BARRA_SOBE       3.0f   // a barra enche suave com os bônus (1/s)
+#define SANIDADE_ECO_VEL          12.0f  // pontos/s: o pedaço perdido (mais escuro) alcança a barra
+#define SANIDADE_ALERTA           30.0f  // abaixo disso a barra fica vermelha e pulsa
 
 // ---------------------------------------------------------------- debug e modos
 #define TECLAS_DEBUG                                                                                         \
@@ -276,8 +276,14 @@
 #define COR_LANTERNA  (Color){0xf2, 0xe8, 0xd0, 255}
 
 // Folego no armario: expulso aos 12 s; saindo com 8 s ou mais escondido, ofega.
-#define ARMARIO_TEMPO_MAX   12.0f
-#define ARMARIO_TEMPO_OFEGO 8.0f
+// Segurar a respiração no armário: a linha vermelha vai e volta e a pessoa aperta ESPAÇO sobre a faixa
+// branca.
+#define RESP_PERIODO_S 1.8f  // tempo da linha atravessar a barra (na 1ª tentativa; cada erro acelera)
+#define RESP_ACELERA   0.78f // a cada erro, o período é multiplicado por isso (mais rápido)
+#define RESP_ZONA      0.16f // largura da faixa branca (fração da barra)
+#define RESP_PRAZO_S   3.6f  // quanto o Precursor fica parado na porta esperando um som
+#define RESP_CHANCES   3     // no 3º erro ele abre o armário (jumpscare)
+#define RESP_ALIVIO_S  1.6f  // "ele foi embora": tempo até soltar o ar
 
 // Zerou o folego correndo: so volta a correr com esta fracao da barra.
 #define FOLEGO_RETOMA_FRACAO 0.75f

@@ -424,3 +424,22 @@ int regras_bonus_movimentos(int movimentos) {
     if (movimentos <= MOVIMENTOS_BONUS_MEIO) return PONTOS_PAINEL_POUCOS_MOV / 2;
     return 0;
 }
+
+// [REQ:PURA-regras_respiracao] a linha vermelha da respiração: vai e volta, cada erro a acelera, e acertar é
+// a linha estar dentro da faixa branca
+float regras_respiracao_linha(float t, float periodo) {
+    if (periodo <= 0.0f || t <= 0.0f) return 0.0f;
+    float f = fmodf(t / periodo, 2.0f);
+    return f < 1.0f ? f : 2.0f - f;
+}
+
+float regras_respiracao_periodo(int erros) {
+    float p = RESP_PERIODO_S;
+    for (int i = 0; i < erros; i++) // padrão FOLD: cada erro multiplica o período (mais rápido)
+        p *= RESP_ACELERA;
+    return p;
+}
+
+bool regras_respiracao_acertou(float linha, float zona, float largura) {
+    return fabsf(linha - zona) <= largura * 0.5f;
+}

@@ -95,6 +95,7 @@ stateDiagram-v2
 | `texturas.c` | gera ou carrega as texturas uma vez, libera ao sair; `texturas_caixa` (6 faces, UV de mundo ou local) e `texturas_quadro` (decalque) |
 | `cenario.c` | ambientação sem colisão: placas em estêncil, umidade, arrasto do duto, eletrodutos, grelhas, fios e halo das lâmpadas |
 | `jogador.c` | câmera, movimento com colisão, fôlego, passos, armário, mira |
+| `respiracao.c` | o armário: ao entrar, o Precursor para na porta e a pessoa segura a respiração (ESPAÇO sobre a faixa branca; 3 chances); tutorial na 1ª vez da partida, com o mundo congelado |
 | `lanterna.c` | a lanterna: F liga e desliga, a 5ª luz do shader (cone saindo dos olhos) e o modelo na mão |
 | `criatura.c` | o Precursor: corpo procedural, IA, A*, captura |
 | `susto.c` | o jumpscare: silêncio, grito e o rosto do modelo pulando até a câmera e tremendo (movimento em `regras_quadro_susto`); dura o trecho alto do `jumpscare.mp3` |

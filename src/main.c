@@ -19,6 +19,7 @@
 #include "texturas.h"
 #include "dialogo.h"
 #include "ranking.h"
+#include "respiracao.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -54,6 +55,7 @@ static void le_entrada(Entrada *in) {
     in->tecla3 = IsKeyPressed(KEY_THREE) || IsKeyPressed(KEY_KP_3);
     in->lanterna = IsKeyPressed(KEY_F);
     in->ajuda = IsKeyPressed(KEY_H);
+    in->respirar = IsKeyPressed(KEY_SPACE);
 #if TECLAS_DEBUG
     in->f1 = IsKeyPressed(KEY_F1);
     in->f2 = IsKeyPressed(KEY_F2);
@@ -199,10 +201,14 @@ static bool piloto_espera_ser_pego(Estado *e, Entrada *in) {
 // 2ª partida, S1: entra no primeiro armário e sai de novo.
 static bool piloto_testa_armario(Estado *e, Entrada *in) {
     if (piloto.partida != 1 || e->fase != FASE_S1 || piloto.armario_testado) return false;
-    if (e->jog.modo == MODO_ARMARIO) {
+    if (e->jog.modo == MODO_ARMARIO) { // a respiração (tutorial e desafio) já passou, a cada quadro
+        if (e->resp.erros > 0) {       // o piloto só aperta com a linha na faixa: um erro é bug do jogo
+            piloto_falha("a respiração contou um erro que o piloto não cometeu");
+            return true;
+        }
         in->interagir = true;
         piloto.armario_testado = true;
-        printf("SMOKE  armário ok: entrou e saiu\n");
+        printf("SMOKE  armário ok: tutorial, segurou a respiração sem erro e saiu\n");
         return true;
     }
     Vector3 a = e->nivel.armarios[0], fora = e->nivel.armario_saida[0];
@@ -318,6 +324,10 @@ static void piloto_entrada(Estado *e, Entrada *in, float dt) {
     piloto.tempo_na_fase += dt;
     if (piloto.tempo_na_fase > SMOKE_LIMITE_FASE_S) {
         piloto_falha("tempo esgotado (travou?)");
+        return;
+    }
+    if (e->jog.modo == MODO_ARMARIO && respiracao_ativa(e)) { // a cada quadro: a linha não espera
+        respiracao_piloto(e, in);
         return;
     }
     piloto.espera -= dt;

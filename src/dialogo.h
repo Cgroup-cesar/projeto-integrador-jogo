@@ -203,6 +203,13 @@ typedef enum {
     TXT_TECLA_ESTRELAS,
     TXT_TECLA_ENVIAR,
     TXT_TECLA_MENU,
+    TXT_RESP_TITULO, // segurar a respiração no armário
+    TXT_RESP_TUTORIAL,
+    TXT_RESP_ASSIM,
+    TXT_RESP_COMECAR,
+    TXT_RESP_OUVIU,
+    TXT_RESP_FOI,
+    TXT_TECLA_RESPIRAR,
     TXT_PAINEL_BARULHO, // o preço do chute e a pergunta da vez
     TXT_PAINEL_MOVIMENTOS,
     TXT_PAINEL_BONUS,

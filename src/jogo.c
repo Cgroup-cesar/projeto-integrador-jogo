@@ -17,6 +17,7 @@
 #include "teclas.h"
 #include "ui.h"
 #include "cenario.h"
+#include "respiracao.h"
 #include "sanidade.h"
 #include <string.h>
 
@@ -28,6 +29,7 @@ static void limpa_partida(Estado *e) {
     e->tempo_partida = 0.0f;
     e->diario_lido = false;
     e->ajuda_aberta = false;
+    e->resp.tutorial_visto = false; // cada partida (cada pessoa da feira) vê o tutorial do armário
     memset(e->conectivo_decifrado, 0, sizeof(e->conectivo_decifrado));
 }
 
@@ -124,6 +126,7 @@ static void entra_fase(Estado *e, Fase fase, bool reinicio) {
     aplica_regra_do_nome(e, fase, reinicio);
     e->fase = fase;
     e->tempo_fase = 0.0f;
+    e->resp.etapa = RESP_NADA; // nenhuma fase começa no meio da respiração
     if (!reinicio) {
         e->erros_na_fase = 0;
         e->pegos_na_fase = 0;
@@ -329,15 +332,20 @@ void jogo_atualiza(Estado *e, float dt) {
         e->menu.cursor = 0;
         return;
     }
+    if (respiracao_congela_mundo(e)) { // tutorial do armário: só a barrinha anda
+        respiracao_atualiza(e, dt);
+        return;
+    }
     atualiza_temporizadores(e, dt);
     susto_atualiza(e, dt);
     if (anda_livre && !susto_ativo(e)) {
         jogador_atualiza(e, dt);
         lanterna_atualiza(e, dt);
+        respiracao_atualiza(e, dt);
     }
     nivel_atualiza(e, dt);
     atualiza_fase(e, dt);
-    criatura_atualiza(e, dt);
+    if (!respiracao_segura_criatura(e)) criatura_atualiza(e, dt); // na porta do armário, ele só espera
     sanidade_atualiza(e, dt); // depois da criatura e do jogador: usa a distância deste quadro
     glifos_atualiza(e, dt);
     col_ruidos_atualiza(&e->ruidos, dt);
@@ -394,6 +402,7 @@ void jogo_desenha_interface(const Estado *e) {
     }
     sanidade_desenha(e);
     identidade_desenha(e);
-    teclas_desenha(e); // a barra de teclas do rodapé, por baixo das legendas e da pausa
+    respiracao_desenha(e); // a barrinha do armário (e o tutorial por cima de tudo)
+    teclas_desenha(e);     // a barra de teclas do rodapé, por baixo das legendas e da pausa
     ui_desenha(e);
 }

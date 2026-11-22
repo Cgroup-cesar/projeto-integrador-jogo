@@ -564,6 +564,30 @@ static void testa_sanidade_intensidade(void) {
     CHECK(linear);
 }
 
+// [REQ:PURA-regras_respiracao] a linha vai e volta, acelera a cada erro e acerta só dentro da faixa
+static void testa_respiracao(void) {
+    float p = RESP_PERIODO_S;
+    CHECK(perto(regras_respiracao_linha(0.0f, p), 0.0f));
+    CHECK(perto(regras_respiracao_linha(p * 0.5f, p), 0.5f));
+    CHECK(perto(regras_respiracao_linha(p, p), 1.0f));          // chegou na ponta direita...
+    CHECK(perto(regras_respiracao_linha(p * 1.25f, p), 0.75f)); // ...e volta
+    CHECK(perto(regras_respiracao_linha(p * 2.0f, p), 0.0f));   // de novo na esquerda
+    CHECK(perto(regras_respiracao_linha(1.0f, 0.0f), 0.0f));    // período inválido: parada na ponta
+    bool dentro = true;
+    for (int i = 0; i < 500; i++) { // padrão FOLD: em qualquer instante, sempre dentro da barra
+        float l = regras_respiracao_linha(i * 0.037f, p);
+        dentro = dentro && l >= 0.0f && l <= 1.0f;
+    }
+    CHECK(dentro);
+    CHECK(perto(regras_respiracao_periodo(0), RESP_PERIODO_S));
+    CHECK(regras_respiracao_periodo(1) < regras_respiracao_periodo(0)); // cada erro: mais rápida
+    CHECK(regras_respiracao_periodo(2) < regras_respiracao_periodo(1));
+    CHECK(regras_respiracao_acertou(0.5f, 0.5f, 0.16f));
+    CHECK(regras_respiracao_acertou(0.58f, 0.5f, 0.16f)); // na borda da faixa ainda vale
+    CHECK(!regras_respiracao_acertou(0.6f, 0.5f, 0.16f)); // fora dela, não
+    CHECK(!regras_respiracao_acertou(0.41f, 0.5f, 0.16f));
+}
+
 int main(void) {
     SetTraceLogLevel(LOG_ERROR); // o aviso de vetor cheio é esperado aqui
     testa_movimento();
@@ -577,6 +601,7 @@ int main(void) {
     testa_placar();
     testa_bonus_movimentos();
     testa_ranking_insere();
+    testa_respiracao();
     testa_ranking_linha();
     testa_vidro();
     testa_evento_do_erro();

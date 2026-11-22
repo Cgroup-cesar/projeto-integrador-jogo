@@ -199,6 +199,11 @@ typedef struct {
 Bloqueio regras_circuito_bloqueio(const Circuito *c, const bool *entradas);
 int regras_bonus_movimentos(int movimentos); // resolver o painel pensando, com poucos movimentos, vale bônus
 
+// ------------------------------------------------------------------ segurar a respiração (armário)
+float regras_respiracao_linha(float t, float periodo); // a linha vermelha vai e volta: 0 → 1 → 0, em [0, 1]
+float regras_respiracao_periodo(int erros);            // cada erro deixa a linha mais rápida
+bool regras_respiracao_acertou(float linha, float zona, float largura); // a linha está sobre a faixa?
+
 // ------------------------------------------------------------------ textos do roteiro (nome e gênero)
 // Um marcador do roteiro e o que entra no lugar dele: {"NOME", "Ana"} troca "{NOME}" por "Ana".
 // As palavras ficam em dialogo.c; aqui só a regra de troca (por isso a função não sabe português).
