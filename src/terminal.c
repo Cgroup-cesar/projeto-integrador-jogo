@@ -76,25 +76,27 @@ static void icone_lampada(Vector2 c, float r, bool acesa) {
     DrawCircleLinesV(c, r, acesa ? COR_LAMPADA : Fade(COR_FOSFORO, 0.5f));
 }
 
-static void icone_marca(Vector2 c, float r, bool verdade) {
+// ✓ verde ou ✗ vermelho; `alfa` < 1 apaga (a coluna que não está em análise).
+static void icone_marca(Vector2 c, float r, bool verdade, float alfa) {
     float t = fmaxf(2.0f, r * 0.35f);
+    Color cor = Fade(verdade ? COR_FOSFORO : COR_ALARME, alfa);
     if (verdade) {
-        DrawLineEx((Vector2){c.x - r, c.y}, (Vector2){c.x - r * 0.3f, c.y + r * 0.7f}, t, COR_FOSFORO);
-        DrawLineEx((Vector2){c.x - r * 0.3f, c.y + r * 0.7f}, (Vector2){c.x + r, c.y - r * 0.8f}, t,
-                   COR_FOSFORO);
+        DrawLineEx((Vector2){c.x - r, c.y}, (Vector2){c.x - r * 0.3f, c.y + r * 0.7f}, t, cor);
+        DrawLineEx((Vector2){c.x - r * 0.3f, c.y + r * 0.7f}, (Vector2){c.x + r, c.y - r * 0.8f}, t, cor);
     } else {
         DrawLineEx((Vector2){c.x - r * 0.8f, c.y - r * 0.8f}, (Vector2){c.x + r * 0.8f, c.y + r * 0.8f}, t,
-                   COR_ALARME);
+                   cor);
         DrawLineEx((Vector2){c.x + r * 0.8f, c.y - r * 0.8f}, (Vector2){c.x - r * 0.8f, c.y + r * 0.8f}, t,
-                   COR_ALARME);
+                   cor);
     }
 }
 
 // ✓ VERDADE ou ✗ FALSO: palavra, cor e símbolo juntos (não depende só da cor, nem do som).
-static float resposta(const Estado *e, Vector2 pos, float tamanho, bool verdade) {
-    icone_marca((Vector2){pos.x + tamanho * 0.45f, pos.y + tamanho * 0.5f}, tamanho * 0.38f, verdade);
+static float resposta(const Estado *e, Vector2 pos, float tamanho, bool verdade, float alfa) {
+    icone_marca((Vector2){pos.x + tamanho * 0.45f, pos.y + tamanho * 0.5f}, tamanho * 0.38f, verdade, alfa);
     const char *t = dialogo_texto(verdade ? TXT_TABELA_VERDADE : TXT_TABELA_FALSO);
-    ui_texto(e, t, (Vector2){pos.x + tamanho * 1.1f, pos.y}, tamanho, verdade ? COR_FOSFORO : COR_ALARME);
+    ui_texto(e, t, (Vector2){pos.x + tamanho * 1.1f, pos.y}, tamanho,
+             Fade(verdade ? COR_FOSFORO : COR_ALARME, alfa));
     return tamanho * 1.1f + ui_mede(e, t, tamanho).x;
 }
 
@@ -115,6 +117,12 @@ static float desenha_frases(const Estado *e, const DadosRodada *d, Vector2 pos) 
     float s = escala();
     const Rodada *r = &e->rod;
     ui_texto(e, dialogo_texto(TXT_TERMINAL_FRASE_OBSERVADA), pos, 15 * s, Fade(COR_FOSFORO, 0.6f));
+    if (d->n_colunas > 1 && r->etapa == ETAPA_ESCOLHER_CONECTIVO) { // qual das duas frases está em análise
+        char analise[48];
+        snprintf(analise, sizeof(analise), dialogo_texto(TXT_TERMINAL_EM_ANALISE), r->coluna + 1);
+        float x = pos.x + ui_mede(e, dialogo_texto(TXT_TERMINAL_FRASE_OBSERVADA), 15 * s).x + 14 * s;
+        ui_texto(e, analise, (Vector2){x, pos.y}, 15 * s, COR_AMBAR);
+    }
     for (int c = 0; c < d->n_colunas; c++) {
         Vector2 p = {pos.x + c * 270 * s, pos.y + 26 * s};
         bool perguntada = d->n_colunas > 1 && r->etapa == ETAPA_ESCOLHER_CONECTIVO && r->coluna == c;
@@ -154,15 +162,22 @@ static float desenha_tabela(const Estado *e, const DadosRodada *d, Vector2 pos) 
     for (int i = 0; i < d->n_luzes; i++)
         ui_texto(e, dialogo_texto(i == 0 ? TXT_TABELA_LUZ_A : TXT_TABELA_LUZ_B),
                  (Vector2){pos.x + i * col_luz, y}, 15 * s, Fade(COR_FOSFORO, 0.7f));
+    bool escolhendo = d->n_colunas > 1 && r->etapa == ETAPA_ESCOLHER_CONECTIVO;
     for (int c = 0; c < d->n_colunas; c++) {
-        char coluna[24];
-        if (d->n_colunas > 1)
+        char coluna[48];
+        bool perguntada = escolhendo && r->coluna == c;
+        if (perguntada) // a coluna em análise: moldura âmbar em volta do cabeçalho e das respostas
+            DrawRectangleRoundedLinesEx((Rectangle){x_res + c * col_res - 10 * s, y - 6 * s, col_res - 8 * s,
+                                                    (rodadas_linhas(d) + 1) * linha_h + 6 * s},
+                                        0.08f, 4, 2.0f * s, COR_AMBAR);
+        if (perguntada)
+            snprintf(coluna, sizeof(coluna), dialogo_texto(TXT_TERMINAL_EM_ANALISE), c + 1);
+        else if (d->n_colunas > 1)
             snprintf(coluna, sizeof(coluna), dialogo_texto(TXT_TERMINAL_COLUNA), c + 1);
         else
             snprintf(coluna, sizeof(coluna), "%s", dialogo_texto(TXT_TABELA_RESPOSTA));
-        bool perguntada = d->n_colunas > 1 && r->etapa == ETAPA_ESCOLHER_CONECTIVO && r->coluna == c;
         ui_texto(e, coluna, (Vector2){x_res + c * col_res, y}, 15 * s,
-                 perguntada ? COR_AMBAR : Fade(COR_FOSFORO, 0.7f));
+                 perguntada ? COR_AMBAR : Fade(COR_FOSFORO, escolhendo ? 0.3f : 0.7f));
     }
     int atual = rodadas_linha_atual(e);
     for (int l = 0; l < rodadas_linhas(d); l++) {
@@ -177,8 +192,9 @@ static float desenha_tabela(const Estado *e, const DadosRodada *d, Vector2 pos) 
         }
         for (int c = 0; c < d->n_colunas; c++) {
             Vector2 p = {x_res + c * col_res, y};
+            float alfa = escolhendo && r->coluna != c ? 0.25f : 1.0f; // a outra frase fica apagada
             if (r->linha_vista[c][l])
-                resposta(e, p, 18 * s, r->linha_valor[c][l]);
+                resposta(e, p, 18 * s, r->linha_valor[c][l], alfa);
             else
                 ui_texto(e, "?", (Vector2){p.x + 6 * s, p.y}, 18 * s, Fade(COR_FOSFORO, 0.3f));
         }
@@ -221,7 +237,7 @@ static void desenha_estado_decifrar(const Estado *e, Vector2 p, float largura) {
     float s = escala();
     const Rodada *r = &e->rod;
     if (r->clarao_t > 0.0f && r->resposta_t <= 0.0f) {
-        resposta(e, (Vector2){p.x, p.y + 4 * s}, 38 * s, r->resposta_valor);
+        resposta(e, (Vector2){p.x, p.y + 4 * s}, 38 * s, r->resposta_valor, 1.0f);
         return;
     }
     bool duas = rodadas_dados(r->numero)->n_luzes == 2;
@@ -252,6 +268,22 @@ static void desenha_rodape(const Estado *e, Rectangle area) {
 }
 
 // ------------------------------------------------------------------ a cola (R1 e R2)
+// Mini-tabela no formato da cola: as lâmpadas (A, e B se houver) e o resultado: ✓, ✗ ou "?" (ainda não
+// visto).
+static void mini_tabela(const Estado *e, Vector2 pos, bool unario, const int *valores) {
+    float s = escala();
+    for (int l = 0; l < (unario ? 2 : 4); l++) { // padrão MAP: cada linha da mini-tabela
+        bool a = unario ? (l & 1) : ((l >> 1) & 1), b = l & 1;
+        float y = pos.y + l * 25 * s;
+        icone_lampada((Vector2){pos.x + 8 * s, y + 8 * s}, 6 * s, a);
+        if (!unario) icone_lampada((Vector2){pos.x + 28 * s, y + 8 * s}, 6 * s, b);
+        if (valores[l] < 0)
+            ui_texto(e, "?", (Vector2){pos.x + 57 * s, y}, 15 * s, Fade(COR_FOSFORO, 0.4f));
+        else
+            icone_marca((Vector2){pos.x + 62 * s, y + 8 * s}, 7 * s, valores[l] != 0, 1.0f);
+    }
+}
+
 // Um conectivo: o nome, o que ele faz em palavras e a mini-tabela (lâmpadas → ✓/✗), para comparar.
 static void conectivo_da_cola(const Estado *e, int indice, Rectangle b) {
     static const OpLogico ops[CONECTIVOS_ESCOLHA] = {OP_NAO, OP_E, OP_OU, OP_IMPLICA};
@@ -262,15 +294,29 @@ static void conectivo_da_cola(const Estado *e, int indice, Rectangle b) {
     ui_texto_quebrado(e, dialogo_texto(descricao[indice]), (Vector2){b.x + 10 * s, b.y + 32 * s},
                       b.width * 0.52f, 13 * s, RAYWHITE);
     bool unario = ops[indice] == OP_NAO;
-    int linhas = unario ? 2 : 4;
-    float x = b.x + b.width * 0.6f, y = b.y + 14 * s;
-    for (int l = 0; l < linhas; l++) { // padrão MAP: cada linha da mini-tabela
-        bool a = unario ? (l & 1) : ((l >> 1) & 1), bb = l & 1;
-        float yl = y + l * 25 * s;
-        icone_lampada((Vector2){x + 8 * s, yl + 8 * s}, 6 * s, a);
-        if (!unario) icone_lampada((Vector2){x + 28 * s, yl + 8 * s}, 6 * s, bb);
-        icone_marca((Vector2){x + 62 * s, yl + 8 * s}, 7 * s, logica_aplica(ops[indice], a, bb));
-    }
+    int valores[4];
+    for (int l = 0; l < 4; l++) // padrão MAP: o resultado do conectivo em cada linha
+        valores[l] = logica_aplica(ops[indice], unario ? (l & 1) : ((l >> 1) & 1), l & 1);
+    mini_tabela(e, (Vector2){b.x + b.width * 0.6f, b.y + 14 * s}, unario, valores);
+}
+
+// A tabela da pessoa (a frase em análise) no mesmo formato dos cartões: comparar vira achar o cartão igual.
+static void sua_tabela_na_cola(const Estado *e, Rectangle b) {
+    const Rodada *r = &e->rod;
+    const DadosRodada *d = rodadas_dados(r->numero);
+    float s = escala();
+    DrawRectangleRounded(b, 0.08f, 4, Fade(COR_AMBAR, 0.12f));
+    DrawRectangleRoundedLinesEx(b, 0.08f, 4, 2.0f * s, COR_AMBAR);
+    char titulo[48];
+    if (d->n_colunas > 1)
+        snprintf(titulo, sizeof(titulo), dialogo_texto(TXT_COLA_SUA_FRASE), r->coluna + 1);
+    else
+        snprintf(titulo, sizeof(titulo), "%s", dialogo_texto(TXT_COLA_SUA_TABELA));
+    ui_texto_quebrado(e, titulo, (Vector2){b.x + 10 * s, b.y + 10 * s}, b.width - 20 * s, 16 * s, COR_AMBAR);
+    int valores[4];
+    for (int l = 0; l < 4; l++) // padrão MAP: o que ele respondeu em cada linha (−1: ainda não visto)
+        valores[l] = r->linha_vista[r->coluna][l] ? r->linha_valor[r->coluna][l] : -1;
+    mini_tabela(e, (Vector2){b.x + (b.width - 76 * s) * 0.5f, b.y + 76 * s}, d->n_luzes == 1, valores);
 }
 
 static void desenha_cola(const Estado *e) {
@@ -282,11 +328,12 @@ static void desenha_cola(const Estado *e) {
     Rectangle c = {24 * s, 56 * s, GetScreenWidth() - 680 * s, 360 * s};
     ui_painel(c, COR_AMBAR);
     ui_texto(e, dialogo_texto(TXT_COLA_TITULO), (Vector2){c.x + 16 * s, c.y + 12 * s}, 17 * s, COR_AMBAR);
-    float bw = (c.width - 44 * s) * 0.5f, bh = 136 * s;
+    float bh = 136 * s, faixa = 118 * s, x0 = c.x + 16 * s + faixa + 12 * s;
+    float bw = (c.x + c.width - 16 * s - x0 - 12 * s) * 0.5f;
+    sua_tabela_na_cola(e, (Rectangle){c.x + 16 * s, c.y + 42 * s, faixa, 2 * bh + 10 * s});
     for (int i = 0; i < CONECTIVOS_ESCOLHA; i++) // padrão MAP: os quatro conectivos, em 2 × 2
-        conectivo_da_cola(e, i,
-                          (Rectangle){c.x + 16 * s + (i % 2) * (bw + 12 * s),
-                                      c.y + 42 * s + (i / 2) * (bh + 10 * s), bw, bh});
+        conectivo_da_cola(
+            e, i, (Rectangle){x0 + (i % 2) * (bw + 12 * s), c.y + 42 * s + (i / 2) * (bh + 10 * s), bw, bh});
     if (r->etapa == ETAPA_ESCOLHER_CONECTIVO)
         ui_texto(e, dialogo_texto(TXT_COLA_COMPARE), (Vector2){c.x + 16 * s, c.y + c.height - 26 * s}, 15 * s,
                  COR_FOSFORO);
