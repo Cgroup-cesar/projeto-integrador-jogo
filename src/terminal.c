@@ -339,7 +339,7 @@ static void desenha_cola(const Estado *e) {
     // junto.
     float g = escala(), livre = GetScreenWidth() - 680 * g, s = g * fminf(1.0f, livre / (600 * g));
     Rectangle c = {24 * g, 66 * g, livre, 360 * s}; // abaixo da barra de sanidade (vhs/sanidade.c)
-    crt_painel(e, c, COR_AMBAR, false); // o manual: mesma moldura de monitor, com a borda âmbar
+    crt_painel(e, c, COR_AMBAR, false);             // o manual: mesma moldura de monitor, com a borda âmbar
     ui_texto(e, dialogo_texto(TXT_COLA_TITULO), (Vector2){c.x + 16 * s, c.y + 12 * s}, 17 * s, COR_AMBAR);
     float bh = 136 * s, faixa = 118 * s, x0 = c.x + 16 * s + faixa + 12 * s;
     float bw = (c.x + c.width - 16 * s - x0 - 12 * s) * 0.5f;

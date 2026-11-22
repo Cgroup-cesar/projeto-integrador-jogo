@@ -10,16 +10,16 @@
 #define MENU_SUBLIMINARES                                                                                    \
     1 // frases que piscam por ~0,1 s na tela de início (0 desliga; ex.: pedido da banca)
 // Chuvisco de TV da tela de início (estilo menu de terror dos anos 2010): a cena continua visível por trás.
-#define MENU_ESTATICA_ALFA   0.09f // força base do chuvisco (0 desliga; acima de ~0,3 a cena some)
-#define MENU_ESTATICA_PICO   0.07f // reforço nos surtos de interferência
-#define MENU_ESTATICA_GRAO   3.0f  // tamanho do grão em px (antes da escala da UI)
+#define MENU_ESTATICA_ALFA    0.09f // força base do chuvisco (0 desliga; acima de ~0,3 a cena some)
+#define MENU_ESTATICA_PICO    0.07f // reforço nos surtos de interferência
+#define MENU_ESTATICA_GRAO    3.0f  // tamanho do grão em px (antes da escala da UI)
 #define MENU_ESTATICA_QUADROS 30.0f // quantas vezes por segundo o chuvisco muda
 #define MENU_FALHA_TROCA_S    0.35f // quanto dura a falha da opção logo depois de escolhida
 #define MENU_BALANCO_PX       3.0f  // amplitude do balanço lento da opção escolhida (px, antes da escala)
-#define MENU_FALHA_LEVE       0.4f  // intensidade da falha nas opções da pausa e das perguntas (1 = a do menu)
+#define MENU_FALHA_LEVE       0.4f // intensidade da falha nas opções da pausa e das perguntas (1 = a do menu)
 #define TELAS_ESTATICA_ALFA   0.03f // chuvisco da pausa e das perguntas da intro: bem mínimo
 #define TELAS_ESTATICA_PICO   0.02f
-#define TECLAS_ESCALA_JOGO    0.88f // tamanho da barra de teclas e do minimapa durante a partida (1 = original)
+#define TECLAS_ESCALA_JOGO 0.88f // tamanho da barra de teclas e do minimapa durante a partida (1 = original)
 
 // ---------------------------------------------------------------- janela e tempo
 #define LARGURA_JANELA 1280
@@ -281,7 +281,7 @@
 #define COR_CRT_TEXTO    (Color){0xb9, 0xf3, 0xcf, 255}
 #define COR_CRT_APAGADO  (Color){0x4f, 0x8a, 0x69, 255} // legendas, opções não escolhidas
 #define COR_AMBAR_ESCURO (Color){0x5a, 0x43, 0x18, 255} // o anel em volta da lâmpada acesa
-#define CRT_VARREDURA_S  7.0f // quanto a faixa clara leva para descer a tela do analisador
+#define CRT_VARREDURA_S  7.0f        // quanto a faixa clara leva para descer a tela do analisador
 #define TERMINAL_TREMIDA_ERRO_S 1.5f // aviso_t acima disto: a opção errada treme (o aviso dura 1,8 s)
 
 // Folego no armario: expulso aos 12 s; saindo com 8 s ou mais escondido, ofega.

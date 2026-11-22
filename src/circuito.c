@@ -378,7 +378,7 @@ void circuito_desenha(const Estado *e) {
     float s = ui_escala();
     const Painel *p = &e->painel;
     Rectangle r = {GetScreenWidth() * 0.5f - 430 * s, 56 * s, 860 * s,
-                   404 * s}; // acima da legenda do rádio e da barra de teclas
+                   404 * s};           // acima da legenda do rádio e da barra de teclas
     crt_painel(e, r, COR_AMBAR, true); // o mesmo monitor do analisador, com a borda âmbar do painel
     crt_titulo(e, dialogo_texto(p->numero == 1 ? TXT_PAINEL1_TITULO : TXT_PAINEL2_TITULO),
                (Vector2){r.x + 24 * s, r.y + 18 * s}, 24 * s, COR_AMBAR);
