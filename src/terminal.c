@@ -275,8 +275,9 @@ static void mini_tabela(const Estado *e, Vector2 pos, bool unario, const int *va
     for (int l = 0; l < (unario ? 2 : 4); l++) { // padrão MAP: cada linha da mini-tabela
         bool a = unario ? (l & 1) : ((l >> 1) & 1), b = l & 1;
         float y = pos.y + l * 25 * s;
-        icone_lampada((Vector2){pos.x + 8 * s, y + 8 * s}, 6 * s, a);
-        if (!unario) icone_lampada((Vector2){pos.x + 28 * s, y + 8 * s}, 6 * s, b);
+        // com uma luz só, a lâmpada fica na coluna ao lado do resultado (sem um buraco no meio)
+        if (!unario) icone_lampada((Vector2){pos.x + 8 * s, y + 8 * s}, 6 * s, a);
+        icone_lampada((Vector2){pos.x + 28 * s, y + 8 * s}, 6 * s, unario ? a : b);
         if (valores[l] < 0)
             ui_texto(e, "?", (Vector2){pos.x + 57 * s, y}, 15 * s, Fade(COR_FOSFORO, 0.4f));
         else
@@ -316,7 +317,7 @@ static void sua_tabela_na_cola(const Estado *e, Rectangle b) {
     int valores[4];
     for (int l = 0; l < 4; l++) // padrão MAP: o que ele respondeu em cada linha (−1: ainda não visto)
         valores[l] = r->linha_vista[r->coluna][l] ? r->linha_valor[r->coluna][l] : -1;
-    mini_tabela(e, (Vector2){b.x + (b.width - 76 * s) * 0.5f, b.y + 76 * s}, d->n_luzes == 1, valores);
+    mini_tabela(e, (Vector2){b.x + (b.width - 76 * s) * 0.5f, b.y + 44 * s}, d->n_luzes == 1, valores);
 }
 
 static void desenha_cola(const Estado *e) {
@@ -334,9 +335,12 @@ static void desenha_cola(const Estado *e) {
     for (int i = 0; i < CONECTIVOS_ESCOLHA; i++) // padrão MAP: os quatro conectivos, em 2 × 2
         conectivo_da_cola(
             e, i, (Rectangle){x0 + (i % 2) * (bw + 12 * s), c.y + 42 * s + (i / 2) * (bh + 10 * s), bw, bh});
-    if (r->etapa == ETAPA_ESCOLHER_CONECTIVO)
-        ui_texto(e, dialogo_texto(TXT_COLA_COMPARE), (Vector2){c.x + 16 * s, c.y + c.height - 26 * s}, 15 * s,
-                 COR_FOSFORO);
+    if (r->etapa == ETAPA_ESCOLHER_CONECTIVO) { // encolhe a letra até caber na largura do painel
+        const char *dica = dialogo_texto(TXT_COLA_COMPARE);
+        float t = 15 * s, cabe = c.width - 32 * s, mede = ui_mede(e, dica, t).x;
+        if (mede > cabe) t *= cabe / mede;
+        ui_texto(e, dica, (Vector2){c.x + 16 * s, c.y + c.height - 26 * s}, t, COR_FOSFORO);
+    }
 }
 
 void terminal_desenha(const Estado *e) {
