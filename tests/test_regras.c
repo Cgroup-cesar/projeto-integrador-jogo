@@ -441,7 +441,8 @@ static void testa_sanidade_queda(void) {
     float a5 = regras_sanidade_passo(50.0f, 5.0f, 1.0f, false, 0.0f, true, 1.0f);
     float a2 = regras_sanidade_passo(50.0f, 2.0f, 1.0f, false, 0.0f, true, 1.0f);
     CHECK(a9 < 50.0f && a5 < a9 && a2 < a5);      // mais perto, cai mais
-    CHECK(50.0f - a9 < 0.5f);                     // a 9 m mal se mexe
+    CHECK(50.0f - a9 > SANIDADE_QUEDA_MIN - 0.01f); // já na borda do raio a barra desce
+    CHECK(50.0f - a9 < 2.5f);                       // ...mas devagar
     CHECK(perto(a2, 50.0f - SANIDADE_QUEDA_MAX)); // colado: a queda máxima
     float escondido = regras_sanidade_passo(50.0f, 5.0f, 1.0f, true, 0.0f, true, 1.0f);
     CHECK(escondido > a5 && escondido < 50.0f); // no armário cai menos, mas cai
@@ -476,6 +477,28 @@ static void testa_sanidade_bonus(void) {
     CHECK(perto(regras_sanidade_conectivos(20.0f, 1, 2), 20.0f + SANIDADE_BONUS_CONECTIVO));
     CHECK(perto(regras_sanidade_conectivos(20.0f, 2, 0), 20.0f)); // partida nova zerou: sem bônus
     CHECK(perto(regras_sanidade_conectivos(20.0f, 2, 2), 20.0f));
+}
+
+static void testa_sanidade_proximidade(void) {
+    CHECK(perto(regras_sanidade_proximidade(SANIDADE_RAIO), 0.0f));
+    CHECK(perto(regras_sanidade_proximidade(30.0f), 0.0f));
+    float borda = regras_sanidade_proximidade(SANIDADE_RAIO - 0.01f);
+    CHECK(borda > SANIDADE_GRAO_BORDA - 0.01f && borda < SANIDADE_GRAO_BORDA + 0.01f); // já se nota a 10 m
+    CHECK(perto(regras_sanidade_proximidade(SANIDADE_PERTO), 1.0f));
+    CHECK(perto(regras_sanidade_proximidade(0.5f), 1.0f));
+    float antes = 0.0f;
+    bool sobe = true;
+    for (int i = 0; i <= 100; i++) { // padrão FOLD: de 10 m até 0 o grão só cresce
+        float g = regras_sanidade_proximidade(SANIDADE_RAIO * (1.0f - (float)i / 100.0f) - 0.001f);
+        sobe = sobe && g >= antes - 1e-6f;
+        antes = g;
+    }
+    CHECK(sobe);
+    CHECK(perto(regras_sanidade_intensidade(0.0f, SANIDADE_MAX), 0.0f));
+    CHECK(perto(regras_sanidade_intensidade(0.4f, SANIDADE_MAX), 0.4f)); // só a proximidade
+    CHECK(perto(regras_sanidade_intensidade(1.0f, 0.0f), 1.0f));         // nunca passa de 1
+    float junto = regras_sanidade_intensidade(0.4f, 40.0f);
+    CHECK(junto > 0.4f && junto > regras_sanidade_grao(40.0f) && junto <= 1.0f); // as duas somam
 }
 
 static void testa_sanidade_grao(void) {
@@ -521,6 +544,7 @@ int main(void) {
     testa_sanidade_queda();
     testa_sanidade_recupera();
     testa_sanidade_bonus();
+    testa_sanidade_proximidade();
     testa_sanidade_grao();
     return resultado_final("test_regras");
 }
