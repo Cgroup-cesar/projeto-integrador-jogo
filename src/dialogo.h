@@ -179,6 +179,13 @@ typedef enum {
     TXT_TABELA_FALSO,
     TXT_PAINEL_OBJETIVO1,
     TXT_PAINEL_OBJETIVO2,
+    TXT_PAINEL_BARULHO, // o preço do chute e a pergunta da vez
+    TXT_PAINEL_MOVIMENTOS,
+    TXT_PAINEL_BONUS,
+    TXT_PAINEL_DICA_E,
+    TXT_PAINEL_DICA_OU,
+    TXT_PAINEL_DICA_NAO,
+    TXT_PAINEL2_DICA,
     TXT_TOTAL
 } TextoId;
 

@@ -40,6 +40,8 @@ static void pontua_evento(Estado *e, Fase fase, EventoFase ev) {
         pontua(e, PONTO_RODADA_SEM_ERRO, PONTOS_RODADA_SEM_ERRO, fase);
     if (ev == EV_SAIDA_CONCLUIDA && e->pegos_na_fase == 0)
         pontua(e, PONTO_SAIDA_LIMPA, PONTOS_SAIDA_SEM_SER_PEGO, fase);
+    int pensou = ev == EV_SAIDA_CONCLUIDA ? regras_bonus_movimentos(e->painel.movimentos) : 0;
+    if (pensou > 0) pontua(e, PONTO_PAINEL_POUCOS_MOV, pensou, fase);
     bool final = ev == EV_TRANSMITIU_CONTRADICAO || ev == EV_TRANSMITIU_SATISFAZIVEL;
     if (!final) return;
     Fase destino = regras_proxima_fase(fase, ev);

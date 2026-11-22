@@ -177,6 +177,8 @@ typedef struct {
     int cursor;
     bool resolvido;
     float resolvido_t;
+    int movimentos; // trocas de chave ou de porta (o cursor não conta): poucas = bônus
+    float barulho;  // 0..1: sobe a cada clique e desce devagar (o medidor do painel)
 } Painel;
 
 // ------------------------------------------------------------------ resposta final

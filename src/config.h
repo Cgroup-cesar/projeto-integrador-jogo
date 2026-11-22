@@ -116,8 +116,12 @@
 #define PONTOS_ERRO               (-25)
 #define PONTOS_SAIDA_SEM_SER_PEGO 50
 #define PONTOS_FINAL_BOM          200
-#define TEMPO_ALVO_PARTIDA_S      480.0f // bônus de tempo: meio ponto por segundo abaixo disso
-#define MAX_FICHAS_FRASE          7
+#define PONTOS_PAINEL_POUCOS_MOV                                                                             \
+    50                           // painel resolvido com até MOVIMENTOS_BONUS_CHEIO trocas (metade até _MEIO)
+#define MOVIMENTOS_BONUS_CHEIO 4 // os dois painéis se resolvem com 2 trocas
+#define MOVIMENTOS_BONUS_MEIO  8
+#define TEMPO_ALVO_PARTIDA_S   480.0f // bônus de tempo: meio ponto por segundo abaixo disso
+#define MAX_FICHAS_FRASE       7
 
 // ---------------------------------------------------------------- capacidades das coleções (sem malloc por
 // quadro)

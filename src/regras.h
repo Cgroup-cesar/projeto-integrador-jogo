@@ -175,6 +175,14 @@ void regras_circuito_painel1(Circuito *c);                             // (A ∧
 void regras_circuito_painel2(Circuito *c, TipoPorta p1, TipoPorta p2); // (A [p1] B) [p2] (¬A)
 bool regras_avaliar_circuito(const Circuito *c, const bool *entradas, bool *leds);
 bool regras_circuito_confere_tabela(const Circuito *c, const bool *alvo);
+// Onde a corrente trava: andando da SAÍDA para trás, a porta e a entrada (0 = a, 1 = b) que a pessoa precisa
+// olhar. porta = −1: a SAÍDA já acende.
+typedef struct {
+    int porta;
+    int entrada;
+} Bloqueio;
+Bloqueio regras_circuito_bloqueio(const Circuito *c, const bool *entradas);
+int regras_bonus_movimentos(int movimentos); // resolver o painel pensando, com poucos movimentos, vale bônus
 
 // ------------------------------------------------------------------ textos do roteiro (nome e gênero)
 // Um marcador do roteiro e o que entra no lugar dele: {"NOME", "Ana"} troca "{NOME}" por "Ana".

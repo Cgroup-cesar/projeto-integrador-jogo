@@ -154,6 +154,22 @@ static void testa_painel1(void) {
     CHECK(unica_certa);
 }
 
+// [REQ:PURA-regras_circuito_bloqueio] painel 1: o ponto que trava anda junto com o raciocínio
+static void testa_bloqueio_painel1(void) {
+    Circuito c;
+    regras_circuito_painel1(&c); // portas: 0 = NÃO B, 1 = A E (NÃO B), 2 = (...) E C
+    bool tudo_desligado[3] = {false, false, false}, so_a[3] = {true, false, false};
+    bool b_ligada[3] = {true, true, true}, certo[3] = {true, false, true};
+    Bloqueio b = regras_circuito_bloqueio(&c, tudo_desligado);
+    CHECK(b.porta == 1 && b.entrada == 0); // o 1º E: falta a chave A
+    b = regras_circuito_bloqueio(&c, so_a);
+    CHECK(b.porta == 2 && b.entrada == 1); // o último E: falta a chave C
+    b = regras_circuito_bloqueio(&c, b_ligada);
+    CHECK(b.porta == 0 && b.entrada == 0); // o NÃO: a chave B precisa desligar
+    b = regras_circuito_bloqueio(&c, certo);
+    CHECK(b.porta == -1); // a SAÍDA acende: nada a apontar
+}
+
 static void testa_pool_cheio(void) {
     PoolLogico pool;
     logica_pool_limpa(&pool);
@@ -172,6 +188,7 @@ int main(void) {
     testa_parser_erros();
     testa_painel1();
     testa_painel2();
+    testa_bloqueio_painel1();
     testa_pool_cheio();
     return resultado_final("test_logica");
 }

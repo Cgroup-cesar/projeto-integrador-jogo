@@ -29,8 +29,19 @@ static bool esta_resolvido(const Painel *p) {
     return regras_circuito_confere_tabela(&c, ALVO_PAINEL2);
 }
 
-// No painel 2 as entradas não são chaves: os LEDs percorrem as 4 linhas da tabela, uma por vez.
+// No painel 2 as entradas não são chaves. Enquanto alguma linha não bate com o ALVO, o painel para na
+// primeira delas (uma pergunta por vez); resolvido, os LEDs voltam a percorrer as 4 linhas.
 static int linha_mostrada(const Estado *e) {
+    const Painel *p = &e->painel;
+    if (p->numero == 2 && !p->resolvido) {
+        Circuito c;
+        monta(p, &c);
+        for (int l = 0; l < 4; l++) { // padrão FILTER: a primeira linha em que a SAÍDA difere do ALVO
+            bool ent[2];
+            logica_valores_da_linha(l, 2, ent);
+            if (regras_avaliar_circuito(&c, ent, NULL) != ALVO_PAINEL2[l]) return l;
+        }
+    }
     return (int)(e->tempo_total / 0.9f) % 4;
 }
 
@@ -99,6 +110,7 @@ static void apagoes(Estado *e, float dt) {
 void circuito_atualiza(Estado *e, float dt) {
     Painel *p = &e->painel;
     apagoes(e, dt);
+    p->barulho = fmaxf(0.0f, p->barulho - 0.12f * dt); // o barulho some devagar
     if (p->resolvido) {
         p->resolvido_t += dt;
         if (p->resolvido_t > 1.8f && e->jog.modo == MODO_PAINEL) e->jog.modo = MODO_ANDANDO;
@@ -112,8 +124,13 @@ void circuito_atualiza(Estado *e, float dt) {
         return;
     }
     if (e->in.ajuda) e->ajuda_aberta = !e->ajuda_aberta; // H: os cartões das portas, como no terminal
+    Painel antes = *p;
     bool mexeu = p->numero == 1 ? atualiza_painel1(e) : atualiza_painel2(e);
     if (!mexeu) return;
+    bool trocou = memcmp(antes.chaves, p->chaves, sizeof(p->chaves)) != 0 ||
+                  memcmp(antes.escolha, p->escolha, sizeof(p->escolha)) != 0;
+    if (trocou) p->movimentos++;                  // mover o cursor não conta como movimento...
+    p->barulho = fminf(1.0f, p->barulho + 0.25f); // ...mas todo clique faz barulho
     // Mexer no painel faz barulho: a criatura pode ouvir.
     Vector3 onde = p->numero == 1 ? e->nivel.painel1 : e->nivel.painel2;
     col_ruidos_adiciona(&e->ruidos, (Ruido){onde, RUIDO_RAIO_PAINEL, 1.0f, RUIDO_PAINEL});
@@ -179,6 +196,55 @@ static void lampada_saida(const Estado *e, Vector2 c, bool acesa) {
     ui_texto(e, dialogo_texto(TXT_PAINEL_SAIDA), (Vector2){c.x - 22 * s, c.y + 26 * s}, 14 * s, COR_AMBAR);
 }
 
+// ------------------------------------------------------------------ a pergunta da vez
+// Um anel âmbar pulsando no ponto que trava a corrente: a pessoa olha um lugar só, não o painel inteiro.
+static void aponta(const Estado *e, Vector2 ponto) {
+    float s = ui_escala(), pulso = 0.5f + 0.5f * sinf(e->tempo_total * 6.0f);
+    DrawRing(ponto, (9 + 4 * pulso) * s, (12 + 4 * pulso) * s, 0, 360, 32,
+             Fade(COR_AMBAR, 0.5f + 0.5f * pulso));
+}
+
+// Painel 1: da SAÍDA para trás até a entrada que trava (regras_circuito_bloqueio), com a frase da porta.
+static void pergunta_painel1(const Estado *e, Rectangle r, const Vector2 pontos[3][2]) {
+    const Painel *p = &e->painel;
+    if (p->resolvido) return;
+    Circuito c;
+    monta(p, &c);
+    Bloqueio b = regras_circuito_bloqueio(&c, p->chaves);
+    if (b.porta < 0) return;
+    aponta(e, pontos[b.porta][b.entrada]);
+    TipoPorta tipo = c.portas[b.porta].tipo;
+    TextoId dica = tipo == PORTA_NAO  ? TXT_PAINEL_DICA_NAO
+                   : tipo == PORTA_OU ? TXT_PAINEL_DICA_OU
+                                      : TXT_PAINEL_DICA_E;
+    float s = ui_escala();
+    ui_texto_quebrado(e, dialogo_texto(dica), (Vector2){r.x + 24 * s, r.y + 286 * s}, 380 * s, 16 * s,
+                      COR_AMBAR);
+}
+
+// O preço do chute: o medidor de barulho (sobe a cada clique, desce devagar) e os movimentos feitos.
+static void medidores(const Estado *e, Rectangle r) {
+    const Painel *p = &e->painel;
+    float s = ui_escala(), x = r.x + 24 * s, y = r.y + 54 * s;
+    ui_texto(e, dialogo_texto(TXT_PAINEL_BARULHO), (Vector2){x, y}, 14 * s, Fade(COR_FOSFORO, 0.7f));
+    x += ui_mede(e, dialogo_texto(TXT_PAINEL_BARULHO), 14 * s).x + 10 * s;
+    Rectangle barra = {x, y + 2 * s, 120 * s, 11 * s};
+    bool alto = p->barulho > 0.7f;
+    Color cor = alto ? COR_ALARME : p->barulho > 0.4f ? COR_AMBAR : COR_FOSFORO;
+    if (alto && fmodf(e->tempo_total, 0.5f) < 0.25f) cor = Fade(cor, 0.4f); // pisca: a criatura pode ouvir
+    DrawRectangleRec(barra, (Color){20, 28, 22, 255});
+    DrawRectangleRec((Rectangle){barra.x, barra.y, barra.width * p->barulho, barra.height}, cor);
+    DrawRectangleLinesEx(barra, 1.0f * s, Fade(COR_FOSFORO, 0.5f));
+    char texto[64];
+    int bonus = regras_bonus_movimentos(p->movimentos);
+    if (p->resolvido && bonus > 0)
+        snprintf(texto, sizeof(texto), dialogo_texto(TXT_PAINEL_BONUS), p->movimentos, bonus);
+    else
+        snprintf(texto, sizeof(texto), dialogo_texto(TXT_PAINEL_MOVIMENTOS), p->movimentos);
+    ui_texto(e, texto, (Vector2){barra.x + barra.width + 24 * s, y}, 14 * s,
+             p->resolvido && bonus > 0 ? COR_AMBAR : Fade(COR_FOSFORO, 0.7f));
+}
+
 static void desenha_painel1(const Estado *e, Rectangle r) {
     float s = ui_escala();
     const Painel *p = &e->painel;
@@ -207,6 +273,11 @@ static void desenha_painel1(const Estado *e, Rectangle r) {
     fio(e, ent[2], (Vector2){r.x + 590 * s, e2.y + 10 * s}, p->chaves[2], true);
     fio(e, e2, (Vector2){r.x + 770 * s, e2.y}, saida, false);
     lampada_saida(e, (Vector2){r.x + 790 * s, e2.y}, saida);
+    const Vector2 pontos[3][2] = {// a entrada de cada porta (0 = NÃO, 1 = 1º E, 2 = último E), na tela
+                                  {{r.x + 260 * s, ent[1].y}, {r.x + 260 * s, ent[1].y}},
+                                  {{r.x + 430 * s, e1.y - 10 * s}, {r.x + 430 * s, e1.y + 10 * s}},
+                                  {{r.x + 590 * s, e2.y - 10 * s}, {r.x + 590 * s, e2.y + 10 * s}}};
+    pergunta_painel1(e, r, pontos);
 }
 
 static void desenha_tabela_painel2(const Estado *e, Vector2 pos) {
@@ -223,9 +294,16 @@ static void desenha_tabela_painel2(const Estado *e, Vector2 pos) {
         bool saida = regras_avaliar_circuito(&c, ent, NULL);
         bool bate = saida == ALVO_PAINEL2[l];
         float y = pos.y + (28 + l * 28) * s;
-        if (l == linha_mostrada(e))
-            DrawRectangleRounded((Rectangle){pos.x - 8 * s, y - 4 * s, 200 * s, 26 * s}, 0.3f, 4,
-                                 Fade(COR_FOSFORO, 0.12f));
+        Rectangle faixa = {pos.x - 8 * s, y - 4 * s, 200 * s, 26 * s};
+        if (l == linha_mostrada(e) && !bate) { // a linha da vez: parada, em âmbar, com a pergunta embaixo
+            DrawRectangleRounded(faixa, 0.3f, 4, Fade(COR_AMBAR, 0.15f));
+            DrawRectangleRoundedLinesEx(faixa, 0.3f, 4, 2.0f * s, COR_AMBAR);
+            char dica[128];
+            snprintf(dica, sizeof(dica), dialogo_texto(TXT_PAINEL2_DICA), saida, ALVO_PAINEL2[l]);
+            ui_texto_quebrado(e, dica, (Vector2){pos.x - 8 * s, pos.y + 146 * s}, 216 * s, 13 * s, COR_AMBAR);
+        } else if (l == linha_mostrada(e)) {
+            DrawRectangleRounded(faixa, 0.3f, 4, Fade(COR_FOSFORO, 0.12f));
+        }
         char linha[48];
         snprintf(linha, sizeof(linha), "%d %d     %s       %s", ent[0], ent[1], saida ? "1" : "0",
                  ALVO_PAINEL2[l] ? "1" : "0");
@@ -290,7 +368,7 @@ static void desenha_ajuda(const Estado *e, Rectangle r) {
         cartao_da_porta(e, PORTA_E, (Rectangle){r.x + 633 * s, r.y + 262 * s, 203 * s, 130 * s}, false);
     } else {
         TipoPorta escolhida = (TipoPorta)e->painel.escolha[e->painel.cursor % 2];
-        cartao_da_porta(e, escolhida, (Rectangle){r.x + 620 * s, r.y + 222 * s, 216 * s, 130 * s}, true);
+        cartao_da_porta(e, escolhida, (Rectangle){r.x + 620 * s, r.y + 272 * s, 216 * s, 122 * s}, true);
     }
 }
 
@@ -314,6 +392,7 @@ void circuito_desenha(const Estado *e) {
     ui_texto_quebrado(e, dialogo_texto(rodape), (Vector2){r.x + 24 * s, r.y + r.height - 58 * s}, largura,
                       18 * s, p->resolvido ? COR_AMBAR : Fade(COR_FOSFORO, 0.8f));
     if (!p->resolvido) manual_selo_ajuda(e, r.x + r.width - 24 * s, r.y + 18 * s, s);
+    medidores(e, r);
     desenha_ajuda(e, r);
 }
 

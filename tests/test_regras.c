@@ -190,6 +190,15 @@ static void testa_placar(void) {
     CHECK(regras_bonus_tempo(TEMPO_ALVO_PARTIDA_S - 100) == 50);
 }
 
+// [REQ:PURA-regras_bonus_movimentos] pensar antes de mexer vale pontos; chutar não
+static void testa_bonus_movimentos(void) {
+    CHECK(regras_bonus_movimentos(2) == PONTOS_PAINEL_POUCOS_MOV);
+    CHECK(regras_bonus_movimentos(MOVIMENTOS_BONUS_CHEIO) == PONTOS_PAINEL_POUCOS_MOV);
+    CHECK(regras_bonus_movimentos(MOVIMENTOS_BONUS_CHEIO + 1) == PONTOS_PAINEL_POUCOS_MOV / 2);
+    CHECK(regras_bonus_movimentos(MOVIMENTOS_BONUS_MEIO + 1) == 0);
+    CHECK(regras_bonus_movimentos(-1) == 0);
+}
+
 // [REQ:PURA-regras_evento_do_erro] testa que só o 3º erro rompe o vidro
 static void testa_evento_do_erro(void) {
     CHECK(regras_evento_do_erro(2) == EV_NENHUM);
@@ -463,6 +472,7 @@ int main(void) {
     testa_volumes_trilhas();
     testa_quadro_susto();
     testa_placar();
+    testa_bonus_movimentos();
     testa_vidro();
     testa_evento_do_erro();
     testa_monta_texto();

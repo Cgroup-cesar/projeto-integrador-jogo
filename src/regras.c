@@ -397,3 +397,30 @@ bool regras_circuito_confere_tabela(const Circuito *c, const bool *alvo) {
     }
     return true;
 }
+
+// [REQ:PURA-regras_circuito_bloqueio] da SAÍDA para trás, de porta apagada em porta apagada, até a entrada
+// que trava a corrente: é o raciocínio que o painel mostra à pessoa, um ponto por vez
+Bloqueio regras_circuito_bloqueio(const Circuito *c, const bool *entradas) {
+    bool leds[MAX_PORTAS] = {false};
+    if (c->n_portas <= 0 || regras_avaliar_circuito(c, entradas, leds)) return (Bloqueio){-1, -1};
+    int g = c->n_portas - 1;
+    for (int passo = 0; passo < c->n_portas; passo++) { // anda para trás: no máximo uma vez por porta
+        const Porta *p = &c->portas[g];
+        // NÃO apagado: a entrada dele está acesa (e precisa apagar). OU-EXCLUSIVO e NÃO-E: a entrada a.
+        if (p->tipo != PORTA_E && p->tipo != PORTA_OU) return (Bloqueio){g, 0};
+        // E ou OU apagado: alguma entrada está apagada; se ela vem de outra porta, a culpa é de lá
+        int refs[2] = {p->a, p->b};
+        int i = valor_da_referencia(refs[0], entradas, leds, g) ? 1 : 0;
+        if (refs[i] < REF_PORTA(0)) return (Bloqueio){g, i};
+        g = refs[i] - REF_PORTA(0);
+    }
+    return (Bloqueio){c->n_portas - 1, 0};
+}
+
+// [REQ:PURA-regras_bonus_movimentos] poucos movimentos = bônus cheio; alguns a mais = metade; chutar = nada
+int regras_bonus_movimentos(int movimentos) {
+    if (movimentos < 0) return 0;
+    if (movimentos <= MOVIMENTOS_BONUS_CHEIO) return PONTOS_PAINEL_POUCOS_MOV;
+    if (movimentos <= MOVIMENTOS_BONUS_MEIO) return PONTOS_PAINEL_POUCOS_MOV / 2;
+    return 0;
+}

@@ -63,7 +63,8 @@ typedef enum {
     PONTO_ERRO,
     PONTO_SAIDA_LIMPA,
     PONTO_BONUS_TEMPO,
-    PONTO_FINAL_BOM
+    PONTO_FINAL_BOM,
+    PONTO_PAINEL_POUCOS_MOV
 } TipoPonto;
 
 typedef struct {
