@@ -222,9 +222,10 @@ void jogador_atualiza_camera(Estado *e) {
 void jogador_desenha(const Estado *e) {
     if (e->jog.modo != MODO_ARMARIO) return;
     int w = e->rec.alvo_largura, h = e->rec.alvo_altura;
-    int fresta = h / 14;
-    for (int y = 0; y < h; y += fresta * 2)
-        DrawRectangle(0, y, w, fresta + fresta / 3, BLACK);
+    // Ripas finas (cerca de 30% da altura): dá para ver o Precursor inteiro na porta, mas ainda é uma fresta.
+    int passo = h / 7, ripa = passo * 3 / 10;
+    for (int y = passo / 2; y < h; y += passo) // padrão MAP: cada ripa da porta
+        DrawRectangle(0, y, w, ripa, BLACK);
     DrawRectangle(0, 0, w / 7, h, BLACK);
     DrawRectangle(w - w / 7, 0, w / 7, h, BLACK);
 }

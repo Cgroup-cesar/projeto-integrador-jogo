@@ -10,6 +10,7 @@
 #include <stdio.h>
 
 #define DEMO_PAUSA_S 1.2f // tutorial: a linha fica parada na faixa ("assim!") por esse tempo
+static const float ZONAS_DEMO[RESP_ACERTOS] = {0.62f, 0.3f, 0.78f}; // onde a faixa fica em cada demonstração
 
 bool respiracao_ativa(const Estado *e) {
     return e->resp.etapa != RESP_NADA;
@@ -48,32 +49,43 @@ void respiracao_comeca(Estado *e) {
     }
     r->etapa = RESP_TUTORIAL;
     r->t = 0.0f;
-    r->zona = 0.62f;
-    r->demo_t = -1.0f;
+    r->zona = ZONAS_DEMO[0];
+    r->demo_relogio = 0.0f;
+    r->demo_t = 0.0f;
+    r->demo_n = 0;
+    r->demo_ultimo = 0.0f;
 }
 
-// Tutorial: a linha anda sozinha; na 1ª passagem pela faixa ela para ("assim!") e depois segue.
+// Tutorial: a linha anda sozinha e "acerta" RESP_ACERTOS vezes, como no desafio: a cada vez ela para na
+// faixa ("assim!"), a tecla desenhada acende, um quadrado de acerto enche e a faixa muda de lugar.
 static float linha_tutorial(const Respiracao *r) {
-    if (r->demo_t < 0.0f) return regras_respiracao_linha(r->t, RESP_PERIODO_S);
-    if (r->t - r->demo_t < DEMO_PAUSA_S) return r->demo_linha;
-    return regras_respiracao_linha(r->t - DEMO_PAUSA_S, RESP_PERIODO_S);
+    return r->demo_t > 0.0f ? r->demo_linha : regras_respiracao_linha(r->demo_relogio, RESP_PERIODO_S);
 }
 
 static bool demo_parada(const Respiracao *r) {
-    return r->demo_t >= 0.0f && r->t - r->demo_t < DEMO_PAUSA_S;
+    return r->demo_t > 0.0f;
 }
 
 static bool tutorial_pronto(const Respiracao *r) {
-    return r->demo_t >= 0.0f && r->t - r->demo_t >= DEMO_PAUSA_S;
+    return r->demo_n >= RESP_ACERTOS && !demo_parada(r);
 }
 
 static void atualiza_tutorial(Estado *e, float dt) {
     Respiracao *r = &e->resp;
     r->t += dt;
-    float linha = linha_tutorial(r);
-    if (r->demo_t < 0.0f && r->t > 1.0f && regras_respiracao_acertou(linha, r->zona, RESP_ZONA * 0.5f)) {
-        r->demo_t = r->t;
-        r->demo_linha = linha;
+    if (r->demo_t > 0.0f) { // parada no "assim!": ao fim da pausa, a faixa vai para outro lugar
+        r->demo_t -= dt;
+        if (r->demo_t <= 0.0f && r->demo_n < RESP_ACERTOS) r->zona = ZONAS_DEMO[r->demo_n];
+    } else {
+        r->demo_relogio += dt;
+        float linha = linha_tutorial(r);
+        bool acertou = regras_respiracao_acertou(linha, r->zona, RESP_ZONA * 0.4f);
+        if (r->demo_n < RESP_ACERTOS && r->demo_relogio > r->demo_ultimo + 0.6f && acertou) {
+            r->demo_n++;
+            r->demo_ultimo = r->demo_relogio;
+            r->demo_t = DEMO_PAUSA_S;
+            r->demo_linha = linha;
+        }
     }
     if (!tutorial_pronto(r) || !e->in.respirar) return;
     r->tutorial_visto = true;
@@ -248,7 +260,7 @@ static void desenha_tutorial(const Estado *e) {
     }
     float y = p.y + 336 * s; // a legenda: o que vai aparecer no desafio
     ui_texto(e, dialogo_texto(TXT_RESP_ACERTOS), (Vector2){p.x + 60 * s, y}, 15 * s, COR_FOSFORO);
-    acertos((Vector2){p.x + 160 * s, y + 9 * s}, 0, s);
+    acertos((Vector2){p.x + 160 * s, y + 9 * s}, r->demo_n, s); // enche com a demonstração
     ui_texto(e, dialogo_texto(TXT_RESP_ACERTOS_DICA), (Vector2){p.x + 60 * s, y + 26 * s}, 14 * s,
              Fade(RAYWHITE, 0.7f));
     ui_texto(e, dialogo_texto(TXT_RESP_CHANCES), (Vector2){p.x + 450 * s, y}, 15 * s, COR_FOSFORO);

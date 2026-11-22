@@ -287,6 +287,9 @@
 #define RESP_LONGE_M      7.0f  // "ele foi embora" só quando ele está pelo menos tão longe
 #define RESP_AFASTA_MAX_S 6.0f  // se ainda não se afastou (preso num canto), é levado ao ponto mais longe
 #define RESP_FOI_S        1.8f  // quanto o "Ele foi embora..." fica na tela (o E já funciona)
+#define RESP_DIST_PORTA                                                                                      \
+    2.6f // até onde ele para, a partir do armário: com olhos a 1,55 m e 70° de visão, a
+         // partir de ~2,3 m o corpo inteiro (2,6 m) cabe na tela
 
 // Zerou o folego correndo: so volta a correr com esta fracao da barra.
 #define FOLEGO_RETOMA_FRACAO 0.75f

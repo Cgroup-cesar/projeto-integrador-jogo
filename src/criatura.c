@@ -307,7 +307,15 @@ void criatura_na_porta_do_armario(Estado *e) {
     c->distorcao = 0.0f;
     c->estado = CRIATURA_PROCURA;
     c->caminho_n = 0;
-    c->pos = Vector3Add(e->nivel.armario_saida[e->jog.armario], Vector3Scale(fora, 0.6f));
+    // Anda para fora a partir da porta enquanto o caminho está livre (nunca atravessa uma parede), até
+    // RESP_DIST_PORTA: longe o bastante para o corpo inteiro aparecer pelas frestas.
+    Vector3 armario = e->nivel.armarios[e->jog.armario];
+    float d = 1.3f;
+    while (d + 0.1f <= RESP_DIST_PORTA &&
+           !col_paredes_colide(&e->paredes, Vector3Add(armario, Vector3Scale(fora, d + 0.1f)), 0.35f, 2.5f))
+        d += 0.1f;
+    c->pos = Vector3Add(armario, Vector3Scale(fora, d));
+    c->pos.y = 0.0f;
     c->yaw = atan2f(-fora.x, -fora.z); // de frente para a porta
     audio_toca(e, SOM_PASSO_CRIATURA, 1.0f, 0.6f);
 }

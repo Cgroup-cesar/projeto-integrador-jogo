@@ -269,8 +269,11 @@ typedef struct {
     float acerto_t;      // "SEGUROU!" depois de um acerto
     float foi_t;         // "Ele foi embora..." (depois que ele está longe de verdade)
     bool tutorial_visto; // por partida (cada pessoa da feira vê uma vez)
-    float demo_t;        // tutorial: quando a demonstração "acertou" (−1: ainda não)
+    float demo_relogio;  // tutorial: o tempo da linha (para nas pausas da demonstração)
+    float demo_t;        // tutorial: quanto falta da pausa "assim!" atual (0: andando)
     float demo_linha;    // onde a linha parou na demonstração
+    int demo_n;          // acertos já demonstrados (a demonstração acerta RESP_ACERTOS vezes)
+    float demo_ultimo;   // demo_relogio no último acerto demonstrado (a linha anda um pouco antes do próximo)
     float aviso_t;       // "ELE OUVIU!" depois de um erro
 } Respiracao;
 
