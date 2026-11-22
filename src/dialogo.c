@@ -183,6 +183,17 @@ static const char *const TEXTOS[TXT_TOTAL] = {
     [TXT_FIM_BOM_TELA] =
         "FINAL 1 DE 3 — O SILÊNCIO. Você calou o Precursor e saiu viv{o|a} de Chã de Alegria. "
         "Às 22:00, a nave foi embora. Oficialmente, nada desceu dela.",
+    // A explicação de cada final, logo abaixo do texto: %s é a frase transmitida, em notação lógica (P, Q).
+    [TXT_FIM_BOM_PORQUE] =
+        "POR QUE VOCÊ VENCEU: a sua frase (%s) é uma contradição. Ela é falsa em todas as linhas "
+        "da tabela-verdade. O Precursor só age sobre o que PODE ser verdade: sem nenhuma brecha, "
+        "ele travou.",
+    [TXT_FIM_RUIM_PORQUE] = "POR QUE VOCÊ PERDEU: a sua frase (%s) pode ser verdadeira em pelo menos uma "
+                            "linha da tabela-verdade, e essa "
+                            "brecha bastou para ele agir. O rádio que te chamava só pelo nome não era o "
+                            "Varela. Da próxima vez, leia o "
+                            "bilhete no Arquivo e transmita uma frase que nunca possa ser verdade.",
+    [TXT_FIM_VER_PLACAR] = "ENTER — ver o placar  (%d)",
     [TXT_FIM_VITORIA] = "VITÓRIA",
     [TXT_FIM_DERROTA] = "DERROTA",
     [TXT_FIM_PLACAR] = "PLACAR TOTAL",

@@ -28,6 +28,9 @@
     1 // F1 VHS · F2 pular fase · F3 estado da criatura · F5 reiniciar · F9 resposta · F12 captura
 #define FEIRA_INATIVIDADE_S 90.0f // no modo feira (--feira), volta ao menu após esse tempo sem nenhuma tecla
 #define FIM_VOLTA_MENU_S    20.0f // a tela de fim volta sozinha ao menu
+#define FIM_RUIM_TEXTO_S    8.2f  // final ruim: quando o texto e o "por quê" aparecem (depois do susto)
+#define FIM_BOM_TEXTO_S     13.0f // final bom: quando o texto e o "por quê" aparecem (depois das falas)
+#define FIM_LEITURA_MAX_S   50.0f // o texto espera a leitura: ENTER ou, no máximo, isso, e vai ao placar
 #define IDENTIDADE_FEIRA_S  20.0f // no modo feira, "professor ou professora?" e o nome seguem sozinhos
 #define SMOKE_LIMITE_FASE_S                                                                                  \
     180.0f // no --smoke, uma fase que demora mais que isso (tempo simulado) é travamento

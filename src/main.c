@@ -271,7 +271,9 @@ static void piloto_age(Estado *e, Entrada *in) {
         break;
     case FASE_FIM_RUIM:
     case FASE_FIM_BOM:
-        in->confirmar = e->fim.tela_final && e->fim.tempo_tela > 0.5f;
+        // lê o texto do final por meio segundo e segue ao placar; no placar, meio segundo e volta ao menu
+        in->confirmar = (e->fim.tela_final && e->fim.tempo_tela > 0.5f) ||
+                        (compositor_fim_lendo(e) && e->fim.leitura > 0.5f);
         break;
     default:
         break;

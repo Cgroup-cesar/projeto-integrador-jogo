@@ -138,7 +138,18 @@ história para quem quiser.
 - Tautologia (ex.: `P OU NÃO P`) → **FINAL 3 DE 3, A VERDADE** (final secreto).
 - Qualquer outra frase satisfazível → **FINAL 2 DE 3, A PORTA** (derrota).
 
-Cada final diz claramente o que aconteceu com o jogador e mostra "FINAL n DE 3".
+Cada final diz claramente o que aconteceu com o jogador e mostra "FINAL n DE 3". Logo abaixo, um parágrafo menor
+explica **por que** aconteceu, com a frase transmitida em notação lógica (`%s`), para quem perdeu saber o que tentar e
+quem ganhou saber o que fez:
+
+- Silêncio: "POR QUE VOCÊ VENCEU: a sua frase (%s) é uma contradição. Ela é falsa em todas as linhas da
+  tabela-verdade. O Precursor só age sobre o que PODE ser verdade: sem nenhuma brecha, ele travou."
+- Porta: "POR QUE VOCÊ PERDEU: a sua frase (%s) pode ser verdadeira em pelo menos uma linha da tabela-verdade, e
+  essa brecha bastou para ele agir. O rádio que te chamava só pelo nome não era o Varela. Da próxima vez, leia o
+  bilhete no Arquivo e transmita uma frase que nunca possa ser verdade."
+- Verdade: "POR QUE ELE LEVOU VOCÊ: a sua frase (%s) é uma tautologia. Ela é verdadeira em todas as linhas da
+  tabela-verdade: você não deu uma brecha a ele, deu todas. Para calá-lo, a frase precisa ser falsa em todas as
+  linhas."
 
 **FINAL 1 DE 3, O SILÊNCIO.** Os símbolos se quebram, o Precursor congela e o canto para (2 s de silêncio total).
 O rádio volta com a voz normal: "...{PROF} {NOME}? É o Varela. O de verdade. O que você disse a ele?" Jogador (texto):

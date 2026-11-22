@@ -190,9 +190,9 @@ Cada trecho que cumpre um requisito tem, logo acima, um comentário-âncora `// 
 
 | Requisito | Onde | Âncora | Como foi cumprido |
 | :---- | :---- | :---- | :---- |
-| RF1 Janela e game loop a 60 FPS com `GetFrameTime()` | [src/main.c#L436-L437](src/main.c#L436-L437)<br>[src/main.c#L378-L387](src/main.c#L378-L387)<br>[src/criatura.c#L270-L271](src/criatura.c#L270-L271) | `[REQ:RF1]` | `SetTargetFPS(60)`; `dt = GetFrameTime()` limitado a 0,05 s e passado a todo `xxx_atualiza`, que multiplica movimento, temporizadores e animações (aqui, o passo da criatura). |
+| RF1 Janela e game loop a 60 FPS com `GetFrameTime()` | [src/main.c#L438-L439](src/main.c#L438-L439)<br>[src/main.c#L380-L389](src/main.c#L380-L389)<br>[src/criatura.c#L270-L271](src/criatura.c#L270-L271) | `[REQ:RF1]` | `SetTargetFPS(60)`; `dt = GetFrameTime()` limitado a 0,05 s e passado a todo `xxx_atualiza`, que multiplica movimento, temporizadores e animações (aqui, o passo da criatura). |
 | RF2 Controle do jogador por teclado/mouse | [src/main.c#L31-L66](src/main.c#L31-L66)<br>[src/jogador.c#L51-L69](src/jogador.c#L51-L69)<br>[src/jogador.c#L119-L127](src/jogador.c#L119-L127) | `[REQ:RF2]` | Câmera em 1ª pessoa pelo mouse; WASD, Shift (corrida com fôlego), E, 1/2/3, setas, ENTER e Esc, lidos uma vez por quadro numa `struct Entrada`. |
-| RF3 Coleção (vetor) de múltiplos objetos | [src/estado.h#L271-L276](src/estado.h#L271-L276) | `[REQ:RF3]` | Seis coleções de capacidade fixa com contador (ruídos, partículas, rachaduras, eventos, interativos, paredes), sem `malloc` por quadro; ver a tabela de map, filter e fold. |
+| RF3 Coleção (vetor) de múltiplos objetos | [src/estado.h#L272-L277](src/estado.h#L272-L277) | `[REQ:RF3]` | Seis coleções de capacidade fixa com contador (ruídos, partículas, rachaduras, eventos, interativos, paredes), sem `malloc` por quadro; ver a tabela de map, filter e fold. |
 | RF4 Colisões com funções da Raylib | [src/jogador.c#L72-L79](src/jogador.c#L72-L79)<br>[src/colecoes.c#L186-L196](src/colecoes.c#L186-L196)<br>[src/colecoes.c#L145-L165](src/colecoes.c#L145-L165)<br>[src/criatura.c#L174-L175](src/criatura.c#L174-L175)<br>[src/criatura.c#L284-L291](src/criatura.c#L284-L291) | `[REQ:RF4]` | `CheckCollisionBoxes` (jogador × paredes, vidro, móveis e armários, eixo por eixo), `GetRayCollisionBox` (mira de interação e visão da criatura contra as paredes) e `CheckCollisionSpheres` (captura). |
 | RF5 Placar, vidas, telas de início e fim | [src/jogo.c#L49-L54](src/jogo.c#L49-L54)<br>[src/ui.c#L358-L371](src/ui.c#L358-L371)<br>[src/ui.c#L525-L564](src/ui.c#L525-L564) | `[REQ:RF5]` | Placar = fold dos eventos; vidas = integridade do vidro (fold das rachaduras), recalculados a cada quadro; menu com o aviso de nome provisório, intro e tela de fim com placar por fase. |
 | RF6 Condição de vitória/derrota | [src/compositor.c#L61-L75](src/compositor.c#L61-L75)<br>[src/ui.c#L525-L564](src/ui.c#L525-L564) | `[REQ:RF6]` | A frase transmitida vai para `regras_avalia_transmissao`: contradição → final bom (VITÓRIA); satisfazível → final ruim (DERROTA); inválida → SINTAXE INVÁLIDA, sem penalidade. |
@@ -245,9 +245,9 @@ Cada laço leva o comentário `// padrão MAP`, `// padrão FILTER` ou `// padr�
 | Requisito | Onde | Âncora | Como foi cumprido |
 | :---- | :---- | :---- | :---- |
 | RNF1 Legibilidade | [.clang-format#L1-L12](.clang-format#L1-L12) | `[REQ:RNF1]` | Nomes em português, claros e consistentes (`atualiza_…`, `desenha_…`, `colidiu_…`); funções de até ~40 linhas (a única exceção, em `audio_sintese.c`, está comentada); o código segue o `.clang-format` (`clang-format --dry-run` sem avisos). |
-| RNF2 Modularização | [src/estado.h#L241-L291](src/estado.h#L241-L291) | `[REQ:RNF2]` | Uma struct por objeto, uma função por responsabilidade, um módulo por sistema; o maior arquivo tem menos de 500 linhas. |
-| RNF3 Separação update/render | [src/main.c#L315-L327](src/main.c#L315-L327) | `[REQ:RNF3]` | Todo módulo tem `xxx_atualiza(Estado *e, float dt)` e `xxx_desenha(const Estado *e)`; o `const` garante que desenhar não muda nada; nenhum `Draw*` em `*_atualiza` (auditado com grep). |
-| RNF4 Robustez | [src/colecoes.c#L9-L14](src/colecoes.c#L9-L14)<br>[src/main.c#L378-L387](src/main.c#L378-L387)<br>[src/nivel.c#L38-L42](src/nivel.c#L38-L42)<br>[src/ui.c#L28-L55](src/ui.c#L28-L55)<br>[src/criatura.c#L24-L40](src/criatura.c#L24-L40) | `[REQ:RNF4]` | Vetor cheio descarta com `TraceLog`, sem travar; listas vazias (sem ruídos, sem eventos) testadas; `dt` limitado; fora do mapa conta como parede; sem fonte, som ou modelo, entra o placeholder. |
+| RNF2 Modularização | [src/estado.h#L242-L292](src/estado.h#L242-L292) | `[REQ:RNF2]` | Uma struct por objeto, uma função por responsabilidade, um módulo por sistema; o maior arquivo tem menos de 500 linhas. |
+| RNF3 Separação update/render | [src/main.c#L317-L329](src/main.c#L317-L329) | `[REQ:RNF3]` | Todo módulo tem `xxx_atualiza(Estado *e, float dt)` e `xxx_desenha(const Estado *e)`; o `const` garante que desenhar não muda nada; nenhum `Draw*` em `*_atualiza` (auditado com grep). |
+| RNF4 Robustez | [src/colecoes.c#L9-L14](src/colecoes.c#L9-L14)<br>[src/main.c#L380-L389](src/main.c#L380-L389)<br>[src/nivel.c#L38-L42](src/nivel.c#L38-L42)<br>[src/ui.c#L28-L55](src/ui.c#L28-L55)<br>[src/criatura.c#L24-L40](src/criatura.c#L24-L40) | `[REQ:RNF4]` | Vetor cheio descarta com `TraceLog`, sem travar; listas vazias (sem ruídos, sem eventos) testadas; `dt` limitado; fora do mapa conta como parede; sem fonte, som ou modelo, entra o placeholder. |
 | RNF5 Documentação | [README.md#L183-L183](README.md#L183-L183) | `[REQ:RNF5]` | Este README, `docs/ARQUITETURA.md`, `docs/DECISOES.md` (as escolhas e por quê), `docs/PROGRESSO.md` e `CLAUDE.md`. |
 | RNF6 Versionamento + Makefile | [Makefile#L1-L2](Makefile#L1-L2) | `[REQ:RNF6]` | `Makefile` como build principal (com `test`, `smoke`, `readme-check`); um commit por marco na v0 (M0 a M9) e, daqui em diante, branch por card e PR (ver Metodologia). |
 
@@ -267,7 +267,7 @@ Cada laço leva o comentário `// padrão MAP`, `// padrão FILTER` ou `// padr�
 **O game loop (RF1):** `dt` limitado e o quadro entrada → atualiza → desenha.
 
 ```c
-// src/main.c#L377-L387
+// src/main.c#L379-L389
 static void quadro(Estado *e) {
     // [REQ:RF1] [REQ:RNF4] dt de GetFrameTime() limitado a DT_MAXIMO; no smoke, passo fixo (velocidade
     // acelerada)
@@ -385,7 +385,7 @@ static void testa_vidro(void) {
 **Desenhar só lê o estado (RNF3):**
 
 ```c
-// src/main.c#L315-L327
+// src/main.c#L317-L329
 // [REQ:RNF3] desenhar recebe const Estado *: não muda nada; o loop é entrada → atualiza → desenha
 static void desenha(const Estado *e) {
     susto_prepara(e); // o rosto do susto, na textura dele

@@ -232,6 +232,7 @@ typedef struct {
 typedef struct {
     float tempo; // tempo da cinemática
     int etapa;
+    float leitura;    // tempo com o texto do final na tela (espera o ENTER, até FIM_LEITURA_MAX_S)
     bool tela_final;  // a cinemática acabou: mostra o placar
     float tempo_tela; // tempo na tela de placar (volta ao menu em 20 s)
 } Fim;

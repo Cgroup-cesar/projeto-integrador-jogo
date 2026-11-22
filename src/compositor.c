@@ -134,6 +134,18 @@ static int ficha_para_indice(Ficha f) {
 }
 
 // A frase montada, em fichas, e a mesma frase em notação lógica (quando já fecha).
+// A frase das fichas em notação lógica (P, Q, ¬, ∧, ∨, →). Devolve false se ela ainda não é uma frase válida.
+static bool formula_das_fichas(const Compositor *c, char *saida, size_t tamanho) {
+    PoolLogico pool;
+    logica_pool_limpa(&pool);
+    ErroLogica erro;
+    int raiz = c->n > 0 ? logica_parse_fichas(&pool, c->fichas, c->n, &erro) : -1;
+    static const char *const nomes[] = {"P", "Q"};
+    if (raiz < 0) return false;
+    logica_para_texto(&pool, raiz, nomes, saida, tamanho);
+    return true;
+}
+
 static void desenha_frase(const Estado *e, Vector2 pos, float largura) {
     float s = ui_escala();
     const Compositor *c = &e->comp;
@@ -146,18 +158,12 @@ static void desenha_frase(const Estado *e, Vector2 pos, float largura) {
     ui_texto(e, dialogo_texto(TXT_TERMINAL_FRASE), pos, 16 * s, Fade(COR_FOSFORO, 0.6f));
     float h = ui_texto_quebrado(e, c->n > 0 ? frase : "_", (Vector2){pos.x, pos.y + 24 * s}, largura, 18 * s,
                                 COR_FOSFORO);
-    PoolLogico pool;
-    logica_pool_limpa(&pool);
-    ErroLogica erro;
-    int raiz = c->n > 0 ? logica_parse_fichas(&pool, c->fichas, c->n, &erro) : -1;
     char formal[128];
-    static const char *const nomes[] = {"P", "Q"};
-    if (raiz >= 0)
-        logica_para_texto(&pool, raiz, nomes, formal, sizeof(formal));
-    else
+    bool valida = formula_das_fichas(c, formal, sizeof(formal));
+    if (!valida)
         snprintf(formal, sizeof(formal), "%s", c->n > 0 ? dialogo_texto(TXT_TERMINAL_INCOMPLETA) : "");
     ui_texto(e, formal, (Vector2){pos.x, pos.y + 30 * s + h}, 22 * s,
-             raiz >= 0 ? COR_VIDRO : Fade(COR_FOSFORO, 0.4f));
+             valida ? COR_VIDRO : Fade(COR_FOSFORO, 0.4f));
 }
 
 void compositor_desenha(const Estado *e) {
@@ -245,7 +251,6 @@ static void atualiza_fim_ruim(Estado *e, float antes, float t) {
         c->yaw = atan2f(-frente.x, -frente.z);
     }
     if (antes < 7.0f && t >= 7.0f) susto_inicia(e, EV_NENHUM);
-    if (t > 12.5f) e->fim.tela_final = true;
 }
 
 // FIM BOM: os glifos se fragmentam, ele convulsiona e congela, 2 s de silêncio total, as falas e o texto.
@@ -253,14 +258,27 @@ static void atualiza_fim_bom(Estado *e, float antes, float t) {
     if (antes < 2.6f && t >= 2.6f) e->cri.congelado_t = 1.0f;
     if (antes < 2.8f && t >= 2.8f) audio_silencia(e);
     if (antes < 4.8f && t >= 4.8f) ui_fala(e, FALAS_FIM_BOM);
-    if (t > 18.5f) e->fim.tela_final = true;
+}
+
+// O texto do final e o "por quê" já estão na tela (passou o momento deles e o susto acabou).
+bool compositor_fim_lendo(const Estado *e) {
+    float inicio = e->fase == FASE_FIM_RUIM ? FIM_RUIM_TEXTO_S : FIM_BOM_TEXTO_S;
+    return !e->fim.tela_final && e->fim.tempo >= inicio && !susto_ativo(e);
 }
 
 void compositor_atualiza_fim(Estado *e, float dt) {
     if (e->fim.tela_final) return;
+    if (compositor_fim_lendo(e)) { // a cena para e espera a leitura: ENTER ou FIM_LEITURA_MAX_S vão ao placar
+        e->fim.leitura += dt;
+        if (e->in.confirmar || e->fim.leitura >= FIM_LEITURA_MAX_S) e->fim.tela_final = true;
+        return;
+    }
     float antes = e->fim.tempo;
     e->fim.tempo += dt;
-    if (e->in.confirmar && e->fim.tempo > 1.0f && !susto_ativo(e)) e->fim.tempo += 3.0f; // ENTER acelera
+    if (e->in.confirmar && e->fim.tempo > 1.0f && !susto_ativo(e)) { // ENTER acelera a cena...
+        e->fim.tempo += 3.0f;
+        ui_legenda_pula(e); // ...e a fala da vez, para ela não ficar por cima do texto do final
+    }
     if (e->fase == FASE_FIM_RUIM)
         atualiza_fim_ruim(e, antes, e->fim.tempo);
     else
@@ -275,6 +293,20 @@ void compositor_desenha_fim(const Estado *e) {
     if (e->fase == FASE_FIM_BOM && t > 2.8f && t < 4.8f)
         preto = fmaxf(preto, 0.55f); // o silêncio escurece a sala
     if (preto > 0.0f) DrawRectangle(0, 0, e->rec.alvo_largura, e->rec.alvo_altura, Fade(BLACK, preto));
+}
+
+// O texto do final e, logo abaixo, por que ele aconteceu: a frase transmitida e o que ela tem de especial.
+// Quem perdeu sai sabendo o que tentar na próxima vez; quem ganhou, por que deu certo.
+static void desenha_texto_e_porque(const Estado *e, const char *texto, float y) {
+    float s = ui_escala(), largura = GetScreenWidth() - 320 * s;
+    float h = ui_texto_quebrado(e, texto, (Vector2){160 * s, y}, largura, 30 * s, RAYWHITE);
+    char formula[128], modelo[512], porque[640];
+    if (!formula_das_fichas(&e->comp, formula, sizeof(formula))) return;
+    dialogo_personaliza(&e->ident,
+                        dialogo_texto(e->fase == FASE_FIM_BOM ? TXT_FIM_BOM_PORQUE : TXT_FIM_RUIM_PORQUE),
+                        modelo, sizeof(modelo));
+    snprintf(porque, sizeof(porque), modelo, formula); // o nome nunca tem '%' (regras_nome_edita não aceita)
+    ui_texto_quebrado(e, porque, (Vector2){160 * s, y + h + 28 * s}, largura, 22 * s, COR_AMBAR);
 }
 
 // Os textos das cinemáticas, em resolução de janela.
@@ -297,11 +329,13 @@ static void desenha_textos_fim(const Estado *e) {
             ui_texto(e, texto, (Vector2){tela.x - m.x * 0.5f + tremor, tela.y - m.y * 0.5f}, 44 * s,
                      Fade(COR_FOSFORO, fminf(1.0f, (t - 2.2f) * 1.5f)));
         }
-        if (t > 8.2f)
-            ui_texto_quebrado(e, tela, (Vector2){160 * s, 320 * s}, GetScreenWidth() - 320 * s, 30 * s,
-                              RAYWHITE);
-        return;
+        if (t > FIM_RUIM_TEXTO_S) desenha_texto_e_porque(e, tela, 220 * s);
+    } else if (t > FIM_BOM_TEXTO_S) {
+        desenha_texto_e_porque(e, tela, 200 * s);
     }
-    if (t > 13.0f)
-        ui_texto_quebrado(e, tela, (Vector2){160 * s, 300 * s}, GetScreenWidth() - 320 * s, 30 * s, RAYWHITE);
+    if (!compositor_fim_lendo(e)) return;
+    char dica[64]; // ENTER leva ao placar; sem ninguém, vai sozinho em FIM_LEITURA_MAX_S
+    snprintf(dica, sizeof(dica), dialogo_texto(TXT_FIM_VER_PLACAR),
+             (int)(FIM_LEITURA_MAX_S - e->fim.leitura + 0.99f));
+    ui_texto_centro(e, dica, GetScreenHeight() - 70 * s, 22 * s, Fade(COR_AMBAR, 0.85f));
 }
