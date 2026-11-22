@@ -198,8 +198,8 @@ static bool acesa(const TeclaMapa *k, const TeclaAcao *itens, int n) {
     return false;
 }
 
-static void desenha_minimapa(const Estado *e, const TeclaAcao *itens, int n, Vector2 pos) {
-    float s = ui_escala(), u = 22 * s; // tamanho de uma tecla no minimapa
+static void desenha_minimapa(const Estado *e, const TeclaAcao *itens, int n, Vector2 pos, float k_escala) {
+    float s = ui_escala() * k_escala, u = 22 * s; // tamanho de uma tecla no minimapa
     int total = (int)(sizeof(MAPA) / sizeof(MAPA[0]));
     for (int i = 0; i < total; i++) { // padrão MAP: cada tecla do mapa, acesa ou apagada
         const TeclaMapa *k = &MAPA[i];
@@ -216,16 +216,20 @@ static void desenha_minimapa(const Estado *e, const TeclaAcao *itens, int n, Vec
 }
 
 // ================================================================== a barra
-static void desenha_barra(const Estado *e, bool minimapa) {
+// Na partida, a barra fica numa faixa escura e um pouco menor (TECLAS_ESCALA_JOGO). No menu, as teclas
+// flutuam direto sobre a cena, sem a faixa, e o texto ganha uma sombra para ler por cima do chuvisco.
+static void desenha_barra(const Estado *e, bool minimapa, bool faixa, float k) {
     TeclaAcao itens[MAX_ITENS];
     int n = itens_do_contexto(e, itens);
-    float s = ui_escala(), altura = 30 * s, y = GetScreenHeight() - altura - 12 * s;
-    DrawRectangle(0, (int)(y - 10 * s), GetScreenWidth(), (int)(altura + 22 * s), (Color){4, 7, 5, 235});
-    if (minimapa) desenha_minimapa(e, itens, n, (Vector2){14 * s, y - 4 * 22 * s - 18 * s});
+    float s = ui_escala() * k, altura = 30 * s, y = GetScreenHeight() - altura - 12 * s;
+    if (faixa)
+        DrawRectangle(0, (int)(y - 10 * s), GetScreenWidth(), (int)(altura + 22 * s), (Color){4, 7, 5, 235});
+    if (minimapa) desenha_minimapa(e, itens, n, (Vector2){14 * s, y - 4 * 22 * s - 18 * s}, k);
     float x = minimapa ? 290 * s : 90 * s; // sem o minimapa (menu), a barra começa na margem do texto
     for (int i = 0; i < n; i++) {          // padrão MAP: cada tecla com o que ela faz agora
         x += tecla(e, itens[i].tecla, (Vector2){x, y}, altura) + 8 * s;
         const char *acao = dialogo_texto(itens[i].acao);
+        if (!faixa) ui_texto(e, acao, (Vector2){x + 1.5f * s, y + altura * 0.22f + 1.5f * s}, 17 * s, BLACK);
         ui_texto(e, acao, (Vector2){x, y + altura * 0.22f}, 17 * s, RAYWHITE);
         x += ui_mede(e, acao, 17 * s).x + 28 * s;
     }
@@ -234,12 +238,13 @@ static void desenha_barra(const Estado *e, bool minimapa) {
 void teclas_desenha(const Estado *e) {
     bool jogando =
         e->fase != FASE_MENU && e->fase != FASE_INTRO && e->fase != FASE_FIM_BOM && e->fase != FASE_FIM_RUIM;
-    if (jogando && !e->pausado && !susto_ativo(e)) desenha_barra(e, true);
+    if (jogando && !e->pausado && !susto_ativo(e)) desenha_barra(e, true, true, TECLAS_ESCALA_JOGO);
 }
 
 // O menu e as telas depois do final cobrem a tela inteira: elas chamam a barra por cima de si. No menu, sem
 // o minimapa (a tela de início fica limpa).
 void teclas_desenha_tela_cheia(const Estado *e) {
-    if (e->fase == FASE_MENU) desenha_barra(e, false);
-    if ((e->fase == FASE_FIM_BOM || e->fase == FASE_FIM_RUIM) && e->fim.tela_final) desenha_barra(e, true);
+    if (e->fase == FASE_MENU) desenha_barra(e, false, false, 1.0f);
+    if ((e->fase == FASE_FIM_BOM || e->fase == FASE_FIM_RUIM) && e->fim.tela_final)
+        desenha_barra(e, true, true, 1.0f);
 }

@@ -16,6 +16,7 @@
 #define MENU_ESTATICA_QUADROS 30.0f // quantas vezes por segundo o chuvisco muda
 #define MENU_FALHA_TROCA_S    0.35f // quanto dura a falha da opção logo depois de escolhida
 #define MENU_BALANCO_PX       3.0f  // amplitude do balanço lento da opção escolhida (px, antes da escala)
+#define TECLAS_ESCALA_JOGO    0.88f // tamanho da barra de teclas e do minimapa durante a partida (1 = original)
 
 // ---------------------------------------------------------------- janela e tempo
 #define LARGURA_JANELA 1280
