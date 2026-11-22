@@ -297,5 +297,3 @@
 #endif
 
 // ---------------------------------------------------------------- Armário
-#define ARMARIO_YAW_MAX   0.45f // limite do olhar para os lados dentro do armário
-#define ARMARIO_PITCH_MAX 0.20f // limite do olhar para cima/baixo dentro do armário
