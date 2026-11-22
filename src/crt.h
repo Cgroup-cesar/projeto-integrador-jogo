@@ -1,5 +1,5 @@
 // crt.h — a cara de monitor de fósforo das telas de tarefa (analisador, painéis, manual): moldura com
-// cantos, scanlines e varredura, caixas com legenda, título com franja de cor e opções em faixa, como a tela
+// cantos, scanlines e varredura, caixas com legenda, título e opções em faixa, como a tela
 // de início.
 #ifndef CRT_H
 #define CRT_H
@@ -12,7 +12,7 @@ void crt_painel(const Estado *e, Rectangle r, Color borda, bool cantos);
 // Caixa com legenda pequena no alto ("FRASE OBSERVADA"); devolve a área útil, abaixo da legenda.
 Rectangle crt_caixa(const Estado *e, Rectangle r, const char *legenda);
 
-// Título com franjas vermelha e ciana e um brilho em volta (o h1 do analisador).
+// Título das telas de tarefa (o h1 do analisador), em texto limpo.
 void crt_titulo(const Estado *e, const char *texto, Vector2 pos, float tamanho, Color cor);
 
 // Texto com o trecho entre parênteses no fim mais apagado: "O que significa...?  (setas + ENTER)".

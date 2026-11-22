@@ -35,7 +35,7 @@ static float escala(void) {
     return ui_escala();
 }
 
-// O monitor do analisador: fundo com scanlines e varredura, quinas, título com franja de cor e, embaixo dele,
+// O monitor do analisador: fundo com scanlines e varredura, quinas, título e, embaixo dele,
 // o `cabecalho` (NULL: quem chama desenha a linha de status). Devolve a área útil.
 Rectangle terminal_moldura(const Estado *e, const char *cabecalho) {
     float s = escala();

@@ -45,13 +45,8 @@ Rectangle crt_caixa(const Estado *e, Rectangle r, const char *legenda) {
     return (Rectangle){r.x + 16 * s, r.y + 36 * s, r.width - 32 * s, r.height - 46 * s};
 }
 
+// Texto limpo, sem franja nem brilho em volta: a equipe preferiu os títulos como eram antes do monitor.
 void crt_titulo(const Estado *e, const char *texto, Vector2 pos, float tamanho, Color cor) {
-    float s = ui_escala();
-    for (int i = 0; i < 4; i++) // padrão MAP: o brilho do fósforo (4 cópias em volta)
-        ui_texto(e, texto, (Vector2){pos.x + (i % 2 ? 1.5f : -1.5f) * s, pos.y + (i / 2 ? 1.5f : -1.5f) * s},
-                 tamanho, Fade(cor, 0.12f));
-    ui_texto(e, texto, (Vector2){pos.x + 2 * s, pos.y}, tamanho, Fade((Color){255, 60, 90, 255}, 0.35f));
-    ui_texto(e, texto, (Vector2){pos.x - 2 * s, pos.y}, tamanho, Fade((Color){60, 160, 255, 255}, 0.3f));
     ui_texto(e, texto, pos, tamanho, cor);
 }
 
