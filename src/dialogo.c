@@ -286,6 +286,7 @@ static const char *const TEXTOS[TXT_TOTAL] = {
     [TXT_MENU_RANKING] = "RANKING",
     [TXT_MENU_GANCHO] = "Agosto de 1985. Do outro lado do vidro, algo quer conversar.",
     [TXT_MENU_DATA_FITA] = "AGO 1985",
+    [TXT_FITA_DATA] = "14.06.1985", // a filmagem do avistamento: dois meses antes da história
     [TXT_SUBLIMINAR_1] = "NÃO OLHE",
     [TXT_SUBLIMINAR_2] = "ELE ESTÁ AQUI",
     [TXT_SUBLIMINAR_3] = "ATRÁS DO VIDRO",

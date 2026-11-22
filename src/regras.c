@@ -443,3 +443,24 @@ float regras_respiracao_periodo(int erros) {
 bool regras_respiracao_acertou(float linha, float zona, float largura) {
     return fabsf(linha - zona) <= largura * 0.5f;
 }
+
+// [REQ:PURA-regras_fita_tomada] a fita do avistamento: qual foto aparece em cada linha da intro e quanto falha
+TomadaFita regras_fita_tomada(int linha, float letras, float linha_t) {
+    TomadaFita t = {-1, 0.0f, 0.0f};
+    float entrada = fmaxf(0.0f, 1.0f - linha_t / FITA_ENTRADA_S);
+    if (linha == 0) {
+        t.foto = 0; // o plano aberto: a cidade e a luz no céu
+        t.falha = entrada;
+    } else if (linha == 1) {
+        bool feixe = letras >= FITA_TROCA_LETRA; // o zoom tremido; depois, o feixe
+        float corte = feixe ? 1.0f - (letras - FITA_TROCA_LETRA) / FITA_CORTE_LETRAS : 0.0f;
+        t.foto = feixe ? 2 : 1;
+        t.falha = fmaxf(entrada, fmaxf(0.0f, corte));
+    } else if (linha == FITA_LINHA_QUEDA && linha_t < FITA_QUEDA_S) {
+        t.foto = 2; // o sinal vai caindo...
+        t.falha = linha_t / FITA_QUEDA_S;
+    } else if (linha == FITA_LINHA_QUEDA && linha_t < FITA_QUEDA_S + FITA_ESTATICA_S) {
+        t.estatica = 1.0f; // ...chuvisco, e a tela fica preta
+    }
+    return t;
+}

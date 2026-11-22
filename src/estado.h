@@ -73,7 +73,9 @@ typedef struct {
     Texture2D material[MATERIAL_TOTAL];
     bool material_de_arquivo[MATERIAL_TOTAL]; // true = assets/texturas/<nome>.png; false = procedural
     Texture2D decalque[DECALQUE_TOTAL];
-    Texture2D halo; // brilho radial das lâmpadas
+    Texture2D halo;             // brilho radial das lâmpadas
+    Texture2D fita[FITA_FOTOS]; // fotos do avistamento (fita.c); opcionais: sem elas, a intro fica preta
+    bool tem_fita[FITA_FOTOS];
 } Recursos;
 
 // ------------------------------------------------------------------ nível (gerado do mapa ASCII)
@@ -224,6 +226,8 @@ typedef struct {
     int linha;
     float letras; // quantas letras da linha atual já apareceram
     float espera;
+    float linha_t; // tempo na linha atual (a queda do sinal da fita conta daqui)
+    float fita_t;  // tempo desde o começo do texto datilografado (o tremido e o relógio da câmera)
 } Intro;
 
 // Quem o jogador é: escolhido no início da partida e usado nos marcadores {NOME}, {PROF} e {x|y} das falas.

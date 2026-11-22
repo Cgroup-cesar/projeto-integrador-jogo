@@ -6,6 +6,7 @@
 #include "tela_fim.h"
 #include "menu.h"
 #include "falha.h"
+#include "fita.h"
 #include "crt.h"
 #include <stdio.h>
 #include <string.h>
@@ -360,8 +361,8 @@ static void copia_letras(const char *texto, int letras, char *saida, size_t tama
 static void desenha_intro(const Estado *e) {
     float s = ui_escala();
     if (e->intro.etapa != INTRO_DATILOGRAFA) return; // perguntas: identidade.c; rádio: as legendas
-    DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), BLACK);
-    float y = 230 * s;
+    fita_desenha(e); // a filmagem do avistamento por trás do texto
+    float y = GetScreenHeight() - 280 * s; // embaixo, sobre a sombra da fita (o OSD fica à direita)
     for (int i = 0; i <= e->intro.linha && i < INTRO_LINHAS; i++) {
         char parcial[256], linha[256];
         dialogo_personaliza(&e->ident, dialogo_intro(i), linha, sizeof(linha));
@@ -369,7 +370,7 @@ static void desenha_intro(const Estado *e) {
             copia_letras(linha, (int)e->intro.letras, parcial, sizeof(parcial));
         else
             snprintf(parcial, sizeof(parcial), "%s", linha);
-        y += ui_texto_quebrado(e, parcial, (Vector2){150 * s, y}, GetScreenWidth() - 300 * s, 24 * s,
+        y += ui_texto_quebrado(e, parcial, (Vector2){110 * s, y}, GetScreenWidth() * 0.62f, 24 * s,
                                COR_FOSFORO) +
              14 * s;
     }

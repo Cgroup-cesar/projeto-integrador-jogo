@@ -19,6 +19,16 @@
 #define MENU_FALHA_LEVE       0.4f // intensidade da falha nas opções da pausa e das perguntas (1 = a do menu)
 #define TELAS_ESTATICA_ALFA   0.03f // chuvisco da pausa e das perguntas da intro: bem mínimo
 #define TELAS_ESTATICA_PICO   0.02f
+// A fita do avistamento na intro (fita.c): três fotos de assets/fita/ por trás do texto datilografado.
+#define FITA_FOTOS         3
+#define FITA_LINHA_QUEDA   2     // na 3ª linha da intro o sinal cai: falha, chuvisco e tela preta
+#define FITA_TROCA_LETRA   30.0f // na 2ª linha, a foto do feixe entra nesta letra ("...desceu da nave")
+#define FITA_CORTE_LETRAS  5.0f  // quanto dura (em letras) a falha do corte entre duas fotos
+#define FITA_ENTRADA_S     0.35f // no começo de cada linha com foto, o sinal "pega" com uma falha curta
+#define FITA_QUEDA_S       0.8f  // a queda: o sinal falha cada vez mais por este tempo...
+#define FITA_ESTATICA_S    0.35f // ...vira chuvisco puro por este; depois a tela fica preta
+#define FITA_PAUSA_S       2.0f  // as linhas com foto ficam mais tempo na tela (as outras, 1,1 s)
+#define FITA_HORA_INICIO   (23 * 3600 + 17 * 60 + 52) // o relógio da câmera no começo da fita (23:17:52)
 #define TECLAS_ESCALA_JOGO 0.88f // tamanho da barra de teclas e do minimapa durante a partida (1 = original)
 
 // ---------------------------------------------------------------- janela e tempo

@@ -19,4 +19,6 @@ float falha_deslocamento(const Estado *e, float intensidade, float *forca);
 void falha_texto(const Estado *e, const char *texto, Vector2 pos, float tamanho, Color cor, float forca,
                  Rectangle faixa);
 
+// Texto de OSD da fita (PLAY, REC, a data): branco com franjas vermelha e ciana, como um VHS velho.
+void falha_osd(const Estado *e, const char *texto, Vector2 pos, float tamanho);
 #endif

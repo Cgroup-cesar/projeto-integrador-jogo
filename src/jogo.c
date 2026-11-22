@@ -211,19 +211,24 @@ static void atualiza_intro(Estado *e, float dt) {
         if (ui_legendas_vazias(e)) e->evento = EV_INTRO_TERMINOU;
         return;
     }
+    it->linha_t += dt;
+    it->fita_t += dt;
     char linha[256];
     dialogo_personaliza(&e->ident, dialogo_intro(it->linha), linha, sizeof(linha));
     float total = (float)conta_letras(linha);
     float antes = it->letras;
-    it->letras += dt * 30.0f;
+    bool sem_sinal = it->linha == FITA_LINHA_QUEDA && it->linha_t < FITA_QUEDA_S + FITA_ESTATICA_S;
+    if (!sem_sinal) it->letras += dt * 30.0f; // a última linha só começa depois que a fita cai
     if ((int)it->letras != (int)antes && it->letras < total)
         audio_toca(e, SOM_MAQUINA_ESCREVER, 0.5f, 0.9f + GetRandomValue(0, 20) / 100.0f);
     if (e->in.confirmar) it->letras = it->letras < total ? total : total + 99.0f;
     if (it->letras >= total) it->espera += dt;
-    if (it->espera < 1.1f && it->letras < total + 99.0f) return;
+    float pausa = it->linha < FITA_LINHA_QUEDA ? FITA_PAUSA_S : 1.1f; // com foto, dá tempo de olhar
+    if (it->espera < pausa && it->letras < total + 99.0f) return;
     it->linha++;
     it->letras = 0.0f;
     it->espera = 0.0f;
+    it->linha_t = 0.0f;
     if (it->linha >= INTRO_LINHAS) {
         it->etapa = INTRO_RADIO;
         ui_fala(e, FALAS_INTRO_INTERFONE);

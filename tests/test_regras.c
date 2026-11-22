@@ -588,6 +588,28 @@ static void testa_respiracao(void) {
     CHECK(!regras_respiracao_acertou(0.41f, 0.5f, 0.16f));
 }
 
+// [REQ:PURA-regras_fita_tomada] a fita do avistamento segue a intro: foto certa, cortes com falha e a queda
+static void testa_fita_tomada(void) {
+    TomadaFita t = regras_fita_tomada(0, 0.0f, 0.0f);
+    CHECK(t.foto == 0 && perto(t.falha, 1.0f)); // a fita começa pegando o sinal...
+    t = regras_fita_tomada(0, 10.0f, FITA_ENTRADA_S);
+    CHECK(t.foto == 0 && perto(t.falha, 0.0f)); // ...e logo firma
+    t = regras_fita_tomada(1, FITA_TROCA_LETRA - 1.0f, 1.0f);
+    CHECK(t.foto == 1 && perto(t.falha, 0.0f));
+    t = regras_fita_tomada(1, FITA_TROCA_LETRA, 1.0f);
+    CHECK(t.foto == 2 && perto(t.falha, 1.0f)); // o feixe entra com um corte
+    t = regras_fita_tomada(1, 999.0f, 1.0f);
+    CHECK(t.foto == 2 && perto(t.falha, 0.0f)); // ENTER pulou a digitação: feixe, sem falha presa
+    t = regras_fita_tomada(FITA_LINHA_QUEDA, 0.0f, FITA_QUEDA_S * 0.5f);
+    CHECK(t.foto == 2 && perto(t.falha, 0.5f)); // o sinal caindo
+    t = regras_fita_tomada(FITA_LINHA_QUEDA, 0.0f, FITA_QUEDA_S + 0.01f);
+    CHECK(t.foto == -1 && perto(t.estatica, 1.0f)); // chuvisco
+    t = regras_fita_tomada(FITA_LINHA_QUEDA, 0.0f, FITA_QUEDA_S + FITA_ESTATICA_S + 0.01f);
+    CHECK(t.foto == -1 && perto(t.estatica, 0.0f)); // tela preta
+    CHECK(regras_fita_tomada(3, 0.0f, 0.0f).foto == -1);
+    CHECK(regras_fita_tomada(-1, 0.0f, 0.0f).foto == -1);
+}
+
 int main(void) {
     SetTraceLogLevel(LOG_ERROR); // o aviso de vetor cheio é esperado aqui
     testa_movimento();
@@ -602,6 +624,7 @@ int main(void) {
     testa_bonus_movimentos();
     testa_ranking_insere();
     testa_respiracao();
+    testa_fita_tomada();
     testa_ranking_linha();
     testa_vidro();
     testa_evento_do_erro();

@@ -37,21 +37,13 @@ static float ciclo(const Estado *e, float periodo) { // 0..1 dentro de um ciclo 
     return fmodf(e->tempo_total / periodo, 1.0f);
 }
 
-// Texto de OSD da fita: branco com franjas vermelha e ciana, como o vídeo de um VHS velho.
-static void texto_osd(const Estado *e, const char *texto, Vector2 pos, float tamanho) {
-    float s = ui_escala();
-    ui_texto(e, texto, (Vector2){pos.x - 2 * s, pos.y}, tamanho, Fade((Color){40, 220, 255, 255}, 0.5f));
-    ui_texto(e, texto, (Vector2){pos.x + 2 * s, pos.y}, tamanho, Fade((Color){255, 40, 80, 255}, 0.5f));
-    ui_texto(e, texto, pos, tamanho, (Color){232, 255, 240, 255});
-}
-
 // A tela de início é uma gravação do SNI: ▶ PLAY e PE ●●● no alto, ● REC com o contador e a data da fita.
 static void marcas_da_fita(const Estado *e) {
     float s = ui_escala(), w = GetScreenWidth(), t = 20 * s, m = 34 * s;
     DrawTriangle((Vector2){m, m + 2 * s}, (Vector2){m, m + t - 2 * s}, (Vector2){m + t * 0.7f, m + t * 0.5f},
                  (Color){232, 255, 240, 255});
-    texto_osd(e, "PLAY", (Vector2){m + t, m}, t);
-    texto_osd(e, "PE", (Vector2){m + t + 90 * s, m}, t);
+    falha_osd(e, "PLAY", (Vector2){m + t, m}, t);
+    falha_osd(e, "PE", (Vector2){m + t + 90 * s, m}, t);
     for (int i = 0; i < 3; i++) // padrão MAP: as três bolinhas da velocidade da fita
         DrawCircleV((Vector2){m + t + 126 * s + i * 14 * s, m + t * 0.5f}, 4 * s, Fade(RAYWHITE, 0.85f));
     char contador[16];
@@ -60,10 +52,10 @@ static void marcas_da_fita(const Estado *e) {
     float x_rec = w - m - ui_mede(e, "REC", t).x;
     if (ciclo(e, 2.0f) < 0.5f)
         DrawRectangle((int)(x_rec - 22 * s), (int)(m + 4 * s), (int)(12 * s), (int)(12 * s), RED);
-    texto_osd(e, "REC", (Vector2){x_rec, m}, t);
-    texto_osd(e, contador, (Vector2){w - m - ui_mede(e, contador, t * 0.9f).x, m + t + 4 * s}, t * 0.9f);
+    falha_osd(e, "REC", (Vector2){x_rec, m}, t);
+    falha_osd(e, contador, (Vector2){w - m - ui_mede(e, contador, t * 0.9f).x, m + t + 4 * s}, t * 0.9f);
     const char *data = dialogo_texto(TXT_MENU_DATA_FITA);
-    texto_osd(e, data, (Vector2){w - m - ui_mede(e, data, t * 0.9f).x, m + 2 * t + 10 * s}, t * 0.9f);
+    falha_osd(e, data, (Vector2){w - m - ui_mede(e, data, t * 0.9f).x, m + 2 * t + 10 * s}, t * 0.9f);
 }
 
 // Uma frase pisca por ~0,1 s, uma vez a cada janela de 10,5 s, num instante e num lugar sorteados.

@@ -204,6 +204,16 @@ float regras_respiracao_linha(float t, float periodo); // a linha vermelha vai e
 float regras_respiracao_periodo(int erros);            // cada erro deixa a linha mais rápida
 bool regras_respiracao_acertou(float linha, float zona, float largura); // a linha está sobre a faixa?
 
+// ------------------------------------------------------------------ a fita do avistamento (intro, fita.c)
+typedef struct {
+    int foto;       // qual foto de assets/fita/ (0, 1 ou 2); -1 = tela preta
+    float falha;    // de 0 a 1: quanto a imagem treme e escorrega (o corte, o sinal pegando ou caindo)
+    float estatica; // de 0 a 1: chuvisco puro por cima de tudo (o fim do sinal)
+} TomadaFita;
+// A foto e a falha a partir da linha datilografada, das letras já escritas e do tempo na linha. A troca de
+// foto segue as letras (o feixe entra com "desceu da nave", mesmo se o ENTER pular a digitação).
+TomadaFita regras_fita_tomada(int linha, float letras, float linha_t);
+
 // ------------------------------------------------------------------ textos do roteiro (nome e gênero)
 // Um marcador do roteiro e o que entra no lugar dele: {"NOME", "Ana"} troca "{NOME}" por "Ana".
 // As palavras ficam em dialogo.c; aqui só a regra de troca (por isso a função não sabe português).

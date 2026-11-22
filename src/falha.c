@@ -79,3 +79,10 @@ void falha_texto(const Estado *e, const char *texto, Vector2 p, float tamanho, C
     }
     ui_texto(e, texto, p, tamanho, cor);
 }
+
+void falha_osd(const Estado *e, const char *texto, Vector2 pos, float tamanho) {
+    float s = ui_escala();
+    ui_texto(e, texto, (Vector2){pos.x - 2 * s, pos.y}, tamanho, Fade((Color){40, 220, 255, 255}, 0.5f));
+    ui_texto(e, texto, (Vector2){pos.x + 2 * s, pos.y}, tamanho, Fade((Color){255, 40, 80, 255}, 0.5f));
+    ui_texto(e, texto, pos, tamanho, (Color){232, 255, 240, 255});
+}

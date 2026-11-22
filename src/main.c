@@ -17,6 +17,7 @@
 #include "trilhas.h"
 #include "ui.h"
 #include "texturas.h"
+#include "fita.h"
 #include "dialogo.h"
 #include "ranking.h"
 #include "respiracao.h"
@@ -479,6 +480,7 @@ static void carrega_recursos(void) {
     posfx_inicia(&estado.rec);
     ui_carrega_fonte(&estado.rec);
     texturas_carrega(&estado.rec); // depois da fonte: as placas de estêncil usam a fonte
+    fita_carrega(&estado.rec);
     audio_inicia(&estado.rec);
     trilhas_carrega(&estado.rec);
     criatura_carrega_modelo(&estado.rec);
@@ -493,6 +495,7 @@ static void descarrega_recursos(void) {
     criatura_descarrega_modelo(&estado.rec);
     trilhas_descarrega(&estado.rec);
     audio_finaliza(&estado.rec);
+    fita_descarrega(&estado.rec);
     texturas_descarrega(&estado.rec);
     ui_descarrega_fonte(&estado.rec);
     posfx_finaliza(&estado.rec);
