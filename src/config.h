@@ -33,14 +33,43 @@
     {0.06f, 0.8f, 0.10f, 0.45f, 2.0f, 1.5f, 0.50f, 0.15f, -0.60f, 0.06f, 0.02f, 0.50f, 1.00f}, /* câmera de vigilância */ \
 }
 // clang-format on
-#define VHS_UNIFORMES (VHS_PARAMETROS + 3) // + tempo, resolução e interferência
-// Interferência: uma sombra escura e semitransparente passa pela tela quando a criatura chega perto (só nos
-// corredores, com o VHS ligado). Pensada para ser percebida, não para atrapalhar: aparece de uma vez a LONGE e cresce até PERTO.
-#define VHS_INTERFERENCIA_LONGE  10.0f // metros: a partir daqui já aparece
-#define VHS_INTERFERENCIA_PERTO  2.5f  // metros: no máximo
-#define VHS_INTERFERENCIA_INICIO 0.25f // 0..1: o nível ao cruzar LONGE (já dá para notar)
-#define VHS_INTERFERENCIA_MAX    0.6f  // 0..1: o teto (colado na criatura)
-#define VHS_INTERFERENCIA_VEL    3.0f  // quão rápido acompanha (1/s)
+#define VHS_UNIFORMES (VHS_PARAMETROS + 3) // + tempo, resolução e insanidade (grão)
+
+// ---------------------------------------------------------------- sanidade (barra no topo e grão na tela)
+// Cai com a criatura perto (só nos corredores), volta devagar enquanto se joga e volta muito ao concluir
+// tarefas. Não mata nem muda regras. A barra fica fixa no topo (SANIDADE e a porcentagem).
+// O efeito na tela (cansaço + fita VHS, em vhs.c) tem força linear: 1 − sanidade/100 (100% → 0, 99% → 0,01,
+// 20% → 0,8, 0% → 1). A criatura age por meio da sanidade, que já cai a partir de SANIDADE_RAIO.
+#define SANIDADE_MAX             100.0f
+#define SANIDADE_RAIO            15.0f // metros: daqui para dentro a criatura abala (e o efeito aparece)
+#define SANIDADE_PERTO           2.5f  // metros: daqui para dentro, queda no máximo
+#define SANIDADE_QUEDA_MIN       1.5f  // pontos/s base na borda do raio (MIN→MAX com p², p = proximidade 0..1)
+#define SANIDADE_QUEDA_MAX       12.0f // pontos/s base colado nela
+#define SANIDADE_ACELERA_LONGE   1.5f  // a base é multiplicada por 1,5× na borda do raio (2,25 pontos/s)...
+#define SANIDADE_ACELERA_PERTO   2.0f  // ...até 2× colado nela (24 pontos/s: 100 → 0 em ~4 s)
+#define SANIDADE_FATOR_ARMARIO   0.5f  // escondido no armário a queda cai pela metade
+#define SANIDADE_REGEN           0.8f  // pontos/s enquanto joga: +50 em ~1 min
+#define SANIDADE_ESPERA_REGEN    3.0f  // s sem a criatura no raio antes de voltar a subir (corredores)
+#define SANIDADE_BONUS_RODADA    35.0f // decifrou e traduziu (EV_RODADA_CONCLUIDA)
+#define SANIDADE_BONUS_SAIDA     40.0f // religou a energia e voltou à sala (EV_SAIDA_CONCLUIDA)
+#define SANIDADE_BONUS_CONECTIVO 10.0f // cada conectivo decifrado pela primeira vez
+#define SANIDADE_PISO_RECOMECO   60.0f // pego ou vidro rompido: recomeça com pelo menos isso (sem espiral)
+// Os tetos abaixo valem com força 1 (sanidade 0) e são o limite jogável.
+#define SANIDADE_CURVA           0.85f // só a percepção: o shader usa força^0,85 (50% → 0,55, 20% → 0,83)
+#define SANIDADE_DESFOQUE_PX     1.8f  // cansaço: raio do desfoque nas bordas (px do render target)
+#define SANIDADE_TUNEL           0.35f // cansaço: quanto a vinheta fecha a mais (visão de túnel)
+#define SANIDADE_DESSATURA       0.25f // cansaço: perda de saturação
+#define SANIDADE_PULSO_A_S       5.3f  // cansaço: períodos das duas ondas lentas que embaçam e desembaçam
+#define SANIDADE_PULSO_B_S       3.1f  //          (somadas para não ficar regular)
+#define SANIDADE_RUIDO           0.45f // fita: ruído de luminância, proporcional ao brilho (±45% nas estrias)
+#define SANIDADE_RUIDO_PRETO     0.035f // fita: piso aditivo no preto (±1,75% de brilho): mantém as silhuetas
+#define SANIDADE_RUIDO_LARGURA_PX 4.0f // fita: o ruído é esticado na horizontal (1 linha × isso)
+#define SANIDADE_CROMA           0.03f // fita: ruído de cor, só nas sombras
+#define SANIDADE_DROPOUT         1.0f  // fita: frequência dos riscos claros (1 ≈ 2 por quadro com força 1)
+#define SANIDADE_TRACKING_PX     5.0f  // fita: tremor horizontal das linhas, só abaixo de ~25% de sanidade
+#define SANIDADE_BARRA_SOBE      3.0f  // a barra enche suave com os bônus (1/s)
+#define SANIDADE_ECO_VEL         12.0f // pontos/s: o pedaço perdido (mais escuro) alcança a barra
+#define SANIDADE_ALERTA          30.0f // abaixo disso a barra fica vermelha e pulsa
 
 // ---------------------------------------------------------------- debug e modos
 #define TECLAS_DEBUG                                                                                         \

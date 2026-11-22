@@ -118,6 +118,7 @@ static const char *const TEXTOS[TXT_TOTAL] = {
     [TXT_HUD_VIDRO] = "VIDRO",
     [TXT_HUD_PLACAR] = "PLACAR",
     [TXT_HUD_FOLEGO] = "FÔLEGO",
+    [TXT_HUD_SANIDADE] = "SANIDADE",
     [TXT_MIRA_CONSOLE] = "E — usar o console",
     [TXT_MIRA_PAINEL] = "E — abrir o painel de circuito",
     [TXT_MIRA_DIARIO] = "E — ler o bilhete",

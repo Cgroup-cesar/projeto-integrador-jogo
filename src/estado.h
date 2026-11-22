@@ -251,7 +251,12 @@ typedef struct Estado {
     bool sair, pausado, debug_criatura, pedir_captura;
     int vhs_preset;          // filtro VHS em uso (0 = desligado; ver vhs.c e VHS_PRESETS em config.h)
     float vhs_rotulo_t;      // > 0: mostra o nome do preset (acabou de trocar)
-    float vhs_interferencia; // 0..1: a criatura está perto (vhs.c)
+    float sanidade;          // 0..SANIDADE_MAX: cai com a criatura perto, volta nas tarefas (sanidade.c)
+    float sanidade_longe_t;  // s seguidos sem a criatura no raio (a recuperação espera um pouco)
+    float sanidade_grao;     // 0..1: força do efeito na tela (segue a barra; vai ao shader como insanidade)
+    float sanidade_barra;    // o que a barra mostra: desce junto, sobe suave nos bônus
+    float sanidade_eco;      // o pedaço recém-perdido (mais escuro), que alcança a barra devagar
+    int sanidade_conectivos; // conectivos decifrados no quadro anterior (para dar o bônus uma vez só)
     bool modo_smoke, modo_feira;
     float tempo_inativo;
 

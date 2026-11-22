@@ -29,6 +29,7 @@ static Fase fase_captura = FASE_TOTAL;     // --captura-fase <NOME>: a captura e
 static bool mudo = false;                  // --mudo: sem som
 static int vhs_inicial = -1;               // --vhs <N>: abre com esse preset de VHS (0 = desligado)
 static float vitrine_vhs_s = 0.0f;         // --vitrine-vhs [s]: troca de preset sozinho a cada s segundos
+static float sanidade_inicial = -1.0f;     // --sanidade <0..100>: começa com essa sanidade (capturas)
 static const char *pasta_galeria = NULL;   // --galeria-vhs <pasta>: uma captura por preset, depois sai
 
 // ================================================================== entrada
@@ -363,6 +364,7 @@ static void le_argumentos(Estado *e, int argc, char **argv) {
         if (strcmp(argv[i], "--feira") == 0) e->modo_feira = true;
         if (strcmp(argv[i], "--mudo") == 0) mudo = true;
         if (strcmp(argv[i], "--vhs") == 0 && i + 1 < argc) sscanf(argv[++i], "%d", &vhs_inicial);
+        if (strcmp(argv[i], "--sanidade") == 0 && i + 1 < argc) sscanf(argv[++i], "%f", &sanidade_inicial);
         if (strcmp(argv[i], "--galeria-vhs") == 0 && i + 1 < argc) pasta_galeria = argv[++i];
         if (strcmp(argv[i], "--vitrine-vhs") == 0) {
             vitrine_vhs_s = 4.0f;
@@ -493,6 +495,11 @@ int main(int argc, char **argv) {
     }
     jogo_inicia(&estado);
     if (!estado.modo_smoke) jogo_vai_para_fase(&estado, fase_inicial);
+    if (sanidade_inicial >= 0.0f) { // já com o grão no ponto (sem a subida suave), para a captura sair certa
+        estado.sanidade = fminf(sanidade_inicial, SANIDADE_MAX);
+        estado.sanidade_grao = regras_sanidade_intensidade(estado.sanidade);
+        estado.sanidade_barra = estado.sanidade_eco = estado.sanidade;
+    }
     while (!WindowShouldClose() && !estado.sair) {
         quadro(&estado);
         if (estado.modo_smoke && piloto.codigo_saida >= 0) break;
