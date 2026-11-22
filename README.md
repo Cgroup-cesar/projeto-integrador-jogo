@@ -1,6 +1,6 @@
-# PROJETO PRECURSOR
+# PRECURSOR
 
-> **Nome provisório.** O título final ainda vai ser definido; para trocar, mudam só duas linhas em `src/config.h` (`TITULO_JOGO` e `TITULO_PROVISORIO`).
+> O nome do jogo fica em `src/config.h` (`TITULO_JOGO`); `TITULO_PROVISORIO` em 1 volta a mostrar o aviso de nome provisório.
 
 Terror em primeira pessoa: em 1985, numa base secreta do SNI, você é o lógico chamado para traduzir uma criatura cuja língua é lógica pura, e cada tradução certa a deixa mais perto de sair.
 
