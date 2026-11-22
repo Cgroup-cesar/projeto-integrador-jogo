@@ -60,7 +60,21 @@ static int itens_andando(const Estado *e, TeclaAcao *t) {
     return n;
 }
 
+// Depois do final: no desempenho, as estrelas; no ranking, só voltar ao menu.
+static int itens_do_placar(const Estado *e, TeclaAcao *t) {
+    if (e->fim.tela == 1) {
+        t[0] = (TeclaAcao){"ENTER", TXT_TECLA_MENU};
+        return 1;
+    }
+    t[0] = (TeclaAcao){"SETAS_V", TXT_TECLA_PERGUNTA};
+    t[1] = (TeclaAcao){"SETAS_H", TXT_TECLA_ESTRELAS};
+    t[2] = (TeclaAcao){"ENTER", TXT_TECLA_ENVIAR};
+    return 3;
+}
+
 static int itens_do_contexto(const Estado *e, TeclaAcao *t) {
+    bool fim = e->fase == FASE_FIM_BOM || e->fase == FASE_FIM_RUIM;
+    if (fim) return itens_do_placar(e, t);
     switch (e->jog.modo) {
     case MODO_TERMINAL:
         return itens_do_terminal(e, t);
@@ -190,10 +204,7 @@ static void desenha_minimapa(const Estado *e, const TeclaAcao *itens, int n, Vec
 }
 
 // ================================================================== a barra
-void teclas_desenha(const Estado *e) {
-    bool jogando =
-        e->fase != FASE_MENU && e->fase != FASE_INTRO && e->fase != FASE_FIM_BOM && e->fase != FASE_FIM_RUIM;
-    if (!jogando || e->pausado || susto_ativo(e)) return;
+static void desenha_barra(const Estado *e) {
     TeclaAcao itens[MAX_ITENS];
     int n = itens_do_contexto(e, itens);
     float s = ui_escala(), altura = 30 * s, y = GetScreenHeight() - altura - 12 * s;
@@ -206,4 +217,15 @@ void teclas_desenha(const Estado *e) {
         ui_texto(e, acao, (Vector2){x, y + altura * 0.22f}, 17 * s, RAYWHITE);
         x += ui_mede(e, acao, 17 * s).x + 28 * s;
     }
+}
+
+void teclas_desenha(const Estado *e) {
+    bool jogando =
+        e->fase != FASE_MENU && e->fase != FASE_INTRO && e->fase != FASE_FIM_BOM && e->fase != FASE_FIM_RUIM;
+    if (jogando && !e->pausado && !susto_ativo(e)) desenha_barra(e);
+}
+
+// As telas depois do final cobrem a tela inteira: elas chamam a barra por cima de si (tela_fim.c).
+void teclas_desenha_placar(const Estado *e) {
+    if ((e->fase == FASE_FIM_BOM || e->fase == FASE_FIM_RUIM) && e->fim.tela_final) desenha_barra(e);
 }

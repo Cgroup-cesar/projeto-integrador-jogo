@@ -239,11 +239,18 @@ typedef struct {
     int etapa;
     float leitura;    // tempo com o texto do final na tela (espera o ENTER, até FIM_LEITURA_MAX_S)
     bool tela_final;  // a cinemática acabou: mostra o placar
-    float tempo_tela; // tempo na tela de placar (volta ao menu em 20 s)
+    float tempo_tela; // tempo na tela atual do placar (o desempenho ou o ranking)
+    int tela;         // 0: desempenho e avaliação; 1: o ranking, com a partida em destaque
+    float parado_t;   // tempo sem tecla no desempenho (volta sozinho em FIM_VOLTA_MENU_S)
+    bool registrado;  // a partida já entrou no ranking
+    int posicao;      // no ranking (0 = 1º lugar; −1 = não coube)
+    int notas[AVALIACAO_PERGUNTAS]; // estrelas que a pessoa deu ao jogo (0 = não respondeu)
+    int nota_cursor;
 } Fim;
 
 typedef struct {
     int cursor;
+    bool ranking_aberto; // a opção RANKING do menu: a tabela por cima, até ENTER ou ESC
 } Menu;
 
 // ------------------------------------------------------------------ o estado inteiro
@@ -270,6 +277,7 @@ typedef struct Estado {
     Compositor comp;
     Intro intro;
     Identidade ident;
+    Ranking ranking; // carregado do disco ao abrir o jogo (ranking.c); vazio no --smoke
     FilaLegendas legendas;
     Mixagem mix;
     Fim fim;

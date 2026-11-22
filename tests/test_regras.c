@@ -461,6 +461,45 @@ static void testa_falha_texto(void) {
           strcmp(s, rotulo) == 0); // tempo negativo: calmo
 }
 
+// [REQ:PURA-regras_ranking_insere] maior placar na frente; empate: o mais rápido; cheio: o pior sai
+static void testa_ranking_insere(void) {
+    static Ranking r; // grande: fora da pilha
+    r.n = 0;
+    EntradaRanking a = {300, 200, true, true, "Inês"}, b = {150, 100, false, false, "Ari"};
+    EntradaRanking c = {300, 150, true, false, "Moura"}, d = {300, 150, false, true, "Lia"};
+    CHECK(regras_ranking_insere(&r, &a) == 0);
+    CHECK(regras_ranking_insere(&r, &b) == 1);
+    CHECK(regras_ranking_insere(&r, &c) == 0); // mesmo placar da Inês, mais rápido
+    CHECK(regras_ranking_insere(&r, &d) == 1); // empate total com Moura: quem chegou antes fica na frente
+    CHECK(r.n == 4 && strcmp(r.itens[2].nome, "Inês") == 0 && strcmp(r.itens[3].nome, "Ari") == 0);
+    r.n = 0;
+    for (int i = 0; i < RANKING_MAX; i++) { // padrão MAP: enche com placares 1000, 990, ...
+        EntradaRanking x = {1000 - i * 10, 60, true, true, "X"};
+        regras_ranking_insere(&r, &x);
+    }
+    EntradaRanking pior = {-5000, 60, false, false, "Pior"}, meio = {995, 60, true, true, "Meio"};
+    CHECK(regras_ranking_insere(&r, &pior) == -1 && r.n == RANKING_MAX);
+    CHECK(regras_ranking_insere(&r, &meio) == 1 && r.n == RANKING_MAX); // entra e o último sai
+    CHECK(r.itens[RANKING_MAX - 1].placar == 1000 - (RANKING_MAX - 2) * 10);
+}
+
+// [REQ:PURA-regras_ranking_le_linha] ida e volta pelo arquivo; linhas estragadas são recusadas
+static void testa_ranking_linha(void) {
+    EntradaRanking a = {-25, 431, false, true, "Maria Inês"}, b;
+    char linha[96];
+    CHECK(regras_ranking_escreve_linha(&a, linha, sizeof(linha)) > 0);
+    CHECK(regras_ranking_le_linha(linha, &b));
+    CHECK(b.placar == -25 && b.segundos == 431 && !b.vitoria && b.feminino &&
+          strcmp(b.nome, "Maria Inês") == 0);
+    CHECK(regras_ranking_le_linha("300;120;1;0;Ari\r\n", &b) && strcmp(b.nome, "Ari") == 0);
+    CHECK(!regras_ranking_le_linha("", &b));
+    CHECK(!regras_ranking_le_linha("300;120;1;0;", &b));     // sem nome
+    CHECK(!regras_ranking_le_linha("abc;120;1;0;Ari", &b));  // placar não é número
+    CHECK(!regras_ranking_le_linha("300;-4;1;0;Ari", &b));   // tempo negativo
+    CHECK(!regras_ranking_le_linha("300;120;1;0;A;ri", &b)); // ';' no nome quebraria o arquivo
+    CHECK(regras_ranking_escreve_linha(&a, linha, 8) == -1); // não coube
+}
+
 int main(void) {
     SetTraceLogLevel(LOG_ERROR); // o aviso de vetor cheio é esperado aqui
     testa_movimento();
@@ -473,6 +512,8 @@ int main(void) {
     testa_quadro_susto();
     testa_placar();
     testa_bonus_movimentos();
+    testa_ranking_insere();
+    testa_ranking_linha();
     testa_vidro();
     testa_evento_do_erro();
     testa_monta_texto();

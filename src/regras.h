@@ -209,4 +209,26 @@ bool regras_nome_edita(char *nome, size_t tamanho, int max_letras, int codigo);
 // `t` dá sempre o mesmo resultado) e só troca letras ASCII: acentos (UTF-8) passam intactos.
 bool regras_falha_texto(const char *texto, float t, char *saida, size_t tamanho);
 
+// ------------------------------------------------------------------ ranking da feira (regras_ranking.c)
+typedef struct {
+    int placar;
+    int segundos; // tempo da partida: desempata (mais rápido na frente)
+    bool vitoria;
+    bool feminino; // para mostrar "Professora Inês" / "Professor Ari"
+    char nome[NOME_MAX_BYTES];
+} EntradaRanking;
+
+typedef struct {
+    EntradaRanking itens[RANKING_MAX];
+    int n;
+} Ranking;
+
+// Põe a partida no lugar dela (maior placar primeiro; empate: o mais rápido; empate total: quem chegou
+// antes). Devolve a posição (0 = 1º lugar) ou −1 se não coube (ranking cheio e placar menor que o último).
+int regras_ranking_insere(Ranking *r, const EntradaRanking *nova);
+// Uma linha do arquivo: "placar;segundos;vitoria;feminino;nome". Ler devolve false se a linha estiver
+// estragada (o arquivo pode ter sido editado à mão); escrever devolve o tamanho (ou −1 se não coube).
+bool regras_ranking_le_linha(const char *linha, EntradaRanking *saida);
+int regras_ranking_escreve_linha(const EntradaRanking *e, char *saida, size_t tamanho);
+
 #endif

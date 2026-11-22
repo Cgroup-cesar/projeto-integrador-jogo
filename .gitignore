@@ -15,3 +15,8 @@ estrutura.txt
 Thumbs.db
 .vscode/
 .idea/
+
+# Dados da feira (ficam só no computador do estande)
+ranking.txt
+ranking.txt.tmp
+avaliacoes.csv

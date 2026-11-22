@@ -3,6 +3,7 @@
 #include <math.h>
 #include "audio_sintese.h"
 #include "trilhas.h"
+#include "tela_fim.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -322,30 +323,28 @@ static void atualiza_legendas(Estado *e, float dt) {
 }
 
 // ------------------------------------------------------------------ menu e fim (lógica)
+// INICIAR, RANKING e SAIR (no modo feira, sem SAIR). O ranking abre por cima até ENTER ou ESC.
 static void atualiza_menu(Estado *e) {
-    int opcoes = e->modo_feira ? 1 : 2;
+    if (e->menu.ranking_aberto) {
+        if (e->in.confirmar || e->in.voltar) e->menu.ranking_aberto = false;
+        return;
+    }
+    int opcoes = e->modo_feira ? 2 : 3;
     if (e->in.cima) e->menu.cursor = (e->menu.cursor + opcoes - 1) % opcoes;
     if (e->in.baixo) e->menu.cursor = (e->menu.cursor + 1) % opcoes;
     if (!e->in.confirmar) return;
     if (e->menu.cursor == 0)
         e->evento = EV_INICIAR;
+    else if (e->menu.cursor == 1)
+        e->menu.ranking_aberto = true;
     else
         e->sair = true;
-}
-
-static void atualiza_tela_final(Estado *e, float dt) {
-    if (!e->fim.tela_final) return;
-    e->fim.tempo_tela += dt;
-    // O ENTER que fechou o texto do final chega aqui no mesmo quadro: sem essa folga, ele fechava o placar
-    // junto e a pessoa nunca o via.
-    bool enter = e->in.confirmar && e->fim.tempo_tela > FIM_PLACAR_FOLGA_S;
-    if (enter || e->fim.tempo_tela >= FIM_VOLTA_MENU_S) e->evento = EV_VOLTAR_MENU;
 }
 
 void ui_atualiza(Estado *e, float dt) {
     atualiza_legendas(e, dt);
     if (e->fase == FASE_MENU) atualiza_menu(e);
-    if (e->fase == FASE_FIM_BOM || e->fase == FASE_FIM_RUIM) atualiza_tela_final(e, dt);
+    tela_fim_atualiza(e, dt);
 }
 
 // ------------------------------------------------------------------ desenho: menu, intro, pausa
@@ -362,18 +361,42 @@ static void desenha_opcao(const Estado *e, const char *texto, float y, bool ativ
     ui_texto(e, texto, (Vector2){x, y}, 30 * s, ativa ? COR_FOSFORO : Fade(COR_FOSFORO, 0.5f));
 }
 
-// [REQ:RF5] tela de início: título (com o aviso de nome provisório), INICIAR e SAIR
+// A chamada do menu: quem está em 1º e o convite ("você pode ser o próximo"); sem ranking, o convite.
+static void desenha_chamada(const Estado *e, float y) {
+    float s = ui_escala();
+    if (e->ranking.n == 0) {
+        ui_texto_centro(e, dialogo_texto(TXT_MENU_CTA_VAZIO), y, 20 * s, COR_AMBAR);
+        return;
+    }
+    const EntradaRanking *lider = &e->ranking.itens[0];
+    Identidade id = {.feminino = lider->feminino};
+    snprintf(id.nome, sizeof(id.nome), "%s", lider->nome);
+    char nome[96], texto[160];
+    dialogo_personaliza(&id, dialogo_texto(TXT_FIM_JOGADOR), nome, sizeof(nome));
+    snprintf(texto, sizeof(texto), dialogo_texto(TXT_MENU_LIDER), nome, lider->placar);
+    ui_texto_centro(e, texto, y, 20 * s, COR_AMBAR);
+    ui_texto_centro(e, dialogo_texto(TXT_MENU_CTA), y + 30 * s, 22 * s, COR_FOSFORO);
+}
+
+// [REQ:RF5] tela de início: título (com o aviso de nome provisório), INICIAR, RANKING e SAIR
 static void desenha_menu(const Estado *e) {
     float s = ui_escala();
+    if (e->menu.ranking_aberto) { // só a tabela: o menu por trás aparecia fantasma
+        tela_fim_desenha_ranking(e, -1, TXT_MENU_CTA);
+        ui_texto_centro(e, dialogo_texto(TXT_RANKING_VOLTAR), GetScreenHeight() - 90 * s, 20 * s, COR_AMBAR);
+        return;
+    }
     int w = GetScreenWidth(), h = GetScreenHeight();
     DrawRectangleGradientV(0, 0, w, h, Fade(BLACK, 0.35f), Fade(BLACK, 0.85f));
     ui_texto_centro(e, TITULO_JOGO, 190 * s, 76 * s, COR_FOSFORO);
 #if TITULO_PROVISORIO
     ui_texto_centro(e, dialogo_texto(TXT_MENU_AVISO_PROVISORIO), 278 * s, 22 * s, COR_AMBAR);
 #endif
-    desenha_opcao(e, dialogo_texto(TXT_MENU_INICIAR), 380 * s, e->menu.cursor == 0);
-    if (!e->modo_feira) desenha_opcao(e, dialogo_texto(TXT_MENU_SAIR), 430 * s, e->menu.cursor == 1);
-    ui_texto_centro(e, dialogo_texto(TXT_MENU_DICA), 560 * s, 18 * s, Fade(COR_VIDRO, 0.8f));
+    desenha_opcao(e, dialogo_texto(TXT_MENU_INICIAR), 360 * s, e->menu.cursor == 0);
+    desenha_opcao(e, dialogo_texto(TXT_MENU_RANKING), 405 * s, e->menu.cursor == 1);
+    if (!e->modo_feira) desenha_opcao(e, dialogo_texto(TXT_MENU_SAIR), 450 * s, e->menu.cursor == 2);
+    desenha_chamada(e, 515 * s);
+    ui_texto_centro(e, dialogo_texto(TXT_MENU_DICA), 600 * s, 18 * s, Fade(COR_VIDRO, 0.8f));
     ui_texto_centro(e, dialogo_texto(TXT_MENU_CONTROLES), 650 * s, 18 * s, Fade(COR_FOSFORO, 0.55f));
 }
 
@@ -537,48 +560,6 @@ static void desenha_diario(const Estado *e) {
              (Color){0x50, 0x44, 0x34, 255});
 }
 
-// ------------------------------------------------------------------ desenho: tela de fim
-// [REQ:RF5] [REQ:RF6] tela de fim: VITÓRIA ou DERROTA, placar total e por fase, tempo, erros, ENTER ou 20 s
-static void desenha_tela_final(const Estado *e) {
-    float s = ui_escala();
-    bool vitoria = e->fase == FASE_FIM_BOM;
-    char texto[96];
-    DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), (Color){4, 6, 5, 240});
-    ui_texto_centro(e, dialogo_texto(vitoria ? TXT_FIM_VITORIA : TXT_FIM_DERROTA), 90 * s, 64 * s,
-                    vitoria ? COR_FOSFORO : COR_ALARME);
-    dialogo_personaliza(&e->ident, dialogo_texto(TXT_FIM_JOGADOR), texto, sizeof(texto)); // [REQ:NOME-USO]
-    ui_texto_centro(e, texto, 166 * s, 22 * s, COR_AMBAR);
-    snprintf(texto, sizeof(texto), "%s  %d", dialogo_texto(TXT_FIM_PLACAR), e->placar);
-    ui_texto_centro(e, texto, 200 * s, 30 * s, COR_FOSFORO);
-    float y = 250 * s;
-    const Fase fases[] = {FASE_R1,
-                          FASE_S1,
-                          FASE_R2,
-                          FASE_S2,
-                          FASE_R3,
-                          FASE_RESPOSTA_FINAL,
-                          vitoria ? FASE_FIM_BOM : FASE_FIM_RUIM};
-    float meio = GetScreenWidth() * 0.5f;
-    for (int i = 0; i < 7; i++) { // duas colunas: o nome alinhado à direita, os pontos à esquerda
-        int pontos = regras_placar_da_fase(e->eventos.itens, e->eventos.n, fases[i]);
-        const char *nome = dialogo_nome_fase(fases[i]);
-        ui_texto(e, nome, (Vector2){meio - 24 * s - ui_mede(e, nome, 20 * s).x, y}, 20 * s,
-                 Fade(COR_FOSFORO, 0.75f));
-        snprintf(texto, sizeof(texto), "%+d", pontos);
-        ui_texto(e, texto, (Vector2){meio + 24 * s, y}, 20 * s, pontos < 0 ? COR_ALARME : COR_FOSFORO);
-        y += 26 * s;
-    }
-    int seg = (int)e->tempo_partida;
-    snprintf(texto, sizeof(texto), "%s %02d:%02d   ·   %s %d", dialogo_texto(TXT_FIM_TEMPO), seg / 60,
-             seg % 60, dialogo_texto(TXT_FIM_ERROS), e->erros_totais);
-    ui_texto_centro(e, texto, y + 16 * s, 22 * s, COR_VIDRO);
-    snprintf(texto, sizeof(texto), "%s  (%d)", dialogo_texto(TXT_FIM_ENTER),
-             (int)(FIM_VOLTA_MENU_S - e->fim.tempo_tela + 0.99f));
-    ui_texto_centro(e, texto, GetScreenHeight() - 110 * s, 24 * s, COR_AMBAR);
-    ui_texto_centro(e, dialogo_texto(TXT_FIM_RODAPE), GetScreenHeight() - 50 * s, 16 * s,
-                    Fade(COR_FOSFORO, 0.45f));
-}
-
 static void desenha_debug(const Estado *e) {
     if (!e->debug_criatura) return;
     char texto[160];
@@ -596,7 +577,7 @@ void ui_desenha(const Estado *e) {
     if (jogando && e->jumpscare_t <= 0.0f) desenha_hud(e);
     desenha_diario(e);
     if (e->jumpscare_t <= 0.0f) desenha_legenda(e); // nada por cima do rosto no susto
-    if ((e->fase == FASE_FIM_BOM || e->fase == FASE_FIM_RUIM) && e->fim.tela_final) desenha_tela_final(e);
+    tela_fim_desenha(e);                            // o desempenho, a avaliação e o ranking (tela_fim.c)
     if (e->pausado) desenha_pausa(e);
     desenha_debug(e);
 }

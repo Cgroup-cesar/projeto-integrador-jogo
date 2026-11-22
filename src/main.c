@@ -17,6 +17,7 @@
 #include "ui.h"
 #include "texturas.h"
 #include "dialogo.h"
+#include "ranking.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -273,7 +274,12 @@ static void piloto_age(Estado *e, Entrada *in) {
         break;
     case FASE_FIM_RUIM:
     case FASE_FIM_BOM:
-        // lê o texto do final por meio segundo e segue ao placar; no placar, meio segundo e volta ao menu
+        // lê o texto do final por meio segundo e segue ao placar; no placar, dá uma estrela à 1ª pergunta,
+        // envia e vê o ranking; no ranking, meio segundo e volta ao menu
+        if (e->fim.tela_final && e->fim.tela == 0 && e->fim.notas[0] == 0) {
+            in->direita = true;
+            break;
+        }
         in->confirmar = (e->fim.tela_final && e->fim.tempo_tela > 0.5f) ||
                         (compositor_fim_lendo(e) && e->fim.leitura > 0.5f);
         break;
@@ -440,6 +446,7 @@ int main(int argc, char **argv) {
         return 0;
     }
     le_argumentos(&estado, argc, argv);
+    if (!estado.modo_smoke) ranking_carrega(&estado.ranking); // o smoke não lê nem grava o ranking
     abre_janela();
     if (!IsWindowReady()) { // sem monitor (tela dormindo, sessão remota): sai com uma mensagem, sem travar
         printf("Não foi possível abrir a janela do jogo (nenhum monitor disponível).\n");
