@@ -8,6 +8,7 @@
 #include "ui.h"
 #include "manual.h"
 #include "dialogo.h"
+#include "crt.h"
 #include <math.h>
 #include <stdio.h>
 
@@ -34,38 +35,54 @@ static float escala(void) {
     return ui_escala();
 }
 
+// O monitor do analisador: fundo com scanlines e varredura, quinas, título com franja de cor e, embaixo dele,
+// o `cabecalho` (NULL: quem chama desenha a linha de status). Devolve a área útil.
 Rectangle terminal_moldura(const Estado *e, const char *cabecalho) {
     float s = escala();
     Rectangle r = {GetScreenWidth() - 620 * s, 56 * s, 596 * s, 600 * s};
-    ui_painel(r, COR_FOSFORO);
-    ui_texto(e, dialogo_texto(TXT_TERMINAL_TITULO), (Vector2){r.x + 20 * s, r.y + 14 * s}, 24 * s,
-             COR_FOSFORO);
-    ui_texto(e, cabecalho, (Vector2){r.x + 20 * s, r.y + 46 * s}, 18 * s, Fade(COR_FOSFORO, 0.75f));
+    crt_painel(e, r, COR_FOSFORO, true);
+    crt_titulo(e, dialogo_texto(TXT_TERMINAL_TITULO), (Vector2){r.x + 26 * s, r.y + 22 * s}, 24 * s,
+               COR_FOSFORO);
+    if (cabecalho) ui_texto(e, cabecalho, (Vector2){r.x + 26 * s, r.y + 54 * s}, 15 * s, COR_CRT_APAGADO);
     char operador[128]; // [REQ:NOME-USO] quem opera o analisador: "Operadora: Professora Inês"
     dialogo_personaliza(&e->ident, dialogo_texto(TXT_TERMINAL_OPERADOR), operador, sizeof(operador));
     // acima da moldura, à direita: no terminal o HUD de cima não aparece, então ali não disputa espaço
     ui_texto(e, operador, (Vector2){r.x + r.width - ui_mede(e, operador, 16 * s).x, r.y - 24 * s}, 16 * s,
              COR_AMBAR);
-    DrawLineEx((Vector2){r.x + 14 * s, r.y + 74 * s}, (Vector2){r.x + r.width - 14 * s, r.y + 74 * s}, 1,
-               Fade(COR_FOSFORO, 0.35f));
     if (e->diario_lido)
         ui_texto_quebrado(e, dialogo_texto(TXT_TERMINAL_ANOTACAO),
                           (Vector2){r.x + 20 * s, r.y + r.height + 10 * s}, r.width - 40 * s, 15 * s,
                           COR_AMBAR);
-    return (Rectangle){r.x + 20 * s, r.y + 86 * s, r.width - 40 * s, r.height - 100 * s};
+    return (Rectangle){r.x + 26 * s, r.y + 90 * s, r.width - 52 * s, r.height - 104 * s};
 }
 
-// Cabeçalho: RODADA n/3 · VIDRO: ■ ■ □ · PLACAR: 000 (os quadrados são desenhados).
+// Um rótulo apagado seguido do valor em verde ("RODADA 1/3"); devolve a largura usada.
+static float status_item(const Estado *e, const char *rotulo, const char *valor, Vector2 p, float t) {
+    float s = escala(), w = ui_mede(e, rotulo, t).x + 8 * s;
+    ui_texto(e, rotulo, p, t, COR_CRT_APAGADO);
+    if (valor) ui_texto(e, valor, (Vector2){p.x + w, p.y}, t, COR_FOSFORO);
+    return w + (valor ? ui_mede(e, valor, t).x : 0.0f) + 20 * s;
+}
+
+// Linha de status: RODADA 1/3 · VIDRO ■■■ (os quadrados acesos brilham) · PLACAR 000.
 static Rectangle moldura_da_rodada(const Estado *e) {
-    float s = escala();
-    char inicio[48], fim[48];
-    snprintf(inicio, sizeof(inicio), dialogo_texto(TXT_TERMINAL_CABECALHO), e->rod.numero);
-    snprintf(fim, sizeof(fim), dialogo_texto(TXT_TERMINAL_PLACAR), e->placar);
-    Rectangle area = terminal_moldura(e, inicio);
-    float x = area.x + ui_mede(e, inicio, 18 * s).x + 10 * s, y = area.y - 40 * s + 2 * s;
+    float s = escala(), t = 15 * s;
+    Rectangle area = terminal_moldura(e, NULL);
+    char rodada[16], placar[16];
+    snprintf(rodada, sizeof(rodada), "%d/3", e->rod.numero);
+    snprintf(placar, sizeof(placar), "%03d", e->placar);
+    Vector2 p = {area.x, area.y - 36 * s};
+    p.x += status_item(e, dialogo_texto(TXT_TERMINAL_CABECALHO), rodada, p, t);
+    p.x += status_item(e, dialogo_texto(TXT_HUD_VIDRO), NULL, p, t) - 12 * s;
     Color cor = e->vidas <= 1 ? COR_ALARME : COR_FOSFORO;
-    x += ui_quadrados_vidro(e->vidas, (Vector2){x, y + 2 * s}, 12 * s, cor) + 4 * s;
-    ui_texto(e, fim, (Vector2){x, y}, 18 * s, Fade(COR_FOSFORO, 0.75f));
+    for (int i = 0; i < VIDAS_VIDRO; i++) { // padrão MAP: um quadrado por vida do vidro
+        Rectangle q = {p.x + i * 18 * s, p.y + 1 * s, 14 * s, 14 * s};
+        if (i < e->vidas) // o brilho em volta do quadrado aceso
+            DrawRectangleRec((Rectangle){q.x - 2 * s, q.y - 2 * s, 18 * s, 18 * s}, Fade(cor, 0.2f));
+        DrawRectangleRec(q, i < e->vidas ? cor : (Color){18, 48, 31, 255});
+    }
+    p.x += VIDAS_VIDRO * 18 * s + 16 * s;
+    status_item(e, dialogo_texto(TXT_TERMINAL_PLACAR), placar, p, t);
     return area;
 }
 
@@ -87,129 +104,167 @@ static void rotulos_glifos(const Estado *e, const FraseGlifos *f, Vector2 pos, f
         IdGlifo g = f->glifos[i];
         int c = glifo_conectivo(g);
         const char *sig = (c >= 0 && !e->conectivo_decifrado[c]) ? "?" : dialogo_significado_glifo(g);
-        ui_texto(e, sig, (Vector2){pos.x + i * tamanho * 1.45f, pos.y + tamanho + 8 * s}, 13 * s,
+        Vector2 m = ui_mede(e, sig, 13 * s);
+        float cx = pos.x + i * tamanho * 1.45f + tamanho * 0.5f;
+        ui_texto(e, sig, (Vector2){cx - m.x * 0.5f, pos.y + tamanho + 8 * s}, 13 * s,
                  Fade(glifo_cor(e, g), 0.9f));
     }
 }
 
+// O brilho atrás de cada glifo: âmbar pulsando no conectivo ainda desconhecido, verde fraco nos outros.
+static void brilho_glifos(const Estado *e, const FraseGlifos *f, Vector2 pos, float tamanho) {
+    float pulso = 0.5f + 0.5f * sinf(e->tempo_total * 2.0f * PI / 2.2f);
+    for (int i = 0; i < f->n; i++) { // padrão MAP: um halo por glifo
+        int c = glifo_conectivo(f->glifos[i]);
+        bool novo = c >= 0 && !e->conectivo_decifrado[c];
+        Vector2 centro = {pos.x + i * tamanho * 1.45f + tamanho * 0.5f, pos.y + tamanho * 0.5f};
+        DrawCircleV(centro, tamanho * 0.85f,
+                    novo ? Fade(COR_AMBAR, 0.08f + 0.10f * pulso) : Fade(COR_FOSFORO, 0.06f));
+    }
+}
+
 // ------------------------------------------------------------------ partes
-static float desenha_frases(const Estado *e, const DadosRodada *d, Vector2 pos) {
+// FRASE OBSERVADA: os glifos com o significado embaixo. Na R2, as duas frases, e a perguntada em âmbar.
+static void desenha_frases(const Estado *e, const DadosRodada *d, Rectangle caixa) {
     float s = escala();
     const Rodada *r = &e->rod;
-    ui_texto(e, dialogo_texto(TXT_TERMINAL_FRASE_OBSERVADA), pos, 15 * s, Fade(COR_FOSFORO, 0.6f));
-    if (d->n_colunas > 1 && r->etapa == ETAPA_ESCOLHER_CONECTIVO) { // qual das duas frases está em análise
+    bool escolhendo = d->n_colunas > 1 && r->etapa == ETAPA_ESCOLHER_CONECTIVO;
+    if (escolhendo) { // qual das duas frases está em análise, à direita da legenda
         char analise[48];
         snprintf(analise, sizeof(analise), dialogo_texto(TXT_TERMINAL_EM_ANALISE), r->coluna + 1);
-        float x = pos.x + ui_mede(e, dialogo_texto(TXT_TERMINAL_FRASE_OBSERVADA), 15 * s).x + 14 * s;
-        ui_texto(e, analise, (Vector2){x, pos.y}, 15 * s, COR_AMBAR);
+        float x = caixa.x + caixa.width - ui_mede(e, analise, 13 * s).x;
+        ui_texto(e, analise, (Vector2){x, caixa.y - 24 * s}, 13 * s, COR_AMBAR);
     }
     for (int c = 0; c < d->n_colunas; c++) {
-        Vector2 p = {pos.x + c * 270 * s, pos.y + 26 * s};
-        bool perguntada = d->n_colunas > 1 && r->etapa == ETAPA_ESCOLHER_CONECTIVO && r->coluna == c;
-        if (perguntada) // na R2, a frase que está sendo perguntada fica em destaque
-            DrawRectangleRoundedLinesEx((Rectangle){p.x - 8 * s, p.y - 8 * s, 250 * s, 74 * s}, 0.15f, 4,
-                                        2.0f * s, COR_AMBAR);
+        Vector2 p = {caixa.x + c * 270 * s, caixa.y + 4 * s};
+        if (escolhendo && r->coluna == c) // na R2, a frase que está sendo perguntada fica em destaque
+            DrawRectangleLinesEx((Rectangle){p.x - 8 * s, p.y - 8 * s, 250 * s, 70 * s}, 1.5f * s, COR_AMBAR);
         if (d->n_colunas > 1)
-            ui_texto(e, c == 0 ? "1" : "2", (Vector2){p.x, p.y + 8 * s}, 18 * s, Fade(COR_FOSFORO, 0.5f));
+            ui_texto(e, c == 0 ? "1" : "2", (Vector2){p.x, p.y + 8 * s}, 18 * s, COR_CRT_APAGADO);
         Vector2 g = {p.x + (d->n_colunas > 1 ? 24 * s : 0), p.y};
+        brilho_glifos(e, &d->teste[c], g, 34 * s);
         desenha_frase_glifos(e, &d->teste[c], g, 34 * s, 3.0f * s);
         rotulos_glifos(e, &d->teste[c], g, 34 * s);
     }
-    return 100 * s;
 }
 
-static float desenha_luzes(const Estado *e, const DadosRodada *d, Vector2 pos) {
-    float s = escala(), x = pos.x;
+// ESTADO DA LUZ: cada luz com a lâmpada e "LUZ A: ACESA"; quebra a linha quando não cabe.
+static void desenha_luzes(const Estado *e, const DadosRodada *d, Rectangle caixa) {
+    float s = escala(), x = caixa.x, y = caixa.y + 2 * s;
     for (int i = 0; i < d->n_luzes; i++) { // padrão MAP: cada luz com a lâmpada e o estado
         bool acesa = i == 0 ? e->rod.luz_a : e->rod.luz_b;
-        manual_lampada((Vector2){x + 9 * s, pos.y + 9 * s}, 8 * s, acesa);
         char t[48];
         snprintf(t, sizeof(t), "%s: %s", dialogo_texto(i == 0 ? TXT_TABELA_LUZ_A : TXT_TABELA_LUZ_B),
                  dialogo_texto(acesa ? TXT_TERMINAL_LUZ_ACESA : TXT_TERMINAL_LUZ_APAGADA));
-        ui_texto(e, t, (Vector2){x + 26 * s, pos.y}, 17 * s, COR_VIDRO);
-        x += 26 * s + ui_mede(e, t, 17 * s).x + 34 * s;
+        float w = 36 * s + ui_mede(e, t, 16 * s).x;
+        if (x > caixa.x && x + w > caixa.x + caixa.width) x = caixa.x, y += 36 * s;
+        manual_lampada((Vector2){x + 12 * s, y + 9 * s}, 9 * s, acesa);
+        ui_texto(e, t, (Vector2){x + 36 * s, y}, 16 * s, COR_VIDRO);
+        x += w + 30 * s;
     }
-    return 34 * s;
 }
 
-// A tabela-verdade se preenche sozinha conforme ele responde. As luzes são lâmpadas (acesa/apagada) e as
-// respostas, ✓ VERDADE ou ✗ FALSO. A linha das luzes atuais fica marcada.
-static float desenha_tabela(const Estado *e, const DadosRodada *d, Vector2 pos) {
-    float s = escala(), linha_h = 28 * s, col_luz = 72 * s, col_res = 190 * s;
+// Topo: FRASE OBSERVADA e ESTADO DA LUZ lado a lado; na R2 (duas frases) a frase ocupa a largura toda e a
+// luz só aparece enquanto ele está decifrando. Devolve a altura usada.
+static float desenha_topo(const Estado *e, const DadosRodada *d, Rectangle area) {
+    float s = escala(), gap = 14 * s, h = 106 * s;
+    bool lado = d->n_colunas == 1, luzes = lado || e->rod.etapa == ETAPA_DECIFRAR;
+    float wf = lado ? (area.width - gap) * 0.5f : area.width;
+    const char *legenda = dialogo_texto(TXT_TERMINAL_FRASE_OBSERVADA);
+    desenha_frases(e, d, crt_caixa(e, (Rectangle){area.x, area.y, wf, h}, legenda));
+    if (!luzes) return h + gap;
+    Rectangle rl = lado ? (Rectangle){area.x + wf + gap, area.y, wf, h}
+                        : (Rectangle){area.x, area.y + h + gap, area.width, 70 * s};
+    desenha_luzes(e, d, crt_caixa(e, rl, dialogo_texto(TXT_TERMINAL_ESTADO_LUZ)));
+    return lado ? h + gap : h + gap + rl.height + gap;
+}
+
+// O cabeçalho de cada coluna de respostas: RESPOSTA, "frase 1" ou, na R2, "FRASE 1 · EM ANÁLISE" em âmbar.
+static void cabecalho_coluna(const Estado *e, const DadosRodada *d, int c, Vector2 p, float linhas_h) {
+    float s = escala(), col_res = 190 * s;
     const Rodada *r = &e->rod;
-    ui_texto(e, dialogo_texto(TXT_TERMINAL_TABELA), pos, 15 * s, Fade(COR_FOSFORO, 0.6f));
-    float y = pos.y + 24 * s, x_res = pos.x + d->n_luzes * col_luz + 24 * s;
+    bool escolhendo = d->n_colunas > 1 && r->etapa == ETAPA_ESCOLHER_CONECTIVO;
+    bool perguntada = escolhendo && r->coluna == c;
+    char coluna[48];
+    if (perguntada) // a coluna em análise: moldura âmbar em volta do cabeçalho e das respostas
+        DrawRectangleLinesEx((Rectangle){p.x - 10 * s, p.y - 6 * s, col_res - 8 * s, linhas_h + 6 * s},
+                             1.5f * s, COR_AMBAR);
+    if (perguntada)
+        snprintf(coluna, sizeof(coluna), dialogo_texto(TXT_TERMINAL_EM_ANALISE), c + 1);
+    else if (d->n_colunas > 1)
+        snprintf(coluna, sizeof(coluna), dialogo_texto(TXT_TERMINAL_COLUNA), c + 1);
+    else
+        snprintf(coluna, sizeof(coluna), "%s", dialogo_texto(TXT_TABELA_RESPOSTA));
+    ui_texto(e, coluna, p, 13 * s, perguntada ? COR_AMBAR : Fade(COR_CRT_APAGADO, escolhendo ? 0.5f : 1.0f));
+}
+
+// TABELA-VERDADE numa caixa: se preenche sozinha conforme ele responde. As luzes são lâmpadas e as
+// respostas, ✓ VERDADE ou ✗ FALSO; a linha das luzes atuais ganha o degradê âmbar. Devolve a altura.
+static float desenha_tabela(const Estado *e, const DadosRodada *d, Rectangle area) {
+    float s = escala(), linha_h = 26 * s, col_luz = 72 * s, col_res = 190 * s;
+    const Rodada *r = &e->rod;
+    int linhas = rodadas_linhas(d), atual = rodadas_linha_atual(e);
+    float altura = 36 * s + 24 * s + linhas * linha_h + 12 * s;
+    Rectangle in =
+        crt_caixa(e, (Rectangle){area.x, area.y, area.width, altura}, dialogo_texto(TXT_TERMINAL_TABELA));
+    float y = in.y, x_res = in.x + d->n_luzes * col_luz + 24 * s;
     for (int i = 0; i < d->n_luzes; i++)
         ui_texto(e, dialogo_texto(i == 0 ? TXT_TABELA_LUZ_A : TXT_TABELA_LUZ_B),
-                 (Vector2){pos.x + i * col_luz, y}, 15 * s, Fade(COR_FOSFORO, 0.7f));
+                 (Vector2){in.x + i * col_luz, y}, 13 * s, COR_CRT_APAGADO);
+    for (int c = 0; c < d->n_colunas; c++)
+        cabecalho_coluna(e, d, c, (Vector2){x_res + c * col_res, y}, (linhas + 1) * linha_h);
     bool escolhendo = d->n_colunas > 1 && r->etapa == ETAPA_ESCOLHER_CONECTIVO;
-    for (int c = 0; c < d->n_colunas; c++) {
-        char coluna[48];
-        bool perguntada = escolhendo && r->coluna == c;
-        if (perguntada) // a coluna em análise: moldura âmbar em volta do cabeçalho e das respostas
-            DrawRectangleRoundedLinesEx((Rectangle){x_res + c * col_res - 10 * s, y - 6 * s, col_res - 8 * s,
-                                                    (rodadas_linhas(d) + 1) * linha_h + 6 * s},
-                                        0.08f, 4, 2.0f * s, COR_AMBAR);
-        if (perguntada)
-            snprintf(coluna, sizeof(coluna), dialogo_texto(TXT_TERMINAL_EM_ANALISE), c + 1);
-        else if (d->n_colunas > 1)
-            snprintf(coluna, sizeof(coluna), dialogo_texto(TXT_TERMINAL_COLUNA), c + 1);
-        else
-            snprintf(coluna, sizeof(coluna), "%s", dialogo_texto(TXT_TABELA_RESPOSTA));
-        ui_texto(e, coluna, (Vector2){x_res + c * col_res, y}, 15 * s,
-                 perguntada ? COR_AMBAR : Fade(COR_FOSFORO, escolhendo ? 0.3f : 0.7f));
-    }
-    int atual = rodadas_linha_atual(e);
-    for (int l = 0; l < rodadas_linhas(d); l++) {
-        y += linha_h;
+    y += 22 * s;
+    for (int l = 0; l < linhas; l++, y += linha_h) {
+        DrawLineEx((Vector2){in.x, y}, (Vector2){in.x + in.width, y}, 1.0f * s, COR_CRT_GRADE);
         if (l == atual && r->etapa == ETAPA_DECIFRAR)
-            DrawRectangleRounded(
-                (Rectangle){pos.x - 8 * s, y - 4 * s, x_res + d->n_colunas * col_res - pos.x, linha_h}, 0.3f,
-                4, Fade(COR_FOSFORO, 0.12f));
+            DrawRectangleGradientH((int)in.x, (int)y, (int)in.width, (int)linha_h, Fade(COR_AMBAR, 0.16f),
+                                   Fade(COR_AMBAR, 0.0f));
         for (int i = 0; i < d->n_luzes; i++) {
             bool acesa = d->n_luzes == 1 ? (l & 1) : i == 0 ? ((l >> 1) & 1) : (l & 1);
-            manual_lampada((Vector2){pos.x + i * col_luz + 18 * s, y + 9 * s}, 7 * s, acesa);
+            manual_lampada((Vector2){in.x + i * col_luz + 14 * s, y + linha_h * 0.5f}, 7 * s, acesa);
         }
         for (int c = 0; c < d->n_colunas; c++) {
-            Vector2 p = {x_res + c * col_res, y};
+            Vector2 p = {x_res + c * col_res, y + 5 * s};
             float alfa = escolhendo && r->coluna != c ? 0.25f : 1.0f; // a outra frase fica apagada
             if (r->linha_vista[c][l])
-                resposta(e, p, 18 * s, r->linha_valor[c][l], alfa);
+                resposta(e, p, 17 * s, r->linha_valor[c][l], alfa);
             else
-                ui_texto(e, "?", (Vector2){p.x + 6 * s, p.y}, 18 * s, Fade(COR_FOSFORO, 0.3f));
+                ui_texto(e, "?", (Vector2){p.x + 6 * s, p.y}, 17 * s, Fade(COR_FOSFORO, 0.3f));
         }
     }
-    return y + linha_h + 8 * s - pos.y;
+    return altura + 14 * s;
 }
 
-static void desenha_opcoes_conectivo(const Estado *e, const DadosRodada *d, Vector2 pos) {
+// Errou agora há pouco? A opção escolhida treme vermelha nos primeiros instantes do aviso.
+static bool errou_agora(const Estado *e) {
+    const Rodada *r = &e->rod;
+    return r->aviso_t > TERMINAL_TREMIDA_ERRO_S && r->aviso == dialogo_texto(TXT_TERMINAL_ERRO);
+}
+
+// Na R2, qual frase está em análise já aparece na caixa da frase e na tabela: aqui só a pergunta.
+static void desenha_opcoes_conectivo(const Estado *e, Vector2 pos, float largura) {
     float s = escala();
-    char texto[64];
-    const char *base = dialogo_texto(TXT_TERMINAL_ESCOLHA_CONECTIVO);
-    if (d->n_colunas > 1) {
-        snprintf(texto, sizeof(texto), dialogo_texto(TXT_TERMINAL_QUAL_FRASE), e->rod.coluna + 1,
-                 d->n_colunas);
-        ui_texto(e, texto, pos, 16 * s, COR_AMBAR);
-        pos.y += 22 * s;
-    }
-    ui_texto(e, base, pos, 17 * s, COR_FOSFORO);
-    for (int i = 0; i < CONECTIVOS_ESCOLHA; i++)
-        ui_opcao(e, dialogo_conectivo(i), (Vector2){pos.x + 10 * s, pos.y + (30 + i * 32) * s}, 220 * s,
-                 22 * s, e->rod.cursor == i, COR_FOSFORO);
+    crt_pergunta(e, dialogo_texto(TXT_TERMINAL_ESCOLHA_CONECTIVO), pos, 16 * s);
+    for (int i = 0; i < CONECTIVOS_ESCOLHA; i++) // padrão MAP: cada conectivo numa faixa
+        crt_opcao(e, dialogo_conectivo(i), (Rectangle){pos.x, pos.y + (28 + i * 34) * s, largura, 30 * s},
+                  18 * s, e->rod.cursor == i, errou_agora(e), true, COR_FOSFORO);
 }
 
 // Tradução: a frase com o significado de cada glifo embaixo (conectivo só se já foi decifrado).
 static void desenha_traducao(const Estado *e, const DadosRodada *d, Vector2 pos, float largura) {
     float s = escala();
-    desenha_frase_glifos(e, &d->traducao, pos, 40 * s, 3.2f * s);
-    rotulos_glifos(e, &d->traducao, pos, 40 * s);
-    float y = pos.y + 84 * s;
-    ui_texto_quebrado(e, dialogo_texto(TXT_TERMINAL_TRADUZA), (Vector2){pos.x, y}, largura, 17 * s,
-                      COR_FOSFORO);
-    for (int i = 0; i < 3; i++)
-        ui_opcao(e, dialogo_opcao_traducao(e->rod.numero, i),
-                 (Vector2){pos.x + 10 * s, y + (34 + i * 34) * s}, largura - 10 * s, 20 * s,
-                 e->rod.cursor == i, COR_FOSFORO);
+    Rectangle in = crt_caixa(e, (Rectangle){pos.x, pos.y, largura, 120 * s},
+                             dialogo_texto(TXT_TERMINAL_FRASE_OBSERVADA));
+    brilho_glifos(e, &d->traducao, (Vector2){in.x, in.y + 2 * s}, 40 * s);
+    desenha_frase_glifos(e, &d->traducao, (Vector2){in.x, in.y + 2 * s}, 40 * s, 3.2f * s);
+    rotulos_glifos(e, &d->traducao, (Vector2){in.x, in.y + 2 * s}, 40 * s);
+    float y = pos.y + 136 * s;
+    crt_pergunta(e, dialogo_texto(TXT_TERMINAL_TRADUZA), (Vector2){pos.x, y}, 16 * s);
+    for (int i = 0; i < 3; i++) // padrão MAP: cada tradução numa faixa
+        crt_opcao(e, dialogo_opcao_traducao(e->rod.numero, i),
+                  (Rectangle){pos.x, y + (30 + i * 42) * s, largura, 34 * s}, 17 * s, e->rod.cursor == i,
+                  errou_agora(e), true, COR_FOSFORO);
 }
 
 // Decifrando: "mude as luzes", "...ele responde..." ou, logo depois da resposta, ✓ VERDADE / ✗ FALSO grande.
@@ -224,19 +279,18 @@ static void desenha_estado_decifrar(const Estado *e, Vector2 p, float largura) {
     TextoId t = r->resposta_t > 0.0f ? TXT_TERMINAL_RESPONDENDO
                 : duas               ? TXT_TERMINAL_OBSERVE_DUAS
                                      : TXT_TERMINAL_OBSERVE;
-    ui_texto_quebrado(e, dialogo_texto(t), p, largura, 17 * s,
-                      r->resposta_t > 0.0f ? COR_AMBAR : COR_FOSFORO);
+    ui_texto_quebrado(e, dialogo_texto(t), p, largura, 16 * s,
+                      r->resposta_t > 0.0f ? COR_AMBAR : COR_CRT_TEXTO);
 }
 
 static void desenha_rodape(const Estado *e, Rectangle area) {
     float s = escala();
     const Rodada *r = &e->rod;
-    if (r->etapa != ETAPA_CONCLUIDA) { // o selo da ajuda, no alto, na linha do placar: sempre à vista
-        manual_selo_ajuda(e, area.x + area.width, area.y - 44 * s, s);
-    }
+    if (r->etapa != ETAPA_CONCLUIDA) // o botão da ajuda, no alto à direita, na linha do título
+        manual_selo_ajuda(e, area.x + area.width, area.y - 70 * s, s);
     if (r->aviso_t > 0.0f) {
         bool erro = r->aviso == dialogo_texto(TXT_TERMINAL_ERRO);
-        ui_texto(e, r->aviso, (Vector2){area.x, area.y + area.height - 34 * s}, 22 * s,
+        ui_texto(e, r->aviso, (Vector2){area.x, area.y + area.height - 22 * s}, 18 * s,
                  erro ? COR_ALARME : COR_FOSFORO);
     }
 }
@@ -309,19 +363,17 @@ void terminal_desenha(const Estado *e) {
     float s = escala();
     Vector2 p = {area.x, area.y};
     if (r->etapa == ETAPA_DECIFRAR || r->etapa == ETAPA_ESCOLHER_CONECTIVO) {
-        p.y += desenha_frases(e, d, p);
-        p.y += desenha_luzes(e, d, p);
-        p.y += desenha_tabela(e, d, p);
-        if (r->etapa == ETAPA_DECIFRAR) {
+        p.y += desenha_topo(e, d, area);
+        p.y += desenha_tabela(e, d, (Rectangle){p.x, p.y, area.width, 0});
+        if (r->etapa == ETAPA_DECIFRAR)
             desenha_estado_decifrar(e, p, area.width);
-        } else {
-            desenha_opcoes_conectivo(e, d, p);
-        }
+        else
+            desenha_opcoes_conectivo(e, p, area.width);
     } else if (r->etapa == ETAPA_TRADUZIR) {
         desenha_traducao(e, d, p, area.width);
     } else {
-        ui_texto(e, dialogo_texto(r->numero == 3 ? TXT_TERMINAL_RESPONDA : TXT_TERMINAL_CERTO),
-                 (Vector2){p.x, p.y + 40 * s}, 40 * s, r->numero == 3 ? COR_ALARME : COR_FOSFORO);
+        crt_titulo(e, dialogo_texto(r->numero == 3 ? TXT_TERMINAL_RESPONDA : TXT_TERMINAL_CERTO),
+                   (Vector2){p.x, p.y + 40 * s}, 40 * s, r->numero == 3 ? COR_ALARME : COR_FOSFORO);
     }
     desenha_rodape(e, area);
     desenha_cola(e);

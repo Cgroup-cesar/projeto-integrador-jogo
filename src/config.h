@@ -282,6 +282,7 @@
 #define COR_CRT_APAGADO  (Color){0x4f, 0x8a, 0x69, 255} // legendas, opções não escolhidas
 #define COR_AMBAR_ESCURO (Color){0x5a, 0x43, 0x18, 255} // o anel em volta da lâmpada acesa
 #define CRT_VARREDURA_S  7.0f // quanto a faixa clara leva para descer a tela do analisador
+#define TERMINAL_TREMIDA_ERRO_S 1.5f // aviso_t acima disto: a opção errada treme (o aviso dura 1,8 s)
 
 // Folego no armario: expulso aos 12 s; saindo com 8 s ou mais escondido, ofega.
 #define ARMARIO_TEMPO_MAX   12.0f
