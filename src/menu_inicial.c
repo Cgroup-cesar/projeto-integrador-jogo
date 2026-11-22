@@ -112,11 +112,6 @@ static inline Color cor_alpha(Color c, unsigned char a) {
     return (Color){c.r, c.g, c.b, a};
 }
 
-// Cor com alpha multiplicado por fator
-static inline Color cor_alpha_mul(Color c, float mul) {
-    return (Color){c.r, c.g, c.b, (unsigned char)(c.a * mul)};
-}
-
 // Mede texto e devolve posição centralizada em X
 static Vector2 centro_texto(Font f, const char *t, float tam, float esp, float cx, float y) {
     Vector2 m = MeasureTextEx(f, t, tam, esp);

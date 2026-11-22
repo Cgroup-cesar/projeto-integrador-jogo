@@ -59,6 +59,16 @@ static Image gera_material(TipoMaterial m) {
     return img;
 }
 
+// A raylib 6.0 trocou ImageDraw por ImageDrawImagePro (que também recebe origem e rotação); a 5.5 só tem
+// ImageDraw. O jogo precisa compilar nas duas, então a escolha é feita pela versão.
+static void desenha_imagem(Image *destino, Image origem_img, Rectangle origem, Rectangle alvo, Color tinta) {
+#if RAYLIB_VERSION_MAJOR >= 6
+    ImageDrawImagePro(destino, origem_img, origem, alvo, (Vector2){0, 0}, 0.0f, tinta);
+#else
+    ImageDraw(destino, origem_img, origem, alvo, tinta);
+#endif
+}
+
 // Placa em estêncil: o texto (dialogo.c) com a fonte do jogo, centralizado, com a tinta gasta.
 static Image gera_estencil(const Recursos *rec, const char *texto, unsigned semente) {
     char limpo[64];
@@ -69,15 +79,16 @@ static Image gera_estencil(const Recursos *rec, const char *texto, unsigned seme
     Image letras = GenImageColor(fino.width + 3, fino.height + 3, BLANK);
     Rectangle origem = {0, 0, (float)fino.width, (float)fino.height};
     for (int k = 0; k < 4; k++) // carregamento: os 4 carimbos (não é map/filter/fold)
-        ImageDraw(&letras, fino, origem,
-                  (Rectangle){(k & 1) * 3.0f, (k >> 1) * 3.0f, origem.width, origem.height}, WHITE);
+        desenha_imagem(&letras, fino, origem,
+                       (Rectangle){(k & 1) * 3.0f, (k >> 1) * 3.0f, origem.width, origem.height}, WHITE);
     UnloadImage(fino);
     Image placa = GenImageColor(DECALQUE_PX * 2, DECALQUE_PX / 2, BLANK);
     float escala = fminf(placa.width * 0.92f / letras.width, placa.height * 0.8f / letras.height);
     Rectangle destino = {(placa.width - letras.width * escala) * 0.5f,
                          (placa.height - letras.height * escala) * 0.5f, letras.width * escala,
                          letras.height * escala};
-    ImageDraw(&placa, letras, (Rectangle){0, 0, (float)letras.width, (float)letras.height}, destino, WHITE);
+    desenha_imagem(&placa, letras, (Rectangle){0, 0, (float)letras.width, (float)letras.height}, destino,
+                   WHITE);
     UnloadImage(letras);
     ImageFormat(&placa, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
     Color *px = (Color *)placa.data;

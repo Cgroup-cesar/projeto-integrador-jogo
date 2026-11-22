@@ -1,9 +1,11 @@
-// jogador.c — o Prof. Elias Moura em 1ª pessoa: olhar, andar, correr, esconder-se e interagir.
+// jogador.c — quem joga (professor ou professora) em 1ª pessoa: olhar, andar, correr, esconder-se e
+// interagir.
 #include "jogador.h"
 #include "nivel.h"
 #include "ui.h"
 #include "dialogo.h"
 #include "audio_sintese.h"
+#include "trilhas.h"
 #include "criatura.h"
 #include <math.h>
 
@@ -110,7 +112,8 @@ static void passos(Estado *e, bool andando, float dt) {
     if (regras_fase_eh_saida(e->fase))
         col_ruidos_adiciona(&e->ruidos,
                             (Ruido){j->pos, raio, 1.0f, j->correndo ? RUIDO_CORRIDA : RUIDO_PASSO});
-    audio_toca(e, SOM_PASSO, j->correndo ? 1.0f : 0.6f, 0.9f + GetRandomValue(0, 20) / 100.0f);
+    if (!trilhas_tem(e, TRILHA_PASSO_ANDAR)) // sem o arquivo, o passo sintetizado de antes
+        audio_toca(e, SOM_PASSO, j->correndo ? 1.0f : 0.6f, 0.9f + GetRandomValue(0, 20) / 100.0f);
 }
 
 // [REQ:RF2] WASD anda, Shift corre (com fôlego); a posição nova vem da regra pura
@@ -152,8 +155,9 @@ static void sai_do_armario(Estado *e) {
     Jogador *j = &e->jog;
     j->modo = MODO_ANDANDO;
     j->pos = e->nivel.armario_saida[j->armario];
-    if (j->armario_t >= ARMARIO_TEMPO_OFEGO || j->folego <= 0.0f) audio_toca(e, SOM_RESPIRACAO_OFEGANTE, 1.0f, 1.0f); // saiu sem folego
-    j->recupera_total = true; // so volta a correr com a barra cheia
+    if (j->armario_t >= ARMARIO_TEMPO_OFEGO || j->folego <= 0.0f)
+        audio_toca(e, SOM_RESPIRACAO_OFEGANTE, 1.0f, 1.0f); // saiu sem folego
+    j->recupera_total = true;                               // so volta a correr com a barra cheia
     j->armario_t = 0.0f;
     audio_toca(e, SOM_INTERRUPTOR, 0.7f, 0.55f);
 }

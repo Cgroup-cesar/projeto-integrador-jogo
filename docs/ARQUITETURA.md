@@ -62,9 +62,8 @@ Por exemplo, a criatura: `criatura.c` faz o raycast contra as paredes (`GetRayCo
 ```mermaid
 stateDiagram-v2
     [*] --> MENU
-    MENU --> NOME: INICIAR
-    NOME --> INTRO: NOME_CONFIRMADO (ENTER; vazio vira VISITANTE)
-    NOME --> MENU: VOLTAR_MENU (Esc)
+    MENU --> INTRO: INICIAR
+    note right of INTRO: etapas: professor ou professora, nome, texto datilografado, carta pelo rádio
     INTRO --> R1: INTRO_TERMINOU
     R1 --> S1: RODADA_CONCLUIDA
     S1 --> R2: SAIDA_CONCLUIDA
@@ -91,7 +90,7 @@ stateDiagram-v2
 | `jogo.c` | aplica `regras_proxima_fase`, prepara cada fase, pontua, pausa, debug, modo feira |
 | `config.h` · `estado.h` | constantes · todo o estado do jogo |
 | `logica.c` · `regras.c` · `funcional.h` · `colecoes.c` | a camada pura |
-| `nivel.c` | mapa ASCII → paredes, móveis, interativos, luzes; desenho do Posto 7 com as texturas |
+| `nivel.c` | mapa ASCII → paredes, móveis, interativos, luzes; desenho do bloco de contenção com as texturas |
 | `materiais.c` | puro: ruído contínuo nas bordas, o desenho de cada material (`materiais_pixel`), manchas, desgaste do estêncil e `materiais_uv` (UV em metros) |
 | `texturas.c` | gera ou carrega as texturas uma vez, libera ao sair; `texturas_caixa` (6 faces, UV de mundo ou local) e `texturas_quadro` (decalque) |
 | `cenario.c` | ambientação sem colisão: placas em estêncil, umidade, arrasto do duto, eletrodutos, grelhas, fios e halo das lâmpadas |
@@ -102,10 +101,13 @@ stateDiagram-v2
 | `rodadas.c` · `terminal.c` · `glifos.c` | as 3 rodadas (o ENTER decide), o analisador SNI-85 (setas e Esc), a língua dos glifos |
 | `circuito.c` | os painéis 1 e 2 |
 | `compositor.c` | a resposta final por fichas e os dois finais |
-| `dialogo.c` | todos os textos |
-| `audio_sintese.c` | os sons gerados em código (ou lidos de `assets/audio/`) |
+| `identidade.c` | as perguntas do começo da intro: "Professor ou professora?" e o nome (a edição é `regras_nome_edita`) |
+| `dialogo.c` | todos os textos; `dialogo_personaliza` troca `{NOME}`, `{PROF}` e `{x\|y}` (regra em `regras_monta_texto`) |
+| `audio_sintese.c` | os sons curtos gerados em código (ou lidos de `assets/audio/`) |
+| `trilhas.c` | os sons longos gravados: trilha do menu, vozes, coração e passos (o volume vem de `regras_volumes_trilhas`) |
 | `posfx.c` | render target, luz e névoa |
-| `vhs.c` | filtro VHS: shader, presets (`VHS_PRESETS`), troca com F1, interferência perto da criatura |
+| `vhs.c` | filtro VHS: shader, presets (`VHS_PRESETS`), troca com F1 e o efeito de sanidade (cansaço + fita) |
+| `sanidade.c` | sanidade: queda pela distância da criatura, recuperação, bônus e a barra no topo (regras em `regras_sanidade.c`) |
 | `ui.c` | fonte com fallback, menu, HUD, legendas, diário, tela de fim |
 
 Módulos sem nada para desenhar (`audio_sintese.c`) ou puros (`logica.c`, `regras.c`, `colecoes.c`, `dialogo.c`, `materiais.c`) não têm `xxx_desenha`. `texturas.c` e `cenario.c` só desenham a partir do estado e não têm nada para atualizar por quadro, então não têm `xxx_atualiza`.

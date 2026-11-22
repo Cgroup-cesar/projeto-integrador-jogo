@@ -318,7 +318,7 @@ static bool atualiza_surgimento(Estado *e, float dt) {
     c->ativo = true;
     c->estado = CRIATURA_PATRULHA;
     c->tempo_replanejar = 99.0f;
-    audio_toca(e, SOM_VOZ_PRECURSOR, 0.9f, 0.7f);
+    audio_toca(e, SOM_DISTORCAO, 0.8f, 0.55f); // sair do duto não é fala: um rugido grave
     return true;
 }
 
@@ -383,7 +383,7 @@ static void cabeca(float altura, float fenda, Color cor) {
 static float visibilidade(const Estado *e) {
     if (!e->cri.contido) return 1.0f - e->cri.distorcao;
     if (e->apagao_t > 0.0f) return 0.05f;
-    bool menu = e->fase == FASE_MENU || e->fase == FASE_NOME || e->fase == FASE_INTRO;
+    bool menu = e->fase == FASE_MENU || e->fase == FASE_INTRO;
     float v = 0.12f + (menu || e->rod.luz_a ? 0.4f : 0.0f) + (e->rod.luz_b ? 0.6f : 0.0f);
     v += nivel_piscada_cela(e) * 0.6f; // aparece no flash da lâmpada com defeito
     if (e->fase == FASE_RESPOSTA_FINAL || e->fase == FASE_FIM_BOM || e->fase == FASE_FIM_RUIM) v = 1.0f;

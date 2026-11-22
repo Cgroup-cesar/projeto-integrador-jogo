@@ -13,8 +13,8 @@
 #include "posfx.h"
 #include "audio_sintese.h"
 #include "dialogo.h"
+#include "identidade.h"
 #include "ui.h"
-#include "tela_nome.h"
 #include "cenario.h"
 #include "sanidade.h"
 #include <string.h>
@@ -106,11 +106,14 @@ static void entra_resposta_final(Estado *e) {
     e->jog.modo = MODO_TERMINAL;
 }
 
-// [REQ:NOME-SESSAO] o nome só vive durante a partida: zerado no menu (fim, pausa, Esc, inatividade) e na
-// partida nova; mantido nos recomeços; nas fases de jogo, vazio vira o padrão (F2, --fase, smoke)
+// [REQ:NOME-SESSAO] o nome só vive durante a partida: zerado no menu (fim, pausa, inatividade) e na
+// partida nova (intro); mantido nos recomeços; nas fases de jogo, vazio vira o padrão (F2, --fase, smoke)
 static void aplica_regra_do_nome(Estado *e, Fase fase, bool reinicio) {
-    regras_nome_aplica(e->nome_jogador, sizeof(e->nome_jogador), fase, reinicio,
-                       dialogo_texto(TXT_NOME_PADRAO));
+    if (reinicio) return; // vidro rompido, pego, F5: a mesma pessoa continua
+    if (fase == FASE_MENU || fase == FASE_INTRO)
+        identidade_reinicia(e);
+    else
+        identidade_garante_nome(e);
 }
 
 static void entra_fase(Estado *e, Fase fase, bool reinicio) {
@@ -128,7 +131,7 @@ static void entra_fase(Estado *e, Fase fase, bool reinicio) {
         entra_menu(e);
         break;
     case FASE_INTRO:
-        memset(&e->intro, 0, sizeof(e->intro));
+        memset(&e->intro, 0, sizeof(e->intro)); // começa em INTRO_GENERO (a identidade já foi zerada)
         jogador_teleporta(e, e->nivel.inicio, PI);
         lanterna_reinicia(e); // partida nova: começa apagada
         break;
@@ -192,12 +195,17 @@ static int conta_letras(const char *texto) {
 
 static void atualiza_intro(Estado *e, float dt) {
     Intro *it = &e->intro;
-    if (it->interfone) {
+    if (it->etapa <= INTRO_NOME) {
+        identidade_atualiza(e, dt);
+        return;
+    }
+    if (it->etapa == INTRO_RADIO) {
         if (e->in.confirmar) ui_legenda_pula(e);
         if (ui_legendas_vazias(e)) e->evento = EV_INTRO_TERMINOU;
         return;
     }
-    const char *linha = dialogo_intro(it->linha);
+    char linha[256];
+    dialogo_personaliza(&e->ident, dialogo_intro(it->linha), linha, sizeof(linha));
     float total = (float)conta_letras(linha);
     float antes = it->letras;
     it->letras += dt * 30.0f;
@@ -210,7 +218,7 @@ static void atualiza_intro(Estado *e, float dt) {
     it->letras = 0.0f;
     it->espera = 0.0f;
     if (it->linha >= INTRO_LINHAS) {
-        it->interfone = true;
+        it->etapa = INTRO_RADIO;
         ui_fala(e, FALAS_INTRO_INTERFONE);
     }
 }
@@ -243,7 +251,7 @@ static void atualiza_debug(Estado *e) {
 #endif
 }
 
-// Conta também na tela de nome e na pausa: quem sair dali deixa o jogo voltar ao menu (e o nome é apagado).
+// Conta também na intro e na pausa: quem sair dali deixa o jogo voltar ao menu (e o nome é apagado).
 static void atualiza_feira(Estado *e, float dt) {
     if (!e->modo_feira || !jogando(e)) {
         e->tempo_inativo = 0.0f;
@@ -258,8 +266,7 @@ static void atualiza_feira(Estado *e, float dt) {
 }
 
 static void atualiza_cursor(const Estado *e) {
-    bool prende =
-        jogando(e) && !e->pausado && !e->modo_smoke && e->fase != FASE_INTRO && e->fase != FASE_NOME;
+    bool prende = jogando(e) && !e->pausado && !e->modo_smoke && e->fase != FASE_INTRO;
     if (prende && !IsCursorHidden()) DisableCursor();
     if (!prende && IsCursorHidden()) EnableCursor();
 }
@@ -267,9 +274,6 @@ static void atualiza_cursor(const Estado *e) {
 // ================================================================== atualiza
 static void atualiza_fase(Estado *e, float dt) {
     switch (e->fase) {
-    case FASE_NOME:
-        tela_nome_atualiza(e, dt);
-        break;
     case FASE_INTRO:
         atualiza_intro(e, dt);
         break;
@@ -297,7 +301,7 @@ static void atualiza_fase(Estado *e, float dt) {
 
 static void atualiza_temporizadores(Estado *e, float dt) {
     e->tempo_fase += dt;
-    if (jogando(e) && e->fase != FASE_INTRO && e->fase != FASE_NOME) e->tempo_partida += dt;
+    if (jogando(e) && e->fase != FASE_INTRO) e->tempo_partida += dt;
     e->apagao_t = e->apagao_t > 0.0f ? e->apagao_t - dt : 0.0f;
     e->falha_luz_t = e->falha_luz_t > 0.0f ? e->falha_luz_t - dt : 0.0f;
     e->alarme_t = e->alarme_t > 0.0f ? e->alarme_t - dt : 0.0f;
@@ -311,8 +315,8 @@ void jogo_atualiza(Estado *e, float dt) {
         atualiza_pausa(e);
         return;
     }
-    bool anda_livre = e->fase != FASE_MENU && e->fase != FASE_NOME && e->fase != FASE_FIM_BOM &&
-                      e->fase != FASE_FIM_RUIM && !(e->fase == FASE_INTRO && !e->intro.interfone);
+    bool anda_livre = e->fase != FASE_MENU && e->fase != FASE_FIM_BOM && e->fase != FASE_FIM_RUIM &&
+                      !(e->fase == FASE_INTRO && e->intro.etapa != INTRO_RADIO);
     if (e->in.voltar && anda_livre && e->jog.modo == MODO_ANDANDO) {
         e->pausado = true;
         e->menu.cursor = 0;
@@ -361,13 +365,14 @@ static void desenha_mundo_3d(const Estado *e) {
     circuito_desenha_3d(e);
     glifos_desenha(e);
     nivel_desenha_vidro(e);
-    if (regras_fase_eh_rodada(e->fase) || e->fase == FASE_RESPOSTA_FINAL) rodadas_desenha(e); // rachaduras no plano do vidro (3D)
+    if (regras_fase_eh_rodada(e->fase) || e->fase == FASE_RESPOSTA_FINAL)
+        rodadas_desenha(e); // rachaduras no plano do vidro (3D)
     EndMode3D();
 }
 
 void jogo_desenha_cena(const Estado *e) {
     ClearBackground(BLACK);
-    bool tela_preta = e->fase == FASE_INTRO && !e->intro.interfone;
+    bool tela_preta = e->fase == FASE_INTRO && e->intro.etapa != INTRO_RADIO;
     if (!tela_preta) desenha_mundo_3d(e);
     jogador_desenha(e);
     susto_desenha(e);
@@ -381,6 +386,6 @@ void jogo_desenha_interface(const Estado *e) {
         circuito_desenha(e);
     }
     sanidade_desenha(e);
-    tela_nome_desenha(e);
+    identidade_desenha(e);
     ui_desenha(e);
 }

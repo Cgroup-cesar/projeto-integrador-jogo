@@ -4,6 +4,7 @@
 #include "criatura.h"
 #include "susto.h"
 #include "audio_sintese.h"
+#include "trilhas.h"
 #include "dialogo.h"
 #include "ui.h"
 #include <math.h>
@@ -130,7 +131,7 @@ static void cria_rachaduras(Estado *e) {
             .angulo = GetRandomValue(0, 628) / 100.0f,
             .comprimento = 0.0f,
             .comprimento_alvo = GetRandomValue(40, 100) / 100.0f, // metros
-            .dano = 1.0f / quantas, // a soma do dano de um erro é 1 vida
+            .dano = 1.0f / quantas,                               // a soma do dano de um erro é 1 vida
             .galhos = GetRandomValue(2, 4),
             .semente = (unsigned)GetRandomValue(1, 1 << 20),
         };
@@ -222,7 +223,7 @@ static void atualiza_escolha_conectivo(Estado *e) {
     r->cursor = 0;
     if (++r->coluna < d->n_colunas) return;
     r->etapa = ETAPA_TRADUZIR;
-    audio_toca(e, SOM_VOZ_PRECURSOR, 1.0f, 1.0f);
+    if (!trilhas_tem(e, TRILHA_VOZ_PRECURSOR)) audio_toca(e, SOM_VOZ_PRECURSOR, 1.0f, 1.0f);
 }
 
 static void atualiza_traducao(Estado *e) {

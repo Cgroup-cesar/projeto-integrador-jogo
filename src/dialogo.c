@@ -1,59 +1,64 @@
 // dialogo.c — todos os textos do jogo. Para mudar uma fala, mude só aqui.
-// Duração das legendas em segundos (o jogador pode ler com calma; o interfone não tem pressa).
+// Duração das legendas em segundos (o jogador pode ler com calma; o rádio não tem pressa).
 #include "dialogo.h"
 
 // ================================================================== falas (legendas)
-// Uma fala com %s recebe o nome de quem joga na hora de desenhar (só a 2ª do interfone da intro).
+// Marcadores: {NOME}, {PROF}, {prof} e {masculino|feminino} (veja dialogo_personaliza).
+// O General Varela verdadeiro chama sempre pelo título e pelo nome: "{PROF} {NOME}" (Professora Inês).
+// Quando o rádio chama SÓ pelo nome ("{NOME}", sem o título), é o Precursor imitando a voz dele: é a pista do
+// plot twist (o bilhete do Arquivo avisa). Não use {NOME} sozinho nas falas do Varela verdadeiro.
 #define V FALANTE_VARELA
-#define E FALANTE_ELIAS
+#define J FALANTE_JOGADOR
 
 static const Legenda INTRO_INTERFONE[] = {
-    {"Boa noite, professor. Coronel Varela. Não encoste no vidro.", 4.0f, V},
-    {"%s, você opera o analisador esta noite. Registre tudo o que o professor traduzir.", 5.0f, V},
-    {"Nós o chamamos de Precursor. Está conosco desde 77. Não fala como nós. Não pensa como nós.", 5.5f, V},
-    {"A Dra. Sampaio concluiu que a língua dele não tem palavras. Só estrutura. Verdadeiro. Falso.", 5.5f, V},
-    {"Os interruptores à sua frente controlam as luzes da cela. Ele responde ao que vê. Descubra o que ele "
-     "diz.",
-     6.0f, V},
+    // a carta de boas-vindas, pelo rádio
+    {"Olá, {PROF} {NOME}. General Varela. Bem-vind{o|a} ao Programa Precursor.", 5.0f, V},
+    {"Seu trabalho: entender o que ele diz. E nada de política, religião... muito menos futebol.", 5.5f, V},
+    {"Ele aprende rápido. Rápido demais. Vai tentar te enganar.", 4.0f, V},
+    {"Uma regra só: nunca deixe as luzes se apagarem. Estou no rádio. Qualquer coisa, grite.", 5.5f, V},
 };
 static const Legenda APOS_R1[] = {
-    {"'Nós não somos perigo.' ...Anotado.", 3.5f, V},
+    {"'Nós não somos perigo.' ...É o que todos dizem, {PROF} {NOME}.", 4.0f, V},
 };
 static const Legenda INICIO_S1[] = {
-    {"Queda de energia. O gerador auxiliar fica no fim do corredor. Sem energia, a contenção...", 5.0f, V},
-    {"Vá. Agora. E não corra se não precisar. Ele ouve.", 4.0f, V},
+    {"As luzes caíram, {PROF} {NOME}. O gerador fica no fim do corredor.", 4.0f, V},
+    {"Vá. E não corra: ele ouve.", 3.0f, V},
 };
 static const Legenda FIM_S1[] = {
-    {"Energia restabelecida. O campo puxou ele de volta. Volte para a sala.", 4.5f, V},
+    {"Luzes de volta, {PROF} {NOME}. Ele está na cela, como se nunca tivesse saído. Volte.", 5.0f, V},
 };
 static const Legenda APOS_R2[] = {
-    {"'Você e nós falamos.' Ele está aprendendo rápido demais, professor.", 4.5f, V},
+    {"'Você e nós falamos'... {PROF} {NOME}, ele está aprendendo a nossa língua.", 5.0f, V},
 };
 static const Legenda INICIO_S2[] = {
-    {"De novo. Agora o painel do Arquivo. É a sala da Dra. Sampaio... não mexa nas coisas dela.", 5.5f, V},
+    {"De novo, {PROF} {NOME}. O painel da contenção fica no Arquivo.", 4.0f, V},
+    {"Eu vou descer até a cela. Se eu não voltar...", 3.5f, V},
 };
 static const Legenda FIM_S2[] = {
-    {"Contenção estável. Por enquanto.", 3.5f, V},
+    // já é o Precursor imitando o Varela: só o nome, sem o título (a pista)
+    {"Contenção estável, {NOME}. Pode voltar.", 3.5f, V},
 };
 static const Legenda APOS_R3[] = {
-    {"Professor... desligue o transmissor. Isso é uma ordem!", 4.5f, V},
+    // o Precursor imitando o Varela: só o nome, sem o título (a pista)
+    {"{NOME}, ele quer conversar. Transmita: se você falar, a porta abre.", 4.5f, V},
+    {"Confie em mim.", 2.5f, V},
 };
 static const Legenda FIM_BOM_FALAS[] = {
-    {"...Ele parou. Professor, o que o senhor disse a ele?", 4.0f, V},
-    {"Nada que pudesse ser verdade.", 3.5f, E},
+    {"...{PROF} {NOME}? É o Varela. O de verdade. O que você disse a ele?", 5.0f, V},
+    {"Nada que pudesse ser verdade.", 3.5f, J},
 };
 static const Legenda PORTA_TRANCADA[] = {
-    {"A porta fica trancada enquanto o senhor trabalha, professor. Volte ao console.", 4.0f, V},
+    {"A porta fica trancada enquanto você trabalha, {PROF} {NOME}. Volte ao console.", 4.5f, V},
 };
 static const Legenda RODADA_RECOMECA[] = {
-    {"Vidro substituído. Recomece a leitura, professor. Com mais cuidado.", 4.0f, V},
+    {"Vidro substituído. Recomece a leitura, {PROF} {NOME}. Com mais cuidado.", 4.5f, V},
 };
 static const Legenda PEGO_FALAS[] = {
-    {"...Professor? Professor! Responda! — Ele voltou ao começo do corredor. Tente de novo.", 4.5f, V},
+    {"...{PROF} {NOME}? Responda! — Ele voltou ao começo do corredor. Tente de novo.", 4.5f, V},
 };
 
 #undef V
-#undef E
+#undef J
 
 typedef struct {
     const Legenda *falas;
@@ -79,10 +84,9 @@ const Legenda *dialogo_falas(BlocoFalas bloco, int *n) {
 
 // ================================================================== intro datilografada
 static const char *const INTRO[INTRO_LINHAS] = {
-    "SERRA DO RONCADOR, MATO GROSSO — 14 DE MARÇO DE 1985.",
-    "Amanhã o país terá seu primeiro presidente civil em 21 anos.",
-    "Esta noite, o Serviço Nacional de Informações precisa de um tradutor.",
-    "Prof. Elias Moura. Lógica Matemática, USP. Convocado às 03h12. Sem direito a recusa.",
+    "CHÃ DE ALEGRIA, PERNAMBUCO — AGOSTO DE 1985.",
+    "Há dois meses, algo desceu da nave que paira sobre a cidade.",
+    "Você é {o|a} {PROF} {NOME}, de linguística da UFPE. Nunca traduziu nada vivo.",
 };
 
 const char *dialogo_intro(int linha) {
@@ -100,13 +104,24 @@ static const char *const TEXTOS[TXT_TOTAL] = {
     [TXT_PAUSA_CONTINUAR] = "CONTINUAR",
     [TXT_PAUSA_MENU] = "VOLTAR AO MENU",
     [TXT_INTRO_PULAR] = "ENTER pula",
+    [TXT_ID_PERGUNTA_GENERO] = "Professor ou professora?",
+    [TXT_ID_PROFESSOR] = "PROFESSOR",
+    [TXT_ID_PROFESSORA] = "PROFESSORA",
+    [TXT_ID_DICA_GENERO] = "← → escolhem · ENTER confirma",
+    [TXT_ID_PERGUNTA_NOME] = "Qual é o seu nome, {prof}?",
+    [TXT_ID_DICA_NOME] = "Até 16 letras · ENTER confirma · sem nome, fica \"%s\"",
+    [TXT_NOME_PADRAO] = "Moura",
+    [TXT_PROF_MAIUSCULA_M] = "Professor",
+    [TXT_PROF_MAIUSCULA_F] = "Professora",
+    [TXT_PROF_MINUSCULA_M] = "professor",
+    [TXT_PROF_MINUSCULA_F] = "professora",
     [TXT_HUD_VIDRO] = "VIDRO",
     [TXT_HUD_PLACAR] = "PLACAR",
     [TXT_HUD_FOLEGO] = "FÔLEGO",
     [TXT_HUD_SANIDADE] = "SANIDADE",
     [TXT_MIRA_CONSOLE] = "E — usar o console",
     [TXT_MIRA_PAINEL] = "E — abrir o painel de circuito",
-    [TXT_MIRA_DIARIO] = "E — ler o diário",
+    [TXT_MIRA_DIARIO] = "E — ler o bilhete",
     [TXT_MIRA_ARMARIO] = "E — esconder-se no armário",
     [TXT_MIRA_PORTA] = "E — porta da sala de observação",
     [TXT_ARMARIO_SAIR] = "E — sair do armário",
@@ -125,7 +140,7 @@ static const char *const TEXTOS[TXT_TOTAL] = {
     [TXT_TERMINAL_CERTO] = "CORRETO.",
     [TXT_TERMINAL_RESPONDENDO] = "...ELE RESPONDE...",
     [TXT_TERMINAL_SAIR] = "Esc — sair do terminal",
-    [TXT_TERMINAL_ANOTACAO] = "ANOTAÇÃO RECUPERADA: \"uma frase que nunca possa ser verdadeira\"",
+    [TXT_TERMINAL_ANOTACAO] = "ANOTAÇÃO RECUPERADA: \"uma frase que nunca possa ser verdade\"",
     [TXT_TERMINAL_RESPONDA] = "RESPONDA.",
     [TXT_TERMINAL_SINTAXE_INVALIDA] = "SINTAXE INVÁLIDA",
     [TXT_TERMINAL_TRANSMITINDO] = "TRANSMITINDO...",
@@ -146,8 +161,8 @@ static const char *const TEXTOS[TXT_TOTAL] = {
     [TXT_TERMINAL_COLUNA] = "frase %d",
     [TXT_TERMINAL_COLUNA_UNICA] = "frase",
     [TXT_PAINEL_CHAVE] = "[%d] %s  %s",
-    [TXT_FALANTE_VARELA] = "CEL. VARELA (interfone)",
-    [TXT_FALANTE_ELIAS] = "PROF. ELIAS",
+    [TXT_FALANTE_VARELA] = "GEN. VARELA (rádio)",
+    [TXT_FALANTE_JOGADOR] = "{PROF} {NOME}",
     [TXT_PAINEL1_TITULO] = "PAINEL 1 — GERADOR AUXILIAR",
     [TXT_PAINEL2_TITULO] = "PAINEL 2 — CONTENÇÃO (ARQUIVO)",
     [TXT_PAINEL_INSTRUCOES1] = "[1] [2] [3] ligam e desligam as chaves A, B, C · Esc fecha",
@@ -157,16 +172,29 @@ static const char *const TEXTOS[TXT_TOTAL] = {
     [TXT_PAINEL_SAIDA] = "SAÍDA",
     [TXT_PAINEL_CHAVE_LIGADA] = "LIGADA",
     [TXT_PAINEL_CHAVE_DESLIGADA] = "DESLIGADA",
-    [TXT_DIARIO] =
-        "02/03/85 — Cada frase que traduzimos, ele repete melhor. Não é diálogo: é aula, e nós somos os "
-        "professores. Ele só consegue agir sobre aquilo que PODE ser verdade. Se um dia for preciso calá-lo, "
-        "dê a ele uma frase que nunca possa ser verdadeira. P E NÃO P. O Varela não pode saber disso. — I.S.",
+    [TXT_DIARIO] = // o bilhete do Varela verdadeiro, no Arquivo: a pista do final bom
+    "Ele aprende as nossas vozes. Eu nunca te chamo só pelo nome: se o rádio te chamar assim, não sou eu. "
+    "Ele só age sobre o que PODE ser verdade. Dê a ele uma frase que nunca possa ser. "
+    "Algo como: você fala e você não fala (P ∧ ¬P). — V.",
     [TXT_DIARIO_FECHAR] = "E ou Esc — fechar",
     [TXT_FIM_RUIM_ACEITA] = "TRANSMISSÃO ACEITA.",
-    [TXT_FIM_RUIM_OBRIGADO] = "OBRIGADO, PROFESSOR.",
-    [TXT_FIM_RUIM_TELA] = "FIM — 1/2. A contenção do Posto 7 nunca foi restabelecida.",
+    [TXT_FIM_RUIM_OBRIGADO] = "OBRIGADO, {NOME}.", // só o nome, sem o título: como o rádio falso
+    [TXT_FIM_RUIM_TELA] = "FINAL 2 DE 3 — A PORTA. Você abriu a porta para ele. Você nunca saiu do bloco. "
+                          "Em agosto de 1985, todas as TVs de Pernambuco exibiram o mesmo símbolo.",
     [TXT_FIM_BOM_TELA] =
-        "FIM — 2/2. O Posto 7 foi lacrado em 15 de março de 1985. Oficialmente, ele nunca existiu.",
+        "FINAL 1 DE 3 — O SILÊNCIO. Você calou o Precursor e saiu viv{o|a} de Chã de Alegria. "
+        "Às 22:00, a nave foi embora. Oficialmente, nada desceu dela.",
+    // A explicação de cada final, logo abaixo do texto: %s é a frase transmitida, em notação lógica (P, Q).
+    [TXT_FIM_BOM_PORQUE] =
+        "POR QUE VOCÊ VENCEU: a sua frase (%s) é uma contradição. Ela é falsa em todas as linhas "
+        "da tabela-verdade. O Precursor só age sobre o que PODE ser verdade: sem nenhuma brecha, "
+        "ele travou.",
+    [TXT_FIM_RUIM_PORQUE] = "POR QUE VOCÊ PERDEU: a sua frase (%s) pode ser verdadeira em pelo menos uma "
+                            "linha da tabela-verdade, e essa "
+                            "brecha bastou para ele agir. O rádio que te chamava só pelo nome não era o "
+                            "Varela. Da próxima vez, leia o "
+                            "bilhete no Arquivo e transmita uma frase que nunca possa ser verdade.",
+    [TXT_FIM_VER_PLACAR] = "ENTER — ver o placar  (%d)",
     [TXT_FIM_VITORIA] = "VITÓRIA",
     [TXT_FIM_DERROTA] = "DERROTA",
     [TXT_FIM_PLACAR] = "PLACAR TOTAL",
@@ -174,15 +202,10 @@ static const char *const TEXTOS[TXT_TOTAL] = {
     [TXT_FIM_ERROS] = "ERROS",
     [TXT_FIM_ENTER] = "Pressione ENTER",
     [TXT_FIM_RODAPE] = "Projeto Integrador PIF · nome provisório",
-    [TXT_FIM_OPERADOR] = "OPERADOR(A): %s",
-    [TXT_TERMINAL_OPERADOR] = "OPERADOR(A): %s",
-    [TXT_NOME_TITULO] = "POSTO 7 — REGISTRO DE ACESSO",
-    [TXT_NOME_PERGUNTA] = "Identifique-se, operador(a):",
-    [TXT_NOME_DICA] = "ENTER confirma · Backspace apaga · Esc volta ao menu",
-    [TXT_NOME_AVISO] = "Seu nome fica só nesta partida: nada é gravado e ele é apagado ao voltar ao menu.",
-    [TXT_NOME_CONTADOR] = "%d/%d",
-    [TXT_NOME_PADRAO] = "VISITANTE",
-    [TXT_PLACA_POSTO] = "POSTO 7", // placas pintadas em estêncil nas paredes (cenario.c)
+    [TXT_FIM_JOGADOR] = "{PROF} {NOME}",
+    [TXT_TERMINAL_OPERADOR] = "{OPERADOR|OPERADORA}: {PROF} {NOME}", // no alto do analisador
+    [TXT_ID_AVISO_NOME] = "Seu nome fica só nesta partida: nada é gravado e ele é apagado ao voltar ao menu.",
+    [TXT_PLACA_POSTO] = "BLOCO 85", // placas pintadas em estêncil nas paredes (cenario.c)
     [TXT_PLACA_RESTRITA] = "ÁREA RESTRITA",
     [TXT_PLACA_ARQUIVO] = "ARQUIVO",
     // Filtro VHS (F1 alterna): "%d/%d · nome" aparece no canto por alguns segundos.
@@ -200,10 +223,20 @@ const char *dialogo_texto(TextoId id) {
     return TEXTOS[id];
 }
 
+void dialogo_personaliza(const Identidade *id, const char *modelo, char *saida, size_t tamanho) {
+    const Marcador marcadores[] = {
+        {"NOME", id->nome},
+        {"PROF", dialogo_texto(id->feminino ? TXT_PROF_MAIUSCULA_F : TXT_PROF_MAIUSCULA_M)},
+        {"prof", dialogo_texto(id->feminino ? TXT_PROF_MINUSCULA_F : TXT_PROF_MINUSCULA_M)},
+    };
+    regras_monta_texto(modelo, marcadores, (int)(sizeof(marcadores) / sizeof(marcadores[0])), id->feminino,
+                       saida, tamanho);
+}
+
 const char *dialogo_nome_fase(int fase) {
     static const char *const nomes[FASE_TOTAL] = {
-        "",        "Nome",     "Intro",          "Rodada 1", "Saída 1", "Rodada 2",
-        "Saída 2", "Rodada 3", "Resposta final", "Final",    "Final",
+        "",        "Intro",    "Rodada 1",       "Saída 1", "Rodada 2",
+        "Saída 2", "Rodada 3", "Resposta final", "Final",   "Final",
     };
     return (fase >= 0 && fase < FASE_TOTAL) ? nomes[fase] : "";
 }

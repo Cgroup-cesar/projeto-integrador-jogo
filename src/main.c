@@ -14,6 +14,7 @@
 #include "posfx.h"
 #include "vhs.h"
 #include "audio_sintese.h"
+#include "trilhas.h"
 #include "ui.h"
 #include "texturas.h"
 #include "dialogo.h"
@@ -59,12 +60,14 @@ static void le_entrada(Entrada *in) {
     in->f9 = IsKeyPressed(KEY_F9);
     in->f12 = IsKeyPressed(KEY_F12);
 #endif
-    // Tela de nome: esvazia a fila de caracteres do quadro (quem filtra o que vale é regras_nome_acrescenta).
-    for (int c = GetCharPressed(); c != 0; c = GetCharPressed())
-        if (in->n_digitados < ENTRADA_MAX_CARACTERES) in->digitados[in->n_digitados++] = c;
+    in->alguma = GetKeyPressed() != 0 || in->mover.x != 0 || in->mover.y != 0 || in->mouse.x != 0 ||
+                 in->mouse.y != 0 || IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
+    // Letras digitadas (o campo do nome): a raylib guarda numa fila; lemos até ela esvaziar.
+    // GetCharPressed já entrega o Unicode com acento ("ã", "ç"), que IsKeyPressed não sabe dar.
+    for (int c = GetCharPressed(); c > 0; c = GetCharPressed())
+        if (in->n_letras < MAX_LETRAS_QUADRO) in->letras[in->n_letras++] = c;
     in->apagar = IsKeyPressed(KEY_BACKSPACE) || IsKeyPressedRepeat(KEY_BACKSPACE);
-    in->alguma = GetKeyPressed() != 0 || in->n_digitados > 0 || in->mover.x != 0 || in->mover.y != 0 ||
-                 in->mouse.x != 0 || in->mouse.y != 0 || IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
+    in->alguma = in->alguma || in->n_letras > 0;
 }
 
 // ================================================================== piloto automático (--smoke)
@@ -100,21 +103,21 @@ static void piloto_comeca_partida(void) {
     piloto.roteiro_i = 0;
 }
 
-// O nome só existe durante a partida: no menu o buffer inteiro está zerado; na intro, com o padrão (o piloto
-// não digita nada). Não imprime o nome.
+// O nome só existe durante a partida: no menu o buffer inteiro está zerado; na R1, com o padrão (o piloto
+// não digita nada nas perguntas da intro). Não imprime o nome.
 static void piloto_confere_nome(Fase para) {
     if (para == FASE_MENU) {
-        for (size_t i = 0; i < sizeof(estado.nome_jogador); i++)
-            if (estado.nome_jogador[i] != '\0') {
+        for (size_t i = 0; i < sizeof(estado.ident.nome); i++) // padrão FOLD: algum byte sobrou?
+            if (estado.ident.nome[i] != '\0') {
                 piloto_falha("o nome não foi apagado ao voltar ao menu");
                 return;
             }
         printf("SMOKE  nome ok: buffer zerado no menu\n");
-    } else if (para == FASE_INTRO) {
-        if (strcmp(estado.nome_jogador, dialogo_texto(TXT_NOME_PADRAO)) != 0)
+    } else if (para == FASE_R1) {
+        if (strcmp(estado.ident.nome, dialogo_texto(TXT_NOME_PADRAO)) != 0)
             piloto_falha("a partida começou sem o nome padrão");
         else
-            printf("SMOKE  nome ok: tela de nome pulada, nome padrão em uso\n");
+            printf("SMOKE  nome ok: perguntas puladas, nome padrão em uso\n");
     }
 }
 
@@ -273,7 +276,9 @@ static void piloto_age(Estado *e, Entrada *in) {
         break;
     case FASE_FIM_RUIM:
     case FASE_FIM_BOM:
-        in->confirmar = e->fim.tela_final && e->fim.tempo_tela > 0.5f;
+        // lê o texto do final por meio segundo e segue ao placar; no placar, meio segundo e volta ao menu
+        in->confirmar = (e->fim.tela_final && e->fim.tempo_tela > 0.5f) ||
+                        (compositor_fim_lendo(e) && e->fim.leitura > 0.5f);
         break;
     default:
         break;
@@ -312,6 +317,7 @@ static void atualiza(Estado *e, float dt) {
     vhs_atualiza(e, dt);
     jogo_atualiza(e, dt);
     audio_atualiza(e, dt);
+    trilhas_atualiza(e, dt);
 }
 
 // [REQ:RNF3] desenhar recebe const Estado *: não muda nada; o loop é entrada → atualiza → desenha
@@ -448,6 +454,7 @@ static void carrega_recursos(void) {
     ui_carrega_fonte(&estado.rec);
     texturas_carrega(&estado.rec); // depois da fonte: as placas de estêncil usam a fonte
     audio_inicia(&estado.rec);
+    trilhas_carrega(&estado.rec);
     criatura_carrega_modelo(&estado.rec);
     susto_carrega_boca(&estado.rec);
     lanterna_carrega_modelo(&estado.rec);
@@ -458,6 +465,7 @@ static void descarrega_recursos(void) {
     lanterna_descarrega_modelo(&estado.rec);
     susto_descarrega_boca(&estado.rec);
     criatura_descarrega_modelo(&estado.rec);
+    trilhas_descarrega(&estado.rec);
     audio_finaliza(&estado.rec);
     texturas_descarrega(&estado.rec);
     ui_descarrega_fonte(&estado.rec);
@@ -496,7 +504,7 @@ int main(int argc, char **argv) {
         quadro(&estado);
         if (estado.modo_smoke && piloto.codigo_saida >= 0) break;
     }
-    memset(estado.nome_jogador, 0, sizeof(estado.nome_jogador)); // o jogo encerrou: o nome some junto
+    memset(estado.ident.nome, 0, sizeof(estado.ident.nome)); // o jogo encerrou: o nome some junto
     descarrega_recursos();
     if (!estado.modo_smoke || piloto.codigo_saida == 0) return 0;
     if (piloto.codigo_saida < 0)

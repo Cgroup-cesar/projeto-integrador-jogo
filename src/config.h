@@ -76,16 +76,12 @@
     1 // F1 preset do VHS · F2 pular fase · F3 estado da criatura · F5 reiniciar · F9 resposta · F12 captura
 #define FEIRA_INATIVIDADE_S 90.0f // no modo feira (--feira), volta ao menu após esse tempo sem nenhuma tecla
 #define FIM_VOLTA_MENU_S    20.0f // a tela de fim volta sozinha ao menu
+#define FIM_RUIM_TEXTO_S    8.2f  // final ruim: quando o texto e o "por quê" aparecem (depois do susto)
+#define FIM_BOM_TEXTO_S     13.0f // final bom: quando o texto e o "por quê" aparecem (depois das falas)
+#define FIM_LEITURA_MAX_S   50.0f // o texto espera a leitura: ENTER ou, no máximo, isso, e vai ao placar
+#define IDENTIDADE_FEIRA_S  20.0f // no modo feira, "professor ou professora?" e o nome seguem sozinhos
 #define SMOKE_LIMITE_FASE_S                                                                                  \
     180.0f // no --smoke, uma fase que demora mais que isso (tempo simulado) é travamento
-
-// ---------------------------------------------------------------- nome do(a) jogador(a) (só em memória)
-// O limite é em letras (codepoints); o buffer é em bytes: em UTF-8 cada letra ocupa até 4 bytes, mais o '\0'.
-#define NOME_MAX_CHARS         16
-#define NOME_BYTES_POR_LETRA   4
-#define NOME_CAPACIDADE        (NOME_MAX_CHARS * NOME_BYTES_POR_LETRA + 1)
-#define NOME_CURSOR_PISCA_S    0.5f // meio período do cursor piscante
-#define ENTRADA_MAX_CARACTERES 16   // caracteres digitados guardados por quadro (fila do GetCharPressed)
 
 // ---------------------------------------------------------------- mundo
 #define TAMANHO_CELULA 2.0f // 1 célula do mapa = 2 m
@@ -166,16 +162,19 @@
 
 // ---------------------------------------------------------------- capacidades das coleções (sem malloc por
 // quadro)
-#define MAX_RUIDOS      32
-#define MAX_PARTICULAS  256
-#define MAX_RACHADURAS  24
-#define MAX_EVENTOS     96
-#define MAX_INTERATIVOS 24
-#define MAX_PAREDES     256
-#define MAX_LAMPADAS    24
-#define MAX_LEGENDAS    8
-#define MAX_NOS_LOGICA  64
-#define MAX_CAMINHO     128
+#define MAX_RUIDOS        32
+#define MAX_PARTICULAS    256
+#define MAX_RACHADURAS    24
+#define MAX_EVENTOS       96
+#define MAX_INTERATIVOS   24
+#define MAX_PAREDES       256
+#define MAX_LAMPADAS      24
+#define MAX_LEGENDAS      8
+#define MAX_LETRAS_QUADRO 8                         // letras digitadas guardadas por quadro (campo do nome)
+#define NOME_MAX_LETRAS   16                        // o nome do jogador tem até 16 letras...
+#define NOME_MAX_BYTES    (NOME_MAX_LETRAS * 2 + 1) // ...de até 2 bytes cada em UTF-8 (Latin-1), mais o '\0'
+#define MAX_NOS_LOGICA    64
+#define MAX_CAMINHO       128
 
 // ---------------------------------------------------------------- texturas do mapa (procedurais; override
 // opcional em assets/texturas/<material>.png). Geradas uma vez ao abrir o jogo, com semente fixa.
@@ -215,8 +214,20 @@
 // ---------------------------------------------------------------- lanterna (tecla F, sem bateria)
 #define LANTERNA_ABERTURA_GRAUS 22.0f // meia-abertura do cone
 #define LANTERNA_INTENSIDADE    3.1f
-#define LANTERNA_QUEDA 0.4f // perda de força com a distância (lâmpadas = 1): menor = alcança mais longe
-#define LANTERNA_COMPRIMENTO_M 0.24f // o modelo na mão é escalado para esse comprimento
+#define LANTERNA_QUEDA          0.4f // perda de força com a distância (lâmpadas = 1): menor = alcança mais longe
+#define LANTERNA_COMPRIMENTO_M  0.24f // o modelo na mão é escalado para esse comprimento
+
+// ---------------------------------------------------------------- trilhas (sons longos de assets/audio)
+#define CORACAO_LONGE_M    16.0f // o Precursor solto além disso: sem coração
+#define CORACAO_PERTO_M    6.0f  // aquém disso: coração rápido
+#define TRILHA_FADE_S      0.4f  // tempo de um volume ir de 0 a 1 (troca suave, sem corte seco)
+#define TRILHA_MENU_FADE_S 1.5f  // a trilha do menu some devagar quando a cena abre no laboratório
+#define VOL_TRILHA_MENU    1.0f
+#define VOL_VOZ_PRECURSOR  0.9f
+#define VOL_VOZ_RADIO      0.85f // a voz do Varela por baixo da legenda
+#define VOL_CORACAO        0.85f
+#define VOL_PASSO_ANDAR    0.55f
+#define VOL_PASSO_CORRER   0.8f
 
 // ---------------------------------------------------------------- paleta (só use onde a raylib já foi
 // incluída)
@@ -242,5 +253,5 @@
 #endif
 
 // ---------------------------------------------------------------- Armário
-#define ARMARIO_YAW_MAX   0.45f  // limite do olhar para os lados dentro do armário
-#define ARMARIO_PITCH_MAX 0.20f  // limite do olhar para cima/baixo dentro do armário
+#define ARMARIO_YAW_MAX   0.45f // limite do olhar para os lados dentro do armário
+#define ARMARIO_PITCH_MAX 0.20f // limite do olhar para cima/baixo dentro do armário
