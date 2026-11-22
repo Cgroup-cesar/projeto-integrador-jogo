@@ -109,7 +109,7 @@ stateDiagram-v2
 | `trilhas.c` | os sons longos gravados: trilha do menu, vozes, coração e passos (o volume vem de `regras_volumes_trilhas`) |
 | `posfx.c` | render target, luz e névoa, VHS |
 | `ui.c` | fonte com fallback, HUD, legendas, diário, pausa |
-| `menu.c` | a tela de início: título que falha de vez em quando (`regras_falha_texto`), gancho, opções em faixas, convite do 1º lugar e a tabela do ranking por cima |
+| `menu.c` | a tela de início como gravação de fita (▶ PLAY, ● REC, AGO 1985): título que pifa, gancho, frases subliminares, opções em faixas, convite do 1º lugar e a tabela do ranking por cima |
 | `tela_fim.c` | depois do final: desempenho (resultado, placar, lugar no ranking), avaliação em estrelas e a tabela do ranking |
 | `ranking.c` | só arquivo: lê e grava `ranking.txt` (temporário + troca) e anexa `avaliacoes.csv`; nada no `--smoke` |
 

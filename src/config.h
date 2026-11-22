@@ -7,6 +7,8 @@
 // Trocar o nome do jogo no futuro exige mudar só estas duas linhas.
 #define TITULO_JOGO       "PROJETO PRECURSOR"
 #define TITULO_PROVISORIO 1
+#define MENU_SUBLIMINARES                                                                                    \
+    1 // frases que piscam por ~0,1 s na tela de início (0 desliga; ex.: pedido da banca)
 
 // ---------------------------------------------------------------- janela e tempo
 #define LARGURA_JANELA 1280

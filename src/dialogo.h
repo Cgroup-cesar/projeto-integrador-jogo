@@ -179,6 +179,12 @@ typedef enum {
     TXT_PAINEL_OBJETIVO2,
     TXT_MENU_RANKING, // ranking e avaliação
     TXT_MENU_GANCHO,
+    TXT_MENU_DATA_FITA,
+    TXT_SUBLIMINAR_1, // as frases que piscam por um instante na tela de início
+    TXT_SUBLIMINAR_2,
+    TXT_SUBLIMINAR_3,
+    TXT_SUBLIMINAR_4,
+    TXT_SUBLIMINAR_5,
     TXT_MENU_LIDER,
     TXT_MENU_CTA,
     TXT_MENU_CTA_VAZIO,
