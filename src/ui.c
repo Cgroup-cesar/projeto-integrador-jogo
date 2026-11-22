@@ -518,8 +518,9 @@ void ui_desenha(const Estado *e) {
     if (e->fase == FASE_INTRO) desenha_intro(e);
     if (jogando && e->jumpscare_t <= 0.0f) desenha_hud(e);
     desenha_diario(e);
-    if (e->jumpscare_t <= 0.0f) desenha_legenda(e); // nada por cima do rosto no susto
-    tela_fim_desenha(e);                            // o desempenho, a avaliação e o ranking (tela_fim.c)
+    if (e->jumpscare_t <= 0.0f && e->resp.etapa != RESP_TUTORIAL)
+        desenha_legenda(e); // nem no susto, nem no tutorial do armário
+    tela_fim_desenha(e);    // o desempenho, a avaliação e o ranking (tela_fim.c)
     if (e->pausado) desenha_pausa(e);
     desenha_debug(e);
 }

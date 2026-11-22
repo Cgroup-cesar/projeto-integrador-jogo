@@ -318,18 +318,30 @@ void criatura_chega_mais_perto(Estado *e) {
     audio_toca(e, SOM_DISTORCAO, 0.6f, 0.5f); // ouviu alguma coisa: um rosnado grave
 }
 
-void criatura_desiste(Estado *e) {
-    Criatura *c = &e->cri;
+static int ponto_mais_longe(const Estado *e) {
     int longe = 0;
     float maior = -1.0f;
     for (int i = 0; i < N_PATRULHA; i++) { // padrão FOLD: o ponto de patrulha mais longe do jogador
         float d = Vector3Distance(nivel_centro_celula(PATRULHA[i][0], PATRULHA[i][1]), e->jog.pos);
         if (d > maior) maior = d, longe = i;
     }
+    return longe;
+}
+
+void criatura_desiste(Estado *e) {
+    Criatura *c = &e->cri;
     c->estado = CRIATURA_PATRULHA;
-    c->patrulha_i = longe;
+    c->patrulha_i = ponto_mais_longe(e);
     c->ve_jogador = false;
     c->tempo_replanejar = 99.0f; // replaneja já, rumo ao ponto longe
+}
+
+void criatura_vai_para_longe(Estado *e) {
+    Criatura *c = &e->cri;
+    int i = ponto_mais_longe(e);
+    c->pos = nivel_centro_celula(PATRULHA[i][0], PATRULHA[i][1]);
+    c->caminho_n = 0;
+    c->tempo_replanejar = 99.0f;
 }
 
 void criatura_captura(Estado *e) {

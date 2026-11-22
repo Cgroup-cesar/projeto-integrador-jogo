@@ -257,7 +257,7 @@ typedef enum {
     RESP_NADA,
     RESP_TUTORIAL, // 1ª vez na partida: o mundo para e a barrinha mostra como faz
     RESP_DESAFIO,  // o Precursor parado na porta; ESPAÇO na hora certa
-    RESP_ALIVIO    // acertou: ele vai embora e, no fim, a pessoa solta o ar
+    RESP_ALIVIO    // 3 acertos: ele se afasta; o E só volta quando ele está longe (aí a pessoa solta o ar)
 } EtapaRespiracao;
 
 typedef struct {
@@ -265,6 +265,9 @@ typedef struct {
     float t;             // tempo na etapa (move a linha vermelha)
     float zona;          // centro da faixa branca (0..1)
     int erros;           // nesta visita ao armário
+    int acertos;         // RESP_ACERTOS e ele desiste
+    float acerto_t;      // "SEGUROU!" depois de um acerto
+    float foi_t;         // "Ele foi embora..." (depois que ele está longe de verdade)
     bool tutorial_visto; // por partida (cada pessoa da feira vê uma vez)
     float demo_t;        // tutorial: quando a demonstração "acertou" (−1: ainda não)
     float demo_linha;    // onde a linha parou na demonstração

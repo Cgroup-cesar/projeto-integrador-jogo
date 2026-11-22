@@ -21,5 +21,6 @@ void criatura_captura(Estado *e);
 void criatura_na_porta_do_armario(Estado *e);
 void criatura_chega_mais_perto(Estado *e);
 void criatura_desiste(Estado *e);
+void criatura_vai_para_longe(Estado *e); // não conseguiu se afastar: aparece no ponto de patrulha mais longe
 
 #endif

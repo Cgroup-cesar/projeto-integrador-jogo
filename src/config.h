@@ -278,12 +278,15 @@
 // Folego no armario: expulso aos 12 s; saindo com 8 s ou mais escondido, ofega.
 // Segurar a respiração no armário: a linha vermelha vai e volta e a pessoa aperta ESPAÇO sobre a faixa
 // branca.
-#define RESP_PERIODO_S 1.8f  // tempo da linha atravessar a barra (na 1ª tentativa; cada erro acelera)
-#define RESP_ACELERA   0.78f // a cada erro, o período é multiplicado por isso (mais rápido)
-#define RESP_ZONA      0.16f // largura da faixa branca (fração da barra)
-#define RESP_PRAZO_S   3.6f  // quanto o Precursor fica parado na porta esperando um som
-#define RESP_CHANCES   3     // no 3º erro ele abre o armário (jumpscare)
-#define RESP_ALIVIO_S  1.6f  // "ele foi embora": tempo até soltar o ar
+#define RESP_PERIODO_S    1.8f  // tempo da linha atravessar a barra (na 1ª tentativa; cada erro acelera)
+#define RESP_ACELERA      0.78f // a cada erro, o período é multiplicado por isso (mais rápido)
+#define RESP_ZONA         0.16f // largura da faixa branca (fração da barra)
+#define RESP_PRAZO_S      3.6f  // quanto o Precursor fica parado na porta esperando um som
+#define RESP_CHANCES      3     // no 3º erro ele abre o armário (jumpscare)
+#define RESP_ACERTOS      3     // acertos para ele desistir e ir embora
+#define RESP_LONGE_M      7.0f  // "ele foi embora" só quando ele está pelo menos tão longe
+#define RESP_AFASTA_MAX_S 6.0f  // se ainda não se afastou (preso num canto), é levado ao ponto mais longe
+#define RESP_FOI_S        1.8f  // quanto o "Ele foi embora..." fica na tela (o E já funciona)
 
 // Zerou o folego correndo: so volta a correr com esta fracao da barra.
 #define FOLEGO_RETOMA_FRACAO 0.75f
