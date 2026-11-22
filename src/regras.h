@@ -152,16 +152,22 @@ bool regras_interativo_ativo(TipoInterativo tipo, int fase);
 
 // ------------------------------------------------------------------ sanidade (regras_sanidade.c)
 // Um quadro de sanidade (0..SANIDADE_MAX). Nos corredores (`fase_saida`), cai com a criatura a menos de
-// SANIDADE_RAIO (mais quanto mais perto, × `surgindo`, metade se `escondido`) e só volta a subir depois de
-// SANIDADE_ESPERA_REGEN s longe dela (`tempo_longe`). Nas outras fases de jogo, sobe sempre devagar.
+// SANIDADE_RAIO (de QUEDA_MIN na borda a QUEDA_MAX em SANIDADE_PERTO, × `surgindo`, metade se `escondido`) e
+// só volta a subir depois de SANIDADE_ESPERA_REGEN s longe dela (`tempo_longe`). Nas outras fases de jogo,
+// sobe sempre devagar.
 float regras_sanidade_passo(float s, float dist, float surgindo, bool escondido, float tempo_longe,
                             bool fase_saida, float dt);
 // Efeito de um evento de fase: partida nova → cheia; tarefa concluída → bônus; recomeço → piso.
 float regras_sanidade_bonus(float s, EventoFase ev);
 // Bônus dos conectivos decifrados neste quadro (`agora` − `antes`, se cresceu).
 float regras_sanidade_conectivos(float s, int antes, int agora);
-// Intensidade do grão (0..1): 0 com sanidade ≥ SANIDADE_GRAO_INICIO, 1 com sanidade 0, suave no meio.
+// Grão pela sanidade (0..1): 0 com sanidade ≥ SANIDADE_GRAO_INICIO, 1 com sanidade 0, suave no meio.
 float regras_sanidade_grao(float s);
+// Grão pela distância (0..1): 0 fora do raio; SANIDADE_GRAO_BORDA ao cruzá-lo; sobe em linha reta até 1 em
+// SANIDADE_PERTO.
+float regras_sanidade_proximidade(float dist);
+// As duas fontes juntas (0..1): 1 − (1 − a)(1 − b). Nunca passa de 1 e nunca é menor que a maior delas.
+float regras_sanidade_intensidade(float proximidade, float s);
 
 // ------------------------------------------------------------------ circuitos dos painéis
 typedef enum { PORTA_E, PORTA_OU, PORTA_XOU, PORTA_NE, PORTA_NAO, PORTA_TOTAL } TipoPorta;

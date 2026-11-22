@@ -33,23 +33,18 @@
     {0.06f, 0.8f, 0.10f, 0.45f, 2.0f, 1.5f, 0.50f, 0.15f, -0.60f, 0.06f, 0.02f, 0.50f, 1.00f}, /* câmera de vigilância */ \
 }
 // clang-format on
-#define VHS_UNIFORMES (VHS_PARAMETROS + 4) // + tempo, resolução, interferência e insanidade (grão)
-// Interferência: uma sombra escura e semitransparente passa pela tela quando a criatura chega perto (só nos
-// corredores, com o VHS ligado). Pensada para ser percebida, não para atrapalhar: aparece de uma vez a LONGE e cresce até PERTO.
-#define VHS_INTERFERENCIA_LONGE  10.0f // metros: a partir daqui já aparece
-#define VHS_INTERFERENCIA_PERTO  2.5f  // metros: no máximo
-#define VHS_INTERFERENCIA_INICIO 0.25f // 0..1: o nível ao cruzar LONGE (já dá para notar)
-#define VHS_INTERFERENCIA_MAX    0.6f  // 0..1: o teto (colado na criatura)
-#define VHS_INTERFERENCIA_VEL    3.0f  // quão rápido acompanha (1/s)
+#define VHS_UNIFORMES (VHS_PARAMETROS + 3) // + tempo, resolução e insanidade (grão)
 
-// ---------------------------------------------------------------- sanidade (granulado na tela)
-// Memória do medo: cai com a criatura perto (só nos corredores), volta devagar e volta muito ao concluir
-// tarefas. Não mata nem muda regras: só deixa a tela granulada (sentida, não lida; sem barra no HUD).
-// Diferente da interferência, que segue a distância NA HORA, o grão fica depois da fuga e some aos poucos.
+// ---------------------------------------------------------------- sanidade (barra no topo e grão na tela)
+// Cai com a criatura perto (só nos corredores), volta devagar enquanto se joga e volta muito ao concluir
+// tarefas. Não mata nem muda regras. A barra fica fixa no topo (SANIDADE e a porcentagem).
+// O grão tem duas fontes, combinadas com teto: a PROXIMIDADE (na hora: um pouco já a SANIDADE_RAIO, cresce
+// até SANIDADE_PERTO) e a SANIDADE baixa (memória: fica depois da fuga e some quando ela volta).
 #define SANIDADE_MAX             100.0f
-#define SANIDADE_RAIO            10.0f // metros: além daqui a criatura não abala (= VHS_INTERFERENCIA_LONGE)
-#define SANIDADE_PERTO           2.5f  // metros: a partir daqui a queda é a máxima
-#define SANIDADE_QUEDA_MAX       12.0f // pontos/s colado nela (× p², p = proximidade 0..1): 100 → 0 em ~8 s
+#define SANIDADE_RAIO            10.0f // metros: daqui para dentro a criatura abala (e o grão aparece)
+#define SANIDADE_PERTO           2.5f  // metros: daqui para dentro, queda e grão no máximo
+#define SANIDADE_QUEDA_MIN       1.5f  // pontos/s na borda do raio (já se vê a barra descer)
+#define SANIDADE_QUEDA_MAX       12.0f // pontos/s colado nela (MIN→MAX com p², p = proximidade 0..1)
 #define SANIDADE_FATOR_ARMARIO   0.5f  // escondido no armário a queda cai pela metade
 #define SANIDADE_REGEN           0.8f  // pontos/s enquanto joga: +50 em ~1 min
 #define SANIDADE_ESPERA_REGEN    3.0f  // s sem a criatura no raio antes de voltar a subir (corredores)
@@ -57,9 +52,14 @@
 #define SANIDADE_BONUS_SAIDA     40.0f // religou a energia e voltou à sala (EV_SAIDA_CONCLUIDA)
 #define SANIDADE_BONUS_CONECTIVO 10.0f // cada conectivo decifrado pela primeira vez
 #define SANIDADE_PISO_RECOMECO   60.0f // pego ou vidro rompido: recomeça com pelo menos isso (sem espiral)
-#define SANIDADE_GRAO_INICIO     75.0f // acima disso, nenhum grão
-#define SANIDADE_GRAO_MAX        0.16f // amplitude do grão (luminância) com sanidade 0: o teto jogável
-#define SANIDADE_GRAO_VEL        2.5f  // quão rápido o grão na tela acompanha a sanidade (1/s): sem saltos
+#define SANIDADE_GRAO_INICIO     85.0f // sanidade abaixo disso já deixa grão (a memória do susto)
+#define SANIDADE_GRAO_BORDA      0.35f // 0..1: intensidade do grão ao cruzar SANIDADE_RAIO (já se nota)
+#define SANIDADE_GRAO_MAX        0.30f // amplitude do grão na intensidade 1: o teto jogável (ver vhs.c)
+#define SANIDADE_GRAO_SOBE       4.0f  // quão rápido o grão cresce (1/s): acompanha a aproximação
+#define SANIDADE_GRAO_DESCE      1.2f  // quão rápido ele some (1/s): nunca some de repente
+#define SANIDADE_BARRA_SOBE      3.0f  // a barra enche suave com os bônus (1/s)
+#define SANIDADE_ECO_VEL         12.0f // pontos/s: o pedaço perdido (mais escuro) alcança a barra
+#define SANIDADE_ALERTA          30.0f // abaixo disso a barra fica vermelha e pulsa
 
 // ---------------------------------------------------------------- debug e modos
 #define TECLAS_DEBUG                                                                                         \

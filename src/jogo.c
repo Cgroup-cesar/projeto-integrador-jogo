@@ -93,7 +93,7 @@ static void entra_menu(Estado *e) {
     criatura_contem(e);
     jogador_teleporta(e, e->nivel.inicio, PI);
     e->menu.cursor = 0;
-    e->sanidade = SANIDADE_MAX;
+    e->sanidade = e->sanidade_barra = e->sanidade_eco = SANIDADE_MAX;
 }
 
 static void entra_resposta_final(Estado *e) {
@@ -380,6 +380,7 @@ void jogo_desenha_interface(const Estado *e) {
         compositor_desenha(e);
         circuito_desenha(e);
     }
+    sanidade_desenha(e);
     tela_nome_desenha(e);
     ui_desenha(e);
 }

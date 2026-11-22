@@ -7,12 +7,17 @@ static float limita(float s) {
     return Clamp(s, 0.0f, SANIDADE_MAX);
 }
 
-// [REQ:SANIDADE] cai com a criatura perto (p², metade no armário), volta devagar; bônus nas tarefas
+// 0 na borda do raio, 1 em SANIDADE_PERTO (e mais perto).
+static float perto_de(float dist) {
+    return Clamp((SANIDADE_RAIO - dist) / (SANIDADE_RAIO - SANIDADE_PERTO), 0.0f, 1.0f);
+}
+
+// [REQ:SANIDADE] cai com a criatura perto (já na borda do raio), volta devagar; bônus nas tarefas
 float regras_sanidade_passo(float s, float dist, float surgindo, bool escondido, float tempo_longe,
                             bool fase_saida, float dt) {
     if (fase_saida && dist < SANIDADE_RAIO) {
-        float p = Clamp((SANIDADE_RAIO - dist) / (SANIDADE_RAIO - SANIDADE_PERTO), 0.0f, 1.0f);
-        float queda = SANIDADE_QUEDA_MAX * p * p * Clamp(surgindo, 0.0f, 1.0f);
+        float p = perto_de(dist);
+        float queda = Lerp(SANIDADE_QUEDA_MIN, SANIDADE_QUEDA_MAX, p * p) * Clamp(surgindo, 0.0f, 1.0f);
         if (escondido) queda *= SANIDADE_FATOR_ARMARIO;
         return limita(s - queda * dt);
     }
@@ -45,4 +50,14 @@ float regras_sanidade_conectivos(float s, int antes, int agora) {
 float regras_sanidade_grao(float s) {
     float t = Clamp((SANIDADE_GRAO_INICIO - s) / SANIDADE_GRAO_INICIO, 0.0f, 1.0f);
     return t * t * (3.0f - 2.0f * t); // smoothstep(INICIO, 0, s)
+}
+
+float regras_sanidade_proximidade(float dist) {
+    if (dist >= SANIDADE_RAIO) return 0.0f;
+    return Lerp(SANIDADE_GRAO_BORDA, 1.0f, perto_de(dist));
+}
+
+float regras_sanidade_intensidade(float proximidade, float s) {
+    float a = Clamp(proximidade, 0.0f, 1.0f), b = regras_sanidade_grao(s);
+    return 1.0f - (1.0f - a) * (1.0f - b);
 }

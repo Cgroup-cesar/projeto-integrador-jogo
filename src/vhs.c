@@ -34,7 +34,7 @@ typedef char cada_preset_tem_um_nome[(sizeof(NOMES) / sizeof(NOMES[0]) == N_PRES
 static const char *const UNIFORMES[VHS_UNIFORMES] = {
     "tempo",      "resolucao",   "ruido",    "aberracao",     "scanlines", "vinheta",
     "wobble",     "sangramento", "tracking", "saturacao",     "tom",       "curvatura",
-    "cintilacao", "rolagem",     "brilho",   "interferencia", "insanidade"};
+    "cintilacao", "rolagem",     "brilho",   "insanidade"};
 
 #define VHS_ROTULO_S 2.5f
 
@@ -46,7 +46,7 @@ static const char *const UNIFORMES[VHS_UNIFORMES] = {
     "uniform float tempo; uniform vec2 resolucao;\n"                                                         \
     "uniform float ruido; uniform float aberracao; uniform float scanlines; uniform float vinheta;\n"        \
     "uniform float wobble; uniform float sangramento; uniform float tracking; uniform float saturacao;\n"    \
-    "uniform float tom; uniform float curvatura; uniform float cintilacao; uniform float interferencia;\n"   \
+    "uniform float tom; uniform float curvatura; uniform float cintilacao;\n"                                \
     "uniform float rolagem; uniform float brilho; uniform float insanidade;\n"                               \
     "float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }\n"                \
     "float luma(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }\n"
@@ -78,12 +78,11 @@ static const char *const UNIFORMES[VHS_UNIFORMES] = {
 // O corpo é o mesmo nas duas versões: AMOSTRA e SAIDA trocam texture/texture2D e finalColor/gl_FragColor.
 // As scanlines compensam o brilho médio que tiram (o escuro não fica mais escuro do que sem filtro).
 // rodape: a faixa de troca de cabeça (3% de baixo); rola: uma faixa fraca de ruído que sobe devagar.
-// Interferência (criatura perto): uma sombra escura e semitransparente que passa pela tela; quanto mais
-// perto, mais escura (até ~33%) e mais larga. Sem linhas claras, sem cobrir a criatura.
-// Insanidade (sanidade baixa): grão de luminância, um por pixel do render target (~1,7 px na tela), trocado
-// 30 vezes por segundo, e a vinheta um pouco mais fechada. O grão é quase todo multiplicativo (±3× a
-// amplitude, proporcional ao brilho) e só um quarto aditivo: somado no escuro ele apagava as silhuetas da
-// porta e da criatura (o preto subia e virava chiado). A amplitude já vem limitada por SANIDADE_GRAO_MAX.
+// Insanidade (criatura perto ou sanidade baixa; ver sanidade.c): grão de luminância, um por pixel do render
+// target (~1,7 px na tela), trocado 30 vezes por segundo, e a vinheta um pouco mais fechada. No escuro o grão
+// é deslocado para baixo (só os picos acendem): vira pontinhos sobre o preto em vez de levantar o preto
+// inteiro, que apagava as silhuetas. No claro ele também multiplica, para texturizar o que a lanterna mostra.
+// A amplitude já vem limitada por SANIDADE_GRAO_MAX.
 #define VHS_CORPO_GLSL                                                                                       \
     "void main() {\n"                                                                                        \
     "    vec2 uv = curva(fragTexCoord);\n"                                                                   \
@@ -94,14 +93,11 @@ static const char *const UNIFORMES[VHS_UNIFORMES] = {
     "    float rodape = tracking * smoothstep(0.97, 1.0, 1.0 - uv.y);\n"                                     \
     "    float altura_rola = abs(uv.y - fract(-tempo * 0.06));\n"                                            \
     "    float rola = rolagem * smoothstep(0.015, 0.0, altura_rola);\n"                                      \
-    "    float altura_sombra = abs(uv.y - fract(-tempo * 0.09));\n"                                          \
-    "    float largura_sombra = 0.02 + 0.04 * interferencia;\n"                                              \
-    "    float sombra = interferencia * smoothstep(largura_sombra, 0.0, altura_sombra);\n"                   \
     "    uv.x += janela * faixa * wobble / resolucao.x;\n"                                                   \
     "    float tremor = hash(vec2(linha, floor(tempo * 30.0))) - 0.5;\n"                                     \
-    "    float empurra = rodape * 14.0 + rola * 2.0 + sombra * 3.0;\n"                                       \
+    "    float empurra = rodape * 14.0 + rola * 2.0;\n"                                                      \
     "    uv.x += empurra * tremor / resolucao.x;\n"                                                          \
-    "    float px = (aberracao + 0.5 * interferencia) / resolucao.x;\n"                                      \
+    "    float px = aberracao / resolucao.x;\n"                                                              \
     "    vec3 c = vec3(AMOSTRA(texture0, uv + vec2(px, 0.0)).r, AMOSTRA(texture0, uv).g,\n"                  \
     "                  AMOSTRA(texture0, uv - vec2(px, 0.0)).b);\n"                                          \
     "    c = sangra(c, uv);\n"                                                                               \
@@ -110,13 +106,13 @@ static const char *const UNIFORMES[VHS_UNIFORMES] = {
     "    c += n * (ruido * (0.3 + 0.7 * luma(c)) + rodape * 0.6 + rola * 0.12);\n"                           \
     "    float quadro = mod(floor(tempo * 30.0), 97.0);\n"                                                   \
     "    float g = hash(floor(uv * resolucao) + vec2(quadro * 13.0, quadro * 7.0)) - 0.5;\n"                 \
-    "    c = c * (1.0 + 3.0 * g * insanidade) + 0.25 * g * insanidade;\n"                                    \
+    "    float lc = luma(c), a = insanidade * (0.45 + 0.55 * lc);\n"                                         \
+    "    c = (c + vec3(g * a - 0.1 * a * (1.0 - lc))) * (1.0 + 1.2 * g * insanidade);\n"                     \
     "    float listra = 0.5 + 0.5 * sin(uv.y * resolucao.y * 3.14159);\n"                                    \
     "    c *= (1.0 + scanlines * 0.5) * (1.0 - scanlines * listra);\n"                                       \
     "    vec2 d = uv - 0.5;\n"                                                                               \
-    "    c *= 1.0 - (vinheta + 0.9 * insanidade) * dot(d, d) * 2.0;\n"                                       \
+    "    c *= 1.0 - (vinheta + 0.6 * insanidade) * dot(d, d) * 2.0;\n"                                       \
     "    c *= brilho * (1.0 - cintilacao * hash(vec2(floor(tempo * 20.0), 3.0)));\n"                         \
-    "    c *= 1.0 - 0.55 * sombra;\n"                                                                        \
     "    SAIDA = vec4(c * fora.x * fora.y, 1.0) * colDiffuse * fragColor;\n"                                 \
     "}\n"
 
@@ -166,21 +162,7 @@ void vhs_escolhe(Estado *e, int preset) {
     e->vhs_rotulo_t = VHS_ROTULO_S;
 }
 
-// Alvo da interferência (só nos corredores): 0 além de VHS_INTERFERENCIA_LONGE; ao cruzar essa distância já
-// aparece (VHS_INTERFERENCIA_INICIO) e cresce em linha reta até VHS_INTERFERENCIA_MAX em
-// VHS_INTERFERENCIA_PERTO.
-static float interferencia_alvo(const Estado *e) {
-    if (!e->cri.ativo || !regras_fase_eh_saida(e->fase)) return 0.0f;
-    float d = Vector3Distance(e->cri.pos, e->jog.pos);
-    if (d > VHS_INTERFERENCIA_LONGE) return 0.0f;
-    float perto = (VHS_INTERFERENCIA_LONGE - d) / (VHS_INTERFERENCIA_LONGE - VHS_INTERFERENCIA_PERTO);
-    float nivel = Lerp(VHS_INTERFERENCIA_INICIO, VHS_INTERFERENCIA_MAX, Clamp(perto, 0.0f, 1.0f));
-    return nivel * e->cri.surgindo;
-}
-
 void vhs_atualiza(Estado *e, float dt) {
-    float alvo = interferencia_alvo(e);
-    e->vhs_interferencia += (alvo - e->vhs_interferencia) * fminf(1.0f, dt * VHS_INTERFERENCIA_VEL);
     e->vhs_rotulo_t = e->vhs_rotulo_t > dt ? e->vhs_rotulo_t - dt : 0.0f;
 #if TECLAS_DEBUG
     if (e->in.f1 && !e->modo_feira) vhs_escolhe(e, e->vhs_preset + 1);
@@ -189,7 +171,7 @@ void vhs_atualiza(Estado *e, float dt) {
 
 // ------------------------------------------------------------------ desenho
 // Com o preset 0 ("desligado") o shader ainda roda quando há grão de sanidade: os parâmetros do preset 0 são
-// neutros, então só o grão aparece (a interferência continua sendo só do VHS ligado).
+// neutros, então só o grão aparece.
 bool vhs_comeca(const Estado *e) {
     const Recursos *r = &e->rec;
     bool so_grao = e->vhs_preset == 0 && e->sanidade_grao > 0.002f;
@@ -202,8 +184,6 @@ bool vhs_comeca(const Estado *e) {
     const float *p = PRESETS[e->vhs_preset];
     for (int i = 0; i < VHS_PARAMETROS; i++) // padrão MAP: coluna do preset → uniforme do shader
         SetShaderValue(r->vhs, r->loc_vhs[i + 2], &p[i], SHADER_UNIFORM_FLOAT);
-    float interferencia = so_grao ? 0.0f : e->vhs_interferencia;
-    SetShaderValue(r->vhs, r->loc_vhs[VHS_UNIFORMES - 2], &interferencia, SHADER_UNIFORM_FLOAT);
     SetShaderValue(r->vhs, r->loc_vhs[VHS_UNIFORMES - 1], &e->sanidade_grao, SHADER_UNIFORM_FLOAT);
     BeginShaderMode(r->vhs);
     return true;

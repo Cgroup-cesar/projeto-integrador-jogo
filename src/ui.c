@@ -400,7 +400,7 @@ static void desenha_mira(const Estado *e) {
 static void desenha_hud(const Estado *e) {
     float s = ui_escala();
     if (e->jog.modo == MODO_ANDANDO || e->jog.modo == MODO_ARMARIO)
-        ui_texto(e, dialogo_texto(objetivo(e)), (Vector2){24 * s, 20 * s}, 18 * s, Fade(COR_FOSFORO, 0.7f));
+        ui_texto(e, dialogo_texto(objetivo(e)), (Vector2){24 * s, 66 * s}, 18 * s, Fade(COR_FOSFORO, 0.7f));
     if (e->jog.modo != MODO_TERMINAL && e->jog.modo != MODO_PAINEL)
         desenha_vidro_e_placar(e); // o terminal já mostra
     desenha_folego(e);
