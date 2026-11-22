@@ -336,7 +336,10 @@ static void atualiza_menu(Estado *e) {
 static void atualiza_tela_final(Estado *e, float dt) {
     if (!e->fim.tela_final) return;
     e->fim.tempo_tela += dt;
-    if (e->in.confirmar || e->fim.tempo_tela >= FIM_VOLTA_MENU_S) e->evento = EV_VOLTAR_MENU;
+    // O ENTER que fechou o texto do final chega aqui no mesmo quadro: sem essa folga, ele fechava o placar
+    // junto e a pessoa nunca o via.
+    bool enter = e->in.confirmar && e->fim.tempo_tela > FIM_PLACAR_FOLGA_S;
+    if (enter || e->fim.tempo_tela >= FIM_VOLTA_MENU_S) e->evento = EV_VOLTAR_MENU;
 }
 
 void ui_atualiza(Estado *e, float dt) {

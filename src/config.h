@@ -28,6 +28,7 @@
     1 // F1 VHS · F2 pular fase · F3 estado da criatura · F5 reiniciar · F9 resposta · F12 captura
 #define FEIRA_INATIVIDADE_S 90.0f // no modo feira (--feira), volta ao menu após esse tempo sem nenhuma tecla
 #define FIM_VOLTA_MENU_S    20.0f // a tela de fim volta sozinha ao menu
+#define FIM_PLACAR_FOLGA_S  0.4f  // o placar ignora o ENTER nesse começo (o do texto não pode fechá-lo)
 #define FIM_RUIM_TEXTO_S    8.2f  // final ruim: quando o texto e o "por quê" aparecem (depois do susto)
 #define FIM_BOM_TEXTO_S     13.0f // final bom: quando o texto e o "por quê" aparecem (depois das falas)
 #define FIM_LEITURA_MAX_S   50.0f // o texto espera a leitura: ENTER ou, no máximo, isso, e vai ao placar

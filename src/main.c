@@ -83,6 +83,7 @@ typedef struct {
     bool pego_testado;       // 1ª partida, S2: espera a criatura ouvir, perseguir e pegar
     unsigned estados_vistos; // bits dos EstadoCriatura que apareceram nesse teste
     bool armario_testado;    // 2ª partida, S1: entra e sai de um armário
+    float placar_t;          // quanto tempo o placar final ficou na tela (precisa aparecer de verdade)
     int codigo_saida;        // −1 = ainda jogando; 0 = ok; 1 = falhou
 } Piloto;
 
@@ -283,7 +284,15 @@ static void piloto_age(Estado *e, Entrada *in) {
 
 static void piloto_entrada(Estado *e, Entrada *in, float dt) {
     memset(in, 0, sizeof(*in));
+    bool era_fim = piloto.fase_vista == FASE_FIM_BOM || piloto.fase_vista == FASE_FIM_RUIM;
+    if (era_fim && e->fase == FASE_MENU && piloto.placar_t < FIM_PLACAR_FOLGA_S) {
+        piloto_falha("o placar final não ficou na tela");
+        return;
+    }
+    bool no_fim = e->fase == FASE_FIM_BOM || e->fase == FASE_FIM_RUIM;
+    if (no_fim && e->fim.tela_final) piloto.placar_t = e->fim.tempo_tela; // só o placar desta partida
     if (e->fase != piloto.fase_vista) {
+        piloto.placar_t = 0.0f;
         piloto_confere_troca(piloto.fase_vista, e->fase);
         piloto.fase_vista = e->fase;
         piloto.tempo_na_fase = 0.0f;
