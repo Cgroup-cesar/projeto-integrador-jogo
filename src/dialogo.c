@@ -188,6 +188,11 @@ static const char *const TEXTOS[TXT_TOTAL] = {
     [TXT_FIM_ERROS] = "ERROS",
     [TXT_FIM_ENTER] = "Pressione ENTER",
     [TXT_FIM_RODAPE] = "Projeto Integrador PIF · nome provisório",
+    [TXT_FIM_JOGADOR] = "{PROF} {NOME}",
+    [TXT_ID_AVISO_NOME] = "Seu nome fica só nesta partida: nada é gravado e ele é apagado ao voltar ao menu.",
+    [TXT_PLACA_POSTO] = "BLOCO 85", // placas pintadas em estêncil nas paredes (cenario.c)
+    [TXT_PLACA_RESTRITA] = "ÁREA RESTRITA",
+    [TXT_PLACA_ARQUIVO] = "ARQUIVO",
 };
 
 const char *dialogo_texto(TextoId id) {

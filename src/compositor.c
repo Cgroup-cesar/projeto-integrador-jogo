@@ -4,6 +4,7 @@
 #include "compositor.h"
 #include "terminal.h"
 #include "criatura.h"
+#include "susto.h"
 #include "jogador.h"
 #include "audio_sintese.h"
 #include "trilhas.h"
@@ -243,7 +244,7 @@ static void atualiza_fim_ruim(Estado *e, float antes, float t) {
         c->pos = (Vector3){e->jog.pos.x + frente.x * 1.0f, 0.0f, e->jog.pos.z + frente.z * 1.0f};
         c->yaw = atan2f(-frente.x, -frente.z);
     }
-    if (antes < 7.0f && t >= 7.0f) criatura_susto(e, EV_NENHUM);
+    if (antes < 7.0f && t >= 7.0f) susto_inicia(e, EV_NENHUM);
     if (t > 12.5f) e->fim.tela_final = true;
 }
 
@@ -259,8 +260,7 @@ void compositor_atualiza_fim(Estado *e, float dt) {
     if (e->fim.tela_final) return;
     float antes = e->fim.tempo;
     e->fim.tempo += dt;
-    if (e->in.confirmar && e->fim.tempo > 1.0f && !criatura_em_susto(e))
-        e->fim.tempo += 3.0f; // ENTER acelera
+    if (e->in.confirmar && e->fim.tempo > 1.0f && !susto_ativo(e)) e->fim.tempo += 3.0f; // ENTER acelera
     if (e->fase == FASE_FIM_RUIM)
         atualiza_fim_ruim(e, antes, e->fim.tempo);
     else
@@ -279,7 +279,7 @@ void compositor_desenha_fim(const Estado *e) {
 
 // Os textos das cinemáticas, em resolução de janela.
 static void desenha_textos_fim(const Estado *e) {
-    if (e->fim.tela_final || criatura_em_susto(e)) return;
+    if (e->fim.tela_final || susto_ativo(e)) return;
     float s = ui_escala(), t = e->fim.tempo;
     char tela[512]; // o texto final, com o nome e o gênero de quem jogou
     dialogo_personaliza(&e->ident,

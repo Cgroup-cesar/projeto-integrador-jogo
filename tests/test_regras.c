@@ -4,6 +4,7 @@
 #include "checagem.h"
 #include "regras.h"
 #include "colecoes.h"
+#include "materiais.h"
 #include <math.h>
 #include <string.h>
 
@@ -132,6 +133,39 @@ static void testa_volumes_trilhas(void) {
     SituacaoSom presa = {.criatura_solta = false, .distancia_criatura = 3.0f};
     regras_volumes_trilhas(presa, v);
     CHECK(perto(v[TRILHA_CORACAO_RAPIDO], 0.0f)); // na cela: sem coração
+}
+
+// [REQ:PURA-regras_quadro_susto] testa o pulo até a câmera, o tremor e o clarão
+static void testa_quadro_susto(void) {
+    QuadroSusto inicio = regras_quadro_susto(0.0f);
+    CHECK(perto(inicio.distancia, JUMPSCARE_LONGE_M) && perto(inicio.clarao, 0.0f)); // começa longe
+    QuadroSusto chegou = regras_quadro_susto(JUMPSCARE_PULO_S);
+    CHECK(perto(chegou.distancia, JUMPSCARE_PERTO_M) && perto(chegou.clarao, 1.0f)); // colado, com clarão
+    CHECK(perto(regras_quadro_susto(-1.0f).distancia, JUMPSCARE_LONGE_M));           // tempo negativo
+    bool so_aproxima = true, no_limite = true;
+    int mudou = 0;
+    QuadroSusto antes = inicio;
+    for (int i = 1; i <= 200; i++) { // 2 s a cada 0,01 s
+        QuadroSusto q = regras_quadro_susto(i * 0.01f);
+        if (q.distancia > antes.distancia + 0.0001f) so_aproxima = false;
+        if (fabsf(q.tremor_x) > JUMPSCARE_TREMOR_M || fabsf(q.tremor_y) > JUMPSCARE_TREMOR_M ||
+            fabsf(q.giro_graus) > JUMPSCARE_TREMOR_GRAUS)
+            no_limite = false;
+        if (!perto(q.tremor_x, antes.tremor_x)) mudou++;
+        antes = q;
+    }
+    CHECK(so_aproxima && no_limite);
+    CHECK(perto(antes.distancia, JUMPSCARE_PERTO_M) && perto(antes.clarao, 0.0f)); // fica colado, sem clarão
+    CHECK(mudou >= (int)(2.0f * JUMPSCARE_TREMOR_HZ) - 4); // treme rápido: ~40 posições novas por segundo
+    CHECK(regras_quadro_susto(0.77f).tremor_y == regras_quadro_susto(0.77f).tremor_y); // repetível
+    CHECK(perto(regras_quadro_susto(JUMPSCARE_PULO_S * 0.5f).boca, 1.0f)); // pula de boca escancarada
+    float menor = 1.0f, maior = 0.0f;
+    for (int i = 0; i < 100; i++) { // 1 s depois do pulo: a boca abre e fecha
+        float b = regras_quadro_susto(JUMPSCARE_PULO_S + i * 0.01f).boca;
+        menor = fminf(menor, b);
+        maior = fmaxf(maior, b);
+    }
+    CHECK(menor >= 0.0f && maior <= 1.0f && menor < 0.15f && maior > 0.85f);
 }
 
 // [REQ:PURA-regras_placar] testa o placar sem eventos, o total e o placar por fase
@@ -293,6 +327,89 @@ static void testa_nome_edita(void) {
     CHECK(!regras_nome_edita(pequeno, sizeof(pequeno), 16, 0xE7)); // o "ç" (2 bytes) não cabe mais
 }
 
+// ================================================================== texturas procedurais (materiais.c)
+// [REQ:PURA-materiais] testa o ruído (faixa, determinismo, repetição sem emenda) e os materiais
+static void testa_ruido_materiais(void) {
+    CHECK(materiais_hash(3, 7, 1985u) == materiais_hash(3, 7, 1985u)); // mesma entrada, mesmo número
+    CHECK(materiais_hash(3, 7, 1985u) != materiais_hash(3, 7, 1986u)); // a semente muda o resultado
+    int fora = 0;
+    // padrão FOLD: conta amostras fora de [0, 1)
+    for (int i = 0; i < 200; i++) {
+        float r = materiais_ruido(i * 0.37f, i * 0.11f, 8, 8, 7u),
+              f = materiais_fbm(i / 200.0f, 0.5f, 4, 4, 4, 7u);
+        fora += r < 0.0f || r >= 1.0f || f < 0.0f || f >= 1.0f;
+    }
+    CHECK(fora == 0);
+    CHECK(perto(materiais_ruido(2.3f, 1.7f, 8, 4, 9u), materiais_ruido(10.3f, 5.7f, 8, 4, 9u))); // período
+    float salto = 0.0f;
+    // padrão FOLD: o maior salto entre a borda direita e a esquerda (a textura repete sem emenda)
+    for (int i = 0; i < 32; i++) {
+        float v = (i + 0.5f) / 32.0f;
+        salto = fmaxf(
+            salto, fabsf(materiais_fbm(0.0005f, v, 12, 6, 4, 3u) - materiais_fbm(0.9995f, v, 12, 6, 4, 3u)));
+    }
+    CHECK(salto < 0.02f);
+}
+
+// Brilho médio perto de 1 (a cor da paleta continua sendo a cor do material: nada fica escuro demais) e
+// mistura em [0, 1]; mesma semente, mesmo pixel.
+static void testa_materiais(void) {
+    for (int m = 0; m < MATERIAL_TOTAL; m++) {
+        float soma = 0.0f;
+        int invalidos = 0;
+        // padrão FOLD: soma do brilho numa grade de 48 × 48 pixels
+        for (int i = 0; i < 48 * 48; i++) {
+            PixelMaterial p =
+                materiais_pixel((TipoMaterial)m, (i % 48 + 0.5f) / 48, (i / 48 + 0.5f) / 48, 0.8f, 1985u);
+            soma += p.brilho;
+            invalidos += p.brilho < 0.15f || p.brilho > 2.0f || p.mistura < 0.0f || p.mistura > 1.0f;
+        }
+        float media = soma / (48 * 48);
+        CHECK(invalidos == 0);
+        CHECK(media > 0.7f && media < 1.15f);
+    }
+    PixelMaterial a = materiais_pixel(MATERIAL_CONCRETO, 0.3f, 0.6f, 0.8f, 1985u);
+    PixelMaterial b = materiais_pixel(MATERIAL_CONCRETO, 0.3f, 0.6f, 0.8f, 1985u);
+    CHECK(a.brilho == b.brilho && a.mistura == b.mistura);
+    PixelMaterial limpo = materiais_pixel(MATERIAL_OLIVA, 0.3f, 0.6f, 0.0f, 1985u); // sujeira 0: sem mistura
+    CHECK(limpo.mistura >= 0.0f && limpo.mistura <= 1.0f);
+}
+
+static void testa_decalques(void) {
+    CHECK(materiais_mancha(DECALQUE_UMIDADE, 0.0f, 0.5f, 1u) == 0.0f); // some na borda
+    CHECK(materiais_mancha(DECALQUE_ARRASTO, 0.5f, 1.0f, 1u) == 0.0f);
+    CHECK(materiais_mancha(DECALQUE_UMIDADE, 0.5f, 0.35f, 1u) > 0.3f); // e existe no meio
+    CHECK(materiais_mancha(DECALQUE_POSTO, 0.5f, 0.5f, 1u) == 0.0f);   // placa de texto não é mancha
+    float minimo = 1.0f, maximo = 0.0f;
+    // padrão FOLD: faixa do desgaste da tinta de estêncil
+    for (int i = 0; i < 256; i++) {
+        float d = materiais_desgaste((i % 16 + 0.5f) / 16, (i / 16 + 0.5f) / 16, 5u);
+        minimo = fminf(minimo, d);
+        maximo = fmaxf(maximo, d);
+    }
+    CHECK(minimo >= 0.0f && maximo <= 1.0f && maximo > 0.5f);
+}
+
+// [REQ:PURA-materiais_uv] testa a UV de mundo: em metros, emendada entre caixas e presa ao teto
+static void testa_uv_mundo(void) {
+    Vector2 m = {6.0f, PE_DIREITO}, zero = {0.0f, 0.0f};
+    Vector2 topo = materiais_uv((Vector3){4.0f, PE_DIREITO, 10.0f}, 2, m, zero, PE_DIREITO);
+    Vector2 chao = materiais_uv((Vector3){4.0f, 0.0f, 10.0f}, 2, m, zero, PE_DIREITO);
+    CHECK(perto(topo.y, 0.0f) && perto(chao.y, 1.0f)); // v = 0 no teto, 1 no chão
+    Vector2 a = materiais_uv((Vector3){1.0f, 1.0f, 10.0f}, 2, m, zero, PE_DIREITO);
+    Vector2 b = materiais_uv((Vector3){4.0f, 1.0f, 10.0f}, 2, m, zero, PE_DIREITO);
+    CHECK(perto(b.x - a.x, 0.5f)); // 3 m numa repetição de 6 m: meia textura (nada estica)
+    Vector2 x1 = materiais_uv((Vector3){16.0f, 2.0f, 7.0f}, 0, m, zero, PE_DIREITO);
+    CHECK(perto(x1.x, 7.0f / 6.0f) && perto(x1.y, (PE_DIREITO - 2.0f) / PE_DIREITO)); // face em x usa z
+    Vector2 piso = materiais_uv((Vector3){3.0f, 0.0f, 5.0f}, 1, (Vector2){2.0f, 2.0f}, zero, PE_DIREITO);
+    CHECK(perto(piso.x, 1.5f) && perto(piso.y, 2.5f));
+    Vector2 d =
+        materiais_uv((Vector3){3.0f, 0.0f, 5.0f}, 1, (Vector2){2.0f, 2.0f}, (Vector2){0.25f, 0.5f}, 0);
+    CHECK(perto(d.x, 1.75f) && perto(d.y, 3.0f)); // o deslocamento só soma
+    Vector2 sem_metros = materiais_uv((Vector3){3.0f, 0.0f, 5.0f}, 1, zero, zero, 0); // metros 0 → 1 (sem /0)
+    CHECK(perto(sem_metros.x, 3.0f));
+}
+
 int main(void) {
     SetTraceLogLevel(LOG_ERROR); // o aviso de vetor cheio é esperado aqui
     testa_movimento();
@@ -302,6 +419,7 @@ int main(void) {
     testa_postura_criatura();
     testa_piscada_cela();
     testa_volumes_trilhas();
+    testa_quadro_susto();
     testa_placar();
     testa_vidro();
     testa_evento_do_erro();
@@ -313,5 +431,9 @@ int main(void) {
     testa_colecao_rachaduras();
     testa_colecao_paredes();
     testa_colecao_interativos();
+    testa_ruido_materiais();
+    testa_materiais();
+    testa_decalques();
+    testa_uv_mundo();
     return resultado_final("test_regras");
 }

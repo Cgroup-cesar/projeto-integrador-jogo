@@ -60,6 +60,7 @@ static Fase fase_seguinte(Fase fase) {
 Fase regras_proxima_fase(Fase fase, EventoFase evento) {
     if (fase < 0 || fase >= FASE_TOTAL) return FASE_MENU;
     if (evento == EV_PULAR_FASE) return fase_seguinte(fase);
+    if (evento == EV_VOLTAR_MENU) return FASE_MENU; // de qualquer fase: fim, pausa, inatividade
     if (evento == EV_IR_RESPOSTA_FINAL && fase >= FASE_INTRO && fase <= FASE_R3) return FASE_RESPOSTA_FINAL;
     switch (fase) {
     case FASE_MENU:
@@ -80,11 +81,8 @@ Fase regras_proxima_fase(Fase fase, EventoFase evento) {
         if (evento == EV_TRANSMITIU_CONTRADICAO) return FASE_FIM_BOM;
         if (evento == EV_TRANSMITIU_SATISFAZIVEL) return FASE_FIM_RUIM;
         return fase;
-    case FASE_FIM_RUIM:
-    case FASE_FIM_BOM:
-        return evento == EV_VOLTAR_MENU ? FASE_MENU : fase;
-    default:
-        return FASE_MENU;
+    default: // FIM_RUIM e FIM_BOM só saem com EV_VOLTAR_MENU (tratado acima)
+        return fase;
     }
 }
 
@@ -106,6 +104,11 @@ int regras_roteiro_partida(bool final_bom, EventoFase *saida, int maximo) {
     for (int i = 0; i < n; i++)
         saida[i] = roteiro[i];
     return n;
+}
+
+EventoFase regras_evento_inatividade(bool modo_feira, Fase fase, float tempo_inativo) {
+    bool jogando = fase != FASE_MENU && fase != FASE_FIM_RUIM && fase != FASE_FIM_BOM;
+    return modo_feira && jogando && tempo_inativo > FEIRA_INATIVIDADE_S ? EV_VOLTAR_MENU : EV_NENHUM;
 }
 
 // ================================================================== resposta final
@@ -235,6 +238,30 @@ void regras_volumes_trilhas(SituacaoSom s, float v[TRILHA_TOTAL]) {
     }
     float perto = (CORACAO_LONGE_M - s.distancia_criatura) / (CORACAO_LONGE_M - CORACAO_PERTO_M); // 0..1
     v[TRILHA_CORACAO_NORMAL] = VOL_CORACAO * (0.35f + 0.65f * perto);
+}
+
+// Sorteio em [−1, 1): uma posição do tremor.
+static float tremida(int ciclo, unsigned semente) {
+    return sorteio(ciclo, semente) * 2.0f - 1.0f;
+}
+
+// [REQ:PURA-regras_quadro_susto] o rosto pula até a câmera, freia colado nela e treme sem parar
+QuadroSusto regras_quadro_susto(float t) {
+    if (t < 0.0f) t = 0.0f;
+    float x = fminf(1.0f, t / JUMPSCARE_PULO_S);
+    float chegada = 1.0f - (1.0f - x) * (1.0f - x) * (1.0f - x); // sai rápido e freia colado na câmera
+    int ciclo = (int)(t * JUMPSCARE_TREMOR_HZ);
+    float forca = 0.35f + 0.65f * chegada; // no pulo já treme; colado, treme inteiro
+    float depois = t - JUMPSCARE_PULO_S;
+    QuadroSusto q;
+    q.distancia = JUMPSCARE_LONGE_M + (JUMPSCARE_PERTO_M - JUMPSCARE_LONGE_M) * chegada;
+    q.tremor_x = tremida(ciclo, 0x2f1du) * JUMPSCARE_TREMOR_M * forca;
+    q.tremor_y = tremida(ciclo, 0x6b43u) * JUMPSCARE_TREMOR_M * forca;
+    q.giro_graus = tremida(ciclo, 0xa7c5u) * JUMPSCARE_TREMOR_GRAUS * forca;
+    q.clarao = depois < 0.0f ? 0.0f : fmaxf(0.0f, 1.0f - depois / JUMPSCARE_CLARAO_S);
+    float ritmo = 2.0f * PI * JUMPSCARE_BOCA_HZ * t + 1.7f * sinf(2.0f * PI * 1.3f * t); // ritmo irregular
+    q.boca = depois < 0.0f ? 1.0f : 0.5f + 0.5f * sinf(ritmo);
+    return q;
 }
 
 // ================================================================== placar, vidas e interativos

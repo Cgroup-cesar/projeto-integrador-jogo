@@ -4,6 +4,7 @@
 #include "rodadas.h"
 #include "glifos.h"
 #include "criatura.h"
+#include "susto.h"
 #include "ui.h"
 #include "dialogo.h"
 #include <stdio.h>
@@ -12,7 +13,7 @@
 void terminal_atualiza(Estado *e, float dt) {
     (void)dt; // a navegação é por tecla, sem tempo
     Rodada *r = &e->rod;
-    if (e->jog.modo != MODO_TERMINAL || !regras_fase_eh_rodada(e->fase) || criatura_em_susto(e)) return;
+    if (e->jog.modo != MODO_TERMINAL || !regras_fase_eh_rodada(e->fase) || susto_ativo(e)) return;
     if (e->in.voltar) {
         e->jog.modo = MODO_ANDANDO;
         return;

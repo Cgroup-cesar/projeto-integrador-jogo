@@ -21,6 +21,9 @@ void posfx_comeca_luz(const Estado *e, const Vector3 *posicoes, const Vector3 *c
                       const float *quedas, int n, float ambiente);
 void posfx_termina_luz(const Estado *e);
 
+// Depois de comeca_luz: troca o ponto de vista da névoa e da contraluz (padrão: a câmera do jogador).
+void posfx_olho(const Estado *e, Vector3 olho);
+
 // Entre comeca_luz e termina_luz: contraluz nas bordas do que for desenhado a seguir (intensidade 0 desliga).
 // Chame fora de rlPushMatrix/rlPopMatrix (envia o lote pendente com a transformação atual).
 void posfx_contraluz(const Estado *e, Color cor, float intensidade);

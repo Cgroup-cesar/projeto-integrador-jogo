@@ -8,9 +8,10 @@
 #include <stdio.h>
 #include <string.h>
 
+// Zera o buffer inteiro, não só o primeiro byte: na feira, o nome de quem jogou antes não fica na memória.
 void identidade_reinicia(Estado *e) {
     e->ident.feminino = false;
-    e->ident.nome[0] = '\0';
+    memset(e->ident.nome, 0, sizeof(e->ident.nome));
 }
 
 void identidade_garante_nome(Estado *e) {
@@ -84,6 +85,7 @@ static void desenha_nome(const Estado *e) {
     ui_texto(e, texto, (Vector2){campo.x + 20 * s, campo.y + 12 * s}, 32 * s, RAYWHITE);
     snprintf(texto, sizeof(texto), dialogo_texto(TXT_ID_DICA_NOME), dialogo_texto(TXT_NOME_PADRAO));
     ui_texto_centro(e, texto, 560 * s, 18 * s, Fade(COR_VIDRO, 0.8f));
+    ui_texto_centro(e, dialogo_texto(TXT_ID_AVISO_NOME), 600 * s, 16 * s, Fade(COR_FOSFORO, 0.5f));
 }
 
 void identidade_desenha(const Estado *e) {

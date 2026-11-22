@@ -155,6 +155,7 @@ static void cria_alvo(Recursos *rec, int largura_janela, int altura_janela) {
     if (w < 64) w = 64;
     if (h < 36) h = 36;
     rec->alvo = LoadRenderTexture(w, h);
+    rec->alvo_susto = LoadRenderTexture(w, h);
     SetTextureFilter(rec->alvo.texture, TEXTURE_FILTER_BILINEAR);
     rec->alvo_largura = w;
     rec->alvo_altura = h;
@@ -203,6 +204,7 @@ void posfx_inicia(Recursos *rec) {
 
 void posfx_finaliza(Recursos *rec) {
     UnloadRenderTexture(rec->alvo);
+    UnloadRenderTexture(rec->alvo_susto);
     if (rec->vhs_ok) UnloadShader(rec->vhs);
     if (rec->luz_ok) UnloadShader(rec->luz);
 }
@@ -238,6 +240,11 @@ void posfx_termina_luz(const Estado *e) {
     if (e->rec.luz_ok) EndShaderMode();
 }
 
+void posfx_olho(const Estado *e, Vector3 olho) {
+    const Recursos *r = &e->rec;
+    if (r->luz_ok) SetShaderValue(r->luz, r->loc_luz_camera, &olho, SHADER_UNIFORM_VEC3);
+}
+
 // A geometria imediata (DrawCube...) fica num lote até ser enviada; esvaziar o lote antes de trocar o
 // uniforme garante que a contraluz pegue só o que for desenhado depois desta chamada.
 // Chame FORA de rlPushMatrix/rlPopMatrix: ao enviar o lote, a raylib manda a transformação atual como
@@ -256,6 +263,7 @@ void posfx_atualiza(Estado *e, float dt) {
     int h = (int)(GetScreenHeight() * ESCALA_RENDER);
     if (w != e->rec.alvo_largura || h != e->rec.alvo_altura) {
         UnloadRenderTexture(e->rec.alvo);
+        UnloadRenderTexture(e->rec.alvo_susto);
         cria_alvo(&e->rec, GetScreenWidth(), GetScreenHeight());
     }
 #if TECLAS_DEBUG

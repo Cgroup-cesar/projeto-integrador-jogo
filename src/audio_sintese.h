@@ -1,5 +1,5 @@
-// audio_sintese.h — todos os sons gerados em código (22050 Hz, mono). Se existir assets/audio/<nome>.ogg,
-// ele substitui o som sintetizado.
+// audio_sintese.h — todos os sons gerados em código (22050 Hz, mono). Se existir assets/audio/<nome>.ogg
+// (ou .wav, .mp3), ele substitui o som sintetizado. O susto toca SOM_JUMPSCARE (arquivo "jumpscare").
 #ifndef AUDIO_SINTESE_H
 #define AUDIO_SINTESE_H
 
@@ -24,10 +24,12 @@ typedef enum {
     SOM_PAPEL,
     SOM_ENERGIA,
     SOM_DISTORCAO,
+    SOM_JUMPSCARE, // só no susto (o apagão usa SOM_ESTRONDO)
+    SOM_RESPIRACAO_OFEGANTE, // so toca ao sair do armario depois de muito tempo escondido
     SOM_TOTAL
 } IdSom;
 
-void audio_inicia(Recursos *rec);
+void audio_inicia(Recursos *rec); // também define rec->susto_s (a duração do susto segue o som)
 void audio_finaliza(Recursos *rec);
 
 // Toca um som curto. volume 0..1; tom 1 = normal.

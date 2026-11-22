@@ -38,7 +38,7 @@ typedef enum {
     EV_PEGO,                    // a criatura pegou o jogador: a saída recomeça
     EV_TRANSMITIU_CONTRADICAO,  // frase que nunca pode ser verdadeira → final bom
     EV_TRANSMITIU_SATISFAZIVEL, // qualquer outra frase válida → final ruim
-    EV_VOLTAR_MENU,             // Enter na tela de fim ou 20 s
+    EV_VOLTAR_MENU,             // Enter na tela de fim ou 20 s; pausa; inatividade (feira)
     EV_PULAR_FASE,              // debug F2
     EV_IR_RESPOSTA_FINAL,       // debug F9
     EV_TOTAL
@@ -56,6 +56,10 @@ Fase regras_proxima_fase(Fase fase, EventoFase evento);
 bool regras_reinicia_fase(Fase fase, EventoFase evento);
 // A sequência de eventos de uma partida inteira; o test_fluxo e o --smoke usam a mesma.
 int regras_roteiro_partida(bool final_bom, EventoFase *saida, int maximo);
+
+// Modo feira: depois de FEIRA_INATIVIDADE_S sem nenhuma tecla numa fase de jogo (inclusive a intro),
+// volta ao menu (EV_VOLTAR_MENU). Fora do modo feira, no menu e no fim (que já volta sozinho): nada.
+EventoFase regras_evento_inatividade(bool modo_feira, Fase fase, float tempo_inativo);
 
 // ------------------------------------------------------------------ resposta final
 #define ATOMO_P 0 // [VOCÊ FALAR]
@@ -91,6 +95,18 @@ typedef struct {
 } PosturaCriatura;
 
 PosturaCriatura regras_postura_criatura(float velocidade, float passada, float t);
+
+// Susto: `t` = segundos desde que o rosto apareceu. O rosto pula de JUMPSCARE_LONGE_M até JUMPSCARE_PERTO_M
+// em JUMPSCARE_PULO_S e treme (posição nova JUMPSCARE_TREMOR_HZ vezes por segundo). Determinístico.
+typedef struct {
+    float distancia;          // metros da câmera ao rosto
+    float tremor_x, tremor_y; // metros, de −JUMPSCARE_TREMOR_M a +JUMPSCARE_TREMOR_M
+    float giro_graus;         // em torno do eixo da câmera
+    float clarao;             // 1 quando ele chega, apagando em JUMPSCARE_CLARAO_S
+    float boca;               // 0 fechando, 1 escancarada: no pulo, aberta; depois abre e fecha
+} QuadroSusto;
+
+QuadroSusto regras_quadro_susto(float t);
 
 // Lâmpada com defeito: 0 apagada, até 1 no flash. Piscada dupla (acende, apaga, acende fraquejando) em
 // intervalos irregulares de ~3 s. Determinística: o mesmo `t` dá sempre o mesmo valor.

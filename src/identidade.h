@@ -5,7 +5,7 @@
 
 #include "estado.h"
 
-// Partida nova: professor e nome vazio (o campo começa limpo para quem vai digitar).
+// Menu e partida nova: professor e nome zerado (privacidade na feira; o campo começa limpo).
 void identidade_reinicia(Estado *e);
 // Sem nome (por exemplo, começando direto numa fase com --fase), usa o nome padrão de dialogo.c.
 void identidade_garante_nome(Estado *e);

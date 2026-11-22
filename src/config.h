@@ -65,8 +65,11 @@
 #define CRIATURA_VISAO_DIST    14.0f
 #define CRIATURA_PROCURA_S     6.0f
 #define CRIATURA_SURGE_S       15.0f // tempo até ele sair do duto no início de cada saída
-#define CRIATURA_RAIO_CAPTURA  0.5f  // duas esferas de 0,5 m: pego quando a distância < 1 m
+#define CRIATURA_RAIO_CAPTURA  0.8f  // duas esferas de 0,8 m: pego quando a distância < 1,6 m
+#define CRIATURA_BOTE_M        3.0f  // perseguindo e mais perto que isso: avança sem as pausas, mais rápido
+#define CRIATURA_BOTE_VEL      1.35f // multiplica a velocidade de perseguição no bote
 #define CRIATURA_DIST_ARMARIO  2.0f  // entrar no armário a menos disso enquanto ele vê = pego
+#define CRIATURA_ALTURA_M      2.6f  // o precursor.glb é escalado para essa altura, com os pés no chão
 // Postura procedural (o modelo .glb não tem animação): ver regras_postura_criatura
 #define CRIATURA_PASSADA_M        1.6f   // metros por passada completa (pernas longas)
 #define CRIATURA_INCLINA_PARADO   3.0f   // graus para a frente, parado
@@ -74,8 +77,27 @@
 #define CRIATURA_BALANCO_GRAUS    5.0f   // de um lado para o outro a cada passo
 #define CRIATURA_SOBE_M           0.05f  // sobe e desce a cada passo
 #define CRIATURA_RESPIRA          0.015f // o tronco se expande 1,5% parado
-#define JUMPSCARE_S               1.2f
-#define JUMPSCARE_SILENCIO_S      0.2f
+// Susto (jumpscare): o rosto do modelo pula até a câmera e fica tremendo (ver regras_quadro_susto).
+// Com assets/audio/jumpscare.mp3, o rosto fica até o fim do trecho alto do som (depois só sobra o eco).
+#define JUMPSCARE_S            1.2f  // duração com o som sintetizado (sem assets/audio/jumpscare.*)
+#define JUMPSCARE_AUDIO_S      2.04f // duração com o jumpscare.mp3 (medida no arquivo)
+#define JUMPSCARE_SILENCIO_S   0.2f
+#define JUMPSCARE_PULO_S       0.16f // o pulo: de longe até colado na câmera
+#define JUMPSCARE_LONGE_M      2.6f  // distância da câmera ao rosto no começo do pulo
+#define JUMPSCARE_PERTO_M      0.2f  // e no fim: o rosto enche a tela
+#define JUMPSCARE_TREMOR_HZ    40.0f // posições novas do tremor por segundo
+#define JUMPSCARE_TREMOR_M     0.02f // deslocamento máximo do tremor
+#define JUMPSCARE_TREMOR_GRAUS 5.0f  // giro máximo do tremor
+#define JUMPSCARE_CLARAO_S     0.12f // clarão branco quando ele chega
+#define JUMPSCARE_ESCURECE     0.85f // o cenário ao fundo fica 85% mais escuro: o foco é a criatura
+#define JUMPSCARE_LUZ          1.1f  // força da luz branca de baixo no rosto (pisca)
+#define JUMPSCARE_BOCA_HZ      4.5f  // quantas vezes por segundo a boca abre e fecha
+#define JUMPSCARE_BOCA_FECHA   8.0f  // graus que a mandíbula sobe para a boca fechar
+#define JUMPSCARE_BOCA_ABRE    28.0f // e escancarada
+// Onde fica o rosto no precursor.glb, em fração da caixa do modelo (0 = mínimo, 1 = máximo).
+#define JUMPSCARE_ROSTO_X 0.48f
+#define JUMPSCARE_ROSTO_Y 0.90f
+#define JUMPSCARE_ROSTO_Z 0.72f
 
 // ---------------------------------------------------------------- sala, vidro e placar
 #define VIDAS_VIDRO               3
@@ -102,6 +124,22 @@
 #define NOME_MAX_BYTES    (NOME_MAX_LETRAS * 2 + 1) // ...de até 2 bytes cada em UTF-8 (Latin-1), mais o '\0'
 #define MAX_NOS_LOGICA    64
 #define MAX_CAMINHO       128
+
+// ---------------------------------------------------------------- texturas do mapa (procedurais; override
+// opcional em assets/texturas/<material>.png). Geradas uma vez ao abrir o jogo, com semente fixa.
+#define TEXTURA_LADO_PX         256   // lado das texturas quadradas (piso, teto, oliva, metal, porta)
+#define TEXTURA_CONCRETO_PX     512   // o concreto é 512 × 256: cobre 6 m × 3 m sem repetir à vista
+#define TEXTURA_SEMENTE         1985u // mesma semente → mesma imagem em toda execução
+#define TEXTURA_SUJEIRA         0.8f  // 0 = limpo; 1 = manchas, escorridos e descascado no máximo
+#define TEXTURA_METROS_CONCRETO 6.0f  // metros por repetição na horizontal (na vertical: PE_DIREITO)
+#define TEXTURA_METROS_PISO     2.0f  // 4 × 4 placas de 0,5 m
+#define TEXTURA_METROS_TETO     2.0f  // 3 × 3 placas de forro
+#define TEXTURA_METROS_METAL    1.0f
+#define TEXTURA_ARQUIVO_MAX_PX  1024  // PNG maior que isso (ou fora de potência de 2) é redimensionado
+#define BARRADO_ALTURA          1.2f  // tinta oliva do chão até aqui (acima: concreto aparente)
+#define DECALQUE_PX             256   // manchas: 256 × 256; placas: 512 × 128
+#define HALO_LAMPADA_M          1.3f  // tamanho do brilho em volta das lâmpadas
+#define HALO_LAMPADA_ALFA       0.35f // força do brilho (some com a névoa)
 
 // ---------------------------------------------------------------- luz e névoa
 #define LUZ_AMBIENTE    0.06f
@@ -153,4 +191,15 @@
 #define COR_AMBAR     (Color){0xd9, 0xa4, 0x41, 255}
 #define COR_LANTERNA  (Color){0xf2, 0xe8, 0xd0, 255}
 
+// Folego no armario: expulso aos 12 s; saindo com 8 s ou mais escondido, ofega.
+#define ARMARIO_TEMPO_MAX   12.0f
+#define ARMARIO_TEMPO_OFEGO 8.0f
+
+// Zerou o folego correndo: so volta a correr com esta fracao da barra.
+#define FOLEGO_RETOMA_FRACAO 0.75f
+
 #endif
+
+// ---------------------------------------------------------------- Armário
+#define ARMARIO_YAW_MAX   0.45f // limite do olhar para os lados dentro do armário
+#define ARMARIO_PITCH_MAX 0.20f // limite do olhar para cima/baixo dentro do armário

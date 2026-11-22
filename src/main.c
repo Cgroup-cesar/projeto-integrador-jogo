@@ -7,6 +7,7 @@
 #include "circuito.h"
 #include "compositor.h"
 #include "criatura.h"
+#include "susto.h"
 #include "lanterna.h"
 #include "nivel.h"
 #include <math.h>
@@ -14,6 +15,8 @@
 #include "audio_sintese.h"
 #include "trilhas.h"
 #include "ui.h"
+#include "texturas.h"
+#include "dialogo.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -95,6 +98,24 @@ static void piloto_comeca_partida(void) {
     piloto.roteiro_i = 0;
 }
 
+// O nome só existe durante a partida: no menu o buffer inteiro está zerado; na R1, com o padrão (o piloto
+// não digita nada nas perguntas da intro). Não imprime o nome.
+static void piloto_confere_nome(Fase para) {
+    if (para == FASE_MENU) {
+        for (size_t i = 0; i < sizeof(estado.ident.nome); i++) // padrão FOLD: algum byte sobrou?
+            if (estado.ident.nome[i] != '\0') {
+                piloto_falha("o nome não foi apagado ao voltar ao menu");
+                return;
+            }
+        printf("SMOKE  nome ok: buffer zerado no menu\n");
+    } else if (para == FASE_R1) {
+        if (strcmp(estado.ident.nome, dialogo_texto(TXT_NOME_PADRAO)) != 0)
+            piloto_falha("a partida começou sem o nome padrão");
+        else
+            printf("SMOKE  nome ok: perguntas puladas, nome padrão em uso\n");
+    }
+}
+
 // Confere a troca de fase contra o roteiro. Recomeços (vidro rompido, pego) mantêm a fase e são aceitos.
 static void piloto_confere_troca(Fase de, Fase para) {
     if (piloto.roteiro_i >= piloto.roteiro_n) {
@@ -108,6 +129,7 @@ static void piloto_confere_troca(Fase de, Fase para) {
     }
     piloto.roteiro_i++;
     printf("SMOKE  partida %d: %s -> %s\n", piloto.partida + 1, regras_nome_fase(de), regras_nome_fase(para));
+    piloto_confere_nome(para);
     if (para != FASE_MENU) return;
     piloto.partida++;
     if (piloto.partida >= 2) {
@@ -151,7 +173,7 @@ static bool piloto_espera_ser_pego(Estado *e, Entrada *in) {
             printf("SMOKE  criatura ok: ouviu (INVESTIGA), viu (PERSEGUE) e pegou; a saída recomeça\n");
         return false;
     }
-    if (criatura_em_susto(e)) return true;
+    if (susto_ativo(e)) return true;
     if (piloto.tempo_na_fase > 60.0f) {
         piloto_falha("a criatura não pegou o jogador parado no corredor");
         return true;
@@ -292,6 +314,7 @@ static void atualiza(Estado *e, float dt) {
 
 // [REQ:RNF3] desenhar recebe const Estado *: não muda nada; o loop é entrada → atualiza → desenha
 static void desenha(const Estado *e) {
+    susto_prepara(e); // o rosto do susto, na textura dele
     posfx_inicia_cena(e);
     jogo_desenha_cena(e);
     posfx_termina_cena(e);
@@ -378,18 +401,22 @@ static void quadro(Estado *e) {
 static void carrega_recursos(void) {
     posfx_inicia(&estado.rec);
     ui_carrega_fonte(&estado.rec);
+    texturas_carrega(&estado.rec); // depois da fonte: as placas de estêncil usam a fonte
     audio_inicia(&estado.rec);
     trilhas_carrega(&estado.rec);
     criatura_carrega_modelo(&estado.rec);
+    susto_carrega_boca(&estado.rec);
     lanterna_carrega_modelo(&estado.rec);
     if (mudo || estado.modo_smoke) SetMasterVolume(0.0f); // o smoke roda calado
 }
 
 static void descarrega_recursos(void) {
     lanterna_descarrega_modelo(&estado.rec);
+    susto_descarrega_boca(&estado.rec);
     criatura_descarrega_modelo(&estado.rec);
     trilhas_descarrega(&estado.rec);
     audio_finaliza(&estado.rec);
+    texturas_descarrega(&estado.rec);
     ui_descarrega_fonte(&estado.rec);
     posfx_finaliza(&estado.rec);
     CloseWindow();
@@ -420,6 +447,7 @@ int main(int argc, char **argv) {
         quadro(&estado);
         if (estado.modo_smoke && piloto.codigo_saida >= 0) break;
     }
+    memset(estado.ident.nome, 0, sizeof(estado.ident.nome)); // o jogo encerrou: o nome some junto
     descarrega_recursos();
     if (!estado.modo_smoke || piloto.codigo_saida == 0) return 0;
     if (piloto.codigo_saida < 0)

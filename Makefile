@@ -47,10 +47,12 @@ endif
 FONTES = $(wildcard src/*.c)
 OBJETOS = $(patsubst src/%.c,obj/%.o,$(FONTES))
 JOGO = bin/precursor$(EXE)
+# teste visual do menu (abre janela; fica fora do make test): make test-menu
+TEST_MENU = bin/test_menu$(EXE)
 
 TESTES = bin/test_logica$(EXE) bin/test_regras$(EXE) bin/test_fluxo$(EXE)
 
-.PHONY: all run test smoke readme-check clean
+.PHONY: all run test smoke readme-check clean test-menu
 
 all: $(JOGO)
 
@@ -71,8 +73,14 @@ bin/test_fluxo$(EXE): obj/test_fluxo.o obj/logica.o obj/regras.o | bin
 	$(CC) $^ -o $@ -lm
 
 # test_regras também testa as coleções, que usam TraceLog e CheckCollisionBoxes (sem abrir janela)
-bin/test_regras$(EXE): obj/test_regras.o obj/regras.o obj/logica.o obj/colecoes.o | bin
+bin/test_regras$(EXE): obj/test_regras.o obj/regras.o obj/logica.o obj/colecoes.o obj/materiais.o | bin
 	$(CC) $^ -o $@ $(RAYLIB_LIBS)
+
+$(TEST_MENU): obj/test_menu.o obj/menu_inicial.o | bin
+	$(CC) $^ -o $@ $(RAYLIB_LIBS)
+
+test-menu: $(TEST_MENU)
+	./$(TEST_MENU)
 
 run: $(JOGO)
 	./$(JOGO)

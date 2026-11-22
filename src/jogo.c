@@ -3,6 +3,7 @@
 #include "nivel.h"
 #include "jogador.h"
 #include "criatura.h"
+#include "susto.h"
 #include "lanterna.h"
 #include "rodadas.h"
 #include "terminal.h"
@@ -14,6 +15,7 @@
 #include "dialogo.h"
 #include "identidade.h"
 #include "ui.h"
+#include "cenario.h"
 #include <string.h>
 
 // ================================================================== início e fim
@@ -102,7 +104,18 @@ static void entra_resposta_final(Estado *e) {
     e->jog.modo = MODO_TERMINAL;
 }
 
+// [REQ:NOME-SESSAO] o nome só vive durante a partida: zerado no menu (fim, pausa, inatividade) e na
+// partida nova (intro); mantido nos recomeços; nas fases de jogo, vazio vira o padrão (F2, --fase, smoke)
+static void aplica_regra_do_nome(Estado *e, Fase fase, bool reinicio) {
+    if (reinicio) return; // vidro rompido, pego, F5: a mesma pessoa continua
+    if (fase == FASE_MENU || fase == FASE_INTRO)
+        identidade_reinicia(e);
+    else
+        identidade_garante_nome(e);
+}
+
 static void entra_fase(Estado *e, Fase fase, bool reinicio) {
+    aplica_regra_do_nome(e, fase, reinicio);
     e->fase = fase;
     e->tempo_fase = 0.0f;
     if (!reinicio) {
@@ -115,8 +128,7 @@ static void entra_fase(Estado *e, Fase fase, bool reinicio) {
         entra_menu(e);
         break;
     case FASE_INTRO:
-        memset(&e->intro, 0, sizeof(e->intro)); // começa em INTRO_GENERO
-        identidade_reinicia(e);                 // quem joga agora escolhe de novo
+        memset(&e->intro, 0, sizeof(e->intro)); // começa em INTRO_GENERO (a identidade já foi zerada)
         jogador_teleporta(e, e->nivel.inicio, PI);
         lanterna_reinicia(e); // partida nova: começa apagada
         break;
@@ -165,7 +177,6 @@ void jogo_inicia(Estado *e) {
     nivel_carrega(&e->nivel);
     e->jog.ultima_celula = -1;
     lanterna_reinicia(e);
-    identidade_garante_nome(e); // para --fase começar direto numa fase já com um nome
     entra_fase(e, FASE_MENU, false);
 }
 
@@ -236,13 +247,18 @@ static void atualiza_debug(Estado *e) {
 #endif
 }
 
+// Conta também na intro e na pausa: quem sair dali deixa o jogo voltar ao menu (e o nome é apagado).
 static void atualiza_feira(Estado *e, float dt) {
-    if (!e->modo_feira || !jogando(e)) return;
-    e->tempo_inativo = e->in.alguma ? 0.0f : e->tempo_inativo + dt;
-    if (e->tempo_inativo > FEIRA_INATIVIDADE_S) {
+    if (!e->modo_feira || !jogando(e)) {
         e->tempo_inativo = 0.0f;
-        entra_fase(e, FASE_MENU, false);
+        return;
     }
+    e->tempo_inativo = e->in.alguma ? 0.0f : e->tempo_inativo + dt;
+    EventoFase ev = regras_evento_inatividade(e->modo_feira, e->fase, e->tempo_inativo);
+    if (ev == EV_NENHUM) return;
+    e->tempo_inativo = 0.0f;
+    e->pausado = false;
+    jogo_aplica_evento(e, ev);
 }
 
 static void atualiza_cursor(const Estado *e) {
@@ -290,6 +306,7 @@ static void atualiza_temporizadores(Estado *e, float dt) {
 void jogo_atualiza(Estado *e, float dt) {
     atualiza_cursor(e);
     atualiza_debug(e);
+    atualiza_feira(e, dt);
     if (e->pausado) {
         atualiza_pausa(e);
         return;
@@ -302,9 +319,8 @@ void jogo_atualiza(Estado *e, float dt) {
         return;
     }
     atualiza_temporizadores(e, dt);
-    atualiza_feira(e, dt);
-    criatura_atualiza_susto(e, dt);
-    if (anda_livre && !criatura_em_susto(e)) {
+    susto_atualiza(e, dt);
+    if (anda_livre && !susto_ativo(e)) {
         jogador_atualiza(e, dt);
         lanterna_atualiza(e, dt);
     }
@@ -335,6 +351,7 @@ static void desenha_mundo_3d(const Estado *e) {
     BeginMode3D(e->camera);
     posfx_comeca_luz(e, pos, cor, cone, queda, n, ambiente);
     nivel_desenha(e);
+    cenario_desenha(e);
     criatura_desenha(e);
     lanterna_desenha(e);
     posfx_termina_luz(e);
@@ -343,6 +360,8 @@ static void desenha_mundo_3d(const Estado *e) {
     circuito_desenha_3d(e);
     glifos_desenha(e);
     nivel_desenha_vidro(e);
+    if (regras_fase_eh_rodada(e->fase) || e->fase == FASE_RESPOSTA_FINAL)
+        rodadas_desenha(e); // rachaduras no plano do vidro (3D)
     EndMode3D();
 }
 
@@ -350,9 +369,8 @@ void jogo_desenha_cena(const Estado *e) {
     ClearBackground(BLACK);
     bool tela_preta = e->fase == FASE_INTRO && e->intro.etapa != INTRO_RADIO;
     if (!tela_preta) desenha_mundo_3d(e);
-    if (regras_fase_eh_rodada(e->fase) || e->fase == FASE_RESPOSTA_FINAL) rodadas_desenha(e);
     jogador_desenha(e);
-    criatura_desenha_jumpscare(e);
+    susto_desenha(e);
     if (e->fase == FASE_FIM_BOM || e->fase == FASE_FIM_RUIM) compositor_desenha_fim(e);
 }
 

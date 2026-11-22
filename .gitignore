@@ -6,6 +6,8 @@ build/
 *.d
 *.exe
 /precursor
+/graphify-out
+estrutura.txt
 
 # Sistema e editores
 .DS_Store
