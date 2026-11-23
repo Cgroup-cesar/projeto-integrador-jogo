@@ -29,7 +29,6 @@ static void limpa_partida(Estado *e) {
     e->tempo_partida = 0.0f;
     e->diario_lido = false;
     e->ajuda_aberta = false;
-    e->resp.tutorial_visto = false; // cada partida (cada pessoa da feira) vê o tutorial do armário
     memset(e->conectivo_decifrado, 0, sizeof(e->conectivo_decifrado));
 }
 
@@ -347,10 +346,6 @@ void jogo_atualiza(Estado *e, float dt) {
     if (e->in.voltar && anda_livre && e->jog.modo == MODO_ANDANDO) {
         e->pausado = true;
         e->menu.cursor = 0;
-        return;
-    }
-    if (respiracao_congela_mundo(e)) { // tutorial do armário: só a barrinha anda
-        respiracao_atualiza(e, dt);
         return;
     }
     atualiza_temporizadores(e, dt);

@@ -1,28 +1,20 @@
-// respiracao.c — o desafio do armário: a espera (ele só vem até a porta se vinha atrás de quem se escondeu),
-// tutorial (1ª vez na partida), desafio (3 acertos, 3 chances) e o afastamento (o E só volta quando ele está
-// longe de verdade). As contas são puras (regras_respiracao_*, regras_armario_*); aqui fica o fluxo, o som e
-// o desenho.
+// respiracao.c — o desafio do armário: a espera (se ele vinha atrás de quem se escondeu, vai até a porta),
+// o desafio (3 acertos, 3 chances; a tecla ESPAÇO desenhada embaixo da barra é toda a explicação) e o
+// afastamento (o E só volta quando ele está longe de verdade). As contas são puras (regras_respiracao_*,
+// regras_armario_*); aqui fica o fluxo, o som e o desenho.
 #include "respiracao.h"
 #include "criatura.h"
 #include "audio_sintese.h"
 #include "ui.h"
 #include "dialogo.h"
 #include <math.h>
-#include <stdio.h>
-
-#define DEMO_PAUSA_S 1.2f // tutorial: a linha fica parada na faixa ("assim!") por esse tempo
-static const float ZONAS_DEMO[RESP_ACERTOS] = {0.62f, 0.3f, 0.78f}; // onde a faixa fica em cada demonstração
 
 bool respiracao_ativa(const Estado *e) {
     return e->resp.etapa != RESP_NADA;
 }
 
-bool respiracao_congela_mundo(const Estado *e) {
-    return e->resp.etapa == RESP_TUTORIAL;
-}
-
 bool respiracao_segura_criatura(const Estado *e) {
-    return e->resp.etapa == RESP_TUTORIAL || e->resp.etapa == RESP_DESAFIO;
+    return e->resp.etapa == RESP_DESAFIO;
 }
 
 static float sorteia_zona(void) {
@@ -40,25 +32,6 @@ static void comeca_desafio(Estado *e) {
     criatura_na_porta_do_armario(e);
 }
 
-// Ele chegou à porta do armário: a 1ª vez na partida vem o tutorial; depois, direto o desafio.
-static void ele_chega_na_porta(Estado *e) {
-    Respiracao *r = &e->resp;
-    r->perseguido = false;
-    r->foi_t = 0.0f;
-    if (r->tutorial_visto) {
-        comeca_desafio(e);
-        return;
-    }
-    r->etapa = RESP_TUTORIAL;
-    r->t = 0.0f;
-    r->zona = ZONAS_DEMO[0];
-    r->demo_relogio = 0.0f;
-    r->demo_t = 0.0f;
-    r->demo_n = 0;
-    r->demo_ultimo = 0.0f;
-    criatura_na_porta_do_armario(e); // no tutorial ele já aparece parado na porta, pelas frestas
-}
-
 void respiracao_comeca(Estado *e) {
     Respiracao *r = &e->resp;
     r->perseguido = false;
@@ -66,8 +39,8 @@ void respiracao_comeca(Estado *e) {
     r->perseguido = regras_armario_perseguido(e->cri.ativo, e->cri.estado, e->cri.ve_jogador);
 }
 
-// Escondido com ele na cola: ele segue procurando com as próprias pernas. Se chega perto do armário, para na
-// porta e começa a respiração; se volta à patrulha antes, a pessoa escapou.
+// Escondido com ele na cola: ele vai até o armário (regras_proximo_estado_criatura com sabe_esconderijo) e,
+// ao chegar perto, para na porta e começa a respiração.
 static void espera_no_armario(Estado *e) {
     Respiracao *r = &e->resp;
     if (!r->perseguido || e->jog.modo != MODO_ARMARIO) return;
@@ -75,48 +48,10 @@ static void espera_no_armario(Estado *e) {
         r->perseguido = false;
         return;
     }
-    if (e->cri.estado == CRIATURA_PATRULHA) { // perdeu o rastro e voltou à ronda: escapou
-        r->perseguido = false;
-        r->foi_t = RESP_FOI_S;
-        return;
-    }
     float d = Vector3Distance(e->cri.pos, e->nivel.armarios[e->jog.armario]);
-    if (regras_armario_chegou(r->perseguido, e->cri.estado, d)) ele_chega_na_porta(e);
-}
-
-// Tutorial: a linha anda sozinha e "acerta" RESP_ACERTOS vezes, como no desafio: a cada vez ela para na
-// faixa ("assim!"), a tecla desenhada acende, um quadrado de acerto enche e a faixa muda de lugar.
-static float linha_tutorial(const Respiracao *r) {
-    return r->demo_t > 0.0f ? r->demo_linha : regras_respiracao_linha(r->demo_relogio, RESP_PERIODO_S);
-}
-
-static bool demo_parada(const Respiracao *r) {
-    return r->demo_t > 0.0f;
-}
-
-static bool tutorial_pronto(const Respiracao *r) {
-    return r->demo_n >= RESP_ACERTOS && !demo_parada(r);
-}
-
-static void atualiza_tutorial(Estado *e, float dt) {
-    Respiracao *r = &e->resp;
-    r->t += dt;
-    if (r->demo_t > 0.0f) { // parada no "assim!": ao fim da pausa, a faixa vai para outro lugar
-        r->demo_t -= dt;
-        if (r->demo_t <= 0.0f && r->demo_n < RESP_ACERTOS) r->zona = ZONAS_DEMO[r->demo_n];
-    } else {
-        r->demo_relogio += dt;
-        float linha = linha_tutorial(r);
-        bool acertou = regras_respiracao_acertou(linha, r->zona, RESP_ZONA * 0.4f);
-        if (r->demo_n < RESP_ACERTOS && r->demo_relogio > r->demo_ultimo + 0.6f && acertou) {
-            r->demo_n++;
-            r->demo_ultimo = r->demo_relogio;
-            r->demo_t = DEMO_PAUSA_S;
-            r->demo_linha = linha;
-        }
-    }
-    if (!tutorial_pronto(r) || !e->in.respirar) return;
-    r->tutorial_visto = true;
+    if (!regras_armario_chegou(r->perseguido, e->cri.estado, d)) return;
+    r->perseguido = false;
+    r->foi_t = 0.0f;
     comeca_desafio(e);
 }
 
@@ -185,11 +120,9 @@ void respiracao_atualiza(Estado *e, float dt) {
         r->etapa = RESP_NADA;
         return;
     }
-    // Uma etapa por quadro: o ESPAÇO que fecha o tutorial não pode contar como tentativa no desafio.
+    // Uma etapa por quadro: o desafio só lê o ESPAÇO a partir do quadro seguinte ao que ele chegou.
     if (r->etapa == RESP_NADA)
         espera_no_armario(e);
-    else if (r->etapa == RESP_TUTORIAL)
-        atualiza_tutorial(e, dt);
     else if (r->etapa == RESP_DESAFIO)
         atualiza_desafio(e, dt);
     else if (r->etapa == RESP_ALIVIO)
@@ -198,7 +131,6 @@ void respiracao_atualiza(Estado *e, float dt) {
 
 void respiracao_piloto(const Estado *e, Entrada *in) {
     const Respiracao *r = &e->resp;
-    if (r->etapa == RESP_TUTORIAL) in->respirar = tutorial_pronto(r);
     if (r->etapa != RESP_DESAFIO) return;
     float linha = regras_respiracao_linha(r->t, regras_respiracao_periodo(r->erros));
     in->respirar = regras_respiracao_acertou(linha, r->zona, RESP_ZONA * 0.5f); // com folga: o quadro anda
@@ -250,64 +182,6 @@ static void chances(Vector2 pos, int erros, float s) {
     }
 }
 
-// Um passo numerado do tutorial: o número num círculo âmbar e o texto curto embaixo.
-static void passo(const Estado *e, int n, TextoId texto, Rectangle col) {
-    float s = ui_escala(), cx = col.x + col.width * 0.5f;
-    DrawCircleLinesV((Vector2){cx, col.y + 16 * s}, 16 * s, COR_AMBAR);
-    char num[4];
-    snprintf(num, sizeof(num), "%d", n);
-    Vector2 m = ui_mede(e, num, 20 * s);
-    ui_texto(e, num, (Vector2){cx - m.x * 0.5f, col.y + 16 * s - m.y * 0.5f}, 20 * s, COR_AMBAR);
-    ui_texto_quebrado(e, dialogo_texto(texto), (Vector2){col.x + 12 * s, col.y + 44 * s}, col.width - 24 * s,
-                      17 * s, RAYWHITE);
-}
-
-// Tutorial: um painel com título, os 3 passos, a demonstração (a tecla acende quando a linha para na
-// faixa), a legenda dos indicadores e o convite para começar.
-static void desenha_tutorial(const Estado *e) {
-    const Respiracao *r = &e->resp;
-    float s = ui_escala(), w = GetScreenWidth(), h = GetScreenHeight();
-    DrawRectangle(0, 0, (int)w, (int)h, Fade(BLACK, 0.6f));
-    Rectangle p = {w * 0.5f - 420 * s, h * 0.5f - 262 * s, 840 * s, 500 * s};
-    ui_painel(p, COR_AMBAR);
-    ui_texto_centro(e, dialogo_texto(TXT_RESP_TITULO), p.y + 22 * s, 36 * s, COR_AMBAR);
-    ui_texto_centro(e, dialogo_texto(TXT_RESP_INTRO), p.y + 70 * s, 19 * s, Fade(RAYWHITE, 0.8f));
-    const TextoId passos[3] = {TXT_RESP_PASSO1, TXT_RESP_PASSO2, TXT_RESP_PASSO3};
-    float col = (p.width - 40 * s) / 3.0f;
-    for (int i = 0; i < 3; i++) // padrão MAP: os 3 passos, lado a lado
-        passo(e, i + 1, passos[i], (Rectangle){p.x + 20 * s + i * col, p.y + 108 * s, col, 90 * s});
-    ui_texto(e, dialogo_texto(TXT_RESP_DEMO), (Vector2){p.x + 60 * s, p.y + 232 * s}, 14 * s,
-             Fade(COR_FOSFORO, 0.6f));
-    Rectangle b = {p.x + 60 * s, p.y + 256 * s, 600 * s, 40 * s};
-    float linha = linha_tutorial(r);
-    barra(b, linha, r->zona, COR_FOSFORO);
-    tecla(e, "ESPAÇO", (Vector2){b.x + b.width + 24 * s, b.y + 2 * s}, 36 * s, demo_parada(r));
-    if (demo_parada(r)) {
-        const char *assim = dialogo_texto(TXT_RESP_ASSIM);
-        ui_texto(e, assim,
-                 (Vector2){b.x + linha * b.width - ui_mede(e, assim, 22 * s).x * 0.5f, b.y - 36 * s}, 22 * s,
-                 COR_AMBAR);
-    }
-    float y = p.y + 336 * s; // a legenda: o que vai aparecer no desafio
-    ui_texto(e, dialogo_texto(TXT_RESP_ACERTOS), (Vector2){p.x + 60 * s, y}, 15 * s, COR_FOSFORO);
-    acertos((Vector2){p.x + 160 * s, y + 9 * s}, r->demo_n, s); // enche com a demonstração
-    ui_texto(e, dialogo_texto(TXT_RESP_ACERTOS_DICA), (Vector2){p.x + 60 * s, y + 26 * s}, 14 * s,
-             Fade(RAYWHITE, 0.7f));
-    ui_texto(e, dialogo_texto(TXT_RESP_CHANCES), (Vector2){p.x + 450 * s, y}, 15 * s, COR_FOSFORO);
-    chances((Vector2){p.x + 550 * s, y + 9 * s}, 0, s);
-    ui_texto(e, dialogo_texto(TXT_RESP_CHANCES_DICA), (Vector2){p.x + 450 * s, y + 26 * s}, 14 * s,
-             Fade(RAYWHITE, 0.7f));
-    if (!tutorial_pronto(r) || fmodf(r->t, 1.0f) >= 0.75f) return;
-    const char *aperte = dialogo_texto(TXT_RESP_APERTE), *comecar = dialogo_texto(TXT_RESP_COMECAR);
-    float t = 24 * s, larg_tecla = ui_mede(e, "ESPAÇO", 20 * s).x + 24 * s;
-    float total = ui_mede(e, aperte, t).x + larg_tecla + ui_mede(e, comecar, t).x + 28 * s;
-    float x = w * 0.5f - total * 0.5f, yc = p.y + p.height - 66 * s;
-    ui_texto(e, aperte, (Vector2){x, yc + 6 * s}, t, COR_FOSFORO);
-    x += ui_mede(e, aperte, t).x + 14 * s;
-    x += tecla(e, "ESPAÇO", (Vector2){x, yc}, 40 * s, false) + 14 * s;
-    ui_texto(e, comecar, (Vector2){x, yc + 6 * s}, t, COR_FOSFORO);
-}
-
 // Desafio: a barra no meio, os acertos à esquerda, as chances à direita e quanto ele ainda espera embaixo.
 static void desenha_desafio(const Estado *e, Rectangle b) {
     const Respiracao *r = &e->resp;
@@ -326,6 +200,10 @@ static void desenha_desafio(const Estado *e, Rectangle b) {
     float resta = fmaxf(0.0f, 1.0f - r->t / RESP_PRAZO_S); // quanto ele ainda espera na porta
     DrawRectangleRec((Rectangle){b.x, b.y + b.height + 14 * s, b.width * resta, 5 * s},
                      Fade(COR_AMBAR, 0.8f));
+    // A única explicação: a tecla ESPAÇO embaixo da barra (afunda ao apertar e logo depois do acerto).
+    float alt = 40 * s, larg = ui_mede(e, "ESPAÇO", alt * 0.5f).x + 24 * s;
+    tecla(e, "ESPAÇO", (Vector2){b.x + (b.width - larg) * 0.5f, b.y + b.height + 34 * s}, alt,
+          e->in.respirar || r->acerto_t > 0.5f);
     if (r->acerto_t > 0.0f)
         ui_texto_centro(e, dialogo_texto(TXT_RESP_SEGUROU), b.y - 110 * s, 34 * s, COR_FOSFORO);
 }
@@ -335,10 +213,6 @@ void respiracao_desenha(const Estado *e) {
     if (r->etapa == RESP_NADA && r->aviso_t <= 0.0f && r->foi_t <= 0.0f) return;
     float s = ui_escala(), w = GetScreenWidth(), h = GetScreenHeight();
     Rectangle b = {w * 0.5f - 300 * s, h * 0.46f, 600 * s, 40 * s}; // acima da legenda do rádio
-    if (r->etapa == RESP_TUTORIAL) {
-        desenha_tutorial(e);
-        return;
-    }
     if (r->etapa == RESP_DESAFIO) desenha_desafio(e, b);
     if (r->etapa == RESP_ALIVIO)
         ui_texto_centro(e, dialogo_texto(TXT_RESP_AFASTANDO), b.y, 24 * s, COR_AMBAR);

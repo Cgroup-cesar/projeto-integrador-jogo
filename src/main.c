@@ -216,11 +216,12 @@ static int piloto_armario_leste(const Estado *e) {
     return melhor;
 }
 
-// Ele vinha perseguindo a ~6 m e viu o jogador pela última vez na porta do armário.
+// Ele tinha visto o jogador e o perdeu de vista longe dali (~18 m, perto do duto): mesmo assim, como vinha
+// atrás quando o jogador se escondeu, ele tem que atravessar o corredor até a porta do armário.
 static void piloto_monta_perseguicao(Estado *e, Vector3 porta) {
     Criatura *c = &e->cri;
-    c->pos = nivel_centro_celula(18, 11);
-    c->estado = CRIATURA_PERSEGUE;
+    c->pos = nivel_centro_celula(12, 11);
+    c->estado = CRIATURA_PROCURA;
     c->ultima_vista = porta;
     c->caminho_n = 0;
     c->tempo_estado = 0.0f;
@@ -235,12 +236,12 @@ static void piloto_confere_respiracao(Estado *e, Entrada *in) {
         piloto_falha("a respiração contou um erro que o piloto não cometeu");
     } else if (e->resp.perseguido) {
         if (e->tempo_fase - piloto.armario_t > 30.0f) piloto_falha("perseguindo, ele não veio até o armário");
-    } else if (!e->resp.tutorial_visto) {
+    } else if (e->resp.acertos < RESP_ACERTOS) {
         piloto_falha("ele chegou ao armário mas a respiração não começou");
     } else {
         in->interagir = true;
         piloto.armario_etapa = 3;
-        printf("SMOKE  armário ok: perseguindo, ele veio até a porta; tutorial e respiração sem erro\n");
+        printf("SMOKE  armário ok: perseguindo, ele veio até a porta; respiração sem erro\n");
     }
 }
 
