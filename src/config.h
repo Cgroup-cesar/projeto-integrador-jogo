@@ -103,8 +103,8 @@
 #define SANIDADE_ACELERA_LONGE   1.5f  // a base é multiplicada por 1,5× na borda do raio (2,25 pontos/s)...
 #define SANIDADE_ACELERA_PERTO   2.0f  // ...até 2× colado nela (24 pontos/s: 100 → 0 em ~4 s)
 #define SANIDADE_FATOR_ARMARIO   0.5f  // escondido no armário a queda cai pela metade
-#define SANIDADE_REGEN           0.8f  // pontos/s enquanto joga: +50 em ~1 min
-#define SANIDADE_ESPERA_REGEN    3.0f  // s sem a criatura no raio antes de voltar a subir (corredores)
+#define SANIDADE_REGEN           2.0f  // pontos/s, contínuo e sempre igual (+50 em 25 s): ele se afastou
+#define SANIDADE_ESPERA_REGEN    0.5f  // s fora do raio antes de subir (só para não piscar na borda)
 #define SANIDADE_BONUS_RODADA    35.0f // decifrou e traduziu (EV_RODADA_CONCLUIDA)
 #define SANIDADE_BONUS_SAIDA     40.0f // religou a energia e voltou à sala (EV_SAIDA_CONCLUIDA)
 #define SANIDADE_BONUS_CONECTIVO 10.0f // cada conectivo decifrado pela primeira vez
