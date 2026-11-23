@@ -79,6 +79,7 @@ typedef struct {
     bool ouviu_ruido;
     bool chegou_ao_destino;
     float tempo_no_estado;
+    bool sabe_esconderijo; // vinha atrás quando a pessoa entrou no armário: vai até a porta dele
 } PercepcaoCriatura;
 
 Vector3 regras_frente(float yaw);
@@ -203,6 +204,11 @@ int regras_bonus_movimentos(int movimentos); // resolver o painel pensando, com 
 float regras_respiracao_linha(float t, float periodo); // a linha vermelha vai e volta: 0 → 1 → 0, em [0, 1]
 float regras_respiracao_periodo(int erros);            // cada erro deixa a linha mais rápida
 bool regras_respiracao_acertou(float linha, float zona, float largura); // a linha está sobre a faixa?
+// Entrar no armário com ele atrás (vendo, perseguindo ou procurando) marca a caçada; sem ela, o armário só
+// esconde e ele nunca vem até a porta.
+bool regras_armario_perseguido(bool criatura_ativa, EstadoCriatura estado, bool ve_jogador);
+// A caçada segue enquanto ele não volta à patrulha; a respiração começa quando ele chega perto do armário.
+bool regras_armario_chegou(bool perseguido, EstadoCriatura estado, float distancia);
 
 // ------------------------------------------------------------------ a fita do avistamento (intro, fita.c)
 typedef struct {

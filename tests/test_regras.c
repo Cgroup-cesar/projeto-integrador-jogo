@@ -62,6 +62,8 @@ static void testa_estados_criatura(void) {
     CHECK(regras_proximo_estado_criatura(CRIATURA_PROCURA, nada) == CRIATURA_PROCURA);
     CHECK(regras_proximo_estado_criatura(CRIATURA_PROCURA, cansou) == CRIATURA_PATRULHA);
     CHECK(regras_proximo_estado_criatura(CRIATURA_PROCURA, ouviu) == CRIATURA_INVESTIGA);
+    PercepcaoCriatura armario = {.sabe_esconderijo = true, .tempo_no_estado = CRIATURA_PROCURA_S};
+    CHECK(regras_proximo_estado_criatura(CRIATURA_PERSEGUE, armario) == CRIATURA_PERSEGUE); // vai até a porta
 }
 
 // [REQ:PURA-regras_postura_criatura] testa a postura parado, andando e perseguindo
@@ -588,6 +590,21 @@ static void testa_respiracao(void) {
     CHECK(!regras_respiracao_acertou(0.41f, 0.5f, 0.16f));
 }
 
+// [REQ:PURA-regras_armario] o armário só chama o Precursor até a porta se ele vinha atrás de quem entrou
+static void testa_armario(void) {
+    CHECK(!regras_armario_perseguido(false, CRIATURA_PERSEGUE, true)); // no duto: ninguém vem
+    CHECK(!regras_armario_perseguido(true, CRIATURA_PATRULHA, false)); // patrulhando longe: só esconde
+    CHECK(!regras_armario_perseguido(true, CRIATURA_INVESTIGA, false)); // atrás de um barulho, não da pessoa
+    CHECK(regras_armario_perseguido(true, CRIATURA_PERSEGUE, false));
+    CHECK(regras_armario_perseguido(true, CRIATURA_PROCURA, false)); // acabou de perder de vista
+    CHECK(regras_armario_perseguido(true, CRIATURA_PATRULHA, true)); // está vendo agora
+    CHECK(regras_armario_chegou(true, CRIATURA_PROCURA, RESP_CHEGA_M));
+    CHECK(regras_armario_chegou(true, CRIATURA_INVESTIGA, 1.0f)); // ouviu algo e veio: continua a caçada
+    CHECK(!regras_armario_chegou(true, CRIATURA_PROCURA, RESP_CHEGA_M + 0.5f)); // ainda longe
+    CHECK(!regras_armario_chegou(true, CRIATURA_PATRULHA, 1.0f));  // desistiu: passa sem parar
+    CHECK(!regras_armario_chegou(false, CRIATURA_PERSEGUE, 1.0f)); // ninguém vinha atrás
+}
+
 // [REQ:PURA-regras_fita_tomada] a fita do avistamento segue a intro: foto certa, cortes com falha e a queda
 static void testa_fita_tomada(void) {
     TomadaFita t = regras_fita_tomada(0, 0.0f, 0.0f);
@@ -638,6 +655,7 @@ int main(void) {
     testa_bonus_movimentos();
     testa_ranking_insere();
     testa_respiracao();
+    testa_armario();
     testa_fita_tomada();
     testa_intro_escuro();
     testa_ranking_linha();

@@ -182,6 +182,7 @@ static PercepcaoCriatura percebe(const Estado *e, Vector3 *ruido_pos) {
     const Criatura *c = &e->cri;
     PercepcaoCriatura p = {0};
     p.ve_jogador = ve_o_jogador(e);
+    p.sabe_esconderijo = e->resp.perseguido; // vinha atrás quando a pessoa se escondeu (respiracao.c)
     float intensidade = 0.0f;
     int mais_forte = col_ruidos_mais_forte(&e->ruidos, c->pos, &intensidade);
     p.ouviu_ruido = mais_forte >= 0 && intensidade > RUIDO_LIMIAR_PERCEBIDO;

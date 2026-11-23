@@ -171,7 +171,7 @@ float regras_ruido_percebido(Ruido ruido, Vector3 ouvinte) {
 
 // [REQ:PURA-regras_proximo_estado_criatura] PATRULHA → INVESTIGA → PERSEGUE → PROCURA → PATRULHA
 EstadoCriatura regras_proximo_estado_criatura(EstadoCriatura atual, PercepcaoCriatura p) {
-    if (p.ve_jogador) return CRIATURA_PERSEGUE;
+    if (p.ve_jogador || p.sabe_esconderijo) return CRIATURA_PERSEGUE; // viu entrar no armário: não desiste
     switch (atual) {
     case CRIATURA_PERSEGUE:
         return CRIATURA_PROCURA; // perdeu de vista: procura onde viu por último
@@ -442,6 +442,16 @@ float regras_respiracao_periodo(int erros) {
 
 bool regras_respiracao_acertou(float linha, float zona, float largura) {
     return fabsf(linha - zona) <= largura * 0.5f;
+}
+
+// [REQ:PURA-regras_armario] o armário esconde; ele só vem até a porta se vinha atrás de quem entrou
+bool regras_armario_perseguido(bool criatura_ativa, EstadoCriatura estado, bool ve_jogador) {
+    if (!criatura_ativa) return false; // ainda no duto, ou puxada pela contenção
+    return ve_jogador || estado == CRIATURA_PERSEGUE || estado == CRIATURA_PROCURA;
+}
+
+bool regras_armario_chegou(bool perseguido, EstadoCriatura estado, float distancia) {
+    return perseguido && estado != CRIATURA_PATRULHA && distancia <= RESP_CHEGA_M;
 }
 
 // [REQ:PURA-regras_fita_tomada] a fita do avistamento: qual foto aparece em cada linha da intro e quanto falha

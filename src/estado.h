@@ -275,25 +275,19 @@ typedef struct {
 // ------------------------------------------------------------------ segurar a respiração (armário)
 typedef enum {
     RESP_NADA,
-    RESP_TUTORIAL, // 1ª vez na partida: o mundo para e a barrinha mostra como faz
     RESP_DESAFIO,  // o Precursor parado na porta; ESPAÇO na hora certa
     RESP_ALIVIO    // 3 acertos: ele se afasta; o E só volta quando ele está longe (aí a pessoa solta o ar)
 } EtapaRespiracao;
 
 typedef struct {
     EtapaRespiracao etapa;
+    bool perseguido;     // ele vinha atrás quando a pessoa entrou no armário (só então ele vem até a porta)
     float t;             // tempo na etapa (move a linha vermelha)
     float zona;          // centro da faixa branca (0..1)
     int erros;           // nesta visita ao armário
     int acertos;         // RESP_ACERTOS e ele desiste
     float acerto_t;      // "SEGUROU!" depois de um acerto
     float foi_t;         // "Ele foi embora..." (depois que ele está longe de verdade)
-    bool tutorial_visto; // por partida (cada pessoa da feira vê uma vez)
-    float demo_relogio;  // tutorial: o tempo da linha (para nas pausas da demonstração)
-    float demo_t;        // tutorial: quanto falta da pausa "assim!" atual (0: andando)
-    float demo_linha;    // onde a linha parou na demonstração
-    int demo_n;          // acertos já demonstrados (a demonstração acerta RESP_ACERTOS vezes)
-    float demo_ultimo;   // demo_relogio no último acerto demonstrado (a linha anda um pouco antes do próximo)
     float aviso_t;       // "ELE OUVIU!" depois de um erro
 } Respiracao;
 
