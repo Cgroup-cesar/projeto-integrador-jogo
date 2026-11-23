@@ -553,10 +553,13 @@ static void testa_sanidade_queda(void) {
 }
 
 static void testa_sanidade_recupera(void) {
-    float esperando = regras_sanidade_passo(50.0f, 20.0f, 1.0f, false, 1.0f, true, 1.0f);
-    CHECK(perto(esperando, 50.0f)); // corredor: ainda dentro da espera
+    float meia_espera = SANIDADE_ESPERA_REGEN * 0.5f;
+    float esperando = regras_sanidade_passo(50.0f, 20.0f, 1.0f, false, meia_espera, true, 1.0f);
+    CHECK(perto(esperando, 50.0f)); // corredor: ainda dentro da espera curta
     float depois = regras_sanidade_passo(50.0f, 20.0f, 1.0f, false, SANIDADE_ESPERA_REGEN, true, 1.0f);
     CHECK(perto(depois, 50.0f + SANIDADE_REGEN));
+    float bem_longe = regras_sanidade_passo(50.0f, 60.0f, 1.0f, false, SANIDADE_ESPERA_REGEN, true, 1.0f);
+    CHECK(perto(bem_longe, depois)); // volta contínua e sempre igual: não depende da distância
     float sala = regras_sanidade_passo(50.0f, 2.0f, 1.0f, false, 0.0f, false, 1.0f);
     CHECK(perto(sala, 50.0f + SANIDADE_REGEN)); // na rodada sobe na hora (a criatura está contida)
     CHECK(perto(regras_sanidade_passo(99.9f, 20.0f, 1.0f, false, 10.0f, false, 1.0f), SANIDADE_MAX));

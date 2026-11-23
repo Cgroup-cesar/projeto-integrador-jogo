@@ -12,7 +12,8 @@ static float perto_de(float dist) {
     return Clamp((SANIDADE_RAIO - dist) / (SANIDADE_RAIO - SANIDADE_PERTO), 0.0f, 1.0f);
 }
 
-// [REQ:SANIDADE] cai com a criatura perto (já na borda do raio), volta devagar; bônus nas tarefas
+// [REQ:SANIDADE] cai com a criatura perto (mais rápido quanto mais perto); com ela fora do raio, volta num
+// ritmo contínuo e sempre igual (SANIDADE_REGEN); bônus nas tarefas
 float regras_sanidade_passo(float s, float dist, float surgindo, bool escondido, float tempo_longe,
                             bool fase_saida, float dt) {
     if (fase_saida && dist < SANIDADE_RAIO) {
