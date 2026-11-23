@@ -44,7 +44,8 @@ Vector3 jogador_direcao(const Estado *e) {
 // [REQ:RF2] câmera em 1ª pessoa pelo mouse (o deslocamento do mouse já é por quadro: não multiplica por dt)
 static void olha(Estado *e) {
     Jogador *j = &e->jog;
-    if (j->modo == MODO_PAINEL || j->modo == MODO_DIARIO) return;
+    // No terminal, no painel e no bilhete o cursor fica à mostra para clicar: a câmera não acompanha o mouse.
+    if (j->modo == MODO_TERMINAL || j->modo == MODO_PAINEL || j->modo == MODO_DIARIO) return;
     if (j->modo == MODO_ARMARIO) { // escondido atrás da porta: o olhar fica preso na fresta, sem virar
         j->yaw = j->armario_yaw;
         j->pitch = 0.0f;

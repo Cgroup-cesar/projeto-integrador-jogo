@@ -27,6 +27,7 @@
 #include "dialogo.h"
 #include "ranking.h"
 #include "respiracao.h"
+#include "clique.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -79,6 +80,11 @@ static void le_entrada(Entrada *in) {
         if (in->n_letras < MAX_LETRAS_QUADRO) in->letras[in->n_letras++] = c;
     in->apagar = IsKeyPressed(KEY_BACKSPACE) || IsKeyPressedRepeat(KEY_BACKSPACE);
     in->alguma = in->alguma || in->n_letras > 0;
+    in->ponteiro_livre = !IsCursorHidden(); // andando, o cursor fica preso e o clique não vale nas telas
+    in->ponteiro = GetMousePosition();
+    in->ponteiro_moveu = in->ponteiro_livre && (in->mouse.x != 0.0f || in->mouse.y != 0.0f);
+    in->clique = in->ponteiro_livre && IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
+    clique_aperta_teclas(in); // clicar numa tecla da barra do rodapé vale como apertá-la
 }
 
 // ================================================================== piloto automático (--smoke)
@@ -410,6 +416,7 @@ static void atualiza(Estado *e, float dt) {
 
 // [REQ:RNF3] desenhar recebe const Estado *: não muda nada; o loop é entrada → atualiza → desenha
 static void desenha(const Estado *e) {
+    clique_limpa();   // as telas registram de novo, ao se desenhar, onde estão as opções clicáveis
     susto_prepara(e); // o rosto do susto, na textura dele
     posfx_inicia_cena(e);
     jogo_desenha_cena(e);

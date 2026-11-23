@@ -6,6 +6,7 @@
 #include "ui.h"
 #include "dialogo.h"
 #include "falha.h"
+#include "clique.h"
 #include <math.h>
 #include <stdio.h>
 
@@ -13,15 +14,16 @@
 // INICIAR, RANKING e SAIR (no modo feira, sem SAIR). O ranking abre por cima até ENTER ou ESC.
 void menu_atualiza(Estado *e) {
     if (e->fase != FASE_MENU) return;
-    if (e->menu.ranking_aberto) {
-        if (e->in.confirmar || e->in.voltar) e->menu.ranking_aberto = false;
+    if (e->menu.ranking_aberto) { // um clique em qualquer lugar também fecha a tabela
+        if (e->in.confirmar || e->in.voltar || e->in.clique) e->menu.ranking_aberto = false;
         return;
     }
-    int opcoes = e->modo_feira ? 2 : 3;
-    if (e->in.cima || e->in.baixo) e->menu.troca_t = e->tempo_total;
+    int opcoes = e->modo_feira ? 2 : 3, antes = e->menu.cursor;
     if (e->in.cima) e->menu.cursor = (e->menu.cursor + opcoes - 1) % opcoes;
     if (e->in.baixo) e->menu.cursor = (e->menu.cursor + 1) % opcoes;
-    if (!e->in.confirmar) return;
+    bool clicou = clique_escolhe(&e->in, CLIQUE_MENU, &e->menu.cursor); // passar por cima escolhe
+    if (e->menu.cursor != antes) e->menu.troca_t = e->tempo_total;     // a opção nova entra com a falha
+    if (!e->in.confirmar && !clicou) return;
     if (e->menu.cursor == 0)
         e->evento = EV_INICIAR;
     else if (e->menu.cursor == 1)
@@ -169,9 +171,11 @@ void menu_desenha(const Estado *e) {
     const TextoId opcoes[3] = {TXT_MENU_INICIAR, TXT_MENU_RANKING, TXT_MENU_SAIR};
     const Color cores[3] = {COR_FOSFORO, COR_AMBAR, COR_ALARME};
     int n = e->modo_feira ? 2 : 3;
-    for (int i = 0; i < n; i++) // padrão MAP: cada opção numa faixa
-        faixa(e, dialogo_texto(opcoes[i]), (Rectangle){x, (330 + i * 62) * s, 400 * s, 46 * s}, cores[i],
-              e->menu.cursor == i);
+    for (int i = 0; i < n; i++) { // padrão MAP: cada opção numa faixa (clicável)
+        Rectangle r = {x, (330 + i * 62) * s, 400 * s, 46 * s};
+        faixa(e, dialogo_texto(opcoes[i]), r, cores[i], e->menu.cursor == i);
+        clique_area(CLIQUE_MENU, i, r);
+    }
     convite(e, (Rectangle){w - 90 * s - 400 * s, h - 190 * s, 400 * s, 84 * s});
 #if TITULO_PROVISORIO
     ui_texto(e, dialogo_texto(TXT_MENU_AVISO_PROVISORIO), (Vector2){x, h - 92 * s}, 14 * s,

@@ -9,6 +9,7 @@
 #include "manual.h"
 #include "dialogo.h"
 #include "crt.h"
+#include "clique.h"
 #include <math.h>
 #include <stdio.h>
 
@@ -28,6 +29,9 @@ void terminal_atualiza(Estado *e, float dt) {
     if (opcoes == 0) return;
     if (e->in.cima) r->cursor = (r->cursor + opcoes - 1) % opcoes;
     if (e->in.baixo) r->cursor = (r->cursor + 1) % opcoes;
+    // O mouse: passar por cima escolhe a opção; clicar vale como o ENTER (que rodadas.c decide). Com a ajuda
+    // aberta por cima, as opções ficam embaixo dela e não recebem o clique.
+    if (!e->ajuda_aberta && clique_escolhe(&e->in, CLIQUE_OPCAO, &r->cursor)) e->in.confirmar = true;
 }
 
 // ------------------------------------------------------------------ moldura
@@ -147,6 +151,8 @@ static void desenha_luzes(const Estado *e, const DadosRodada *d, Rectangle caixa
         if (x > caixa.x && x + w > caixa.x + caixa.width) x = caixa.x, y += 36 * s;
         manual_lampada((Vector2){x + 12 * s, y + 9 * s}, 9 * s, acesa);
         ui_texto(e, t, (Vector2){x + 36 * s, y}, 16 * s, COR_VIDRO);
+        // clicar na luz é como apertar 1 ou 2 (clique.c)
+        clique_area(CLIQUE_TECLA, i == 0 ? TECLA_1 : TECLA_2, (Rectangle){x, y - 6 * s, w, 30 * s});
         x += w + 30 * s;
     }
 }
@@ -233,9 +239,11 @@ static bool errou_agora(const Estado *e) {
 static void desenha_opcoes_conectivo(const Estado *e, Vector2 pos, float largura) {
     float s = escala();
     crt_pergunta(e, dialogo_texto(TXT_TERMINAL_ESCOLHA_CONECTIVO), pos, 16 * s);
-    for (int i = 0; i < CONECTIVOS_ESCOLHA; i++) // padrão MAP: cada conectivo numa faixa
-        crt_opcao(e, dialogo_conectivo(i), (Rectangle){pos.x, pos.y + (28 + i * 34) * s, largura, 30 * s},
-                  18 * s, e->rod.cursor == i, errou_agora(e), true, COR_FOSFORO);
+    for (int i = 0; i < CONECTIVOS_ESCOLHA; i++) { // padrão MAP: cada conectivo numa faixa (clicável)
+        Rectangle r = {pos.x, pos.y + (28 + i * 34) * s, largura, 30 * s};
+        crt_opcao(e, dialogo_conectivo(i), r, 18 * s, e->rod.cursor == i, errou_agora(e), true, COR_FOSFORO);
+        clique_area(CLIQUE_OPCAO, i, r);
+    }
 }
 
 // Tradução: a frase com o significado de cada glifo embaixo (conectivo só se já foi decifrado).
@@ -247,10 +255,12 @@ static void desenha_traducao(const Estado *e, const DadosRodada *d, Vector2 pos,
     rotulos_glifos(e, &d->traducao, (Vector2){in.x, in.y + 2 * s}, 40 * s);
     float y = pos.y + 136 * s;
     crt_pergunta(e, dialogo_texto(TXT_TERMINAL_TRADUZA), (Vector2){pos.x, y}, 16 * s);
-    for (int i = 0; i < 3; i++) // padrão MAP: cada tradução numa faixa
-        crt_opcao(e, dialogo_opcao_traducao(e->rod.numero, i),
-                  (Rectangle){pos.x, y + (30 + i * 42) * s, largura, 34 * s}, 17 * s, e->rod.cursor == i,
-                  errou_agora(e), true, COR_FOSFORO);
+    for (int i = 0; i < 3; i++) { // padrão MAP: cada tradução numa faixa (clicável)
+        Rectangle r = {pos.x, y + (30 + i * 42) * s, largura, 34 * s};
+        crt_opcao(e, dialogo_opcao_traducao(e->rod.numero, i), r, 17 * s, e->rod.cursor == i, errou_agora(e),
+                  true, COR_FOSFORO);
+        clique_area(CLIQUE_OPCAO, i, r);
+    }
 }
 
 // Decifrando: "mude as luzes", "...ele responde..." ou, logo depois da resposta, ✓ VERDADE / ✗ FALSO grande.

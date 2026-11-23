@@ -10,6 +10,7 @@
 #include "trilhas.h"
 #include "ui.h"
 #include "dialogo.h"
+#include "clique.h"
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -112,7 +113,8 @@ void compositor_atualiza(Estado *e, float dt) {
         return;
     }
     move_cursor(c, &e->in);
-    if (e->in.confirmar) usa_ficha(e, c->cursor);
+    bool clicou = clique_escolhe(&e->in, CLIQUE_FICHA, &c->cursor); // passar por cima escolhe; clicar usa
+    if (e->in.confirmar || clicou) usa_ficha(e, c->cursor);
 }
 
 // ================================================================== desenho do compositor
@@ -122,6 +124,7 @@ static void desenha_fichas(const Estado *e, Vector2 pos) {
         Vector2 p = {pos.x + (i % COLUNAS_FICHAS) * 136 * s, pos.y + (i / COLUNAS_FICHAS) * 40 * s};
         Color cor = i == FICHA_TRANSMITIR ? COR_ALARME : i == FICHA_APAGAR ? COR_AMBAR : COR_FOSFORO;
         ui_opcao(e, dialogo_ficha(i), p, 130 * s, 16 * s, e->comp.cursor == i, cor);
+        clique_area(CLIQUE_FICHA, i, (Rectangle){p.x - 10 * s, p.y - 4 * s, 130 * s, 24 * s});
     }
 }
 
