@@ -5,6 +5,7 @@
 #include "dialogo.h"
 #include "falha.h"
 #include "ui.h"
+#include "clique.h"
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -28,12 +29,15 @@ static void avanca(Estado *e, EtapaIntro proxima) {
 }
 
 static void atualiza_genero(Estado *e, bool segue_sozinho) {
-    if (e->in.esquerda || e->in.direita || e->in.cima || e->in.baixo) {
-        e->ident.feminino = !e->ident.feminino;
+    int escolha = e->ident.feminino ? 1 : 0, antes = escolha;
+    if (e->in.esquerda || e->in.direita || e->in.cima || e->in.baixo) escolha = 1 - escolha;
+    bool clicou = clique_escolhe(&e->in, CLIQUE_GENERO, &escolha); // passar por cima escolhe; clicar confirma
+    if (escolha != antes) {
+        e->ident.feminino = escolha == 1;
         e->menu.troca_t = e->tempo_total; // a opção nova entra com a falha (falha.c)
         audio_toca(e, SOM_INTERRUPTOR, 0.4f, 1.3f);
     }
-    if (e->in.confirmar || segue_sozinho) avanca(e, INTRO_NOME);
+    if (e->in.confirmar || clicou || segue_sozinho) avanca(e, INTRO_NOME);
 }
 
 static void atualiza_nome(Estado *e, bool segue_sozinho) {
@@ -43,7 +47,9 @@ static void atualiza_nome(Estado *e, bool segue_sozinho) {
         mudou |= regras_nome_edita(id->nome, sizeof(id->nome), NOME_MAX_LETRAS, e->in.letras[i]);
     if (e->in.apagar) mudou |= regras_nome_edita(id->nome, sizeof(id->nome), NOME_MAX_LETRAS, NOME_APAGAR);
     if (mudou) audio_toca(e, SOM_MAQUINA_ESCREVER, 0.5f, 0.9f + GetRandomValue(0, 20) / 100.0f);
-    if (!e->in.confirmar && !segue_sozinho) return;
+    int botao = 0; // o botão CONTINUAR embaixo do campo vale como o ENTER
+    bool clicou = clique_escolhe(&e->in, CLIQUE_OPCAO, &botao);
+    if (!e->in.confirmar && !clicou && !segue_sozinho) return;
     identidade_garante_nome(e); // ENTER com o campo vazio fica com o nome padrão
     avanca(e, INTRO_DATILOGRAFA);
 }
@@ -60,10 +66,12 @@ void identidade_atualiza(Estado *e, float dt) {
 }
 
 // ------------------------------------------------------------------ desenho
-static void desenha_opcao_genero(const Estado *e, TextoId texto, float centro_x, float y, bool ativa) {
+static void desenha_opcao_genero(const Estado *e, TextoId texto, float centro_x, float y, bool ativa, int i) {
     float s = ui_escala();
     const char *t = dialogo_texto(texto);
     Vector2 m = ui_mede(e, t, 30 * s);
+    Rectangle area = {centro_x - m.x * 0.5f - 16 * s, y - 4 * s, m.x + 32 * s, 38 * s};
+    clique_area(CLIQUE_GENERO, i, area);
     if (!ativa) {
         ui_opcao(e, t, (Vector2){centro_x - m.x * 0.5f - 6 * s, y}, m.x + 32 * s, 30 * s, false, COR_FOSFORO);
         return;
@@ -78,8 +86,8 @@ static void desenha_opcao_genero(const Estado *e, TextoId texto, float centro_x,
 static void desenha_genero(const Estado *e) {
     float s = ui_escala(), meio = GetScreenWidth() * 0.5f;
     ui_texto_centro(e, dialogo_texto(TXT_ID_PERGUNTA_GENERO), 250 * s, 36 * s, COR_FOSFORO);
-    desenha_opcao_genero(e, TXT_ID_PROFESSOR, meio - 170 * s, 350 * s, !e->ident.feminino);
-    desenha_opcao_genero(e, TXT_ID_PROFESSORA, meio + 170 * s, 350 * s, e->ident.feminino);
+    desenha_opcao_genero(e, TXT_ID_PROFESSOR, meio - 170 * s, 350 * s, !e->ident.feminino, 0);
+    desenha_opcao_genero(e, TXT_ID_PROFESSORA, meio + 170 * s, 350 * s, e->ident.feminino, 1);
     ui_texto_centro(e, dialogo_texto(TXT_ID_DICA_GENERO), 560 * s, 18 * s, Fade(COR_VIDRO, 0.8f));
 }
 
@@ -93,6 +101,11 @@ static void desenha_nome(const Estado *e) {
     bool cursor_aceso = fmodf(e->tempo_fase, 1.0f) < 0.55f; // o "_" pisca, como num terminal
     snprintf(texto, sizeof(texto), "%s%s", e->ident.nome, cursor_aceso ? "_" : "");
     ui_texto(e, texto, (Vector2){campo.x + 20 * s, campo.y + 12 * s}, 32 * s, RAYWHITE);
+    const char *continuar = dialogo_texto(TXT_ID_CONTINUAR); // para quem prefere o mouse
+    float lc = ui_mede(e, continuar, 22 * s).x + 48 * s;
+    Rectangle botao = {GetScreenWidth() * 0.5f - lc * 0.5f, campo.y + campo.height + 40 * s, lc, 38 * s};
+    ui_opcao(e, continuar, (Vector2){botao.x + 10 * s, botao.y + 4 * s}, lc, 30 * s, true, COR_FOSFORO);
+    clique_area(CLIQUE_OPCAO, 0, botao);
     snprintf(texto, sizeof(texto), dialogo_texto(TXT_ID_DICA_NOME), dialogo_texto(TXT_NOME_PADRAO));
     ui_texto_centro(e, texto, 560 * s, 18 * s, Fade(COR_VIDRO, 0.8f));
     ui_texto_centro(e, dialogo_texto(TXT_ID_AVISO_NOME), 600 * s, 16 * s, Fade(COR_FOSFORO, 0.5f));

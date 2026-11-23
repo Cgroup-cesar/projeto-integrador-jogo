@@ -8,6 +8,7 @@
 #include "falha.h"
 #include "fita.h"
 #include "crt.h"
+#include "clique.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -332,10 +333,11 @@ void ui_atualiza(Estado *e, float dt) {
 
 // ------------------------------------------------------------------ desenho: menu, intro, pausa
 // Opção da pausa. A ativa ganha fundo, barra na lateral e uma falha leve (falha.c, MENU_FALHA_LEVE).
-static void desenha_opcao(const Estado *e, const char *texto, float y, bool ativa) {
+static void desenha_opcao(const Estado *e, const char *texto, float y, bool ativa, int indice) {
     float s = ui_escala();
     Vector2 m = ui_mede(e, texto, 30 * s);
     float x = (GetScreenWidth() - m.x) * 0.5f;
+    clique_area(CLIQUE_PAUSA, indice, (Rectangle){x - 22 * s, y - 6 * s, m.x + 44 * s, m.y + 12 * s});
     if (!ativa) {
         ui_texto(e, texto, (Vector2){x, y}, 30 * s, Fade(COR_FOSFORO, 0.5f));
         return;
@@ -394,8 +396,8 @@ static void desenha_pausa(const Estado *e) {
     DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(BLACK, 0.7f));
     falha_chuvisco(e, TELAS_ESTATICA_ALFA, TELAS_ESTATICA_PICO, false); // bem fraco: só um grão de fita
     ui_texto_centro(e, dialogo_texto(TXT_PAUSA), 240 * s, 52 * s, COR_FOSFORO);
-    desenha_opcao(e, dialogo_texto(TXT_PAUSA_CONTINUAR), 350 * s, e->menu.cursor == 0);
-    desenha_opcao(e, dialogo_texto(TXT_PAUSA_MENU), 400 * s, e->menu.cursor == 1);
+    desenha_opcao(e, dialogo_texto(TXT_PAUSA_CONTINUAR), 350 * s, e->menu.cursor == 0, 0);
+    desenha_opcao(e, dialogo_texto(TXT_PAUSA_MENU), 400 * s, e->menu.cursor == 1, 1);
 }
 
 // ------------------------------------------------------------------ desenho: HUD
