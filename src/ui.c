@@ -362,7 +362,17 @@ static void desenha_intro(const Estado *e) {
     float s = ui_escala();
     if (e->intro.etapa != INTRO_DATILOGRAFA) return; // perguntas: identidade.c; rádio: as legendas
     fita_desenha(e); // a filmagem do avistamento por trás do texto
-    float y = GetScreenHeight() - 280 * s; // embaixo, sobre a sombra da fita (o OSD fica à direita)
+    float alfa = 1.0f - fminf(1.0f, e->intro.saida_t / INTRO_TEXTO_SOME_S); // no fim, o texto some devagar
+    // O bloco cresce para cima, preso perto do rodapé: com a fita, só duas linhas embaixo (a nave fica à
+    // vista); cada linha nova empurra as outras, como um terminal. A altura conta a linha inteira (mesmo a meio
+    // caminho), para o bloco não pular quando ela quebra; o texto em BLANK só mede.
+    float largura = GetScreenWidth() * 0.74f, total = 0.0f;
+    for (int i = 0; i <= e->intro.linha && i < INTRO_LINHAS; i++) { // padrão FOLD: soma as alturas
+        char linha[256];
+        dialogo_personaliza(&e->ident, dialogo_intro(i), linha, sizeof(linha));
+        total += ui_texto_quebrado(e, linha, (Vector2){0, 0}, largura, 24 * s, BLANK) + 14 * s;
+    }
+    float y = GetScreenHeight() - 90 * s - total; // embaixo, sobre a sombra da fita (o OSD fica à direita)
     for (int i = 0; i <= e->intro.linha && i < INTRO_LINHAS; i++) {
         char parcial[256], linha[256];
         dialogo_personaliza(&e->ident, dialogo_intro(i), linha, sizeof(linha));
@@ -370,13 +380,13 @@ static void desenha_intro(const Estado *e) {
             copia_letras(linha, (int)e->intro.letras, parcial, sizeof(parcial));
         else
             snprintf(parcial, sizeof(parcial), "%s", linha);
-        y += ui_texto_quebrado(e, parcial, (Vector2){110 * s, y}, GetScreenWidth() * 0.62f, 24 * s,
-                               COR_FOSFORO) +
+        y += ui_texto_quebrado(e, parcial, (Vector2){110 * s, y}, largura, 24 * s,
+                               Fade(COR_FOSFORO, alfa)) +
              14 * s;
     }
     ui_texto(e, dialogo_texto(TXT_INTRO_PULAR),
              (Vector2){GetScreenWidth() - 150 * s, GetScreenHeight() - 40 * s}, 16 * s,
-             Fade(COR_FOSFORO, 0.4f));
+             Fade(COR_FOSFORO, 0.4f * alfa));
 }
 
 static void desenha_pausa(const Estado *e) {

@@ -125,6 +125,10 @@ const Legenda *dialogo_falas(BlocoFalas bloco, int *n) {
 static const char *const INTRO[INTRO_LINHAS] = {
     "CHÃ DE ALEGRIA, PERNAMBUCO — AGOSTO DE 1985.",
     "Há dois meses, algo desceu da nave que paira sobre a cidade.",
+    // depois da fita (o sinal cai antes desta linha): o resto da história, sobre a tela preta
+    "O Exército isolou a cidade. Toda noite, das 19:05 às 22:00, a nave canta.",
+    "O que desceu não tem olhos e fala por símbolos de luz. O SNI o mantém preso.",
+    "Da última vez que as luzes caíram, dois homens morreram.",
     "Você é {o|a} {PROF} {NOME}, de linguística da UFPE. Nunca traduziu nada vivo.",
 };
 
@@ -286,7 +290,7 @@ static const char *const TEXTOS[TXT_TOTAL] = {
     [TXT_MENU_RANKING] = "RANKING",
     [TXT_MENU_GANCHO] = "Agosto de 1985. Do outro lado do vidro, algo quer conversar.",
     [TXT_MENU_DATA_FITA] = "AGO 1985",
-    [TXT_FITA_DATA] = "14.06.1985", // a filmagem do avistamento: dois meses antes da história
+    [TXT_FITA_DATA] = "05.06.1985", // a filmagem: o dia em que a plataforma desceu (PROPOSTA_HISTORIA)
     [TXT_SUBLIMINAR_1] = "NÃO OLHE",
     [TXT_SUBLIMINAR_2] = "ELE ESTÁ AQUI",
     [TXT_SUBLIMINAR_3] = "ATRÁS DO VIDRO",

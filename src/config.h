@@ -28,7 +28,13 @@
 #define FITA_QUEDA_S       0.8f  // a queda: o sinal falha cada vez mais por este tempo...
 #define FITA_ESTATICA_S    0.35f // ...vira chuvisco puro por este; depois a tela fica preta
 #define FITA_PAUSA_S       2.0f  // as linhas com foto ficam mais tempo na tela (as outras, 1,1 s)
-#define FITA_HORA_INICIO   (23 * 3600 + 17 * 60 + 52) // o relógio da câmera no começo da fita (23:17:52)
+// A passagem da intro para a sala: a última frase fica, some, um instante de preto e a sala clareia.
+#define INTRO_FIM_PAUSA_S    2.5f // a última frase ("Nunca traduziu nada vivo.") fica na tela
+#define INTRO_TEXTO_SOME_S   0.8f // o texto some devagar...
+#define INTRO_PRETO_S        0.5f // ...um instante de tela preta e silêncio...
+#define INTRO_ABRE_S         2.0f // ...e a sala aparece saindo do preto
+#define INTRO_RADIO_ATRASO_S 1.0f // o rádio do Varela só toca com a sala já à vista
+#define FITA_HORA_INICIO   (21 * 3600 + 47 * 60 + 52) // a câmera às 21:47:52, durante o canto
 #define TECLAS_ESCALA_JOGO 0.88f // tamanho da barra de teclas e do minimapa durante a partida (1 = original)
 
 // ---------------------------------------------------------------- janela e tempo

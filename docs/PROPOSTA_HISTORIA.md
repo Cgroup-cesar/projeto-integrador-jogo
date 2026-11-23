@@ -72,12 +72,15 @@ sozinho. O campo do nome põe a primeira letra de cada palavra em maiúscula ("i
    - "Professor ou professora?" com as duas opções lado a lado (setas e ENTER).
    - "Qual é o seu nome, {prof}?" com um campo de texto de até 16 letras, aceitando acentos. ENTER com o campo
      vazio usa o nome padrão "Moura". No modo feira, cada pergunta segue sozinha depois de ~20 s sem resposta.
-   - *Ajuste em relação ao roteiro discutido:* as perguntas vêm **antes** do texto datilografado, porque a linha 3
+   - *Ajuste em relação ao roteiro discutido:* as perguntas vêm **antes** do texto datilografado, porque a linha 6
      já usa a palavra "professor/professora".
 2. **Texto datilografado** (um clique de máquina de escrever por letra; ENTER pula):
    1. "CHÃ DE ALEGRIA, PERNAMBUCO — AGOSTO DE 1985."
    2. "Há dois meses, algo desceu da nave que paira sobre a cidade."
-   3. "Você é {o|a} {PROF} {NOME}, de linguística da UFPE. Nunca traduziu nada vivo."
+   3. "O Exército isolou a cidade. Toda noite, das 19:05 às 22:00, a nave canta."
+   4. "O que desceu não tem olhos e fala por símbolos de luz. O SNI o mantém preso."
+   5. "Da última vez que as luzes caíram, dois homens morreram."
+   6. "Você é {o|a} {PROF} {NOME}, de linguística da UFPE. Nunca traduziu nada vivo."
 3. **A carta** (fade para a sala; rádio, General Varela):
    - "Olá, {PROF} {NOME}. General Varela. Bem-vind{o|a} ao Programa Precursor."
    - "Seu trabalho: entender o que ele diz. E nada de política, religião... muito menos futebol."

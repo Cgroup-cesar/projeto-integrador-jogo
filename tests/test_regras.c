@@ -610,6 +610,20 @@ static void testa_fita_tomada(void) {
     CHECK(regras_fita_tomada(-1, 0.0f, 0.0f).foto == -1);
 }
 
+// [REQ:PURA-regras_intro_escuro] a sala sai do preto aos poucos, sempre entre 0 e 1, e nunca volta a
+// escurecer
+static void testa_intro_escuro(void) {
+    CHECK(perto(regras_intro_escuro(0.0f), 1.0f));
+    CHECK(perto(regras_intro_escuro(-1.0f), 1.0f));
+    CHECK(perto(regras_intro_escuro(INTRO_ABRE_S * 0.5f), 0.5f));
+    CHECK(perto(regras_intro_escuro(INTRO_ABRE_S), 0.0f));
+    CHECK(perto(regras_intro_escuro(INTRO_ABRE_S * 3.0f), 0.0f));
+    bool desce = true;
+    for (int i = 1; i <= 100; i++) // padrão FOLD: cada passo é mais claro (ou igual) que o anterior
+        desce = desce && regras_intro_escuro(i * 0.03f) <= regras_intro_escuro((i - 1) * 0.03f);
+    CHECK(desce);
+}
+
 int main(void) {
     SetTraceLogLevel(LOG_ERROR); // o aviso de vetor cheio é esperado aqui
     testa_movimento();
@@ -625,6 +639,7 @@ int main(void) {
     testa_ranking_insere();
     testa_respiracao();
     testa_fita_tomada();
+    testa_intro_escuro();
     testa_ranking_linha();
     testa_vidro();
     testa_evento_do_erro();

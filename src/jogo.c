@@ -207,8 +207,22 @@ static void atualiza_intro(Estado *e, float dt) {
         return;
     }
     if (it->etapa == INTRO_RADIO) {
+        it->abre_t += dt;
+        bool comeca = !it->radio && (it->abre_t >= INTRO_RADIO_ATRASO_S || e->in.confirmar);
+        if (comeca) { // o Varela só fala com a sala aparecendo (ENTER adianta)
+            it->radio = true;
+            it->abre_t = fmaxf(it->abre_t, INTRO_RADIO_ATRASO_S);
+            ui_fala(e, FALAS_INTRO_INTERFONE);
+            return;
+        }
+        if (!it->radio) return;
         if (e->in.confirmar) ui_legenda_pula(e);
         if (ui_legendas_vazias(e)) e->evento = EV_INTRO_TERMINOU;
+        return;
+    }
+    if (it->linha >= INTRO_LINHAS) { // a última frase some, um instante de preto, e a sala abre
+        it->saida_t += dt;
+        if (it->saida_t >= INTRO_TEXTO_SOME_S + INTRO_PRETO_S || e->in.confirmar) it->etapa = INTRO_RADIO;
         return;
     }
     it->linha_t += dt;
@@ -223,16 +237,14 @@ static void atualiza_intro(Estado *e, float dt) {
         audio_toca(e, SOM_MAQUINA_ESCREVER, 0.5f, 0.9f + GetRandomValue(0, 20) / 100.0f);
     if (e->in.confirmar) it->letras = it->letras < total ? total : total + 99.0f;
     if (it->letras >= total) it->espera += dt;
-    float pausa = it->linha < FITA_LINHA_QUEDA ? FITA_PAUSA_S : 1.1f; // com foto, dá tempo de olhar
+    float pausa = 1.1f;
+    if (it->linha < FITA_LINHA_QUEDA) pausa = FITA_PAUSA_S;       // com foto, dá tempo de olhar
+    if (it->linha == INTRO_LINHAS - 1) pausa = INTRO_FIM_PAUSA_S; // a frase final pesa
     if (it->espera < pausa && it->letras < total + 99.0f) return;
     it->linha++;
     it->letras = 0.0f;
     it->espera = 0.0f;
     it->linha_t = 0.0f;
-    if (it->linha >= INTRO_LINHAS) {
-        it->etapa = INTRO_RADIO;
-        ui_fala(e, FALAS_INTRO_INTERFONE);
-    }
 }
 
 // ================================================================== pausa, debug e modo feira
@@ -396,6 +408,9 @@ void jogo_desenha_cena(const Estado *e) {
     if (!tela_preta) desenha_mundo_3d(e);
     jogador_desenha(e);
     susto_desenha(e);
+    if (e->fase == FASE_INTRO && e->intro.etapa == INTRO_RADIO) // a sala saindo do preto
+        DrawRectangle(0, 0, e->rec.alvo_largura, e->rec.alvo_altura,
+                      Fade(BLACK, regras_intro_escuro(e->intro.abre_t)));
     if (e->fase == FASE_FIM_BOM || e->fase == FASE_FIM_RUIM) compositor_desenha_fim(e);
 }
 

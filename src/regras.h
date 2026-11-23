@@ -213,6 +213,8 @@ typedef struct {
 // A foto e a falha a partir da linha datilografada, das letras já escritas e do tempo na linha. A troca de
 // foto segue as letras (o feixe entra com "desceu da nave", mesmo se o ENTER pular a digitação).
 TomadaFita regras_fita_tomada(int linha, float letras, float linha_t);
+// Quanto preto ainda cobre a sala no começo do rádio: 1 → 0 em INTRO_ABRE_S, suave nas pontas.
+float regras_intro_escuro(float abre_t);
 
 // ------------------------------------------------------------------ textos do roteiro (nome e gênero)
 // Um marcador do roteiro e o que entra no lugar dele: {"NOME", "Ana"} troca "{NOME}" por "Ana".

@@ -114,7 +114,7 @@ stateDiagram-v2
 | `sanidade.c` | sanidade: queda pela distância da criatura, recuperação, bônus e a barra no topo (regras em `regras_sanidade.c`) |
 | `ui.c` | fonte com fallback, HUD, legendas, diário, pausa |
 | `menu.c` | a tela de início como gravação de fita (▶ PLAY, ● REC, AGO 1985): título que pifa, gancho, frases subliminares, opções em faixas, convite do 1º lugar e a tabela do ranking por cima |
-| `fita.c` | a fita do avistamento por trás da intro datilografada: 3 fotos de `assets/fita/` com zoom lento, tremida, franjas de cor, OSD da câmera (▶ PLAY, hora, 14.06.1985) e o sinal caindo antes da última linha (`regras_fita_tomada`) |
+| `fita.c` | a fita do avistamento por trás da intro datilografada: 3 fotos de `assets/fita/` com zoom lento, tremida, franjas de cor, OSD da câmera (▶ PLAY, hora, 05.06.1985) e o sinal caindo antes da 3ª linha (`regras_fita_tomada`) |
 | `tela_fim.c` | depois do final: desempenho (resultado, placar, lugar no ranking), avaliação em estrelas e a tabela do ranking |
 | `ranking.c` | só arquivo: lê e grava `ranking.txt` (temporário + troca) e anexa `avaliacoes.csv`; nada no `--smoke` |
 

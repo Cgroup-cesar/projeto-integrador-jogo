@@ -464,3 +464,9 @@ TomadaFita regras_fita_tomada(int linha, float letras, float linha_t) {
     }
     return t;
 }
+
+// [REQ:PURA-regras_intro_escuro] a sala sai do preto devagar depois da intro (sem corte seco para o jogo)
+float regras_intro_escuro(float abre_t) {
+    float x = fminf(1.0f, fmaxf(0.0f, abre_t / INTRO_ABRE_S));
+    return 1.0f - x * x * (3.0f - 2.0f * x); // smoothstep: começa e termina devagar
+}

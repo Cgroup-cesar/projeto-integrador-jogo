@@ -96,7 +96,7 @@ void fita_desenha(const Estado *e) {
     }
     if (tomada.estatica > 0.0f) falha_chuvisco(e, 0.75f * tomada.estatica, 0.25f, true); // fim do sinal
     // embaixo, o texto datilografado (ui.c) precisa de fundo escuro para ser lido sobre a imagem
-    DrawRectangleGradientV(0, (int)(h * 0.5f), (int)w, (int)(h * 0.5f) + 1, Fade(BLACK, 0.0f),
+    DrawRectangleGradientV(0, (int)(h * 0.38f), (int)w, (int)(h * 0.62f) + 1, Fade(BLACK, 0.0f),
                            Fade(BLACK, 0.85f));
     if (tomada.foto >= 0 && e->rec.tem_fita[tomada.foto]) osd(e); // por cima da sombra: sempre legível
 }

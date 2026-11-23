@@ -31,7 +31,7 @@ const Legenda *dialogo_falas(BlocoFalas bloco, int *n);
 BlocoFalas dialogo_versao_falsa(BlocoFalas bloco);
 
 // Linhas datilografadas da intro (tela preta). Podem ter marcadores: passe por dialogo_personaliza.
-#define INTRO_LINHAS 3
+#define INTRO_LINHAS 6
 const char *dialogo_intro(int linha);
 
 // Textos soltos da interface e das rodadas.

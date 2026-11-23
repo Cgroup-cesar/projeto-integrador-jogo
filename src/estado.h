@@ -228,6 +228,9 @@ typedef struct {
     float espera;
     float linha_t; // tempo na linha atual (a queda do sinal da fita conta daqui)
     float fita_t;  // tempo desde o começo do texto datilografado (o tremido e o relógio da câmera)
+    float saida_t; // depois da última linha: o texto sumindo e o preto (INTRO_TEXTO_SOME_S + INTRO_PRETO_S)
+    float abre_t;  // na etapa do rádio: a sala clareando (regras_intro_escuro)
+    bool radio;    // a carta do Varela já começou (antes dela, legendas vazias não encerram a intro)
 } Intro;
 
 // Quem o jogador é: escolhido no início da partida e usado nos marcadores {NOME}, {PROF} e {x|y} das falas.
