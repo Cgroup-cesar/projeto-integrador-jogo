@@ -31,6 +31,11 @@ typedef struct {
     int letras[MAX_LETRAS_QUADRO]; // letras digitadas neste quadro (Unicode), para o campo do nome
     int n_letras;
     bool apagar; // Backspace (repete se ficar apertado)
+    // O mouse nas telas de interface (clique.c): só vale com o cursor à mostra (fora do andar e do armário).
+    Vector2 ponteiro;    // posição do cursor na janela
+    bool ponteiro_livre; // o cursor está à mostra
+    bool ponteiro_moveu; // passou por cima de uma opção: ela fica escolhida
+    bool clique;         // botão esquerdo: escolhe e confirma
 } Entrada;
 
 // ------------------------------------------------------------------ recursos carregados uma vez
