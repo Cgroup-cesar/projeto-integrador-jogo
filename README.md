@@ -61,7 +61,7 @@ Projeto Integrador da disciplina **Programação Imperativa e Funcional (PIF)**,
 
 ![Sanidade em 20%: a barra vermelha no topo, as bordas embaçadas e o ruído de fita sobre o corredor](docs/img/sanidade_20.png)
 
-A barra no topo da tela mostra a **SANIDADE** em porcentagem (nas salas, cheia, ela some). Ela é verde, fica âmbar abaixo de 60% e vermelha e pulsando abaixo de 30%; o pedaço que a criatura acabou de tirar aparece em vermelho escuro por um instante.
+A barra no topo da tela mostra a **SANIDADE** em porcentagem, também com o painel ou o bilhete abertos: quando ela cai, ele está perto (nas salas, cheia, ela some). Ela é verde, fica âmbar abaixo de 60% e vermelha e pulsando abaixo de 30%; o pedaço que a criatura acabou de tirar aparece em vermelho escuro por um instante.
 
 - **Cai** nos corredores quando o Precursor está a menos de 15 m, mais rápido quanto mais perto: cerca de 2 pontos por segundo na borda e 24 colado nele (de 100% a 0% em uns 4 s). Escondido no armário, cai pela metade.
 - **Sobe devagar** enquanto se joga (0,8 ponto por segundo; nos corredores, só depois de 3 s longe dele) e **sobe bastante** ao concluir tarefas: +35 por rodada, +40 por saída e +10 por conectivo decifrado. Ser pego ou romper o vidro recomeça a fase com pelo menos 60%.

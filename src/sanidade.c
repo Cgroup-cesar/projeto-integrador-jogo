@@ -60,10 +60,11 @@ static Color cor_da_barra(const Estado *e) {
 }
 
 // Nas salas ela não cai: cheia, a barra some (só polui a tela); volta enquanto enche depois de uma saída.
+// No painel e no bilhete ela continua à vista: é por ela que a pessoa sabe que ele está chegando e que é hora
+// de largar a tarefa e se esconder.
 static bool mostra_barra(const Estado *e) {
-    bool modo_ok = e->jog.modo != MODO_DIARIO && e->jog.modo != MODO_PAINEL;
     bool importa = regras_fase_eh_saida(e->fase) || e->sanidade_barra < SANIDADE_MAX - 0.5f;
-    return fase_de_jogo(e->fase) && modo_ok && importa && e->jumpscare_t <= 0.0f && !e->pausado;
+    return fase_de_jogo(e->fase) && importa && e->jumpscare_t <= 0.0f && !e->pausado;
 }
 
 // [REQ:SANIDADE-HUD] fixa no topo; com o terminal aberto (ele ocupa a direita), centrada no que sobra
