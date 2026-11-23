@@ -97,7 +97,8 @@ typedef struct {
     bool colisao_conferida;
     bool pego_testado;       // 1ª partida, S2: espera a criatura ouvir, perseguir e pegar
     unsigned estados_vistos; // bits dos EstadoCriatura que apareceram nesse teste
-    bool armario_testado;    // 2ª partida, S1: entra e sai de um armário
+    int armario_etapa;       // 2ª partida, S1: 0 escondido à toa, 1 monta a perseguição, 2 espera, 3 ok
+    float armario_t;         // tempo_fase em que a perseguição foi montada
     float placar_t;          // quanto tempo o placar final ficou na tela (precisa aparecer de verdade)
     int codigo_saida;        // −1 = ainda jogando; 0 = ok; 1 = falhou
 } Piloto;
@@ -205,22 +206,75 @@ static bool piloto_espera_ser_pego(Estado *e, Entrada *in) {
     return true;
 }
 
-// 2ª partida, S1: entra no primeiro armário e sai de novo.
-static bool piloto_testa_armario(Estado *e, Entrada *in) {
-    if (piloto.partida != 1 || e->fase != FASE_S1 || piloto.armario_testado) return false;
-    if (e->jog.modo == MODO_ARMARIO) { // a respiração (tutorial e desafio) já passou, a cada quadro
-        if (e->resp.erros > 0) {       // o piloto só aperta com a linha na faixa: um erro é bug do jogo
-            piloto_falha("a respiração contou um erro que o piloto não cometeu");
-            return true;
-        }
+// O armário do corredor leste (célula 21,10), perto do ponto de onde a perseguição parte.
+static int piloto_armario_leste(const Estado *e) {
+    int melhor = 0;
+    Vector3 alvo = nivel_centro_celula(21, 10);
+    for (int i = 1; i < e->nivel.n_armarios; i++) // padrão FOLD: o armário mais perto da célula
+        if (Vector3Distance(e->nivel.armarios[i], alvo) < Vector3Distance(e->nivel.armarios[melhor], alvo))
+            melhor = i;
+    return melhor;
+}
+
+// Ele vinha perseguindo a ~6 m e viu o jogador pela última vez na porta do armário.
+static void piloto_monta_perseguicao(Estado *e, Vector3 porta) {
+    Criatura *c = &e->cri;
+    c->pos = nivel_centro_celula(18, 11);
+    c->estado = CRIATURA_PERSEGUE;
+    c->ultima_vista = porta;
+    c->caminho_n = 0;
+    c->tempo_estado = 0.0f;
+    c->tempo_replanejar = 99.0f;
+    piloto.armario_t = e->tempo_fase;
+}
+
+// Escondido depois da perseguição: ele precisa vir andando, parar na porta e passar pela respiração (que o
+// piloto faz a cada quadro em piloto_entrada); depois sai.
+static void piloto_confere_respiracao(Estado *e, Entrada *in) {
+    if (e->resp.erros > 0) { // o piloto só aperta com a linha na faixa: um erro é bug do jogo
+        piloto_falha("a respiração contou um erro que o piloto não cometeu");
+    } else if (e->resp.perseguido) {
+        if (e->tempo_fase - piloto.armario_t > 30.0f) piloto_falha("perseguindo, ele não veio até o armário");
+    } else if (!e->resp.tutorial_visto) {
+        piloto_falha("ele chegou ao armário mas a respiração não começou");
+    } else {
         in->interagir = true;
-        piloto.armario_testado = true;
-        printf("SMOKE  armário ok: tutorial, segurou a respiração sem erro e saiu\n");
+        piloto.armario_etapa = 3;
+        printf("SMOKE  armário ok: perseguindo, ele veio até a porta; tutorial e respiração sem erro\n");
+    }
+}
+
+// 2ª partida, S1: (1) escondido desde o começo, ele sai do duto e patrulha sem nunca vir até a porta;
+// (2) escondido logo depois de uma perseguição, ele vem até a porta e começa a respiração.
+static bool piloto_testa_armario(Estado *e, Entrada *in) {
+    if (piloto.partida != 1 || e->fase != FASE_S1 || piloto.armario_etapa >= 3) return false;
+    int a = piloto_armario_leste(e);
+    Vector3 dentro = e->nivel.armarios[a], fora = e->nivel.armario_saida[a];
+    bool escondido = e->jog.modo == MODO_ARMARIO;
+    if (!escondido && piloto.armario_etapa != 1) { // entra (de novo, se foi pego)
+        jogador_teleporta(e, fora, atan2f(dentro.x - fora.x, dentro.z - fora.z));
+        in->interagir = true;
         return true;
     }
-    Vector3 a = e->nivel.armarios[0], fora = e->nivel.armario_saida[0];
-    jogador_teleporta(e, fora, atan2f(a.x - fora.x, a.z - fora.z));
-    in->interagir = true;
+    if (piloto.armario_etapa == 0) {
+        if (respiracao_ativa(e) || e->resp.perseguido) {
+            piloto_falha("sem perseguição, ele veio até o armário");
+        } else if (e->tempo_fase > CRIATURA_SURGE_S + 6.0f) { // já saiu do duto e patrulha há uns segundos
+            in->interagir = true;
+            piloto.armario_etapa = 1;
+            printf("SMOKE  armário ok: escondido sem perseguição, ele patrulhou e não veio até a porta\n");
+        }
+        return true;
+    }
+    if (piloto.armario_etapa == 1) {
+        if (escondido) return true; // ainda saindo
+        jogador_teleporta(e, fora, atan2f(dentro.x - fora.x, dentro.z - fora.z));
+        piloto_monta_perseguicao(e, fora);
+        in->interagir = true;
+        piloto.armario_etapa = 2;
+        return true;
+    }
+    piloto_confere_respiracao(e, in);
     return true;
 }
 
