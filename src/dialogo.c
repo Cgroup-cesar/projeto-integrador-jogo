@@ -173,7 +173,8 @@ static const char *const TEXTOS[TXT_TOTAL] = {
     [TXT_OBJETIVO_VOLTAR] = "Volte para a sala de observação.",
     [TXT_OBJETIVO_RESPOSTA] = "Responda pelo console.",
     [TXT_TERMINAL_TITULO] = "ANALISADOR SEMÂNTICO SNI-85",
-    [TXT_TERMINAL_OBSERVE] = "Acenda e apague a LUZ A [1] e veja o que ele responde.",
+    [TXT_TERMINAL_OBSERVE] =
+        "Acenda e apague a LUZ A [1] e veja o que ele responde. A tabela se preenche sozinha.",
     [TXT_TERMINAL_OBSERVE_DUAS] = "Teste as 4 combinações das luzes A [1] e B [2] e veja o que ele responde.",
     [TXT_TERMINAL_SELO_AJUDA] = "[H] AJUDA",
     [TXT_TERMINAL_SELO_FECHAR] = "[H] FECHAR AJUDA",

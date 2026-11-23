@@ -1,6 +1,7 @@
 // teclas.c — a barra de teclas do rodapé. Só desenha, a partir do estado: escolhe as teclas pelo contexto
-// (terminal, painel, andando, armário, bilhete) e não muda nada. Andando, ela aparece só no começo de cada
-// fase (TECLAS_ANDAR_S): depois disso, quem joga já sabe, e a dica do que está na mira mostra o E.
+// (terminal, painel, andando, armário, bilhete) e não muda nada. Andando, ela fica o tempo todo no primeiro
+// nível (R1) e na primeira saída (S1), onde quem joga está aprendendo; nas fases seguintes, só no começo
+// (TECLAS_ANDAR_S), porque aí a pessoa já sabe e a dica do que está na mira mostra o E.
 #include "teclas.h"
 #include "rodadas.h"
 #include "susto.h"
@@ -51,7 +52,8 @@ static int itens_do_painel(const Estado *e, TeclaAcao *t) {
 }
 
 static int itens_andando(const Estado *e, TeclaAcao *t) {
-    if (e->tempo_fase > TECLAS_ANDAR_S) return 0; // já andou o bastante para saber
+    bool aprendendo = e->fase == FASE_R1 || e->fase == FASE_S1;
+    if (!aprendendo && e->tempo_fase > TECLAS_ANDAR_S) return 0; // já conhece os controles
     int n = 0;
     t[n++] = (TeclaAcao){"WASD", TXT_TECLA_ANDAR};
     t[n++] = (TeclaAcao){"MOUSE", TXT_TECLA_OLHAR};

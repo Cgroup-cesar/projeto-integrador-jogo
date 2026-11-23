@@ -60,7 +60,7 @@
 #define CAMERA_ALTURA_M       2.5f  // onde a placa encosta na parede
 #define CAMERA_INCLINA_GRAUS  22.0f // a lente aponta um pouco para baixo
 #define FITA_HORA_INICIO   (21 * 3600 + 47 * 60 + 52) // a câmera às 21:47:52, durante o canto
-#define TECLAS_ANDAR_S     10.0f // andando, a barra de teclas some depois disso em cada fase
+#define TECLAS_ANDAR_S     10.0f // da R2 em diante, andando, a barra de teclas some depois disso em cada fase
 #define TECLAS_ESCALA_JOGO 0.88f // tamanho da barra de teclas durante a partida (1 = original)
 
 // ---------------------------------------------------------------- janela e tempo

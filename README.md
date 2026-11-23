@@ -143,7 +143,7 @@ src/rodadas.c/.h         dados e fluxo das 3 rodadas
 src/terminal.c/.h        interface do ANALISADOR SEMÂNTICO SNI-85
 src/manual.c/.h          o manual dos conectivos (lâmpada, ✓/✗, mini-tabela, cartão), do terminal e dos painéis
 src/crt.c/.h             a cara de monitor das telas de tarefa: moldura com quinas, scanlines, varredura, caixas e faixas
-src/teclas.c/.h          a barra de teclas do rodapé (só as teclas que valem agora; andando, só no começo da fase)
+src/teclas.c/.h          a barra de teclas do rodapé (só as teclas que valem agora; andando, sempre na R1 e na S1)
 src/clique.c/.h          o mouse nas telas: as áreas clicáveis de cada quadro e o clique nas teclas da barra
 src/compositor.c/.h      resposta final por fichas e os dois finais
 src/circuito.c/.h        painéis de circuito 1 e 2
