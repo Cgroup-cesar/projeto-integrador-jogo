@@ -171,7 +171,7 @@ float regras_ruido_percebido(Ruido ruido, Vector3 ouvinte) {
 
 // [REQ:PURA-regras_proximo_estado_criatura] PATRULHA → INVESTIGA → PERSEGUE → PROCURA → PATRULHA
 EstadoCriatura regras_proximo_estado_criatura(EstadoCriatura atual, PercepcaoCriatura p) {
-    if (p.ve_jogador) return CRIATURA_PERSEGUE;
+    if (p.ve_jogador || p.sabe_esconderijo) return CRIATURA_PERSEGUE; // viu entrar no armário: não desiste
     switch (atual) {
     case CRIATURA_PERSEGUE:
         return CRIATURA_PROCURA; // perdeu de vista: procura onde viu por último

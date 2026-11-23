@@ -62,6 +62,8 @@ static void testa_estados_criatura(void) {
     CHECK(regras_proximo_estado_criatura(CRIATURA_PROCURA, nada) == CRIATURA_PROCURA);
     CHECK(regras_proximo_estado_criatura(CRIATURA_PROCURA, cansou) == CRIATURA_PATRULHA);
     CHECK(regras_proximo_estado_criatura(CRIATURA_PROCURA, ouviu) == CRIATURA_INVESTIGA);
+    PercepcaoCriatura armario = {.sabe_esconderijo = true, .tempo_no_estado = CRIATURA_PROCURA_S};
+    CHECK(regras_proximo_estado_criatura(CRIATURA_PERSEGUE, armario) == CRIATURA_PERSEGUE); // vai até a porta
 }
 
 // [REQ:PURA-regras_postura_criatura] testa a postura parado, andando e perseguindo

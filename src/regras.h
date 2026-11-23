@@ -79,6 +79,7 @@ typedef struct {
     bool ouviu_ruido;
     bool chegou_ao_destino;
     float tempo_no_estado;
+    bool sabe_esconderijo; // vinha atrás quando a pessoa entrou no armário: vai até a porta dele
 } PercepcaoCriatura;
 
 Vector3 regras_frente(float yaw);
