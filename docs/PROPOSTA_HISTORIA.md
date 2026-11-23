@@ -78,7 +78,7 @@ sozinho. O campo do nome põe a primeira letra de cada palavra em maiúscula ("i
    1. "CHÃ DE ALEGRIA, PERNAMBUCO — AGOSTO DE 1985."
    2. "Há dois meses, algo desceu da nave que paira sobre a cidade."
    3. "O Exército isolou a cidade. Toda noite, das 19:05 às 22:00, a nave canta."
-   4. "O que desceu não tem olhos e fala por símbolos de luz. O SNI o mantém preso."
+   4. "O que desceu é alto, quase humano, e fala por luzes. O SNI o mantém preso."
    5. "Da última vez que as luzes caíram, dois homens morreram."
    6. "Você é {o|a} {PROF} {NOME}, de linguística da UFPE. Nunca traduziu nada vivo."
 3. **A carta** (fade para a sala; rádio, General Varela):

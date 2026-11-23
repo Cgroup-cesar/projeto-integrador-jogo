@@ -127,7 +127,7 @@ static const char *const INTRO[INTRO_LINHAS] = {
     "Há dois meses, algo desceu da nave que paira sobre a cidade.",
     // depois da fita (o sinal cai antes desta linha): o resto da história, sobre a tela preta
     "O Exército isolou a cidade. Toda noite, das 19:05 às 22:00, a nave canta.",
-    "O que desceu não tem olhos e fala por símbolos de luz. O SNI o mantém preso.",
+    "O que desceu é alto, quase humano, e fala por luzes. O SNI o mantém preso.",
     "Da última vez que as luzes caíram, dois homens morreram.",
     "Você é {o|a} {PROF} {NOME}, de linguística da UFPE. Nunca traduziu nada vivo.",
 };
