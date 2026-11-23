@@ -232,7 +232,8 @@ static void pergunta_painel1(const Estado *e, Rectangle r, const Vector2 pontos[
                       COR_AMBAR);
 }
 
-// O preço do chute: o medidor de barulho (sobe a cada clique, desce devagar) e os movimentos feitos.
+// O preço do chute: o medidor de barulho (sobe a cada clique, desce devagar). Os movimentos não ficam
+// contando na tela durante a tarefa: o bônus por poucos movimentos só aparece quando o painel é resolvido.
 static void medidores(const Estado *e, Rectangle r) {
     const Painel *p = &e->painel;
     float s = ui_escala(), x = r.x + 24 * s, y = r.y + 54 * s;
@@ -245,14 +246,11 @@ static void medidores(const Estado *e, Rectangle r) {
     DrawRectangleRec(barra, (Color){20, 28, 22, 255});
     DrawRectangleRec((Rectangle){barra.x, barra.y, barra.width * p->barulho, barra.height}, cor);
     DrawRectangleLinesEx(barra, 1.0f * s, Fade(COR_FOSFORO, 0.5f));
-    char texto[64];
     int bonus = regras_bonus_movimentos(p->movimentos);
-    if (p->resolvido && bonus > 0)
-        snprintf(texto, sizeof(texto), dialogo_texto(TXT_PAINEL_BONUS), p->movimentos, bonus);
-    else
-        snprintf(texto, sizeof(texto), dialogo_texto(TXT_PAINEL_MOVIMENTOS), p->movimentos);
-    ui_texto(e, texto, (Vector2){barra.x + barra.width + 24 * s, y}, 14 * s,
-             p->resolvido && bonus > 0 ? COR_AMBAR : Fade(COR_FOSFORO, 0.7f));
+    if (!p->resolvido || bonus <= 0) return;
+    char texto[64];
+    snprintf(texto, sizeof(texto), dialogo_texto(TXT_PAINEL_BONUS), p->movimentos, bonus);
+    ui_texto(e, texto, (Vector2){barra.x + barra.width + 24 * s, y}, 14 * s, COR_AMBAR);
 }
 
 static void desenha_painel1(const Estado *e, Rectangle r) {

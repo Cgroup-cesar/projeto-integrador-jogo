@@ -59,9 +59,11 @@ static Color cor_da_barra(const Estado *e) {
     return Fade(COR_ALARME, 0.55f + 0.45f * pisca); // pulsa mais rápido quanto mais baixa
 }
 
+// Nas salas ela não cai: cheia, a barra some (só polui a tela); volta enquanto enche depois de uma saída.
 static bool mostra_barra(const Estado *e) {
     bool modo_ok = e->jog.modo != MODO_DIARIO && e->jog.modo != MODO_PAINEL;
-    return fase_de_jogo(e->fase) && modo_ok && e->jumpscare_t <= 0.0f && !e->pausado;
+    bool importa = regras_fase_eh_saida(e->fase) || e->sanidade_barra < SANIDADE_MAX - 0.5f;
+    return fase_de_jogo(e->fase) && modo_ok && importa && e->jumpscare_t <= 0.0f && !e->pausado;
 }
 
 // [REQ:SANIDADE-HUD] fixa no topo; com o terminal aberto (ele ocupa a direita), centrada no que sobra

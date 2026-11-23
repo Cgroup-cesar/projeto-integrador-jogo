@@ -426,7 +426,7 @@ static void desenha_folego(const Estado *e) {
     float s = ui_escala();
     float fracao = j->folego / JOGADOR_FOLEGO_MAX;
     Rectangle r = {260 * s, GetScreenHeight() - 84 * s, 200 * s,
-                   8 * s}; // acima da barra, ao lado do minimapa
+                   8 * s}; // acima da barra de teclas
     Color cor = j->exausto ? COR_ALARME : COR_FOSFORO;
     Color cor_texto = Fade(COR_FOSFORO, 0.7f);
     ui_texto(e, dialogo_texto(TXT_HUD_FOLEGO), (Vector2){r.x, r.y - 24 * s}, 16 * s, cor_texto);
@@ -473,11 +473,10 @@ static void desenha_legenda(const Estado *e) {
     const Legenda *l = &e->legendas.fila[0];
     float largura = 900 * s;
     float x = (GetScreenWidth() - largura) * 0.5f,
-          y = GetScreenHeight() - 216 * s; // acima da barra de teclas e do minimapa
+          y = GetScreenHeight() - 216 * s; // acima da barra de teclas
     if (e->jog.modo == MODO_TERMINAL) {    // o terminal ocupa a direita: a legenda vai para a esquerda
         largura = GetScreenWidth() - 680 * s;
         x = 24 * s;
-        y = GetScreenHeight() - 270 * s; // entre a cola (no alto) e o minimapa do teclado
     }
     bool falso = l->falante == FALANTE_VARELA_FALSO; // o mesmo rótulo do Varela: ele está imitando
     const char *quem = (l->falante == FALANTE_VARELA || falso) ? dialogo_texto(TXT_FALANTE_VARELA)

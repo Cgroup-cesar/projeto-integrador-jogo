@@ -1,5 +1,7 @@
-// teclas.c — a barra de teclas do rodapé e o minimapa do teclado. Só desenha, a partir do estado: escolhe as
-// teclas pelo contexto (terminal, painel, andando, armário, bilhete) e não muda nada.
+// teclas.c — a barra de teclas do rodapé. Só desenha, a partir do estado: escolhe as teclas pelo contexto
+// (terminal, painel, andando, armário, bilhete) e não muda nada. Andando, ela fica o tempo todo no primeiro
+// nível (R1) e na primeira saída (S1), onde quem joga está aprendendo; nas fases seguintes, só no começo
+// (TECLAS_ANDAR_S), porque aí a pessoa já sabe e a dica do que está na mira mostra o E.
 #include "teclas.h"
 #include "rodadas.h"
 #include "susto.h"
@@ -39,9 +41,7 @@ static int itens_do_terminal(const Estado *e, TeclaAcao *t) {
 static int itens_do_painel(const Estado *e, TeclaAcao *t) {
     int n = 0;
     if (e->painel.numero == 1) {
-        t[n++] = (TeclaAcao){"SETAS_V", TXT_TECLA_ESCOLHER};
-        t[n++] = (TeclaAcao){"ENTER", TXT_TECLA_LIGAR};
-        t[n++] = (TeclaAcao){"1 2 3", TXT_TECLA_CHAVES}; // atalho: liga e desliga direto
+        t[n++] = (TeclaAcao){"1 2 3", TXT_TECLA_CHAVES}; // a tecla de cada chave também está na linha dela
     } else {
         t[n++] = (TeclaAcao){"SETAS_H", TXT_TECLA_ENCAIXE};
         t[n++] = (TeclaAcao){"SETAS_V", TXT_TECLA_PORTA};
@@ -52,6 +52,8 @@ static int itens_do_painel(const Estado *e, TeclaAcao *t) {
 }
 
 static int itens_andando(const Estado *e, TeclaAcao *t) {
+    bool aprendendo = e->fase == FASE_R1 || e->fase == FASE_S1;
+    if (!aprendendo && e->tempo_fase > TECLAS_ANDAR_S) return 0; // já conhece os controles
     int n = 0;
     t[n++] = (TeclaAcao){"WASD", TXT_TECLA_ANDAR};
     t[n++] = (TeclaAcao){"MOUSE", TXT_TECLA_OLHAR};
@@ -157,69 +159,6 @@ static float tecla(const Estado *e, const char *rotulo, Vector2 pos, float altur
     return largura;
 }
 
-// ================================================================== minimapa do teclado
-// A parte do teclado que o jogo usa, em "unidades de tecla": coluna, linha, largura e o nome que acende.
-typedef struct {
-    float x, y, w;
-    const char *nome;
-    const char *acende; // o rótulo da barra que acende esta tecla
-} TeclaMapa;
-
-static const TeclaMapa MAPA[] = {
-    {0, 0, 1, "Esc", "ESC"},
-    {1.2f, 0, 1, "1", "1"},
-    {2.2f, 0, 1, "2", "2"},
-    {3.2f, 0, 1, "3", "3"},
-    {4.2f, 0, 1, "4", ""},
-    {0, 1, 1.5f, "", ""},
-    {1.5f, 1, 1, "Q", ""},
-    {2.5f, 1, 1, "W", "WASD"},
-    {3.5f, 1, 1, "E", "E"},
-    {4.5f, 1, 1, "R", ""},
-    {1.8f, 2, 1, "A", "WASD"},
-    {2.8f, 2, 1, "S", "WASD"},
-    {3.8f, 2, 1, "D", "WASD"},
-    {4.8f, 2, 1, "F", "F"},
-    {5.8f, 2, 1, "G", ""},
-    {6.8f, 2, 1, "H", "H"},
-    {0, 3, 2.3f, "Shift", "SHIFT"},
-    {2.3f, 3, 1, "Z", ""},
-    {3.4f, 3, 3.6f, "Espaço", "ESPAÇO"},
-    {8.2f, 1, 1.6f, "Enter", "ENTER"},
-    {9.2f, 2, 1, "", "SETAS_V"},
-    {8.2f, 3, 1, "", "SETAS_H"},
-    {9.2f, 3, 1, "", "SETAS_V"},
-    {10.2f, 3, 1, "", "SETAS_H"},
-};
-
-static bool acesa(const TeclaMapa *k, const TeclaAcao *itens, int n) {
-    for (int i = 0; i < n; i++) { // padrão FOLD: alguma tecla da barra acende esta?
-        if (k->acende[0] == '\0') continue;
-        bool setas = strcmp(itens[i].tecla, "SETAS") == 0 && strncmp(k->acende, "SETAS", 5) == 0;
-        bool numeros =
-            strcmp(itens[i].tecla, "1 2 3") == 0 && strlen(k->acende) == 1 && strchr("123", k->acende[0]);
-        if (setas || numeros || strcmp(itens[i].tecla, k->acende) == 0) return true;
-    }
-    return false;
-}
-
-static void desenha_minimapa(const Estado *e, const TeclaAcao *itens, int n, Vector2 pos, float k_escala) {
-    float s = ui_escala() * k_escala, u = 22 * s; // tamanho de uma tecla no minimapa
-    int total = (int)(sizeof(MAPA) / sizeof(MAPA[0]));
-    for (int i = 0; i < total; i++) { // padrão MAP: cada tecla do mapa, acesa ou apagada
-        const TeclaMapa *k = &MAPA[i];
-        Rectangle r = {pos.x + k->x * u, pos.y + k->y * u, k->w * u - 2 * s, u - 2 * s};
-        bool liga = acesa(k, itens, n);
-        DrawRectangleRounded(r, 0.25f, 3, liga ? COR_FOSFORO : (Color){20, 28, 22, 255});
-        if (k->nome[0] != '\0') {
-            float t = 11 * s;
-            Vector2 m = ui_mede(e, k->nome, t);
-            ui_texto(e, k->nome, (Vector2){r.x + (r.width - m.x) * 0.5f, r.y + (r.height - m.y) * 0.5f}, t,
-                     liga ? (Color){8, 14, 10, 255} : Fade(COR_FOSFORO, 0.35f));
-        }
-    }
-}
-
 // ================================================================== a barra
 // Que tecla um clique nesta parte da barra aperta (as setas não: elas só andam pelas opções, que já são
 // clicáveis direto na tela).
@@ -237,15 +176,15 @@ static TeclaClique tecla_clicavel(const char *rotulo) {
 
 // Na partida, a barra fica numa faixa escura e um pouco menor (TECLAS_ESCALA_JOGO). No menu, as teclas
 // flutuam direto sobre a cena, sem a faixa, e o texto ganha uma sombra para ler por cima do chuvisco.
-static void desenha_barra(const Estado *e, bool minimapa, bool faixa, float k) {
+static void desenha_barra(const Estado *e, bool faixa, float k) {
     TeclaAcao itens[MAX_ITENS];
     int n = itens_do_contexto(e, itens);
+    if (n == 0) return; // nada a ensinar agora: nem a faixa escura
     float s = ui_escala() * k, altura = 30 * s, y = GetScreenHeight() - altura - 12 * s;
     if (faixa)
         DrawRectangle(0, (int)(y - 10 * s), GetScreenWidth(), (int)(altura + 22 * s), (Color){4, 7, 5, 235});
-    if (minimapa) desenha_minimapa(e, itens, n, (Vector2){14 * s, y - 4 * 22 * s - 18 * s}, k);
-    float x = minimapa ? 290 * s : 90 * s; // sem o minimapa (menu), a barra começa na margem do texto
-    for (int i = 0; i < n; i++) {          // padrão MAP: cada tecla com o que ela faz agora
+    float x = 90 * s; // na margem do texto do menu e do HUD
+    for (int i = 0; i < n; i++) { // padrão MAP: cada tecla com o que ela faz agora
         float x0 = x;
         x += tecla(e, itens[i].tecla, (Vector2){x, y}, altura) + 8 * s;
         const char *acao = dialogo_texto(itens[i].acao);
@@ -261,13 +200,13 @@ static void desenha_barra(const Estado *e, bool minimapa, bool faixa, float k) {
 void teclas_desenha(const Estado *e) {
     bool jogando =
         e->fase != FASE_MENU && e->fase != FASE_INTRO && e->fase != FASE_FIM_BOM && e->fase != FASE_FIM_RUIM;
-    if (jogando && !e->pausado && !susto_ativo(e)) desenha_barra(e, true, true, TECLAS_ESCALA_JOGO);
+    if (jogando && !e->pausado && !susto_ativo(e)) desenha_barra(e, true, TECLAS_ESCALA_JOGO);
 }
 
 // O menu e as telas depois do final cobrem a tela inteira: elas chamam a barra por cima de si. No menu, sem
-// o minimapa (a tela de início fica limpa).
+// a faixa escura (as teclas flutuam sobre a cena).
 void teclas_desenha_tela_cheia(const Estado *e) {
-    if (e->fase == FASE_MENU) desenha_barra(e, false, false, 1.0f);
-    if ((e->fase == FASE_FIM_BOM || e->fase == FASE_FIM_RUIM) && e->fim.tela_final)
-        desenha_barra(e, true, true, 1.0f);
+    if (e->fase == FASE_MENU) desenha_barra(e, false, 1.0f);
+    bool fim = e->fase == FASE_FIM_BOM || e->fase == FASE_FIM_RUIM;
+    if (fim && e->fim.tela_final) desenha_barra(e, true, 1.0f);
 }
