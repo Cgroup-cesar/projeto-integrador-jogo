@@ -4,6 +4,7 @@
 #include "ranking.h"
 #include "teclas.h"
 #include "ui.h"
+#include "clique.h"
 #include <math.h>
 #include <stdio.h>
 
@@ -27,13 +28,26 @@ static void envia_avaliacao(const Estado *e) {
         ranking_registra_avaliacao(e->fim.notas, e->placar, e->fase == FASE_FIM_BOM);
 }
 
-// ↑↓ escolhe a pergunta, ←→ dá as estrelas, ENTER envia e mostra o ranking. Parado, segue sozinho.
+// O mouse na avaliação: passar por uma pergunta a escolhe; clicar numa estrela dá aquela nota.
+static void avaliacao_pelo_mouse(Estado *e) {
+    Fim *f = &e->fim;
+    clique_escolhe(&e->in, CLIQUE_PERGUNTA, &f->nota_cursor);
+    int estrela = -1;
+    if (!clique_escolhe(&e->in, CLIQUE_ESTRELA, &estrela)) return;
+    f->nota_cursor = estrela / AVALIACAO_MAX;
+    f->notas[f->nota_cursor] = estrela % AVALIACAO_MAX + 1;
+}
+
+// ↑↓ escolhe a pergunta, ←→ dá as estrelas, ENTER envia e mostra o ranking (o mouse também). Parado, segue
+// sozinho.
 static void atualiza_desempenho(Estado *e, float dt) {
     Fim *f = &e->fim;
-    bool mexeu = e->in.cima || e->in.baixo || e->in.esquerda || e->in.direita;
+    bool mexeu = e->in.cima || e->in.baixo || e->in.esquerda || e->in.direita || e->in.ponteiro_moveu ||
+                 e->in.clique;
     f->parado_t = mexeu ? 0.0f : f->parado_t + dt;
     if (e->in.cima) f->nota_cursor = (f->nota_cursor + AVALIACAO_PERGUNTAS - 1) % AVALIACAO_PERGUNTAS;
     if (e->in.baixo) f->nota_cursor = (f->nota_cursor + 1) % AVALIACAO_PERGUNTAS;
+    avaliacao_pelo_mouse(e);
     int *nota = &f->notas[f->nota_cursor];
     if (e->in.direita && *nota < AVALIACAO_MAX) (*nota)++;
     if (e->in.esquerda && *nota > 0) (*nota)--;
@@ -99,9 +113,14 @@ static void desenha_desempenho(const Estado *e) {
         bool ativa = f->nota_cursor == i;
         ui_opcao(e, dialogo_texto(perguntas[i]), (Vector2){caixa.x + 34 * s, y + 6 * s}, caixa.width - 68 * s,
                  20 * s, ativa, ativa ? COR_FOSFORO : Fade(COR_FOSFORO, 0.7f));
-        for (int j = 0; j < AVALIACAO_MAX; j++) // padrão MAP: as 5 estrelas da pergunta
-            estrela((Vector2){caixa.x + caixa.width - 220 * s + j * 40 * s, y + 18 * s}, 14 * s,
-                    j < f->notas[i], s);
+        Rectangle linha = {caixa.x + 24 * s, y + 2 * s, caixa.width - 68 * s, 28 * s};
+        clique_area(CLIQUE_PERGUNTA, i, linha);
+        for (int j = 0; j < AVALIACAO_MAX; j++) { // padrão MAP: as 5 estrelas da pergunta (clicáveis)
+            Vector2 c = {caixa.x + caixa.width - 220 * s + j * 40 * s, y + 18 * s};
+            estrela(c, 14 * s, j < f->notas[i], s);
+            Rectangle area = {c.x - 18 * s, c.y - 18 * s, 36 * s, 36 * s};
+            clique_area(CLIQUE_ESTRELA, i * AVALIACAO_MAX + j, area);
+        }
     }
 }
 
