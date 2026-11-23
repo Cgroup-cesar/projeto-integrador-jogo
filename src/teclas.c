@@ -182,7 +182,7 @@ static void desenha_barra(const Estado *e, bool faixa, float k) {
     if (faixa)
         DrawRectangle(0, (int)(y - 10 * s), GetScreenWidth(), (int)(altura + 22 * s), (Color){4, 7, 5, 235});
     float x = 90 * s; // na margem do texto do menu e do HUD
-    for (int i = 0; i < n; i++) {          // padrão MAP: cada tecla com o que ela faz agora
+    for (int i = 0; i < n; i++) { // padrão MAP: cada tecla com o que ela faz agora
         float x0 = x;
         x += tecla(e, itens[i].tecla, (Vector2){x, y}, altura) + 8 * s;
         const char *acao = dialogo_texto(itens[i].acao);
