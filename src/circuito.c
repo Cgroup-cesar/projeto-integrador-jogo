@@ -9,6 +9,7 @@
 #include "manual.h"
 #include "dialogo.h"
 #include "crt.h"
+#include "clique.h"
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -70,7 +71,8 @@ static bool atualiza_painel1(Estado *e) {
     bool teclas[3] = {e->in.tecla1, e->in.tecla2, e->in.tecla3};
     if (e->in.cima) p->cursor = (p->cursor + 2) % 3;
     if (e->in.baixo) p->cursor = (p->cursor + 1) % 3;
-    if (e->in.confirmar) teclas[p->cursor] = true;
+    bool clicou = !e->ajuda_aberta && clique_escolhe(&e->in, CLIQUE_CHAVE, &p->cursor); // clicar liga/desliga
+    if (e->in.confirmar || clicou) teclas[p->cursor] = true;
     bool mexeu = false;
     for (int i = 0; i < 3; i++) {
         if (!teclas[i]) continue;
@@ -83,7 +85,9 @@ static bool atualiza_painel1(Estado *e) {
 static bool atualiza_painel2(Estado *e) {
     Painel *p = &e->painel;
     if (e->in.esquerda || e->in.direita) p->cursor = 1 - (p->cursor % 2);
-    int passo = (e->in.cima ? -1 : 0) + (e->in.baixo || e->in.confirmar ? 1 : 0);
+    // O mouse: passar por cima escolhe o encaixe; clicar nele troca a porta (como a seta para baixo).
+    bool clicou = !e->ajuda_aberta && clique_escolhe(&e->in, CLIQUE_ENCAIXE, &p->cursor);
+    int passo = (e->in.cima ? -1 : 0) + (e->in.baixo || e->in.confirmar || clicou ? 1 : 0);
     if (passo == 0) return e->in.esquerda || e->in.direita;
     int encaixe = p->cursor % 2;
     p->escolha[encaixe] = (p->escolha[encaixe] + passo + 4) % 4; // E, OU, OU-EXCLUSIVO, NÃO-E
@@ -175,9 +179,14 @@ static void fio(const Estado *e, Vector2 a, Vector2 b, bool v, bool entra_em_por
 }
 
 // Uma porta lógica: caixa com o nome e o LED da saída ao vivo. Devolve o ponto de saída.
+static Rectangle caixa_da_porta(Vector2 centro) {
+    float s = ui_escala();
+    return (Rectangle){centro.x - 70 * s, centro.y - 22 * s, 140 * s, 44 * s};
+}
+
 static Vector2 porta(const Estado *e, Vector2 centro, const char *nome, bool led, bool selecionada) {
     float s = ui_escala();
-    Rectangle r = {centro.x - 70 * s, centro.y - 22 * s, 140 * s, 44 * s};
+    Rectangle r = caixa_da_porta(centro);
     DrawRectangleRounded(r, 0.2f, 4, selecionada ? Fade(COR_AMBAR, 0.25f) : (Color){12, 20, 15, 255});
     DrawRectangleRoundedLinesEx(r, 0.2f, 4, selecionada ? 2.5f : 1.5f,
                                 selecionada ? COR_AMBAR : Fade(COR_FOSFORO, 0.6f));
@@ -260,6 +269,7 @@ static void desenha_painel1(const Estado *e, Rectangle r) {
                  dialogo_texto(p->chaves[i] ? TXT_PAINEL_CHAVE_LIGADA : TXT_PAINEL_CHAVE_DESLIGADA));
         ui_opcao(e, rotulo, (Vector2){r.x + 26 * s, ent[i].y - 10 * s}, 120 * s + 60 * s, 16 * s,
                  p->cursor == i, p->chaves[i] ? COR_FOSFORO : Fade(COR_FOSFORO, 0.7f));
+        clique_area(CLIQUE_CHAVE, i, (Rectangle){r.x + 16 * s, ent[i].y - 14 * s, 180 * s, 24 * s});
         ent[i].x += 40 * s;
     }
     Vector2 nao = porta(e, (Vector2){r.x + 330 * s, ent[1].y}, dialogo_porta(PORTA_NAO), leds[0], false);
@@ -322,14 +332,16 @@ static void desenha_painel2(const Estado *e, Rectangle r) {
     Vector2 a = {r.x + 60 * s, r.y + 130 * s}, b = {r.x + 60 * s, r.y + 210 * s};
     ui_texto(e, "A", (Vector2){a.x - 30 * s, a.y - 10 * s}, 20 * s, cor_sinal(ent[0]));
     ui_texto(e, "B", (Vector2){b.x - 30 * s, b.y - 10 * s}, 20 * s, cor_sinal(ent[1]));
-    Vector2 p1 = porta(e, (Vector2){r.x + 220 * s, (a.y + b.y) * 0.5f}, dialogo_porta(p->escolha[0]), leds[0],
-                       p->cursor % 2 == 0);
+    Vector2 c1 = {r.x + 220 * s, (a.y + b.y) * 0.5f};
+    Vector2 p1 = porta(e, c1, dialogo_porta(p->escolha[0]), leds[0], p->cursor % 2 == 0);
+    clique_area(CLIQUE_ENCAIXE, 0, caixa_da_porta(c1));
     fio(e, a, (Vector2){r.x + 150 * s, p1.y - 10 * s}, ent[0], true);
     fio(e, b, (Vector2){r.x + 150 * s, p1.y + 10 * s}, ent[1], true);
     Vector2 nao = porta(e, (Vector2){r.x + 220 * s, r.y + 300 * s}, dialogo_porta(PORTA_NAO), leds[1], false);
     fio(e, a, (Vector2){r.x + 150 * s, nao.y}, ent[0], true);
-    Vector2 p2 = porta(e, (Vector2){r.x + 420 * s, (p1.y + nao.y) * 0.5f}, dialogo_porta(p->escolha[1]),
-                       leds[2], p->cursor % 2 == 1);
+    Vector2 c2 = {r.x + 420 * s, (p1.y + nao.y) * 0.5f};
+    Vector2 p2 = porta(e, c2, dialogo_porta(p->escolha[1]), leds[2], p->cursor % 2 == 1);
+    clique_area(CLIQUE_ENCAIXE, 1, caixa_da_porta(c2));
     fio(e, p1, (Vector2){r.x + 350 * s, p2.y - 10 * s}, leds[0], true);
     fio(e, nao, (Vector2){r.x + 350 * s, p2.y + 10 * s}, leds[1], true);
     fio(e, p2, (Vector2){r.x + 520 * s, p2.y}, saida, false);

@@ -3,6 +3,7 @@
 #include "manual.h"
 #include "ui.h"
 #include "dialogo.h"
+#include "clique.h"
 #include <math.h>
 
 // Acesa: o bulbo âmbar com um anel escuro em volta e o brilho por fora. Apagada: um botão verde-escuro.
@@ -65,4 +66,5 @@ void manual_selo_ajuda(const Estado *e, float direita, float topo, float s) {
     DrawRectangleRec(b, Fade(COR_AMBAR, e->ajuda_aberta ? 0.2f : 0.08f));
     DrawRectangleLinesEx(b, 1.0f * s, COR_AMBAR);
     ui_texto(e, selo, (Vector2){b.x + 12 * s, b.y + 7 * s}, 16 * s, COR_AMBAR);
+    clique_area(CLIQUE_TECLA, TECLA_H, b); // clicar no selo é como apertar H
 }
