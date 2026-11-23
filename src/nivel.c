@@ -4,6 +4,7 @@
 #include "console_modelo.h"
 #include "caixas.h"
 #include "mesa_bilhete.h"
+#include "armario_modelo.h"
 #include "texturas.h"
 #include "cenario.h"
 #include <math.h>
@@ -374,7 +375,9 @@ static void desenha_moveis(const Estado *e) {
         Vector3 tam = em_x ? (Vector3){0.75f, 2.1f, 1.3f} : (Vector3){1.3f, 2.1f, 0.75f};
         Vector3 c = {n->armarios[i].x, 1.05f, n->armarios[i].z};
         if (i == armario_oculto) continue; // escondido: a camera esta dentro, nao desenha o armario
-        metal(e, c, tam, (Color){0x3b, 0x40, 0x31, 255}, 10 + i);
+        if (armario_modelo_desenha(e, c, tam, Vector3Negate(Vector3Normalize(d))))
+            continue; // o modelo já tem a porta com venezianas: as frestas desenhadas são só da caixa
+        metal(e, c, tam, (Color){0x3b, 0x40, 0x31, 255}, 10 + i); // sem o modelo: a caixa de metal
         Vector3 frente = Vector3Scale(Vector3Normalize(d), -(em_x ? tam.x : tam.z) * 0.5f - 0.005f);
         for (int f = 0; f < 4; f++) { // frestas
             Vector3 p = Vector3Add(c, frente);

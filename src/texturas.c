@@ -168,6 +168,11 @@ void texturas_carrega(Recursos *rec) {
         sobe(gera_mancha(DECALQUE_UMIDADE, (Color){0x10, 0x13, 0x0d, 255}, TEXTURA_SEMENTE), false);
     rec->decalque[DECALQUE_ARRASTO] =
         sobe(gera_mancha(DECALQUE_ARRASTO, (Color){0x0c, 0x08, 0x06, 255}, TEXTURA_SEMENTE), false);
+    char caminho[512]; // o sangue só existe como arquivo: sem ele, a textura fica vazia e não é desenhada
+    if (ui_caminho_asset("texturas/sangue.png", caminho, sizeof(caminho))) {
+        Image sangue = LoadImage(caminho);
+        if (sangue.data != NULL) rec->decalque[DECALQUE_SANGUE] = sobe(sangue, false);
+    }
     rec->halo = sobe(GenImageGradientRadial(64, 64, 0.0f, WHITE, BLANK), false);
     TraceLog(LOG_INFO,
              "PRECURSOR: texturas do mapa prontas (%d de %d procedurais; override em assets/texturas/)",

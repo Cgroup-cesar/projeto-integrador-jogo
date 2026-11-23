@@ -35,6 +35,17 @@ static const Placa PLACAS[] = {
     {DECALQUE_UMIDADE, {27.0f, 1.7f, BORDA(6) - DESCOLA}, {-1.8f, 0, 0}, {0, 2.2f, 0}, {255, 255, 255, 230}},
     {DECALQUE_UMIDADE, {BORDA(22) - DESCOLA, 1.5f, 17.0f}, {0, 0, 1.6f}, {0, 2.0f, 0}, {255, 255, 255, 230}},
     {DECALQUE_UMIDADE, {9.0f, 1.8f, BORDA(9) + DESCOLA}, {1.8f, 0, 0}, {0, 2.2f, 0}, {255, 255, 255, 230}},
+    // sangue, onde a história aconteceu (o apagão de 15 de junho) e onde quem passa olha:
+    // corredor norte, ao lado do armário (coluna 12): logo à esquerda de quem sai da sala de observação
+    {DECALQUE_SANGUE, {23.4f, 1.25f, BORDA(5) + DESCOLA}, {1.7f, 0, 0}, {0, 1.9f, 0}, {255, 255, 255, 235}},
+    // fim do corredor norte (parede leste): de frente para quem anda até o gerador
+    {DECALQUE_SANGUE, {BORDA(22) - DESCOLA, 1.35f, 11.0f}, {0, 0, 1.9f}, {0, 2.1f, 0}, {255, 255, 255, 240}},
+    // sala do gerador, ao lado do painel 1: "o americano foi ver o gerador e não voltou"
+    {DECALQUE_SANGUE, {36.4f, 1.5f, BORDA(1) + DESCOLA}, {1.6f, 0, 0}, {0, 1.8f, 0}, {255, 255, 255, 230}},
+    // corredor oeste, baixo, logo antes do armário da coluna 8 (alguém se arrastou até ele)
+    {DECALQUE_SANGUE, {BORDA(8) + DESCOLA, 0.85f, 14.6f}, {0, 0, -1.4f}, {0, 1.5f, 0}, {255, 255, 255, 225}},
+    // corredor sul, perto da boca do duto, de onde ele sai
+    {DECALQUE_SANGUE, {30.6f, 1.15f, BORDA(12) - DESCOLA}, {-1.8f, 0, 0}, {0, 2.0f, 0}, {255, 255, 255, 235}},
     // marcas de arrasto no chão, saindo da boca do duto (coluna 14, linha 11) para oeste
     {DECALQUE_ARRASTO, {26.15f, DESCOLA * 0.5f, 23.0f}, {4.5f, 0, 0}, {0, 0, -1.2f}, {255, 255, 255, 255}},
 };
@@ -68,7 +79,7 @@ static const Vector3 GRELHAS[] = {{33.0f, 2.45f, BORDA(12) - 0.02f}, {27.0f, 2.5
 static const Vector3 FIOS[][3] = {
     {{38.8f, 1.8f, 5.1f}, {38.5f, 2.3f, 5.3f}, {38.6f, 3.0f, 4.9f}},
     {{39.3f, 1.8f, 5.0f}, {39.6f, 2.5f, 4.8f}, {39.5f, 3.0f, 5.3f}},
-    {{9.0f, 1.8f, 20.7f}, {9.3f, 2.4f, 20.5f}, {9.1f, 3.0f, 20.3f}},
+    {{10.8f, 1.8f, 18.45f}, {10.6f, 2.4f, 18.3f}, {10.7f, 3.0f, 18.15f}}, // do painel 2 (parede norte do Arquivo)
     {{30.0f, 3.0f, 22.6f}, {30.1f, 2.6f, 22.7f}, {29.95f, 2.2f, 22.55f}},
 };
 

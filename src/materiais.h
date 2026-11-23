@@ -27,6 +27,7 @@ typedef enum {
     DECALQUE_CAIXA_2,  // "CHÃ DE ALEGRIA - PE"
     DECALQUE_UMIDADE,  // mancha de umidade com escorridos (parede)
     DECALQUE_ARRASTO,  // marcas de arrasto saindo do duto (chão)
+    DECALQUE_SANGUE,   // respingo de sangue (assets/texturas/sangue.png; sem o arquivo, não aparece)
     DECALQUE_TOTAL
 } Decalque;
 

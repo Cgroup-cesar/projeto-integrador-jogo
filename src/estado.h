@@ -73,6 +73,8 @@ typedef struct {
     bool tem_caixas;
     Model modelo_mesa, modelo_papeis; // opcionais: a mesa do bilhete e as folhas (mesa_bilhete.c)
     bool tem_mesa, tem_papeis;
+    Model modelo_armario; // opcional: assets/modelos/armario.glb (os armários de esconderijo)
+    bool tem_armario;
     Music trilhas[TRILHA_TOTAL]; // opcionais: sons longos de assets/audio (trilhas.c)
     bool tem_trilha[TRILHA_TOTAL];
     // Texturas do mapa (texturas.c): criadas uma vez em carrega_recursos, liberadas em descarrega_recursos.
