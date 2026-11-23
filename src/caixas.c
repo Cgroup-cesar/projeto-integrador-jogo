@@ -14,7 +14,7 @@ typedef struct {
 // Encostadas nas paredes, longe das portas, dos móveis e do caminho do Precursor. Edite à vontade.
 static const Pilha PILHAS[] = {
     {3.3f, 13.5f, true},  // sala de observação: canto sudoeste
-    {11.0f, 25.5f, true}, // Arquivo: parede sul
+    {11.0f, 23.5f, true}, // Arquivo: parede sul
     {42.7f, 2.5f, true},  // sala do painel 1: parede norte, no canto leste
 };
 #define N_PILHAS ((int)(sizeof(PILHAS) / sizeof(PILHAS[0])))

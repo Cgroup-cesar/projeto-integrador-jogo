@@ -17,7 +17,7 @@
 #define ALTURA_OLHO_CRIATURA 2.4f
 
 // Pontos de patrulha (coluna, linha): os cantos do loop de corredores, o gerador e o Arquivo.
-static const int PATRULHA[][2] = {{8, 5}, {21, 5}, {19, 2}, {21, 11}, {8, 11}, {3, 11}};
+static const int PATRULHA[][2] = {{8, 5}, {21, 5}, {19, 2}, {21, 11}, {8, 11}, {4, 11}};
 #define N_PATRULHA ((int)(sizeof(PATRULHA) / sizeof(PATRULHA[0])))
 
 // ================================================================== modelo opcional

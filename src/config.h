@@ -44,6 +44,15 @@
 #define CAIXAS_PROFUNDIDADE_M 0.9f
 #define CAIXAS_PLACA_LARGURA_M 0.62f // a placa do Exército no caixote grande (cobre o "Fragile" do modelo)
 #define CAIXAS_PLACA_ALTURA_M  0.28f
+// A mesa do bilhete, no fundo do Arquivo (mesa_bilhete.c).
+#define MESA_ALTURA_M      0.76f  // o modelo é escalado por esta altura
+#define MESA_FUNDO_M       0.84f  // de frente para trás (eixo X): encostada na parede oeste
+#define MESA_COMPRIMENTO_M 1.69f
+#define MESA_PAPEL_ESCALA  0.01f  // as folhas de papeis.glb estão em centímetros
+#define MESA_LUZ_Y         2.1f   // a lâmpada pendurada sobre a mesa (mais baixa que as do teto)
+#define MESA_LUZ_FORCA     3.6f   // o dobro de uma lâmpada de corredor: o ponto mais claro do Arquivo
+#define MESA_LUZ_ALCANCE_M 14.0f  // até esta distância ela sempre acende (cobre o Arquivo e a porta)
+#define MESA_COR_LUZ       (Color){0xff, 0x9a, 0x3c, 255} // âmbar quente: a única luz assim no Arquivo
 #define FITA_HORA_INICIO   (21 * 3600 + 47 * 60 + 52) // a câmera às 21:47:52, durante o canto
 #define TECLAS_ESCALA_JOGO 0.88f // tamanho da barra de teclas e do minimapa durante a partida (1 = original)
 

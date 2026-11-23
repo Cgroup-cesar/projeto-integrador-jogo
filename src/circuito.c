@@ -405,8 +405,8 @@ void circuito_desenha_3d(const Estado *e) {
     bool saida = avalia_mostrado(e, leds) || p->resolvido;
     bool painel1 = p->numero == 1;
     Vector3 c = painel1 ? e->nivel.painel1 : e->nivel.painel2;
-    Vector3 frente = painel1 ? (Vector3){0, 0, 0.27f} : (Vector3){0.27f, 0, 0};
-    Vector3 lado = painel1 ? (Vector3){0.22f, 0, 0} : (Vector3){0, 0, -0.22f};
+    Vector3 frente = {0, 0, 0.27f}; // os dois painéis encostam numa parede norte e olham para o sul
+    Vector3 lado = {0.22f, 0, 0};
     for (int i = 0; i < 3; i++) {
         Vector3 led =
             Vector3Add(Vector3Add((Vector3){c.x, 1.35f, c.z}, frente), Vector3Scale(lado, (float)(i - 1)));

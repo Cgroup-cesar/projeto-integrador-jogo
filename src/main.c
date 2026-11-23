@@ -20,6 +20,7 @@
 #include "fita.h"
 #include "console_modelo.h"
 #include "caixas.h"
+#include "mesa_bilhete.h"
 #include "dialogo.h"
 #include "ranking.h"
 #include "respiracao.h"
@@ -490,10 +491,12 @@ static void carrega_recursos(void) {
     lanterna_carrega_modelo(&estado.rec);
     console_modelo_carrega(&estado.rec); // depois da luz (posfx_inicia): usa o shader dela
     caixas_carrega(&estado.rec);
+    mesa_bilhete_carrega(&estado.rec);
     if (mudo || estado.modo_smoke) SetMasterVolume(0.0f); // o smoke roda calado
 }
 
 static void descarrega_recursos(void) {
+    mesa_bilhete_descarrega(&estado.rec);
     caixas_descarrega(&estado.rec);
     console_modelo_descarrega(&estado.rec);
     lanterna_descarrega_modelo(&estado.rec);

@@ -3,6 +3,7 @@
 #include "nivel.h"
 #include "console_modelo.h"
 #include "caixas.h"
+#include "mesa_bilhete.h"
 #include "texturas.h"
 #include "cenario.h"
 #include <math.h>
@@ -14,15 +15,15 @@ static const char *const MAPA[MAPA_ALTURA] = {
     "########################", "#CCCCCC##########.....##", "#CCCVCC##########..1..##",
     "#GGGGGG##########L....##", "#OOOTOO############D####", "#OOSOOOD....L.......L.##",
     "#OOOOOO#.############.##", "########.############.##", "########L############.##",
-    "#......#.############.##", "#.N.2..D.############L##", "#......#......V.......##",
-    "#L.....#################", "########################",
+    "###..2.#.############.##", "###N...D.############L##", "###L...#......V.......##",
+    "########################", "########################",
 };
 
 // Lâmpadas dos corredores e das salas (coluna, linha). Edite à vontade.
 static const int LAMPADAS[][2] = {
     {10, 5},  {15, 5},  {20, 5},  {21, 8}, {8, 7},  {8, 10},
-    {11, 11}, {16, 11}, {20, 11}, {19, 2}, {4, 11}, {3, 5},
-};
+    {11, 11}, {16, 11}, {20, 11}, {19, 2}, {3, 5},
+}; // o Arquivo não tem lâmpada de teto: a única luz lá dentro é a da mesa do bilhete (mesa_bilhete.c)
 
 // ================================================================== coordenadas
 Vector3 nivel_centro_celula(int coluna, int linha) {
@@ -92,11 +93,11 @@ static void registra_celula(Nivel *n, char ch, int c, int l) {
     case '1':
         n->painel1 = centro;
         break;
-    case '2':
-        n->painel2 = centro;
+    case '2': // encostado na parede norte da célula, virado para dentro do Arquivo (como o painel 1)
+        n->painel2 = (Vector3){centro.x, 0.0f, centro.z - TAMANHO_CELULA * 0.5f + 0.28f};
         break;
-    case 'N':
-        n->diario = centro;
+    case 'N': // a mesa encosta na parede oeste da célula, de frente para a porta do Arquivo
+        n->diario = (Vector3){centro.x - TAMANHO_CELULA * 0.5f + MESA_FUNDO_M * 0.5f + 0.05f, 0.0f, centro.z};
         break;
     case 'D':
         if (nivel_celula(n, c - 1, l) == 'O') n->porta_sala = centro;
@@ -165,9 +166,10 @@ void nivel_constroi_paredes(const Nivel *n, ColParedes *paredes) {
     col_paredes_adiciona(paredes, caixa((Vector3){n->painel1.x, 0.9f, n->painel1.z},
                                         (Vector3){1.2f, 1.8f, 0.5f}, PAREDE_MOVEL));
     col_paredes_adiciona(paredes, caixa((Vector3){n->painel2.x, 0.9f, n->painel2.z},
-                                        (Vector3){0.5f, 1.8f, 1.2f}, PAREDE_MOVEL));
+                                        (Vector3){1.2f, 1.8f, 0.5f}, PAREDE_MOVEL));
     col_paredes_adiciona(
-        paredes, caixa((Vector3){n->diario.x, 0.4f, n->diario.z}, (Vector3){0.9f, 0.8f, 1.4f}, PAREDE_MOVEL));
+        paredes, caixa((Vector3){n->diario.x, MESA_ALTURA_M * 0.5f, n->diario.z},
+                         (Vector3){MESA_FUNDO_M, MESA_ALTURA_M, MESA_COMPRIMENTO_M}, PAREDE_MOVEL));
     caixas_adiciona_paredes(paredes);
     for (int i = 0; i < n->n_armarios; i++) {
         Vector3 d = Vector3Subtract(n->armarios[i], n->armario_saida[i]);
@@ -195,8 +197,8 @@ void nivel_constroi_interativos(const Nivel *n, ColInterativos *c) {
     col_interativos_adiciona(c, interativo(INTER_PAINEL1, (Vector3){n->painel1.x, 1.2f, n->painel1.z},
                                            (Vector3){0.65f, 0.7f, 0.3f}, (Vector3){0, 0, 1}));
     col_interativos_adiciona(c, interativo(INTER_PAINEL2, (Vector3){n->painel2.x, 1.2f, n->painel2.z},
-                                           (Vector3){0.3f, 0.7f, 0.65f}, (Vector3){1, 0, 0}));
-    col_interativos_adiciona(c, interativo(INTER_DIARIO, (Vector3){n->diario.x, 0.85f, n->diario.z},
+                                           (Vector3){0.65f, 0.7f, 0.3f}, (Vector3){0, 0, 1}));
+    col_interativos_adiciona(c, interativo(INTER_DIARIO, (Vector3){n->diario.x, MESA_ALTURA_M + 0.05f, n->diario.z},
                                            (Vector3){0.45f, 0.12f, 0.6f}, (Vector3){1, 0, 0}));
     for (int i = 0; i < n->n_armarios; i++) {
         Vector3 fora = Vector3Normalize(Vector3Subtract(n->armario_saida[i], n->armarios[i]));
@@ -265,7 +267,7 @@ static int luzes_saida(const Estado *e, Vector3 *pos, Vector3 *cor) {
     int total = 0;
     for (int i = 0; i < n->n_lampadas; i++)
         candidatos[total++] = n->lampadas[i];
-    candidatos[total++] = (Vector3){n->diario.x, PE_DIREITO - 0.3f, n->diario.z};
+    candidatos[total++] = (Vector3){n->diario.x, MESA_LUZ_Y, n->diario.z};
     bool energia = e->painel.resolvido;
     float corte = e->apagao_t > 0.0f ? 0.08f : 1.0f; // apagão: as lâmpadas quase somem
     for (int k = 0; k < 3; k++) {
@@ -279,9 +281,19 @@ static int luzes_saida(const Estado *e, Vector3 *pos, Vector3 *cor) {
         pos[k] = candidatos[k];
         bool diario = candidatos[k].x == n->diario.x && candidatos[k].z == n->diario.z;
         float g = LUZ_CORREDOR_GANHO;
-        cor[k] = diario    ? cor_luz(COR_LAMPADA, 1.4f * g * corte)
+        cor[k] = diario    ? cor_luz(MESA_COR_LUZ, MESA_LUZ_FORCA * g * corte * mesa_bilhete_piscada(e))
                  : energia ? cor_luz(COR_LAMPADA, 1.5f * g)
                            : cor_luz(COR_ALARME, 1.7f * g * corte);
+    }
+    // A lâmpada da mesa precisa acender de longe: de dentro do Arquivo (ou da porta) ela entra no lugar da
+    // terceira mais próxima, mesmo que outras estejam mais perto. É o que chama o olho para a mesa.
+    Vector3 mesa = {n->diario.x, MESA_LUZ_Y, n->diario.z};
+    bool escolhida = false;
+    for (int k = 0; k < 3; k++) // padrão FOLD: a lâmpada da mesa já está entre as três?
+        escolhida = escolhida || (pos[k].x == mesa.x && pos[k].z == mesa.z);
+    if (!escolhida && Vector3Distance(mesa, e->jog.pos) < MESA_LUZ_ALCANCE_M) {
+        pos[2] = mesa;
+        cor[2] = cor_luz(MESA_COR_LUZ, MESA_LUZ_FORCA * LUZ_CORREDOR_GANHO * corte * mesa_bilhete_piscada(e));
     }
     pos[3] = (Vector3){e->jog.pos.x, ALTURA_OLHOS + 0.3f, e->jog.pos.z};
     cor[3] = cor_luz(COR_LAMPADA, 0.32f);
@@ -354,11 +366,8 @@ static void desenha_moveis(const Estado *e) {
     metal(e, (Vector3){con.x + 0.62f, 1.18f, con.z - 0.88f}, (Vector3){0.22f, 0.3f, 0.1f}, cinza,
           3); // interfone
     metal(e, (Vector3){n->painel1.x, 0.9f, n->painel1.z}, (Vector3){1.2f, 1.8f, 0.5f}, COR_OLIVA, 4);
-    metal(e, (Vector3){n->painel2.x, 0.9f, n->painel2.z}, (Vector3){0.5f, 1.8f, 1.2f}, COR_OLIVA, 5);
-    metal(e, (Vector3){n->diario.x, 0.4f, n->diario.z}, (Vector3){0.9f, 0.8f, 1.4f},
-          (Color){0x3a, 0x2c, 0x20, 255}, 6);
-    DrawCubeV((Vector3){n->diario.x, 0.81f, n->diario.z}, (Vector3){0.32f, 0.02f, 0.44f},
-              (Color){0xc8, 0xc0, 0xa8, 255});
+    metal(e, (Vector3){n->painel2.x, 0.9f, n->painel2.z}, (Vector3){1.2f, 1.8f, 0.5f}, COR_OLIVA, 5);
+    mesa_bilhete_desenha(e); // a mesa do bilhete, a lâmpada pendurada e as folhas
     for (int i = 0; i < n->n_armarios; i++) { // laço de desenho: só percorre os armários
         Vector3 d = Vector3Subtract(n->armarios[i], n->armario_saida[i]);
         bool em_x = fabsf(d.x) > fabsf(d.z);
@@ -482,7 +491,8 @@ void nivel_desenha_emissivos(const Estado *e) {
     if (saida) {
         for (int i = 0; i < n->n_lampadas; i++)
             DrawSphereEx(n->lampadas[i], 0.09f, 6, 6, lamp);
-        DrawSphereEx((Vector3){n->diario.x, PE_DIREITO - 0.3f, n->diario.z}, 0.08f, 6, 6, COR_LAMPADA);
+        DrawSphereEx((Vector3){n->diario.x, MESA_LUZ_Y, n->diario.z}, 0.06f, 6, 6,
+                     ColorBrightness(MESA_COR_LUZ, mesa_bilhete_piscada(e) - 1.0f));
     }
     float sala = brilho_sala(e);
     Vector3 lampada_sala = {8.0f, PE_DIREITO - 0.25f, 11.0f};
@@ -492,6 +502,7 @@ void nivel_desenha_emissivos(const Estado *e) {
     for (int i = 0; saida && i < n->n_lampadas; i++) // laço de desenho: o halo de cada lâmpada acesa
         cenario_halo(e, n->lampadas[i], lamp);
     if (!saida && sala > 0.5f) cenario_halo(e, lampada_sala, cor_sala);
+    mesa_bilhete_desenha_brilho(e);
     cenario_termina_halos();
     bool menu = e->fase == FASE_MENU || e->fase == FASE_INTRO;
     bool a_acesa = menu || e->rod.luz_a || nivel_piscada_cela(e) > 0.0f;
