@@ -560,6 +560,12 @@ static void testa_sanidade_recupera(void) {
     CHECK(perto(depois, 50.0f + SANIDADE_REGEN));
     float bem_longe = regras_sanidade_passo(50.0f, 60.0f, 1.0f, false, SANIDADE_ESPERA_REGEN, true, 1.0f);
     CHECK(perto(bem_longe, depois)); // volta contínua e sempre igual: não depende da distância
+    // Entre SANIDADE_RAIO_VOLTA e SANIDADE_RAIO: chegando (tempo_longe 0), cai; afastando, já volta.
+    float entre = (SANIDADE_RAIO_VOLTA + SANIDADE_RAIO) * 0.5f;
+    CHECK(regras_sanidade_passo(50.0f, entre, 1.0f, false, 0.0f, true, 1.0f) < 50.0f);
+    CHECK(perto(regras_sanidade_passo(50.0f, entre, 1.0f, false, SANIDADE_ESPERA_REGEN, true, 1.0f), depois));
+    float dentro = SANIDADE_RAIO_VOLTA - 0.5f; // mais perto que o raio da volta: cai sempre
+    CHECK(regras_sanidade_passo(50.0f, dentro, 1.0f, false, SANIDADE_ESPERA_REGEN, true, 1.0f) < 50.0f);
     float sala = regras_sanidade_passo(50.0f, 2.0f, 1.0f, false, 0.0f, false, 1.0f);
     CHECK(perto(sala, 50.0f + SANIDADE_REGEN)); // na rodada sobe na hora (a criatura está contida)
     CHECK(perto(regras_sanidade_passo(99.9f, 20.0f, 1.0f, false, 10.0f, false, 1.0f), SANIDADE_MAX));

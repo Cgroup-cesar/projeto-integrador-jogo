@@ -12,11 +12,13 @@ static float perto_de(float dist) {
     return Clamp((SANIDADE_RAIO - dist) / (SANIDADE_RAIO - SANIDADE_PERTO), 0.0f, 1.0f);
 }
 
-// [REQ:SANIDADE] cai com a criatura perto (mais rápido quanto mais perto); com ela fora do raio, volta num
-// ritmo contínuo e sempre igual (SANIDADE_REGEN); bônus nas tarefas
+// [REQ:SANIDADE] cai com a criatura perto (mais rápido quanto mais perto); volta num ritmo contínuo e
+// sempre igual (SANIDADE_REGEN) assim que ela está além de SANIDADE_RAIO_VOLTA sem se aproximar; bônus nas
+// tarefas. `tempo_longe`: segundos seguidos com ela além desse raio e sem chegar mais perto.
 float regras_sanidade_passo(float s, float dist, float surgindo, bool escondido, float tempo_longe,
                             bool fase_saida, float dt) {
-    if (fase_saida && dist < SANIDADE_RAIO) {
+    bool afastou = dist >= SANIDADE_RAIO_VOLTA && tempo_longe >= SANIDADE_ESPERA_REGEN;
+    if (fase_saida && dist < SANIDADE_RAIO && !afastou) {
         float p = perto_de(dist);
         float acelera = Lerp(SANIDADE_ACELERA_LONGE, SANIDADE_ACELERA_PERTO, p); // mais perto, mais rápido
         float queda = Lerp(SANIDADE_QUEDA_MIN, SANIDADE_QUEDA_MAX, p * p) * acelera;

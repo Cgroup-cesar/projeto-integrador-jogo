@@ -109,7 +109,8 @@
 #define SANIDADE_ACELERA_PERTO   2.0f  // ...até 2× colado nela (24 pontos/s: 100 → 0 em ~4 s)
 #define SANIDADE_FATOR_ARMARIO   0.5f  // escondido no armário a queda cai pela metade
 #define SANIDADE_REGEN           2.0f  // pontos/s, contínuo e sempre igual (+50 em 25 s): ele se afastou
-#define SANIDADE_ESPERA_REGEN    0.5f  // s fora do raio antes de subir (só para não piscar na borda)
+#define SANIDADE_RAIO_VOLTA      10.0f // metros: além disso, com ele sem se aproximar, a sanidade já volta
+#define SANIDADE_ESPERA_REGEN    0.5f  // s afastando antes de subir (as pausas do passo dele são mais curtas)
 #define SANIDADE_BONUS_RODADA    35.0f // decifrou e traduziu (EV_RODADA_CONCLUIDA)
 #define SANIDADE_BONUS_SAIDA     40.0f // religou a energia e voltou à sala (EV_SAIDA_CONCLUIDA)
 #define SANIDADE_BONUS_CONECTIVO 10.0f // cada conectivo decifrado pela primeira vez
