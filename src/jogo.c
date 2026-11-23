@@ -386,7 +386,9 @@ static void desenha_mundo_3d(const Estado *e) {
     float queda[LUZES_SHADER] = {1.0f, 1.0f, 1.0f, 1.0f, 1.0f}; // as lâmpadas do cenário: queda comum
     int n = nivel_luzes(e, pos, cor, cone);
     if (lanterna_luz(e, &pos[n], &cor[n], &cone[n], &queda[n])) n++; // a 5ª luz
-    float ambiente = e->apagao_t > 0.0f ? LUZ_AMBIENTE * 0.3f : LUZ_AMBIENTE;
+    bool sem_energia = regras_fase_eh_saida(e->fase) && !e->painel.resolvido;
+    float ambiente = LUZ_AMBIENTE * (sem_energia ? SEM_ENERGIA_AMBIENTE : 1.0f);
+    if (e->apagao_t > 0.0f) ambiente = LUZ_AMBIENTE * 0.3f * (sem_energia ? SEM_ENERGIA_AMBIENTE : 1.0f);
     BeginMode3D(e->camera);
     posfx_comeca_luz(e, pos, cor, cone, queda, n, ambiente);
     nivel_desenha(e);

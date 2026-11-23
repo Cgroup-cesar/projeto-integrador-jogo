@@ -59,6 +59,11 @@
 #define CAMERA_COMPRIMENTO_M  0.65f // da placa do suporte até a frente da carcaça
 #define CAMERA_ALTURA_M       2.5f  // onde a placa encosta na parede
 #define CAMERA_INCLINA_GRAUS  22.0f // a lente aponta um pouco para baixo
+// O quadro de investigação na parede sul da sala de observação (quadro.c), atrás de quem está no console.
+#define QUADRO_LARGURA_M 1.95f
+#define QUADRO_X         8.6f   // centro, no meio da parede sul
+#define QUADRO_PAREDE_Z  13.995f // a parede sul da sala (linha 7 do mapa: z = 14)
+#define QUADRO_BASE_Y    0.95f  // onde fica a borda de baixo
 #define FITA_HORA_INICIO   (21 * 3600 + 47 * 60 + 52) // a câmera às 21:47:52, durante o canto
 #define TECLAS_ANDAR_S     10.0f // da R2 em diante, andando, a barra de teclas some depois disso em cada fase
 #define TECLAS_ESCALA_JOGO 0.88f // tamanho da barra de teclas durante a partida (1 = original)
@@ -272,6 +277,11 @@
 #define LUZ_AMBIENTE       0.045f // era 0,06: o escuro pesa mais, mas a lanterna e os holofotes não mudaram
 #define NEVOA_DENSIDADE    0.095f // era 0,085: o fundo do corredor some um pouco antes
 #define LUZ_CORREDOR_GANHO 0.8f   // força das lâmpadas dos corredores (a luz fraca no jogador fica igual)
+// Sem energia (nas saídas, até o painel ser resolvido): só as luzes de emergência, fracas, e quase nada de
+// ambiente. Sem a lanterna, dá para ver o vulto do corredor, mas não o que tem nele.
+#define SEM_ENERGIA_AMBIENTE   0.35f // multiplica LUZ_AMBIENTE
+#define SEM_ENERGIA_EMERGENCIA 0.6f  // força das lâmpadas vermelhas (antes 1,7)
+#define SEM_ENERGIA_JOGADOR    0.14f // a luz fraquinha no próprio jogador (com energia, 0,32)
 // Holofotes da cela (luzes A e B): ficam à frente e acima do Precursor, apontados para o peito dele.
 #define HOLOFOTE_ABERTURA_GRAUS 30.0f // meia-abertura do cone; fora dele sobram 15% (a cela não fica preta)
 #define HOLOFOTE_GANHO          1.6f  // compensa a luz que deixou de se espalhar pela cela

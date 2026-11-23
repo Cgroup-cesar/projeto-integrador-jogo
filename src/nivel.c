@@ -7,6 +7,7 @@
 #include "armario_modelo.h"
 #include "porta_bunker.h"
 #include "cameras.h"
+#include "quadro.h"
 #include "texturas.h"
 #include "cenario.h"
 #include <math.h>
@@ -300,7 +301,7 @@ static int luzes_saida(const Estado *e, Vector3 *pos, Vector3 *cor) {
         float g = LUZ_CORREDOR_GANHO;
         cor[k] = diario    ? cor_luz(MESA_COR_LUZ, MESA_LUZ_FORCA * g * corte * mesa_bilhete_piscada(e))
                  : energia ? cor_luz(COR_LAMPADA, 1.5f * g)
-                           : cor_luz(COR_ALARME, 1.7f * g * corte);
+                           : cor_luz(COR_ALARME, SEM_ENERGIA_EMERGENCIA * g * corte);
     }
     // A lâmpada da mesa precisa acender de longe: de dentro do Arquivo (ou da porta) ela entra no lugar da
     // terceira mais próxima, mesmo que outras estejam mais perto. É o que chama o olho para a mesa.
@@ -313,7 +314,7 @@ static int luzes_saida(const Estado *e, Vector3 *pos, Vector3 *cor) {
         cor[2] = cor_luz(MESA_COR_LUZ, MESA_LUZ_FORCA * LUZ_CORREDOR_GANHO * corte * mesa_bilhete_piscada(e));
     }
     pos[3] = (Vector3){e->jog.pos.x, ALTURA_OLHOS + 0.3f, e->jog.pos.z};
-    cor[3] = cor_luz(COR_LAMPADA, 0.32f);
+    cor[3] = cor_luz(COR_LAMPADA, energia ? 0.32f : SEM_ENERGIA_JOGADOR);
     return 4;
 }
 
@@ -380,6 +381,7 @@ static void desenha_moveis(const Estado *e) {
     metal(e, (Vector3){con.x, 1.02f, con.z - 0.75f}, (Vector3){1.5f, 0.06f, 0.5f}, cinza, 2);
     caixas_desenha(e);
     cameras_desenha(e);
+    quadro_desenha(e);
     console_modelo_desenha(e); // o computador de época em cima da mesa (sem o modelo, a tela verde abaixo)
     metal(e, (Vector3){con.x + 0.62f, 1.18f, con.z - 0.88f}, (Vector3){0.22f, 0.3f, 0.1f}, cinza,
           3); // interfone

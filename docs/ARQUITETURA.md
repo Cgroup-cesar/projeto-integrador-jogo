@@ -123,6 +123,7 @@ stateDiagram-v2
 | `armario_modelo.c` | o armário de metal de duas portas no lugar da caixa dos esconderijos, girado para o corredor e com a frente rente à colisão; só o desenho (o esconderijo e a respiração não mudam) |
 | `porta_bunker.c` | a porta da sala de observação: ao carregar, separa a folha do batente (peças da mesma malha) pelo plano da folha; a folha gira na dobradiça, fechada nas rodadas e abrindo em 1,8 s na saída |
 | `cameras.c` | 7 câmeras de segurança presas retas no alto das paredes das salas e corredores, inclinadas para baixo, com o LED de REC |
+| `quadro.c` | o quadro de investigação na parede sul da sala de observação, atrás do console; desenhado sem descartar faces de trás (os papéis do modelo vêm com a face invertida) |
 | `tela_fim.c` | depois do final: desempenho (resultado, placar, lugar no ranking), avaliação em estrelas e a tabela do ranking |
 | `ranking.c` | só arquivo: lê e grava `ranking.txt` (temporário + troca) e anexa `avaliacoes.csv`; nada no `--smoke` |
 
