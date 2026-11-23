@@ -315,6 +315,7 @@ typedef struct Estado {
     float sanidade;          // 0..SANIDADE_MAX: cai com a criatura perto, volta nas tarefas (sanidade.c)
     float sanidade_longe_t;  // s seguidos sem a criatura no raio (a recuperação espera um pouco)
     float sanidade_grao;     // 0..1: força do efeito na tela (segue a barra; vai ao shader como insanidade)
+    float sanidade_surto;    // 0..1: sanidade zerada (falhas na visão e vinheta vermelha, no shader do VHS)
     float sanidade_barra;    // o que a barra mostra: desce junto, sobe suave nos bônus
     float sanidade_eco;      // o pedaço recém-perdido (mais escuro), que alcança a barra devagar
     int sanidade_conectivos; // conectivos decifrados no quadro anterior (para dar o bônus uma vez só)

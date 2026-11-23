@@ -33,7 +33,12 @@ typedef char cada_preset_tem_um_nome[(sizeof(NOMES) / sizeof(NOMES[0]) == N_PRES
 
 static const char *const UNIFORMES[VHS_UNIFORMES] = {
     "tempo",    "resolucao", "ruido", "aberracao", "scanlines",  "vinheta", "wobble", "sangramento",
-    "tracking", "saturacao", "tom",   "curvatura", "cintilacao", "rolagem", "brilho", "insanidade"};
+    "tracking", "saturacao", "tom",   "curvatura", "cintilacao", "rolagem", "brilho", "insanidade",
+    "surto",    "piscada"};
+// Depois dos parâmetros do preset: o grão de sanidade, o surto (sanidade zerada) e o brilho da falha.
+#define U_INSANIDADE (VHS_PARAMETROS + 2)
+#define U_SURTO      (VHS_PARAMETROS + 3)
+#define U_PISCADA    (VHS_PARAMETROS + 4)
 
 #define VHS_ROTULO_S 2.5f
 
@@ -49,6 +54,7 @@ static const char *const UNIFORMES[VHS_UNIFORMES] = {
     "uniform float wobble; uniform float sangramento; uniform float tracking; uniform float saturacao;\n"    \
     "uniform float tom; uniform float curvatura; uniform float cintilacao;\n"                                \
     "uniform float rolagem; uniform float brilho; uniform float insanidade;\n"                               \
+    "uniform float surto; uniform float piscada;\n"                                                          \
     "float hash(vec2 p) {\n"                                                                                 \
     "    vec3 p3 = fract(vec3(p.xyx) * 0.1031);\n"                                                           \
     "    p3 += dot(p3, p3.yzx + 33.33);\n"                                                                   \
@@ -164,6 +170,7 @@ static const char *const UNIFORMES[VHS_UNIFORMES] = {
     "    float tremor = hash(vec2(linha, quadro(30.0, 61.0))) - 0.5;\n"                                      \
     "    float empurra = rodape * 14.0 + rola * 2.0;\n"                                                      \
     "    uv.x += (janela * faixa * wobble + empurra * tremor + trilha(uv, linha)) / resolucao.x;\n"          \
+    "    uv = escorrega(uv, linha);\n"                                                                       \
     "    float px = aberracao / resolucao.x;\n"                                                              \
     "    vec3 c = vec3(AMOSTRA(texture0, uv + vec2(px, 0.0)).r, AMOSTRA(texture0, uv).g,\n"                  \
     "                  AMOSTRA(texture0, uv - vec2(px, 0.0)).b);\n"                                          \
@@ -177,13 +184,32 @@ static const char *const UNIFORMES[VHS_UNIFORMES] = {
     "    c *= (1.0 + scanlines * 0.5) * (1.0 - scanlines * listra);\n"                                       \
     "    vec2 d = uv - 0.5;\n"                                                                               \
     "    c *= 1.0 - (vinheta + SAN_TUNEL * cansaco()) * dot(d, d) * 2.0;\n"                                  \
+    "    c = surta(c, uv);\n"                                                                                \
     "    c *= brilho * (1.0 - cintilacao * hash(vec2(quadro(20.0, 997.0), 3.0)));\n"                         \
     "    SAIDA = vec4(c * fora.x * fora.y, 1.0) * colDiffuse * fragColor;\n"                                 \
     "}\n"
 
+// Sanidade zerada (o surto): a imagem puxa para o vermelho, uma vinheta vermelho-sangue fecha as bordas
+// (respirando devagar) e, nas falhas, a visão escurece de uma vez e as linhas escorregam de lado. `piscada`
+// vem de regras_surto_piscada (1 = acesa); tudo escala com `surto` (0..1), que entra e sai suave.
+#define VHS_SURTO_GLSL                                                                                       \
+    "vec2 escorrega(vec2 uv, float linha) {\n"                                                               \
+    "    float falha = surto * (1.0 - piscada);\n"                                                           \
+    "    float lado = hash(vec2(floor(linha / 6.0), quadro(SURTO_HZ, 499.0))) - 0.5;\n"                      \
+    "    return uv + vec2(lado * 2.0 * SURTO_TREMOR * falha / resolucao.x, 0.0);\n"                          \
+    "}\n"                                                                                                    \
+    "vec3 surta(vec3 c, vec2 uv) {\n"                                                                        \
+    "    vec2 d = uv - 0.5;\n"                                                                               \
+    "    float borda = smoothstep(0.0, 0.3, dot(d, d));\n"                                                   \
+    "    float respira = 0.85 + 0.15 * sin(mod(tempo, 600.0) * 3.0);\n"                                      \
+    "    c = mix(c, vec3(luma(c)) * vec3(1.6, 0.42, 0.42), SURTO_TINGE * surto);\n"                          \
+    "    c = c * mix(1.0, piscada, surto) + vec3(0.11, 0.0, 0.012) * SURTO_NEVOA * surto;\n"                 \
+    "    return mix(c, vec3(0.62, 0.03, 0.05), borda * SURTO_VINHETA * surto * respira);\n"                  \
+    "}\n"
+
 #define VHS_FUNCOES_GLSL                                                                                     \
     VHS_UNIFORMES_GLSL VHS_CURVA_GLSL VHS_SANGRA_GLSL VHS_TOM_GLSL VHS_CANSACO_GLSL VHS_FITA_GLSL            \
-        VHS_CORPO_GLSL
+        VHS_SURTO_GLSL VHS_CORPO_GLSL
 
 static const char *VHS_CAB_330 = "#version 330\n"
                                  "#define AMOSTRA texture\n"
@@ -214,12 +240,18 @@ static bool monta_fonte(char *fonte, size_t cap, bool v100) {
                      "#define SAN_CROMA %.4f\n"
                      "#define SAN_DROPOUT %.4f\n"
                      "#define SAN_TRACKING %.4f\n"
+                     "#define SURTO_HZ %.4f\n"
+                     "#define SURTO_TREMOR %.4f\n"
+                     "#define SURTO_TINGE %.4f\n"
+                     "#define SURTO_VINHETA %.4f\n"
+                     "#define SURTO_NEVOA %.4f\n"
                      "%s",
                      v100 ? VHS_CAB_100 : VHS_CAB_330, (double)SANIDADE_CURVA, (double)SANIDADE_DESFOQUE_PX,
                      (double)SANIDADE_TUNEL, (double)SANIDADE_DESSATURA, (double)SANIDADE_PULSO_A_S,
                      (double)SANIDADE_PULSO_B_S, (double)SANIDADE_RUIDO, (double)SANIDADE_RUIDO_PRETO,
                      (double)SANIDADE_RUIDO_LARGURA_PX, (double)SANIDADE_CROMA, (double)SANIDADE_DROPOUT,
-                     (double)SANIDADE_TRACKING_PX, VHS_FUNCOES_GLSL);
+                     (double)SANIDADE_TRACKING_PX, (double)SURTO_FALHA_HZ, (double)SURTO_TREMOR_PX,
+                     (double)SURTO_TINGE, (double)SURTO_VINHETA, (double)SURTO_NEVOA, VHS_FUNCOES_GLSL);
     return n > 0 && (size_t)n < cap;
 }
 
@@ -272,7 +304,7 @@ void vhs_atualiza(Estado *e, float dt) {
 // neutros, então só o grão aparece.
 bool vhs_comeca(const Estado *e) {
     const Recursos *r = &e->rec;
-    bool so_grao = e->vhs_preset == 0 && e->sanidade_grao > 0.001f;
+    bool so_grao = e->vhs_preset == 0 && (e->sanidade_grao > 0.001f || e->sanidade_surto > 0.001f);
     if (!r->vhs_ok || e->vhs_preset < 0 || e->vhs_preset >= N_PRESETS) return false;
     if (e->vhs_preset == 0 && !so_grao) return false;
     float tempo = e->tempo_total;
@@ -282,7 +314,10 @@ bool vhs_comeca(const Estado *e) {
     const float *p = PRESETS[e->vhs_preset];
     for (int i = 0; i < VHS_PARAMETROS; i++) // padrão MAP: coluna do preset → uniforme do shader
         SetShaderValue(r->vhs, r->loc_vhs[i + 2], &p[i], SHADER_UNIFORM_FLOAT);
-    SetShaderValue(r->vhs, r->loc_vhs[VHS_UNIFORMES - 1], &e->sanidade_grao, SHADER_UNIFORM_FLOAT);
+    float piscada = regras_surto_piscada(tempo); // a falha da visão no surto (1 = acesa)
+    SetShaderValue(r->vhs, r->loc_vhs[U_INSANIDADE], &e->sanidade_grao, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(r->vhs, r->loc_vhs[U_SURTO], &e->sanidade_surto, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(r->vhs, r->loc_vhs[U_PISCADA], &piscada, SHADER_UNIFORM_FLOAT);
     BeginShaderMode(r->vhs);
     return true;
 }

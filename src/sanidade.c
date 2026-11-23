@@ -48,6 +48,7 @@ void sanidade_atualiza(Estado *e, float dt) {
     atualiza_barra(e, dt);
     // A força do efeito segue a barra (e não a sanidade crua): muda junto com a porcentagem, sem saltos.
     e->sanidade_grao = regras_sanidade_intensidade(e->sanidade_barra);
+    e->sanidade_surto = regras_surto_passo(e->sanidade_surto, e->sanidade_barra, dt); // zerada: o surto
 }
 
 // ------------------------------------------------------------------ desenho

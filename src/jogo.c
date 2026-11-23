@@ -100,6 +100,7 @@ static void entra_menu(Estado *e) {
     jogador_teleporta(e, e->nivel.inicio, PI);
     e->menu.cursor = 0;
     e->sanidade = e->sanidade_barra = e->sanidade_eco = SANIDADE_MAX;
+    e->sanidade_surto = 0.0f;
 }
 
 static void entra_resposta_final(Estado *e) {
