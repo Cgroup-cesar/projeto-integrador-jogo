@@ -6,6 +6,7 @@
 #include "ui.h"
 #include "dialogo.h"
 #include "respiracao.h"
+#include "clique.h"
 #include <string.h>
 
 // Uma tecla e o que ela faz agora. Rótulos especiais: "SETAS_V" (↑↓), "SETAS_H" (←→), "SETAS" (as quatro).
@@ -220,6 +221,20 @@ static void desenha_minimapa(const Estado *e, const TeclaAcao *itens, int n, Vec
 }
 
 // ================================================================== a barra
+// Que tecla um clique nesta parte da barra aperta (as setas não: elas só andam pelas opções, que já são
+// clicáveis direto na tela).
+static TeclaClique tecla_clicavel(const char *rotulo) {
+    static const struct {
+        const char *rotulo;
+        TeclaClique tecla;
+    } TABELA[] = {{"ESC", TECLA_ESC}, {"ENTER", TECLA_ENTER}, {"H", TECLA_H},
+                  {"1", TECLA_1},     {"2", TECLA_2},         {"E", TECLA_E},
+                  {"F", TECLA_F},     {"ESPAÇO", TECLA_ESPACO}};
+    for (size_t i = 0; i < sizeof(TABELA) / sizeof(TABELA[0]); i++) // padrão FOLD: procura o rótulo
+        if (strcmp(TABELA[i].rotulo, rotulo) == 0) return TABELA[i].tecla;
+    return TECLA_NENHUMA;
+}
+
 // Na partida, a barra fica numa faixa escura e um pouco menor (TECLAS_ESCALA_JOGO). No menu, as teclas
 // flutuam direto sobre a cena, sem a faixa, e o texto ganha uma sombra para ler por cima do chuvisco.
 static void desenha_barra(const Estado *e, bool minimapa, bool faixa, float k) {
@@ -231,11 +246,15 @@ static void desenha_barra(const Estado *e, bool minimapa, bool faixa, float k) {
     if (minimapa) desenha_minimapa(e, itens, n, (Vector2){14 * s, y - 4 * 22 * s - 18 * s}, k);
     float x = minimapa ? 290 * s : 90 * s; // sem o minimapa (menu), a barra começa na margem do texto
     for (int i = 0; i < n; i++) {          // padrão MAP: cada tecla com o que ela faz agora
+        float x0 = x;
         x += tecla(e, itens[i].tecla, (Vector2){x, y}, altura) + 8 * s;
         const char *acao = dialogo_texto(itens[i].acao);
         if (!faixa) ui_texto(e, acao, (Vector2){x + 1.5f * s, y + altura * 0.22f + 1.5f * s}, 17 * s, BLACK);
         ui_texto(e, acao, (Vector2){x, y + altura * 0.22f}, 17 * s, RAYWHITE);
-        x += ui_mede(e, acao, 17 * s).x + 28 * s;
+        x += ui_mede(e, acao, 17 * s).x;
+        TeclaClique t = tecla_clicavel(itens[i].tecla);
+        if (t != TECLA_NENHUMA) clique_area(CLIQUE_TECLA, t, (Rectangle){x0, y, x - x0, altura});
+        x += 28 * s;
     }
 }
 

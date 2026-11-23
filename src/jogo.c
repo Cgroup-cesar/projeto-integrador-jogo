@@ -19,6 +19,7 @@
 #include "cenario.h"
 #include "respiracao.h"
 #include "sanidade.h"
+#include "clique.h"
 #include <string.h>
 
 // ================================================================== início e fim
@@ -252,13 +253,13 @@ static bool jogando(const Estado *e) {
 }
 
 static void atualiza_pausa(Estado *e) {
-    if (e->in.cima || e->in.baixo) {
-        e->menu.cursor = 1 - e->menu.cursor;
-        e->menu.troca_t = e->tempo_total; // a opção nova entra com a falha (falha.c)
-    }
-    if (e->in.voltar || (e->in.confirmar && e->menu.cursor == 0))
+    int antes = e->menu.cursor;
+    if (e->in.cima || e->in.baixo) e->menu.cursor = 1 - e->menu.cursor;
+    bool confirma = clique_escolhe(&e->in, CLIQUE_PAUSA, &e->menu.cursor) || e->in.confirmar;
+    if (e->menu.cursor != antes) e->menu.troca_t = e->tempo_total; // a opção nova entra com a falha (falha.c)
+    if (e->in.voltar || (confirma && e->menu.cursor == 0))
         e->pausado = false;
-    else if (e->in.confirmar && e->menu.cursor == 1) {
+    else if (confirma && e->menu.cursor == 1) {
         e->pausado = false;
         entra_fase(e, FASE_MENU, false);
     }
@@ -291,10 +292,16 @@ static void atualiza_feira(Estado *e, float dt) {
     jogo_aplica_evento(e, ev);
 }
 
+// O cursor fica preso (e some) só andando ou escondido no armário, quando o mouse vira o olhar. Nas telas
+// de interface (menu, pausa, perguntas, terminal, painel, bilhete, fim) ele aparece para clicar, e vira a
+// mãozinha sobre o que é clicável (clique.c).
 static void atualiza_cursor(const Estado *e) {
-    bool prende = jogando(e) && !e->pausado && !e->modo_smoke && e->fase != FASE_INTRO;
+    bool explorando = e->jog.modo == MODO_ANDANDO || e->jog.modo == MODO_ARMARIO;
+    bool na_sala = e->fase != FASE_INTRO || e->intro.etapa == INTRO_RADIO;
+    bool prende = jogando(e) && na_sala && explorando && !e->pausado && !e->modo_smoke;
     if (prende && !IsCursorHidden()) DisableCursor();
     if (!prende && IsCursorHidden()) EnableCursor();
+    SetMouseCursor(clique_sobre_algo(&e->in) ? MOUSE_CURSOR_POINTING_HAND : MOUSE_CURSOR_DEFAULT);
 }
 
 // ================================================================== atualiza
