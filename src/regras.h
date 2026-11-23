@@ -175,6 +175,14 @@ float regras_sanidade_bonus(float s, EventoFase ev);
 float regras_sanidade_conectivos(float s, int antes, int agora);
 // Força do efeito na tela (0..1), linear no que falta de sanidade: 1 − s/SANIDADE_MAX.
 float regras_sanidade_intensidade(float s);
+// Sanidade zerada (o surto): sobe rápido enquanto ela está em 0 e some devagar quando ela volta (0..1).
+float regras_surto_passo(float surto, float sanidade, float dt);
+// O brilho da visão no surto: 1, ou uma falha curta (SURTO_ESCURO_MIN..MAX) sorteada a cada
+// 1/SURTO_FALHA_HZ s, nunca duas seguidas (falha e volta, alternando). Determinística: o mesmo `t` dá
+// sempre o mesmo valor.
+float regras_surto_piscada(float t);
+// Número "sorteado" em [0, 1) a partir do ciclo e da semente: sem rand(), então é puro e repetível.
+float regras_sorteio(int ciclo, unsigned semente);
 
 // ------------------------------------------------------------------ circuitos dos painéis
 typedef enum { PORTA_E, PORTA_OU, PORTA_XOU, PORTA_NE, PORTA_NAO, PORTA_TOTAL } TipoPorta;

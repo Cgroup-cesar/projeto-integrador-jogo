@@ -560,6 +560,12 @@ static void testa_sanidade_recupera(void) {
     CHECK(perto(depois, 50.0f + SANIDADE_REGEN));
     float bem_longe = regras_sanidade_passo(50.0f, 60.0f, 1.0f, false, SANIDADE_ESPERA_REGEN, true, 1.0f);
     CHECK(perto(bem_longe, depois)); // volta contínua e sempre igual: não depende da distância
+    // Entre SANIDADE_RAIO_VOLTA e SANIDADE_RAIO: chegando (tempo_longe 0), cai; afastando, já volta.
+    float entre = (SANIDADE_RAIO_VOLTA + SANIDADE_RAIO) * 0.5f;
+    CHECK(regras_sanidade_passo(50.0f, entre, 1.0f, false, 0.0f, true, 1.0f) < 50.0f);
+    CHECK(perto(regras_sanidade_passo(50.0f, entre, 1.0f, false, SANIDADE_ESPERA_REGEN, true, 1.0f), depois));
+    float dentro = SANIDADE_RAIO_VOLTA - 0.5f; // mais perto que o raio da volta: cai sempre
+    CHECK(regras_sanidade_passo(50.0f, dentro, 1.0f, false, SANIDADE_ESPERA_REGEN, true, 1.0f) < 50.0f);
     float sala = regras_sanidade_passo(50.0f, 2.0f, 1.0f, false, 0.0f, false, 1.0f);
     CHECK(perto(sala, 50.0f + SANIDADE_REGEN)); // na rodada sobe na hora (a criatura está contida)
     CHECK(perto(regras_sanidade_passo(99.9f, 20.0f, 1.0f, false, 10.0f, false, 1.0f), SANIDADE_MAX));
@@ -595,6 +601,29 @@ static void testa_sanidade_intensidade(void) {
         antes = g;
     }
     CHECK(linear);
+}
+
+// [REQ:PURA-regras_surto] sanidade zerada: o surto entra e sai suave; a visão falha alternando
+static void testa_surto(void) {
+    CHECK(perto(regras_surto_passo(0.0f, 0.0f, SURTO_ENTRA_S), 1.0f)); // zerada: chega ao máximo
+    CHECK(perto(regras_surto_passo(1.0f, 30.0f, SURTO_SAI_S), 0.0f));  // voltou: some
+    CHECK(perto(regras_surto_passo(0.0f, 30.0f, 1.0f), 0.0f));         // com sanidade, nada
+    float meio = regras_surto_passo(0.0f, 0.0f, SURTO_ENTRA_S * 0.5f);
+    CHECK(meio > 0.4f && meio < 0.6f); // entra aos poucos
+    int falhas = 0, seguidas = 0;
+    bool na_faixa = true;
+    float antes = 1.0f;
+    for (int i = 0; i < 1100; i++) { // padrão FOLD: 100 s, um valor por sorteio
+        float v = regras_surto_piscada((i + 0.5f) / SURTO_FALHA_HZ);
+        if (v < SURTO_ESCURO_MIN - 0.001f || v > 1.0f) na_faixa = false;
+        if (v < 1.0f) falhas++;
+        if (v < 1.0f && antes < 1.0f) seguidas++;
+        antes = v;
+    }
+    CHECK(na_faixa);
+    CHECK(seguidas == 0);                // falha e volta: nunca duas seguidas
+    CHECK(falhas > 150 && falhas < 450); // pisca bastante, mas fica acesa a maior parte do tempo
+    CHECK(regras_surto_piscada(7.3f) == regras_surto_piscada(7.3f)); // repetível
 }
 
 // [REQ:PURA-regras_respiracao] a linha vai e volta, acelera a cada erro e acerta só dentro da faixa
@@ -711,5 +740,6 @@ int main(void) {
     testa_sanidade_recupera();
     testa_sanidade_bonus();
     testa_sanidade_intensidade();
+    testa_surto();
     return resultado_final("test_regras");
 }

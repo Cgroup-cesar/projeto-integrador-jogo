@@ -93,7 +93,7 @@
     {0.06f, 0.8f, 0.10f, 0.45f, 2.0f, 1.5f, 0.50f, 0.15f, -0.60f, 0.06f, 0.02f, 0.50f, 1.00f}, /* câmera de vigilância */ \
 }
 // clang-format on
-#define VHS_UNIFORMES (VHS_PARAMETROS + 3) // + tempo, resolução e insanidade (grão)
+#define VHS_UNIFORMES (VHS_PARAMETROS + 5) // + tempo, resolução, insanidade (grão), surto e piscada
 
 // ---------------------------------------------------------------- sanidade (barra no topo e grão na tela)
 // Cai com a criatura perto (só nos corredores), volta devagar enquanto se joga e volta muito ao concluir
@@ -109,7 +109,8 @@
 #define SANIDADE_ACELERA_PERTO   2.0f  // ...até 2× colado nela (24 pontos/s: 100 → 0 em ~4 s)
 #define SANIDADE_FATOR_ARMARIO   0.5f  // escondido no armário a queda cai pela metade
 #define SANIDADE_REGEN           2.0f  // pontos/s, contínuo e sempre igual (+50 em 25 s): ele se afastou
-#define SANIDADE_ESPERA_REGEN    0.5f  // s fora do raio antes de subir (só para não piscar na borda)
+#define SANIDADE_RAIO_VOLTA      10.0f // metros: além disso, com ele sem se aproximar, a sanidade já volta
+#define SANIDADE_ESPERA_REGEN    0.5f  // s afastando antes de subir (as pausas do passo dele são mais curtas)
 #define SANIDADE_BONUS_RODADA    35.0f // decifrou e traduziu (EV_RODADA_CONCLUIDA)
 #define SANIDADE_BONUS_SAIDA     40.0f // religou a energia e voltou à sala (EV_SAIDA_CONCLUIDA)
 #define SANIDADE_BONUS_CONECTIVO 10.0f // cada conectivo decifrado pela primeira vez
@@ -130,6 +131,19 @@
 #define SANIDADE_BARRA_SOBE       3.0f   // a barra enche suave com os bônus (1/s)
 #define SANIDADE_ECO_VEL          12.0f  // pontos/s: o pedaço perdido (mais escuro) alcança a barra
 #define SANIDADE_ALERTA           30.0f  // abaixo disso a barra fica vermelha e pulsa
+// Sanidade zerada (o surto): a visão falha em apagões curtos e alternados e uma vinheta vermelha fecha as
+// bordas (vhs.c). Some devagar quando a sanidade volta a subir.
+#define SURTO_LIMIAR       0.5f  // sanidade (a da barra) até aqui conta como zerada
+#define SURTO_ENTRA_S      0.5f  // quanto o surto leva para chegar ao máximo
+#define SURTO_SAI_S        1.2f  // e para sumir depois que a sanidade volta
+#define SURTO_FALHA_HZ     11.0f // sorteios por segundo: cada um decide se a visão falha agora
+#define SURTO_FALHA_CHANCE 0.40f // fração dos sorteios que falham (nunca dois seguidos)
+#define SURTO_ESCURO_MIN   0.10f // brilho no meio de uma falha (0 = preto total)...
+#define SURTO_ESCURO_MAX   0.45f // ...até este
+#define SURTO_VINHETA      0.9f  // força do vermelho nas bordas (continua acesa nas falhas)
+#define SURTO_TINGE        0.45f // quanto a imagem inteira puxa para o vermelho
+#define SURTO_NEVOA        1.0f  // névoa vermelha somada à imagem (tira o preto puro, como sangue no olho)
+#define SURTO_TREMOR_PX    10.0f // quanto as linhas escorregam de lado numa falha
 
 // ---------------------------------------------------------------- debug e modos
 #define TECLAS_DEBUG                                                                                         \

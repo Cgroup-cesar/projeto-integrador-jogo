@@ -206,7 +206,7 @@ PosturaCriatura regras_postura_criatura(float velocidade, float passada, float t
 }
 
 // Número "sorteado" em [0, 1) a partir do ciclo: sem rand(), então o resultado é puro e repetível.
-static float sorteio(int ciclo, unsigned semente) {
+float regras_sorteio(int ciclo, unsigned semente) {
     unsigned h = (unsigned)ciclo * 2654435761u ^ semente;
     h ^= h >> 13;
     h *= 0x5bd1e995u;
@@ -217,8 +217,8 @@ static float sorteio(int ciclo, unsigned semente) {
 // [REQ:PURA-regras_falha_lanterna] a lanterna falhando: a cada sorteio a luz cai (quase apaga) ou volta
 float regras_falha_lanterna(float t) {
     int ciclo = (int)(fmaxf(t, 0.0f) * LANTERNA_FALHA_HZ);
-    if (sorteio(ciclo, 0x51edu) >= LANTERNA_FALHA_CHANCE) return 1.0f;
-    return 0.05f + 0.3f * sorteio(ciclo, 0x2a9fu);
+    if (regras_sorteio(ciclo, 0x51edu) >= LANTERNA_FALHA_CHANCE) return 1.0f;
+    return 0.05f + 0.3f * regras_sorteio(ciclo, 0x2a9fu);
 }
 
 // [REQ:PURA-regras_no_cone] o ponto dentro do facho: perto o bastante e dentro da abertura do cone
@@ -234,8 +234,8 @@ bool regras_no_cone(Vector3 origem, Vector3 direcao, float cos_meia_abertura, fl
 float regras_piscada_cela(float t) {
     if (t < 0.0f) return 0.0f;
     int ciclo = (int)(t / PISCADA_INTERVALO_S);
-    if (sorteio(ciclo, 0x9e37u) < PISCADA_PULA) return 0.0f; // às vezes ela não falha
-    float s = t - ciclo * PISCADA_INTERVALO_S - sorteio(ciclo, 0x85ebu) * PISCADA_VARIACAO_S;
+    if (regras_sorteio(ciclo, 0x9e37u) < PISCADA_PULA) return 0.0f; // às vezes ela não falha
+    float s = t - ciclo * PISCADA_INTERVALO_S - regras_sorteio(ciclo, 0x85ebu) * PISCADA_VARIACAO_S;
     if (s < 0.0f || s >= 0.30f) return 0.0f;
     if (s < 0.07f) return 1.0f;               // acende
     if (s < 0.13f) return 0.0f;               // apaga
@@ -266,7 +266,7 @@ void regras_volumes_trilhas(SituacaoSom s, float v[TRILHA_TOTAL]) {
 
 // Sorteio em [−1, 1): uma posição do tremor.
 static float tremida(int ciclo, unsigned semente) {
-    return sorteio(ciclo, semente) * 2.0f - 1.0f;
+    return regras_sorteio(ciclo, semente) * 2.0f - 1.0f;
 }
 
 // [REQ:PURA-regras_quadro_susto] o rosto pula até a câmera, freia colado nela e treme sem parar
