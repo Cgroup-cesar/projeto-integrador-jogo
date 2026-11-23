@@ -282,6 +282,7 @@ typedef enum {
 
 typedef struct {
     EtapaRespiracao etapa;
+    bool perseguido;     // ele vinha atrás quando a pessoa entrou no armário (só então ele vem até a porta)
     float t;             // tempo na etapa (move a linha vermelha)
     float zona;          // centro da faixa branca (0..1)
     int erros;           // nesta visita ao armário

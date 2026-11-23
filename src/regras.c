@@ -444,6 +444,16 @@ bool regras_respiracao_acertou(float linha, float zona, float largura) {
     return fabsf(linha - zona) <= largura * 0.5f;
 }
 
+// [REQ:PURA-regras_armario] o armário esconde; ele só vem até a porta se vinha atrás de quem entrou
+bool regras_armario_perseguido(bool criatura_ativa, EstadoCriatura estado, bool ve_jogador) {
+    if (!criatura_ativa) return false; // ainda no duto, ou puxada pela contenção
+    return ve_jogador || estado == CRIATURA_PERSEGUE || estado == CRIATURA_PROCURA;
+}
+
+bool regras_armario_chegou(bool perseguido, EstadoCriatura estado, float distancia) {
+    return perseguido && estado != CRIATURA_PATRULHA && distancia <= RESP_CHEGA_M;
+}
+
 // [REQ:PURA-regras_fita_tomada] a fita do avistamento: qual foto aparece em cada linha da intro e quanto falha
 TomadaFita regras_fita_tomada(int linha, float letras, float linha_t) {
     TomadaFita t = {-1, 0.0f, 0.0f};

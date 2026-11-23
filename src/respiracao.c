@@ -1,6 +1,7 @@
-// respiracao.c — o desafio do armário: tutorial (1ª vez na partida), desafio (3 acertos, 3 chances) e o
-// afastamento (o E só volta quando ele está longe de verdade). As contas da linha e do acerto são puras
-// (regras_respiracao_*); aqui fica o fluxo, o som e o desenho.
+// respiracao.c — o desafio do armário: a espera (ele só vem até a porta se vinha atrás de quem se escondeu),
+// tutorial (1ª vez na partida), desafio (3 acertos, 3 chances) e o afastamento (o E só volta quando ele está
+// longe de verdade). As contas são puras (regras_respiracao_*, regras_armario_*); aqui fica o fluxo, o som e
+// o desenho.
 #include "respiracao.h"
 #include "criatura.h"
 #include "audio_sintese.h"
@@ -39,9 +40,10 @@ static void comeca_desafio(Estado *e) {
     criatura_na_porta_do_armario(e);
 }
 
-void respiracao_comeca(Estado *e) {
-    if (!regras_fase_eh_saida(e->fase) || e->painel.resolvido) return; // energia de volta: ele está contido
+// Ele chegou à porta do armário: a 1ª vez na partida vem o tutorial; depois, direto o desafio.
+static void ele_chega_na_porta(Estado *e) {
     Respiracao *r = &e->resp;
+    r->perseguido = false;
     r->foi_t = 0.0f;
     if (r->tutorial_visto) {
         comeca_desafio(e);
@@ -54,6 +56,32 @@ void respiracao_comeca(Estado *e) {
     r->demo_t = 0.0f;
     r->demo_n = 0;
     r->demo_ultimo = 0.0f;
+    criatura_na_porta_do_armario(e); // no tutorial ele já aparece parado na porta, pelas frestas
+}
+
+void respiracao_comeca(Estado *e) {
+    Respiracao *r = &e->resp;
+    r->perseguido = false;
+    if (!regras_fase_eh_saida(e->fase) || e->painel.resolvido) return; // energia de volta: ele está contido
+    r->perseguido = regras_armario_perseguido(e->cri.ativo, e->cri.estado, e->cri.ve_jogador);
+}
+
+// Escondido com ele na cola: ele segue procurando com as próprias pernas. Se chega perto do armário, para na
+// porta e começa a respiração; se volta à patrulha antes, a pessoa escapou.
+static void espera_no_armario(Estado *e) {
+    Respiracao *r = &e->resp;
+    if (!r->perseguido || e->jog.modo != MODO_ARMARIO) return;
+    if (e->painel.resolvido || !e->cri.ativo) { // a energia voltou: a contenção o puxou
+        r->perseguido = false;
+        return;
+    }
+    if (e->cri.estado == CRIATURA_PATRULHA) { // perdeu o rastro e voltou à ronda: escapou
+        r->perseguido = false;
+        r->foi_t = RESP_FOI_S;
+        return;
+    }
+    float d = Vector3Distance(e->cri.pos, e->nivel.armarios[e->jog.armario]);
+    if (regras_armario_chegou(r->perseguido, e->cri.estado, d)) ele_chega_na_porta(e);
 }
 
 // Tutorial: a linha anda sozinha e "acerta" RESP_ACERTOS vezes, como no desafio: a cada vez ela para na
@@ -158,7 +186,9 @@ void respiracao_atualiza(Estado *e, float dt) {
         return;
     }
     // Uma etapa por quadro: o ESPAÇO que fecha o tutorial não pode contar como tentativa no desafio.
-    if (r->etapa == RESP_TUTORIAL)
+    if (r->etapa == RESP_NADA)
+        espera_no_armario(e);
+    else if (r->etapa == RESP_TUTORIAL)
         atualiza_tutorial(e, dt);
     else if (r->etapa == RESP_DESAFIO)
         atualiza_desafio(e, dt);

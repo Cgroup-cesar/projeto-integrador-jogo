@@ -135,7 +135,7 @@ static void entra_no_armario(Estado *e, const Interativo *it) {
     // Entrar no armário a menos de 2 m dele enquanto ele te vê não adianta.
     bool visto = e->cri.ativo && e->cri.ve_jogador;
     if (visto && Vector3Distance(e->cri.pos, j->pos) < CRIATURA_DIST_ARMARIO) criatura_captura(e);
-    if (j->modo == MODO_ARMARIO) respiracao_comeca(e); // o Precursor vem até a porta: segure a respiração
+    if (j->modo == MODO_ARMARIO) respiracao_comeca(e); // se ele vinha atrás, pode vir até a porta
 }
 
 static void sai_do_armario(Estado *e) {
