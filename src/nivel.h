@@ -24,10 +24,6 @@ bool nivel_na_sala_de_observacao(const Nivel *n, Vector3 pos);
 // na sala, as luzes A e B da cela são holofotes no Precursor; as outras são pontuais.
 int nivel_luzes(const Estado *e, Vector3 *posicoes, Vector3 *cores, Vector4 *cones);
 
-// Com a cela apagada nas rodadas, o holofote A pisca como lâmpada com defeito (0 = apagado; ver
-// regras_piscada_cela). O Precursor usa o mesmo valor para aparecer no flash.
-float nivel_piscada_cela(const Estado *e);
-
 void nivel_atualiza(Estado *e, float dt);
 void nivel_desenha(const Estado *e);           // geometria iluminada (dentro do shader de luz)
 void nivel_desenha_emissivos(const Estado *e); // lâmpadas, telas e LEDs (sem luz, brilham sozinhos)

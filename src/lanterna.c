@@ -56,13 +56,34 @@ void lanterna_atualiza(Estado *e, float dt) {
 }
 
 // ================================================================== a luz
+// De onde sai a luz: um pouco atrás dos olhos, para o cone já abrir no rosto.
+static Vector3 origem_da_luz(const Estado *e) {
+    return Vector3Add(jogador_olho(e), Vector3Scale(jogador_direcao(e), -0.15f));
+}
+
+bool lanterna_mira_criatura(const Estado *e) {
+    const Criatura *c = &e->cri;
+    if (!acesa(e) || (!c->contido && !c->ativo)) return false;
+    Vector3 olho = origem_da_luz(e), peito = Vector3Add(c->pos, (Vector3){0.0f, 1.5f, 0.0f});
+    float abertura = cosf(LANTERNA_ABERTURA_GRAUS * DEG2RAD);
+    if (!regras_no_cone(olho, jogador_direcao(e), abertura, CRIATURA_LANTERNA_ALCANCE_M, peito)) return false;
+    if (c->contido) return true;
+    float dist = Vector3Distance(olho, peito);
+    Vector3 para = Vector3Normalize(Vector3Subtract(peito, olho));
+    return col_paredes_distancia_raio(&e->paredes, olho, para, dist) >= dist - 0.3f;
+}
+
+// 1 normal; mirando o Precursor, a força oscila como uma lanterna com mau contato.
+static float forca(const Estado *e) {
+    return lanterna_mira_criatura(e) ? regras_falha_lanterna(e->tempo_total) : 1.0f;
+}
+
 bool lanterna_luz(const Estado *e, Vector3 *pos, Vector3 *cor, Vector4 *cone, float *queda) {
     if (!acesa(e)) return false;
     Vector3 frente = jogador_direcao(e);
-    *pos =
-        Vector3Add(jogador_olho(e), Vector3Scale(frente, -0.15f)); // um pouco atrás: o cone já abre no rosto
+    *pos = origem_da_luz(e);
     Color c = COR_LANTERNA;
-    float k = LANTERNA_INTENSIDADE;
+    float k = LANTERNA_INTENSIDADE * forca(e);
     *cor = (Vector3){c.r / 255.0f * k, c.g / 255.0f * k, c.b / 255.0f * k};
     *cone = (Vector4){frente.x, frente.y, frente.z, cosf(LANTERNA_ABERTURA_GRAUS * DEG2RAD)};
     *queda = LANTERNA_QUEDA; // enfraquece mais devagar que as lâmpadas: alcança o fundo do corredor
@@ -132,5 +153,8 @@ void lanterna_desenha(const Estado *e) {
 void lanterna_desenha_brilho(const Estado *e) {
     if (!na_mao(e) || !acesa(e)) return;
     Mao m = mao(e);
-    DrawSphereEx(Vector3Add(lente(m), Vector3Scale(m.frente, 0.004f)), 0.02f, 8, 8, COR_LANTERNA);
+    Color c = COR_LANTERNA;
+    float f = forca(e); // a lente também falha
+    Color lente_acesa = {(unsigned char)(c.r * f), (unsigned char)(c.g * f), (unsigned char)(c.b * f), 255};
+    DrawSphereEx(Vector3Add(lente(m), Vector3Scale(m.frente, 0.004f)), 0.02f, 8, 8, lente_acesa);
 }

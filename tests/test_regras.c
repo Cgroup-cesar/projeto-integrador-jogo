@@ -83,6 +83,34 @@ static void testa_postura_criatura(void) {
     CHECK(perto(rapido.inclina_graus, CRIATURA_INCLINA_CORRENDO)); // não passa do limite
 }
 
+// [REQ:PURA-regras_falha_lanterna] testa a falha: fica entre 0,05 e 1, cai e volta, e é repetível
+static void testa_falha_lanterna(void) {
+    int quedas = 0, acesas = 0;
+    bool na_faixa = true;
+    for (int i = 0; i < 200; i++) { // 10 s a cada 50 ms
+        float f = regras_falha_lanterna(i / LANTERNA_FALHA_HZ);
+        if (f < 0.05f || f > 1.0f) na_faixa = false;
+        if (f < 1.0f)
+            quedas++;
+        else
+            acesas++;
+    }
+    CHECK(na_faixa);
+    CHECK(quedas > 40 && acesas > 80); // pisca bastante, mas acende mais do que apaga
+    CHECK(regras_falha_lanterna(3.21f) == regras_falha_lanterna(3.21f)); // repetível
+}
+
+// [REQ:PURA-regras_no_cone] testa o facho: no centro, na borda, fora do ângulo, longe demais e atrás
+static void testa_no_cone(void) {
+    Vector3 o = {0, 1.6f, 0}, frente = {0, 0, -1};
+    float cos22 = cosf(22.0f * DEG2RAD);
+    CHECK(regras_no_cone(o, frente, cos22, 16.0f, (Vector3){0, 1.6f, -5}));    // bem no centro
+    CHECK(regras_no_cone(o, frente, cos22, 16.0f, (Vector3){1.8f, 1.6f, -5})); // dentro dos 22°
+    CHECK(!regras_no_cone(o, frente, cos22, 16.0f, (Vector3){3, 1.6f, -5}));   // fora do ângulo
+    CHECK(!regras_no_cone(o, frente, cos22, 16.0f, (Vector3){0, 1.6f, -20}));  // longe demais
+    CHECK(!regras_no_cone(o, frente, cos22, 16.0f, (Vector3){0, 1.6f, 5}));    // atrás
+}
+
 // [REQ:PURA-regras_piscada_cela] testa a lâmpada com defeito: rara, curta, irregular e repetível
 static void testa_piscada_cela(void) {
     int acendeu = 0, quadros_acesos = 0, quadros = 0;
@@ -649,6 +677,8 @@ int main(void) {
     testa_estados_criatura();
     testa_postura_criatura();
     testa_piscada_cela();
+    testa_no_cone();
+    testa_falha_lanterna();
     testa_volumes_trilhas();
     testa_quadro_susto();
     testa_placar();

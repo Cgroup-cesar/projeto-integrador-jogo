@@ -117,6 +117,13 @@ QuadroSusto regras_quadro_susto(float t);
 // intervalos irregulares de ~3 s. Determinística: o mesmo `t` dá sempre o mesmo valor.
 float regras_piscada_cela(float t);
 
+// A lanterna apontada para o Precursor: 1 acesa, ou uma queda (0,05 a 0,35) sorteada a cada
+// 1/LANTERNA_FALHA_HZ s. Determinística: o mesmo `t` dá sempre o mesmo valor.
+float regras_falha_lanterna(float t);
+
+// O ponto está dentro do cone de luz (origem, direção unitária, cosseno da meia-abertura) e do alcance?
+bool regras_no_cone(Vector3 origem, Vector3 direcao, float cos_meia_abertura, float alcance, Vector3 ponto);
+
 // ------------------------------------------------------------------ mixagem das trilhas (sons longos)
 typedef enum {
     TRILHA_MENU,

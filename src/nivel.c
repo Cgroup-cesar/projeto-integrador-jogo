@@ -24,8 +24,7 @@ static const char *const MAPA[MAPA_ALTURA] = {
 
 // Lâmpadas dos corredores e das salas (coluna, linha). Edite à vontade.
 static const int LAMPADAS[][2] = {
-    {10, 5},  {15, 5},  {20, 5},  {21, 8}, {8, 7},  {8, 10},
-    {11, 11}, {16, 11}, {20, 11}, {19, 2}, {3, 5},
+    {10, 5}, {15, 5}, {20, 5}, {21, 8}, {8, 7}, {8, 10}, {11, 11}, {16, 11}, {20, 11}, {19, 2}, {3, 5},
 }; // o Arquivo não tem lâmpada de teto: a única luz lá dentro é a da mesa do bilhete (mesa_bilhete.c)
 
 // ================================================================== coordenadas
@@ -78,6 +77,14 @@ static void registra_armario(Nivel *n, int c, int l) {
     n->n_armarios++;
 }
 
+// A cela é o retângulo das células 'C' (e da 'V' do Precursor), até o vidro: a névoa fica dentro dela.
+static void cresce_cela(Nivel *n, int c, int l) {
+    n->cela_min.x = fminf(n->cela_min.x, c * TAMANHO_CELULA);
+    n->cela_min.z = fminf(n->cela_min.z, l * TAMANHO_CELULA);
+    n->cela_max.x = fmaxf(n->cela_max.x, (c + 1) * TAMANHO_CELULA);
+    n->cela_max.z = fmaxf(n->cela_max.z, (l + 1) * TAMANHO_CELULA);
+}
+
 static void registra_celula(Nivel *n, char ch, int c, int l) {
     Vector3 centro = nivel_centro_celula(c, l);
     switch (ch) {
@@ -87,11 +94,16 @@ static void registra_celula(Nivel *n, char ch, int c, int l) {
     case 'T':
         n->console = centro;
         break;
+    case 'C':
+        cresce_cela(n, c, l);
+        break;
     case 'V':
-        if (nivel_celula(n, c, l - 1) == 'C' || l <= 2)
+        if (nivel_celula(n, c, l - 1) == 'C' || l <= 2) {
             n->cela_precursor = centro;
-        else
+            cresce_cela(n, c, l);
+        } else {
             n->duto = centro;
+        }
         break;
     case '1':
         n->painel1 = centro;
@@ -120,11 +132,14 @@ static void registra_celula(Nivel *n, char ch, int c, int l) {
 
 void nivel_carrega(Nivel *n) {
     memset(n, 0, sizeof(*n));
+    n->cela_min = (Vector3){1e9f, 0.0f, 1e9f};
+    n->cela_max = (Vector3){-1e9f, PE_DIREITO, -1e9f};
     for (int l = 0; l < MAPA_ALTURA; l++)
         memcpy(n->celulas[l], MAPA[l], MAPA_LARGURA + 1);
     for (int l = 0; l < MAPA_ALTURA; l++)
         for (int c = 0; c < MAPA_LARGURA; c++)
             registra_celula(n, n->celulas[l][c], c, l);
+    if (n->vidro_z > 0.0f) n->cela_max.z = n->vidro_z - 0.2f; // a névoa vai até o vidro
     int total = (int)(sizeof(LAMPADAS) / sizeof(LAMPADAS[0]));
     for (int i = 0; i < total && n->n_lampadas < MAX_LAMPADAS; i++) {
         Vector3 p = nivel_centro_celula(LAMPADAS[i][0], LAMPADAS[i][1]);
@@ -161,7 +176,8 @@ static void constroi_muros(const Nivel *n, ColParedes *paredes) {
 void nivel_constroi_paredes(const Nivel *n, ColParedes *paredes) {
     paredes->n = 0;
     constroi_muros(n, paredes);
-    for (int lado = -1; lado <= 1; lado += 2) // os pilares e o batente da porta da sala: passa-se só pelo meio
+    for (int lado = -1; lado <= 1;
+         lado += 2) // os pilares e o batente da porta da sala: passa-se só pelo meio
         col_paredes_adiciona(paredes, caixa((Vector3){n->porta_sala.x, 1.1f, n->porta_sala.z + lado * 0.775f},
                                             (Vector3){0.34f, 2.2f, 0.45f}, PAREDE_MOVEL));
     float meio_x = (n->vidro_x0 + n->vidro_x1) * 0.5f, largura = n->vidro_x1 - n->vidro_x0;
@@ -173,9 +189,9 @@ void nivel_constroi_paredes(const Nivel *n, ColParedes *paredes) {
                                         (Vector3){1.2f, 1.8f, 0.5f}, PAREDE_MOVEL));
     col_paredes_adiciona(paredes, caixa((Vector3){n->painel2.x, 0.9f, n->painel2.z},
                                         (Vector3){1.2f, 1.8f, 0.5f}, PAREDE_MOVEL));
-    col_paredes_adiciona(
-        paredes, caixa((Vector3){n->diario.x, MESA_ALTURA_M * 0.5f, n->diario.z},
-                         (Vector3){MESA_FUNDO_M, MESA_ALTURA_M, MESA_COMPRIMENTO_M}, PAREDE_MOVEL));
+    col_paredes_adiciona(paredes,
+                         caixa((Vector3){n->diario.x, MESA_ALTURA_M * 0.5f, n->diario.z},
+                               (Vector3){MESA_FUNDO_M, MESA_ALTURA_M, MESA_COMPRIMENTO_M}, PAREDE_MOVEL));
     caixas_adiciona_paredes(paredes);
     for (int i = 0; i < n->n_armarios; i++) {
         Vector3 d = Vector3Subtract(n->armarios[i], n->armario_saida[i]);
@@ -204,7 +220,8 @@ void nivel_constroi_interativos(const Nivel *n, ColInterativos *c) {
                                            (Vector3){0.65f, 0.7f, 0.3f}, (Vector3){0, 0, 1}));
     col_interativos_adiciona(c, interativo(INTER_PAINEL2, (Vector3){n->painel2.x, 1.2f, n->painel2.z},
                                            (Vector3){0.65f, 0.7f, 0.3f}, (Vector3){0, 0, 1}));
-    col_interativos_adiciona(c, interativo(INTER_DIARIO, (Vector3){n->diario.x, MESA_ALTURA_M + 0.05f, n->diario.z},
+    col_interativos_adiciona(c, interativo(INTER_DIARIO,
+                                           (Vector3){n->diario.x, MESA_ALTURA_M + 0.05f, n->diario.z},
                                            (Vector3){0.45f, 0.12f, 0.6f}, (Vector3){1, 0, 0}));
     for (int i = 0; i < n->n_armarios; i++) {
         Vector3 fora = Vector3Normalize(Vector3Subtract(n->armario_saida[i], n->armarios[i]));
@@ -238,12 +255,6 @@ static Vector4 holofote(Vector3 de, Vector3 alvo) {
     return (Vector4){d.x, d.y, d.z, cosf(HOLOFOTE_ABERTURA_GRAUS * DEG2RAD)};
 }
 
-// Lâmpada com defeito no holofote A: só nas rodadas, com a cela toda apagada e fora do apagão.
-float nivel_piscada_cela(const Estado *e) {
-    if (!regras_fase_eh_rodada(e->fase) || e->rod.luz_a || e->rod.luz_b || e->apagao_t > 0.0f) return 0.0f;
-    return regras_piscada_cela(e->tempo_total) * PISCADA_FORCA;
-}
-
 static int luzes_sala(const Estado *e, Vector3 *pos, Vector3 *cor, Vector4 *cone) {
     bool menu = e->fase == FASE_MENU || e->fase == FASE_INTRO;
     bool luz_a = menu ? true : e->rod.luz_a;
@@ -255,7 +266,7 @@ static int luzes_sala(const Estado *e, Vector3 *pos, Vector3 *cor, Vector4 *cone
     cor[0] = e->alarme_t > 0.0f ? cor_luz(COR_ALARME, 0.6f + 0.5f * sinf(e->tempo_total * 6.0f))
                                 : cor_luz(COR_LAMPADA, sala);
     pos[1] = HOLOFOTE_A;
-    cor[1] = cor_luz(COR_VIDRO, luz_a ? cela : cela * nivel_piscada_cela(e));
+    cor[1] = cor_luz(COR_VIDRO, luz_a ? cela : 0.0f);
     cone[1] = holofote(pos[1], peito);
     pos[2] = HOLOFOTE_B;
     cor[2] = cor_luz(COR_VIDRO, luz_b ? cela : 0.0f);
@@ -374,7 +385,7 @@ static void desenha_moveis(const Estado *e) {
           3); // interfone
     metal(e, (Vector3){n->painel1.x, 0.9f, n->painel1.z}, (Vector3){1.2f, 1.8f, 0.5f}, COR_OLIVA, 4);
     metal(e, (Vector3){n->painel2.x, 0.9f, n->painel2.z}, (Vector3){1.2f, 1.8f, 0.5f}, COR_OLIVA, 5);
-    mesa_bilhete_desenha(e); // a mesa do bilhete, a lâmpada pendurada e as folhas
+    mesa_bilhete_desenha(e);                  // a mesa do bilhete, a lâmpada pendurada e as folhas
     for (int i = 0; i < n->n_armarios; i++) { // laço de desenho: só percorre os armários
         Vector3 d = Vector3Subtract(n->armarios[i], n->armario_saida[i]);
         bool em_x = fabsf(d.x) > fabsf(d.z);
@@ -519,7 +530,7 @@ void nivel_desenha_emissivos(const Estado *e) {
     mesa_bilhete_desenha_brilho(e);
     cenario_termina_halos();
     bool menu = e->fase == FASE_MENU || e->fase == FASE_INTRO;
-    bool a_acesa = menu || e->rod.luz_a || nivel_piscada_cela(e) > 0.0f;
+    bool a_acesa = menu || e->rod.luz_a;
     if (a_acesa && e->apagao_t <= 0.0f) DrawSphereEx(HOLOFOTE_A, 0.1f, 8, 8, COR_VIDRO);
     if (!menu && e->rod.luz_b && e->apagao_t <= 0.0f) DrawSphereEx(HOLOFOTE_B, 0.1f, 8, 8, COR_VIDRO);
     Color tela = e->jog.modo == MODO_TERMINAL ? COR_FOSFORO : (Color){0x2a, 0x6a, 0x3a, 255};
