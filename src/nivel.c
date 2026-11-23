@@ -257,7 +257,7 @@ static Vector4 holofote(Vector3 de, Vector3 alvo) {
 
 static int luzes_sala(const Estado *e, Vector3 *pos, Vector3 *cor, Vector4 *cone) {
     bool menu = e->fase == FASE_MENU || e->fase == FASE_INTRO;
-    bool luz_a = menu ? true : e->rod.luz_a;
+    bool luz_a = e->fase == FASE_MENU || (!menu && e->rod.luz_a); // na intro, a cela fica no escuro
     bool luz_b = menu ? false : e->rod.luz_b;
     float cela = (menu ? 0.9f : 2.2f) * HOLOFOTE_GANHO * (e->apagao_t > 0.0f ? 0.0f : 1.0f);
     float sala = brilho_sala(e) * (menu ? 0.7f : 1.5f);
@@ -530,7 +530,7 @@ void nivel_desenha_emissivos(const Estado *e) {
     mesa_bilhete_desenha_brilho(e);
     cenario_termina_halos();
     bool menu = e->fase == FASE_MENU || e->fase == FASE_INTRO;
-    bool a_acesa = menu || e->rod.luz_a;
+    bool a_acesa = e->fase == FASE_MENU || (!menu && e->rod.luz_a); // na intro, apagado
     if (a_acesa && e->apagao_t <= 0.0f) DrawSphereEx(HOLOFOTE_A, 0.1f, 8, 8, COR_VIDRO);
     if (!menu && e->rod.luz_b && e->apagao_t <= 0.0f) DrawSphereEx(HOLOFOTE_B, 0.1f, 8, 8, COR_VIDRO);
     Color tela = e->jog.modo == MODO_TERMINAL ? COR_FOSFORO : (Color){0x2a, 0x6a, 0x3a, 255};

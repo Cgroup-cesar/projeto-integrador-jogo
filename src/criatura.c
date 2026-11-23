@@ -440,8 +440,8 @@ static void cabeca(float altura, float fenda, Color cor) {
 static float visibilidade(const Estado *e) {
     if (!e->cri.contido) return 1.0f - e->cri.distorcao;
     if (e->apagao_t > 0.0f) return 0.05f;
-    bool menu = e->fase == FASE_MENU || e->fase == FASE_INTRO;
-    float v = 0.03f + (menu || e->rod.luz_a ? 0.4f : 0.0f) + (e->rod.luz_b ? 0.6f : 0.0f); // cela escura
+    bool intro = e->fase == FASE_INTRO; // na intro, como nas rodadas no escuro: só a silhueta na névoa
+    float v = 0.03f + (!intro && e->rod.luz_a ? 0.4f : 0.0f) + (!intro && e->rod.luz_b ? 0.6f : 0.0f);
     if (lanterna_mira_criatura(e)) v += 0.7f; // a lanterna o ilumina (e falha)
     if (e->fase == FASE_MENU) v = 0.0f;       // no menu: silhueta preta, só os olhos (desenha_olhos_no_menu)
     if (e->fase == FASE_RESPOSTA_FINAL || e->fase == FASE_FIM_BOM || e->fase == FASE_FIM_RUIM) v = 1.0f;
