@@ -5,6 +5,8 @@
 #include "caixas.h"
 #include "mesa_bilhete.h"
 #include "armario_modelo.h"
+#include "porta_bunker.h"
+#include "cameras.h"
 #include "texturas.h"
 #include "cenario.h"
 #include <math.h>
@@ -159,6 +161,9 @@ static void constroi_muros(const Nivel *n, ColParedes *paredes) {
 void nivel_constroi_paredes(const Nivel *n, ColParedes *paredes) {
     paredes->n = 0;
     constroi_muros(n, paredes);
+    for (int lado = -1; lado <= 1; lado += 2) // os pilares e o batente da porta da sala: passa-se só pelo meio
+        col_paredes_adiciona(paredes, caixa((Vector3){n->porta_sala.x, 1.1f, n->porta_sala.z + lado * 0.775f},
+                                            (Vector3){0.34f, 2.2f, 0.45f}, PAREDE_MOVEL));
     float meio_x = (n->vidro_x0 + n->vidro_x1) * 0.5f, largura = n->vidro_x1 - n->vidro_x0;
     col_paredes_adiciona(
         paredes, caixa((Vector3){meio_x, 1.5f, n->vidro_z}, (Vector3){largura, 3.0f, 0.4f}, PAREDE_VIDRO));
@@ -363,6 +368,7 @@ static void desenha_moveis(const Estado *e) {
     metal(e, (Vector3){con.x, 0.5f, con.z - 0.6f}, (Vector3){1.6f, 1.0f, 0.8f}, COR_OLIVA, 1);
     metal(e, (Vector3){con.x, 1.02f, con.z - 0.75f}, (Vector3){1.5f, 0.06f, 0.5f}, cinza, 2);
     caixas_desenha(e);
+    cameras_desenha(e);
     console_modelo_desenha(e); // o computador de época em cima da mesa (sem o modelo, a tela verde abaixo)
     metal(e, (Vector3){con.x + 0.62f, 1.18f, con.z - 0.88f}, (Vector3){0.22f, 0.3f, 0.1f}, cinza,
           3); // interfone
@@ -387,13 +393,18 @@ static void desenha_moveis(const Estado *e) {
     }
 }
 
-// Nas saídas, a porta da sala de observação desliza para dentro da parede no primeiro segundo.
+// A porta da sala de observação: a de bunker (porta_bunker.c), com dois pilares de concreto fechando o vão
+// de 2 m em volta do batente; sem o modelo, a porta de correr de antes, que some na parede nas saídas.
 static void desenha_porta_da_sala(const Estado *e) {
+    Vector3 p = e->nivel.porta_sala;
+    for (int lado = -1; lado <= 1; lado += 2) // padrão MAP: um pilar de cada lado do batente
+        texturas_caixa(e->rec.material[MATERIAL_CONCRETO], (Vector3){p.x, 1.1f, p.z + lado * 0.83f},
+                       (Vector3){0.3f, 2.2f, 0.34f}, texturas_modo(MATERIAL_CONCRETO, 7 + lado), WHITE);
+    if (porta_bunker_desenha(e)) return;
     if (!regras_fase_eh_saida(e->fase)) return;
     float abre = fminf(1.0f, e->tempo_fase / 1.2f);
-    Vector3 p = e->nivel.porta_sala;
-    texturas_caixa(e->rec.material[MATERIAL_PORTA], (Vector3){p.x, 1.1f, p.z + 2.0f * abre},
-                   (Vector3){0.16f, 2.2f, 2.0f}, texturas_modo(MATERIAL_PORTA, 0), WHITE);
+    texturas_caixa(e->rec.material[MATERIAL_PORTA], (Vector3){p.x, 1.1f, p.z + 1.4f * abre},
+                   (Vector3){0.16f, 2.2f, 1.32f}, texturas_modo(MATERIAL_PORTA, 0), WHITE);
 }
 
 static void desenha_portas_e_duto(const Estado *e) {

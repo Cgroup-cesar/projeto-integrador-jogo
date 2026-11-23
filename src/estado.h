@@ -75,6 +75,11 @@ typedef struct {
     bool tem_mesa, tem_papeis;
     Model modelo_armario; // opcional: assets/modelos/armario.glb (os armários de esconderijo)
     bool tem_armario;
+    Model modelo_porta; // opcional: assets/modelos/porta_bunker.glb (a porta da sala de observação)
+    Mesh porta_batente, porta_folha; // as duas peças do modelo, separadas ao carregar (porta_bunker.c)
+    bool tem_porta;
+    Model modelo_camera; // opcional: assets/modelos/camera.glb (as câmeras de segurança)
+    bool tem_cameras;
     Music trilhas[TRILHA_TOTAL]; // opcionais: sons longos de assets/audio (trilhas.c)
     bool tem_trilha[TRILHA_TOTAL];
     // Texturas do mapa (texturas.c): criadas uma vez em carrega_recursos, liberadas em descarrega_recursos.

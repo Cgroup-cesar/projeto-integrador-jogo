@@ -53,6 +53,12 @@
 #define MESA_LUZ_FORCA     3.6f   // o dobro de uma lâmpada de corredor: o ponto mais claro do Arquivo
 #define MESA_LUZ_ALCANCE_M 14.0f  // até esta distância ela sempre acende (cobre o Arquivo e a porta)
 #define MESA_COR_LUZ       (Color){0xff, 0x9a, 0x3c, 255} // âmbar quente: a única luz assim no Arquivo
+// A porta de bunker da sala de observação (porta_bunker.c) e as câmeras de segurança (cameras.c).
+#define PORTA_ALTURA_M        2.2f  // o batente cabe embaixo da verga das portas
+#define PORTA_ABRE_S          1.8f  // quanto a folha leva para abrir quando a saída começa
+#define CAMERA_COMPRIMENTO_M  0.65f // da placa do suporte até a frente da carcaça
+#define CAMERA_ALTURA_M       2.5f  // onde a placa encosta na parede
+#define CAMERA_INCLINA_GRAUS  22.0f // a lente aponta um pouco para baixo
 #define FITA_HORA_INICIO   (21 * 3600 + 47 * 60 + 52) // a câmera às 21:47:52, durante o canto
 #define TECLAS_ESCALA_JOGO 0.88f // tamanho da barra de teclas e do minimapa durante a partida (1 = original)
 

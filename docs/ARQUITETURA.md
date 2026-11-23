@@ -119,6 +119,8 @@ stateDiagram-v2
 | `caixas.c` | pilhas de caixotes de madeira encostadas nas paredes das salas (`assets/modelos/caixas.glb`), com colisão e as placas "EXÉRCITO BRASILEIRO / CHÃ DE ALEGRIA - PE" sobre o "Fragile" do modelo; sem o arquivo, caixas simples |
 | `mesa_bilhete.c` | a mesa do bilhete no fundo do Arquivo, de frente para a porta (`mesa.glb`, `papeis.glb`), a lâmpada âmbar pendurada que pisca (a única luz da sala, sempre acesa a até 14 m) e o brilho que respira no bilhete até ele ser lido |
 | `armario_modelo.c` | o armário de metal de duas portas no lugar da caixa dos esconderijos, girado para o corredor e com a frente rente à colisão; só o desenho (o esconderijo e a respiração não mudam) |
+| `porta_bunker.c` | a porta da sala de observação: ao carregar, separa a folha do batente (peças da mesma malha) pelo plano da folha; a folha gira na dobradiça, fechada nas rodadas e abrindo em 1,8 s na saída |
+| `cameras.c` | 7 câmeras de segurança presas retas no alto das paredes das salas e corredores, inclinadas para baixo, com o LED de REC |
 | `tela_fim.c` | depois do final: desempenho (resultado, placar, lugar no ranking), avaliação em estrelas e a tabela do ranking |
 | `ranking.c` | só arquivo: lê e grava `ranking.txt` (temporário + troca) e anexa `avaliacoes.csv`; nada no `--smoke` |
 

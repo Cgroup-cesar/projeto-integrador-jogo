@@ -22,6 +22,8 @@
 #include "caixas.h"
 #include "mesa_bilhete.h"
 #include "armario_modelo.h"
+#include "porta_bunker.h"
+#include "cameras.h"
 #include "dialogo.h"
 #include "ranking.h"
 #include "respiracao.h"
@@ -494,10 +496,14 @@ static void carrega_recursos(void) {
     caixas_carrega(&estado.rec);
     mesa_bilhete_carrega(&estado.rec);
     armario_modelo_carrega(&estado.rec);
+    porta_bunker_carrega(&estado.rec);
+    cameras_carrega(&estado.rec);
     if (mudo || estado.modo_smoke) SetMasterVolume(0.0f); // o smoke roda calado
 }
 
 static void descarrega_recursos(void) {
+    cameras_descarrega(&estado.rec);
+    porta_bunker_descarrega(&estado.rec);
     armario_modelo_descarrega(&estado.rec);
     mesa_bilhete_descarrega(&estado.rec);
     caixas_descarrega(&estado.rec);
