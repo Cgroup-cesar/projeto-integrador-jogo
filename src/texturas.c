@@ -59,14 +59,22 @@ static Image gera_material(TipoMaterial m) {
     return img;
 }
 
-// A raylib 6.0 trocou ImageDraw por ImageDrawImagePro (que também recebe origem e rotação); a 5.5 só tem
-// ImageDraw. O jogo precisa compilar nas duas, então a escolha é feita pela versão.
+// Cola o recorte `origem` em `destino`, redimensionado para `alvo` e misturado pelo alfa (como o ImageDraw).
+// Feito à mão porque o nome da função da raylib mudou (ImageDraw na 5.5 e na 6.0 do instalador do Windows,
+// ImageDrawImagePro na 6.2) e o número da versão não diz qual existe. Só roda ao gerar as texturas.
 static void desenha_imagem(Image *destino, Image origem_img, Rectangle origem, Rectangle alvo, Color tinta) {
-#if RAYLIB_VERSION_MAJOR >= 6
-    ImageDrawImagePro(destino, origem_img, origem, alvo, (Vector2){0, 0}, 0.0f, tinta);
-#else
-    ImageDraw(destino, origem_img, origem, alvo, tinta);
-#endif
+    int w = (int)alvo.width, h = (int)alvo.height;
+    if (w <= 0 || h <= 0) return;
+    Image pedaco = ImageFromImage(origem_img, origem);
+    ImageResize(&pedaco, w, h);
+    for (int y = 0; y < h; y++) // carregamento: cópia pixel a pixel (não é map/filter/fold)
+        for (int x = 0; x < w; x++) {
+            int dx = (int)alvo.x + x, dy = (int)alvo.y + y;
+            if (dx < 0 || dy < 0 || dx >= destino->width || dy >= destino->height) continue;
+            Color fundo = GetImageColor(*destino, dx, dy);
+            ImageDrawPixel(destino, dx, dy, ColorAlphaBlend(fundo, GetImageColor(pedaco, x, y), tinta));
+        }
+    UnloadImage(pedaco);
 }
 
 // Placa em estêncil: o texto (dialogo.c) com a fonte do jogo, centralizado, com a tinta gasta.
