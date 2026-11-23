@@ -103,6 +103,7 @@ stateDiagram-v2
 | `manual.c` | o manual dos conectivos que o terminal e os painéis compartilham: lâmpada, ✓/✗, mini-tabela e cartão |
 | `crt.c` | a cara de monitor de fósforo das telas de tarefa (analisador, painéis, manual): moldura com quinas, scanlines, varredura descendo, caixas com legenda e opções em faixa |
 | `teclas.c` | a barra de teclas do rodapé e o minimapa do teclado: só as teclas que valem no contexto |
+| `clique.c` | o mouse nas telas de interface: ao desenhar, cada tela registra as áreas clicáveis do quadro (`clique_area`); no quadro seguinte, o atualiza pergunta o que está sob o ponteiro (`clique_escolhe`: passar por cima escolhe, clicar confirma). Um clique numa tecla da barra do rodapé vale como apertá-la |
 | `circuito.c` | os painéis 1 e 2: corrente nos fios, o ponto que trava (`regras_circuito_bloqueio`), barulho e movimentos |
 | `compositor.c` | a resposta final por fichas e os dois finais |
 | `identidade.c` | as perguntas do começo da intro: "Professor ou professora?" e o nome (a edição é `regras_nome_edita`) |
