@@ -1,6 +1,8 @@
 // nivel.c — o bloco de contenção: mapa ASCII → paredes, móveis, interativos e luzes.
 // O mapa é texto para a equipe editar. 1 célula = 2 m; pé-direito 3 m.
 #include "nivel.h"
+#include "console_modelo.h"
+#include "caixas.h"
 #include "texturas.h"
 #include "cenario.h"
 #include <math.h>
@@ -166,6 +168,7 @@ void nivel_constroi_paredes(const Nivel *n, ColParedes *paredes) {
                                         (Vector3){0.5f, 1.8f, 1.2f}, PAREDE_MOVEL));
     col_paredes_adiciona(
         paredes, caixa((Vector3){n->diario.x, 0.4f, n->diario.z}, (Vector3){0.9f, 0.8f, 1.4f}, PAREDE_MOVEL));
+    caixas_adiciona_paredes(paredes);
     for (int i = 0; i < n->n_armarios; i++) {
         Vector3 d = Vector3Subtract(n->armarios[i], n->armario_saida[i]);
         Vector3 tam = fabsf(d.x) > fabsf(d.z) ? (Vector3){0.75f, 2.1f, 1.3f} : (Vector3){1.3f, 2.1f, 0.75f};
@@ -346,6 +349,8 @@ static void desenha_moveis(const Estado *e) {
     Vector3 con = n->console;
     metal(e, (Vector3){con.x, 0.5f, con.z - 0.6f}, (Vector3){1.6f, 1.0f, 0.8f}, COR_OLIVA, 1);
     metal(e, (Vector3){con.x, 1.02f, con.z - 0.75f}, (Vector3){1.5f, 0.06f, 0.5f}, cinza, 2);
+    caixas_desenha(e);
+    console_modelo_desenha(e); // o computador de época em cima da mesa (sem o modelo, a tela verde abaixo)
     metal(e, (Vector3){con.x + 0.62f, 1.18f, con.z - 0.88f}, (Vector3){0.22f, 0.3f, 0.1f}, cinza,
           3); // interfone
     metal(e, (Vector3){n->painel1.x, 0.9f, n->painel1.z}, (Vector3){1.2f, 1.8f, 0.5f}, COR_OLIVA, 4);
@@ -493,7 +498,8 @@ void nivel_desenha_emissivos(const Estado *e) {
     if (a_acesa && e->apagao_t <= 0.0f) DrawSphereEx(HOLOFOTE_A, 0.1f, 8, 8, COR_VIDRO);
     if (!menu && e->rod.luz_b && e->apagao_t <= 0.0f) DrawSphereEx(HOLOFOTE_B, 0.1f, 8, 8, COR_VIDRO);
     Color tela = e->jog.modo == MODO_TERMINAL ? COR_FOSFORO : (Color){0x2a, 0x6a, 0x3a, 255};
-    DrawCubeV((Vector3){n->console.x, 1.1f, n->console.z - 0.78f}, (Vector3){0.9f, 0.14f, 0.3f}, tela);
+    if (!e->rec.tem_terminal)
+        DrawCubeV((Vector3){n->console.x, 1.1f, n->console.z - 0.78f}, (Vector3){0.9f, 0.14f, 0.3f}, tela);
 }
 
 void nivel_desenha_vidro(const Estado *e) {

@@ -115,6 +115,8 @@ stateDiagram-v2
 | `ui.c` | fonte com fallback, HUD, legendas, diário, pausa |
 | `menu.c` | a tela de início como gravação de fita (▶ PLAY, ● REC, AGO 1985): título que pifa, gancho, frases subliminares, opções em faixas, convite do 1º lugar e a tabela do ranking por cima |
 | `fita.c` | a fita do avistamento por trás da intro datilografada: 3 fotos de `assets/fita/` com zoom lento, tremida, franjas de cor, OSD da câmera (▶ PLAY, hora, 05.06.1985) e o sinal caindo antes da 3ª linha (`regras_fita_tomada`) |
+| `console_modelo.c` | o computador de época (`assets/modelos/terminal.glb`) em cima da mesa do console, girado para quem chega; sem o arquivo, a tela verde de antes |
+| `caixas.c` | pilhas de caixotes de madeira encostadas nas paredes das salas (`assets/modelos/caixas.glb`), com colisão e as placas "EXÉRCITO BRASILEIRO / CHÃ DE ALEGRIA - PE" sobre o "Fragile" do modelo; sem o arquivo, caixas simples |
 | `tela_fim.c` | depois do final: desempenho (resultado, placar, lugar no ranking), avaliação em estrelas e a tabela do ranking |
 | `ranking.c` | só arquivo: lê e grava `ranking.txt` (temporário + troca) e anexa `avaliacoes.csv`; nada no `--smoke` |
 

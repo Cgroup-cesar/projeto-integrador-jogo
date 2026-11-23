@@ -34,6 +34,16 @@
 #define INTRO_PRETO_S        0.5f // ...um instante de tela preta e silêncio...
 #define INTRO_ABRE_S         2.0f // ...e a sala aparece saindo do preto
 #define INTRO_RADIO_ATRASO_S 1.0f // o rádio do Varela só toca com a sala já à vista
+// O computador de época sobre a mesa do console (console_modelo.c).
+#define CONSOLE_TERMINAL_LARGURA_M 0.75f  // de lado a lado
+#define CONSOLE_TAMPO_Y            1.05f  // altura do tampo da mesa (a base do terminal)
+#define CONSOLE_TERMINAL_Z         -0.62f // em relação ao ponto do console (negativo: para o lado do vidro)
+// As pilhas de caixotes das salas (caixas.c): a colisão usa estas medidas, com ou sem o modelo.
+#define CAIXAS_COMPRIMENTO_M  2.5f
+#define CAIXAS_ALTURA_M       1.21f
+#define CAIXAS_PROFUNDIDADE_M 0.9f
+#define CAIXAS_PLACA_LARGURA_M 0.62f // a placa do Exército no caixote grande (cobre o "Fragile" do modelo)
+#define CAIXAS_PLACA_ALTURA_M  0.28f
 #define FITA_HORA_INICIO   (21 * 3600 + 47 * 60 + 52) // a câmera às 21:47:52, durante o canto
 #define TECLAS_ESCALA_JOGO 0.88f // tamanho da barra de teclas e do minimapa durante a partida (1 = original)
 

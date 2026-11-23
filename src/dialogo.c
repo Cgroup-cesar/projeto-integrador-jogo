@@ -351,6 +351,8 @@ static const char *const TEXTOS[TXT_TOTAL] = {
     [TXT_PLACA_POSTO] = "BLOCO 85", // placas pintadas em estêncil nas paredes (cenario.c)
     [TXT_PLACA_RESTRITA] = "ÁREA RESTRITA",
     [TXT_PLACA_ARQUIVO] = "ARQUIVO",
+    [TXT_PLACA_CAIXA_1] = "EXÉRCITO BRASILEIRO", // a placa pregada nos caixotes (caixas.c)
+    [TXT_PLACA_CAIXA_2] = "CHÃ DE ALEGRIA - PE",
     // Filtro VHS (F1 alterna): "%d/%d · nome" aparece no canto por alguns segundos.
     [TXT_VHS_ROTULO] = "FILTRO VHS %d/%d · %s",
     [TXT_VHS_DESLIGADO] = "DESLIGADO",

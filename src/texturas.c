@@ -159,8 +159,8 @@ void texturas_carrega(Recursos *rec) {
         carrega_material(rec, (TipoMaterial)m);
         procedurais += !rec->material_de_arquivo[m];
     }
-    static const TextoId PLACAS[DECALQUES_ESTENCIL] = {TXT_PLACA_POSTO, TXT_PLACA_RESTRITA,
-                                                       TXT_PLACA_ARQUIVO};
+    static const TextoId PLACAS[DECALQUES_ESTENCIL] = {TXT_PLACA_POSTO, TXT_PLACA_RESTRITA, TXT_PLACA_ARQUIVO,
+                                                       TXT_PLACA_CAIXA_1, TXT_PLACA_CAIXA_2};
     for (int d = 0; d < DECALQUES_ESTENCIL; d++) // carregamento: uma placa por texto
         rec->decalque[d] =
             sobe(gera_estencil(rec, dialogo_texto(PLACAS[d]), TEXTURA_SEMENTE + (unsigned)d), false);

@@ -23,12 +23,14 @@ typedef enum {
     DECALQUE_POSTO,    // "POSTO 7"
     DECALQUE_RESTRITA, // "ÁREA RESTRITA"
     DECALQUE_ARQUIVO,  // "ARQUIVO"
+    DECALQUE_CAIXA_1,  // "EXÉRCITO BRASILEIRO" (a placa dos caixotes, caixas.c)
+    DECALQUE_CAIXA_2,  // "CHÃ DE ALEGRIA - PE"
     DECALQUE_UMIDADE,  // mancha de umidade com escorridos (parede)
     DECALQUE_ARRASTO,  // marcas de arrasto saindo do duto (chão)
     DECALQUE_TOTAL
 } Decalque;
 
-#define DECALQUES_ESTENCIL 3 // os primeiros DECALQUES_ESTENCIL do enum são texto
+#define DECALQUES_ESTENCIL 5 // os primeiros DECALQUES_ESTENCIL do enum são texto
 
 typedef struct {
     float brilho;  // multiplica a cor base (≈1 = a cor da paleta)

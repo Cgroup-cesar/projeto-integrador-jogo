@@ -67,6 +67,10 @@ typedef struct {
     BocaModelo boca;       // a mandíbula animada no susto (susto_carrega_boca)
     Model modelo_lanterna; // opcional: assets/modelos/lanterna.glb
     bool tem_lanterna;
+    Model modelo_terminal; // opcional: assets/modelos/terminal.glb (o computador do console)
+    bool tem_terminal;
+    Model modelo_caixas; // opcional: assets/modelos/caixas.glb (as pilhas de caixotes das salas)
+    bool tem_caixas;
     Music trilhas[TRILHA_TOTAL]; // opcionais: sons longos de assets/audio (trilhas.c)
     bool tem_trilha[TRILHA_TOTAL];
     // Texturas do mapa (texturas.c): criadas uma vez em carrega_recursos, liberadas em descarrega_recursos.
