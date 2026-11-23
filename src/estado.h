@@ -56,6 +56,8 @@ typedef struct {
     bool luz_ok;
     int loc_luz_pos, loc_luz_cor, loc_luz_ambiente, loc_luz_nevoa, loc_luz_camera, loc_luz_modelo;
     int loc_luz_cone, loc_luz_contraluz, loc_luz_queda;
+    int loc_luz_cela_min, loc_luz_cela_max, loc_luz_cela_densidade, loc_luz_cela_cor, loc_luz_cela_espalha;
+    int loc_luz_cela_lanterna;
     RenderTexture2D alvo;       // cena 3D renderizada a ESCALA_RENDER da janela
     RenderTexture2D alvo_susto; // o rosto do susto (mesmo tamanho), colado por cima da cena
     int alvo_largura, alvo_altura;
@@ -106,6 +108,7 @@ typedef struct {
     int n_armarios;
     float vidro_z; // plano do vidro da contenção
     float vidro_x0, vidro_x1;
+    Vector3 cela_min, cela_max; // a caixa da cela, do chão ao teto e até o vidro (onde fica a névoa)
 } Nivel;
 
 // ------------------------------------------------------------------ jogador

@@ -20,6 +20,7 @@ void posfx_termina_cena(const Estado *e);
 void posfx_comeca_luz(const Estado *e, const Vector3 *posicoes, const Vector3 *cores, const Vector4 *cones,
                       const float *quedas, int n, float ambiente);
 void posfx_termina_luz(const Estado *e);
+void posfx_retoma_luz(const Estado *e); // volta ao shader de luz (com os uniformes do quadro) após uma pausa
 
 // Depois de comeca_luz: troca o ponto de vista da névoa e da contraluz (padrão: a câmera do jogador).
 void posfx_olho(const Estado *e, Vector3 olho);
@@ -27,6 +28,10 @@ void posfx_olho(const Estado *e, Vector3 olho);
 // Entre comeca_luz e termina_luz: contraluz nas bordas do que for desenhado a seguir (intensidade 0 desliga).
 // Chame fora de rlPushMatrix/rlPopMatrix (envia o lote pendente com a transformação atual).
 void posfx_contraluz(const Estado *e, Color cor, float intensidade);
+
+// Entre comeca_luz e termina_luz: a densidade da névoa da cela para o que for desenhado a seguir (0 desliga).
+// Também fora de rlPushMatrix/rlPopMatrix, pelo mesmo motivo da contraluz.
+void posfx_nevoa_cela(const Estado *e, float densidade);
 
 // Amplia o render target para a janela inteira, com o filtro VHS se estiver ligado.
 void posfx_desenha(const Estado *e);

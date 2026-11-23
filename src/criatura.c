@@ -8,6 +8,8 @@
 #include "audio_sintese.h"
 #include "ui.h"
 #include "posfx.h"
+#include "cela.h"
+#include "lanterna.h"
 #include "rlgl.h"
 #include <math.h>
 #include <stdlib.h>
@@ -361,14 +363,6 @@ void criatura_captura(Estado *e) {
 }
 
 // ================================================================== atualiza
-static void atualiza_contido(Estado *e, float dt) {
-    Criatura *c = &e->cri;
-    Vector3 base = e->nivel.cela_precursor;
-    float alvo_z = base.z + 1.3f * c->avanco_vidro + (c->mao_no_vidro ? 0.15f : 0.0f);
-    c->pos = (Vector3){base.x, 0.0f, alvo_z};
-    c->passo_t += dt;
-}
-
 // Ele sobe pelo duto 15 s depois do início da saída (dá tempo do jogador se orientar).
 static bool atualiza_surgimento(Estado *e, float dt) {
     Criatura *c = &e->cri;
@@ -412,7 +406,7 @@ void criatura_atualiza(Estado *e, float dt) {
     Criatura *c = &e->cri;
     c->fala_t = fmaxf(0.0f, c->fala_t - dt);
     if (c->contido)
-        atualiza_contido(e, dt);
+        cela_atualiza(e, dt); // centro, fuga da lanterna e volta (cela.c)
     else if (regras_fase_eh_saida(e->fase))
         atualiza_nos_corredores(e, dt);
 }
@@ -447,8 +441,9 @@ static float visibilidade(const Estado *e) {
     if (!e->cri.contido) return 1.0f - e->cri.distorcao;
     if (e->apagao_t > 0.0f) return 0.05f;
     bool menu = e->fase == FASE_MENU || e->fase == FASE_INTRO;
-    float v = 0.12f + (menu || e->rod.luz_a ? 0.4f : 0.0f) + (e->rod.luz_b ? 0.6f : 0.0f);
-    v += nivel_piscada_cela(e) * 0.6f; // aparece no flash da lâmpada com defeito
+    float v = 0.03f + (menu || e->rod.luz_a ? 0.4f : 0.0f) + (e->rod.luz_b ? 0.6f : 0.0f); // cela escura
+    if (lanterna_mira_criatura(e)) v += 0.7f; // a lanterna o ilumina (e falha)
+    if (e->fase == FASE_MENU) v = 0.0f;       // no menu: silhueta preta, só os olhos (desenha_olhos_no_menu)
     if (e->fase == FASE_RESPOSTA_FINAL || e->fase == FASE_FIM_BOM || e->fase == FASE_FIM_RUIM) v = 1.0f;
     return fminf(1.0f, v);
 }
@@ -498,6 +493,25 @@ static void aplica_postura(const Estado *e) {
     rlScalef(p.respira, 1.0f, p.respira);
 }
 
+// No menu: dois pontinhos brancos nos olhos da silhueta, e mais nada. Ficam fora do shader de luz (sem luz
+// nem névoa). Os olhos foram medidos no precursor.glb, nas unidades do arquivo (y de -1 a 1, rosto em +z).
+static void desenha_olhos_no_menu(const Estado *e, Matrix corpo) {
+    if (e->fase != FASE_MENU || !e->cri.contido || !e->rec.tem_modelo) return;
+    static const Vector3 OLHOS[2] = {{-0.0495f, 0.8485f, 0.2f}, {0.0275f, 0.8485f, 0.2f}};
+    BoundingBox caixa = GetModelBoundingBox(e->rec.modelo_precursor);
+    float escala = CRIATURA_ALTURA_M / fmaxf(0.01f, caixa.max.y - caixa.min.y);
+    posfx_termina_luz(e);
+    for (int i = 0; i < 2; i++) { // os dois olhos, no espaço do modelo → no mundo
+        Vector3 local = {OLHOS[i].x * escala, (OLHOS[i].y - caixa.min.y) * escala, OLHOS[i].z * escala};
+        Vector3 olho = Vector3Transform(local, corpo);
+        // o raio cresce com a distância: o pontinho fica sempre com CRIATURA_OLHO_PX pixels na imagem
+        float px_por_m = e->rec.alvo_altura / (2.0f * tanf(e->camera.fovy * 0.5f * DEG2RAD) *
+                                               Vector3Distance(olho, e->camera.position));
+        DrawSphereEx(olho, CRIATURA_OLHO_PX / px_por_m, 4, 4, WHITE);
+    }
+    posfx_retoma_luz(e);
+}
+
 void criatura_desenha(const Estado *e) {
     const Criatura *c = &e->cri;
     desenha_caminho(e);
@@ -511,6 +525,8 @@ void criatura_desenha(const Estado *e) {
     // transformação atual como matModel. Dentro do push, as paredes eram iluminadas na posição dele (pretas).
     float contraluz = (c->contido ? CONTRALUZ_CELA : CONTRALUZ_CORREDOR) * (1.0f - c->distorcao);
     posfx_contraluz(e, COR_CONTRALUZ, contraluz); // recorta a silhueta; desligada logo depois do corpo
+    bool menu = e->fase == FASE_MENU;
+    if (menu) posfx_nevoa_cela(e, 0.0f); // no menu, sem névoa no corpo: preto puro contra a névoa clara
     rlPushMatrix();
     float subida = c->contido ? 0.0f : (c->surgindo - 1.0f) * 2.7f; // sobe pelo duto
     rlTranslatef(c->pos.x + (c->distorcao > 0.0f ? sinf(t * 70.0f) * c->distorcao * 0.4f : 0.0f),
@@ -519,10 +535,13 @@ void criatura_desenha(const Estado *e) {
     aplica_postura(e);
     if (c->distorcao > 0.0f)
         rlScalef(1.0f - c->distorcao * 0.8f, 1.0f + c->distorcao * 1.5f, 1.0f - c->distorcao * 0.8f);
+    Matrix corpo = rlGetMatrixTransform(); // a mesma transformação leva os olhos junto com o corpo
     if (e->rec.tem_modelo)
         desenha_modelo(e, pele);
     else
         desenha_corpo(e, pele);
     rlPopMatrix();
     posfx_contraluz(e, COR_CONTRALUZ, 0.0f); // envia o corpo procedural (lote) ainda com a contraluz
+    if (menu) posfx_nevoa_cela(e, NEVOA_CELA_DENSIDADE);
+    desenha_olhos_no_menu(e, corpo);
 }

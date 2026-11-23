@@ -214,6 +214,22 @@ static float sorteio(int ciclo, unsigned semente) {
     return (float)(h & 0xffffu) / 65536.0f;
 }
 
+// [REQ:PURA-regras_falha_lanterna] a lanterna falhando: a cada sorteio a luz cai (quase apaga) ou volta
+float regras_falha_lanterna(float t) {
+    int ciclo = (int)(fmaxf(t, 0.0f) * LANTERNA_FALHA_HZ);
+    if (sorteio(ciclo, 0x51edu) >= LANTERNA_FALHA_CHANCE) return 1.0f;
+    return 0.05f + 0.3f * sorteio(ciclo, 0x2a9fu);
+}
+
+// [REQ:PURA-regras_no_cone] o ponto dentro do facho: perto o bastante e dentro da abertura do cone
+bool regras_no_cone(Vector3 origem, Vector3 direcao, float cos_meia_abertura, float alcance, Vector3 ponto) {
+    Vector3 para = Vector3Subtract(ponto, origem);
+    float d = Vector3Length(para);
+    if (d < 0.001f) return true;
+    if (d > alcance) return false;
+    return Vector3DotProduct(Vector3Scale(para, 1.0f / d), direcao) >= cos_meia_abertura;
+}
+
 // [REQ:PURA-regras_piscada_cela] lâmpada com defeito: piscada dupla em intervalos irregulares
 float regras_piscada_cela(float t) {
     if (t < 0.0f) return 0.0f;

@@ -188,6 +188,8 @@
 #define CRIATURA_RAIO_CAPTURA  0.8f  // duas esferas de 0,8 m: pego quando a distância < 1,6 m
 #define CRIATURA_BOTE_M        3.0f  // perseguindo e mais perto que isso: avança sem as pausas, mais rápido
 #define CRIATURA_BOTE_VEL      1.35f // multiplica a velocidade de perseguição no bote
+#define CRIATURA_LANTERNA_ALCANCE_M 16.0f // até onde a lanterna, apontada para ele, começa a falhar
+#define CRIATURA_OLHO_PX            1.0f  // no menu: raio, em pixels da cena, dos dois pontinhos dos olhos
 #define CRIATURA_DIST_ARMARIO  2.0f  // entrar no armário a menos disso enquanto ele vê = pego
 #define CRIATURA_ALTURA_M      2.6f  // o precursor.glb é escalado para essa altura, com os pés no chão
 // Postura procedural (o modelo .glb não tem animação): ver regras_postura_criatura
@@ -273,7 +275,7 @@
 #define HOLOFOTE_ABERTURA_GRAUS 30.0f // meia-abertura do cone; fora dele sobram 15% (a cela não fica preta)
 #define HOLOFOTE_GANHO          1.6f  // compensa a luz que deixou de se espalhar pela cela
 // Contraluz fria só no corpo do Precursor: recorta a silhueta mesmo no escuro (não clareia o resto).
-#define CONTRALUZ_CELA     0.55f
+#define CONTRALUZ_CELA     0.0f  // na cela, nada de contorno: ele fica no escuro (névoa e luzes o revelam)
 #define CONTRALUZ_CORREDOR 0.22f // mais fraca: nos corredores ele ainda precisa se esconder no escuro
 // Lâmpada com defeito na cela apagada: piscada dupla, em média a cada 3 s, sem ritmo de relógio.
 #define PISCADA_INTERVALO_S 3.0f  // um ciclo; a piscada cai num ponto sorteado dentro dele
@@ -282,12 +284,22 @@
 #define PISCADA_FORCA       0.7f  // fração do holofote A aceso no auge da piscada
 // O shader aceita até 5 luzes: as 4 do cenário (nivel_luzes) e a lanterna (o texto do shader segue este
 // valor).
+// Névoa só dentro da cela (a caixa vem do mapa): densa, mas deixa ver o Precursor no centro; no fundo,
+// ela o engole. As luzes (flash, holofotes, lanterna) clareiam a própria névoa.
+#define NEVOA_CELA_DENSIDADE        0.55f // por metro de cela atravessado pelo olhar
+#define NEVOA_CELA_ESPALHA          0.3f  // quanto das luzes da cela (flash, holofotes) a névoa devolve
+#define NEVOA_CELA_ESPALHA_LANTERNA 0.05f // e da lanterna: pouco, senão a névoa vira parede branca
+#define NEVOA_CELA_COR_R 0.045f // a cor da névoa sem luz: só um pouco acima do preto, para a silhueta
+#define NEVOA_CELA_COR_G 0.050f // escura dele aparecer contra ela
+#define NEVOA_CELA_COR_B 0.055f
 #define LUZES_SHADER 5
 
 // ---------------------------------------------------------------- lanterna (tecla F, sem bateria)
 #define LANTERNA_ABERTURA_GRAUS 22.0f // meia-abertura do cone
 #define LANTERNA_INTENSIDADE    3.1f
 #define LANTERNA_QUEDA          0.4f // perda de força com a distância (lâmpadas = 1): menor = alcança mais longe
+#define LANTERNA_FALHA_HZ       20.0f // apontada para o Precursor, ela falha: um sorteio a cada 50 ms
+#define LANTERNA_FALHA_CHANCE   0.4f  // chance de a luz cair em cada sorteio
 #define LANTERNA_COMPRIMENTO_M  0.24f // o modelo na mão é escalado para esse comprimento
 
 // ---------------------------------------------------------------- trilhas (sons longos de assets/audio)

@@ -12,6 +12,10 @@ void lanterna_descarrega_modelo(Recursos *rec);
 void lanterna_reinicia(Estado *e); // partida nova: começa apagada
 void lanterna_atualiza(Estado *e, float dt);
 
+// A lanterna acesa com o peito do Precursor no facho (na cela, o vidro não conta; no corredor, uma parede
+// no meio esconde). Enquanto isso, ela falha (regras_falha_lanterna).
+bool lanterna_mira_criatura(const Estado *e);
+
 // A luz do quadro para o shader (a 5ª, depois das 4 do cenário). Devolve false com a lanterna apagada.
 bool lanterna_luz(const Estado *e, Vector3 *pos, Vector3 *cor, Vector4 *cone, float *queda);
 
