@@ -189,6 +189,14 @@
 #define JOGADOR_FOLEGO_MAX      4.0f // segundos de corrida
 #define JOGADOR_FOLEGO_RECUPERA 0.8f // fôlego recuperado por segundo andando/parado
 #define SENSIBILIDADE_MOUSE     0.0025f
+// Controle (Xbox ou qualquer um que a raylib reconheça; controle.c). O olhar é em radianos por segundo, com
+// o analógico direito todo empurrado; o vertical gira mais devagar, como na maioria dos jogos de console.
+#define CONTROLE_GIRO_RAD_S     2.8f
+#define CONTROLE_GIRO_VERTICAL  0.65f // fração do giro horizontal
+#define CONTROLE_ZONA_MORTA     0.18f // analógico: abaixo disso conta como solto (deriva do controle)
+#define CONTROLE_CURVA          2.0f  // resposta do analógico do olhar (2 = ao quadrado: mira fina no meio)
+#define CONTROLE_MENU_LIMIAR    0.6f  // analógico esquerdo empurrado além disso vira uma seta nos menus
+#define CONTROLE_GATILHO_LIMIAR 0.5f  // LT apertado além disso (eixo de -1 a 1) corre, como o LB
 #define DISTANCIA_INTERACAO     2.4f
 #define ANGULO_INTERACAO_GRAUS  35.0f
 

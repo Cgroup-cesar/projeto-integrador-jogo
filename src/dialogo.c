@@ -342,8 +342,38 @@ static const char *const TEXTOS[TXT_TOTAL] = {
     [TXT_VHS_VIGILANCIA] = "CÂMERA DE VIGILÂNCIA",
 };
 
+// As mesmas dicas, com os botões do controle de Xbox. Só entram aqui os textos que citam teclas; o resto
+// (NULL) fica igual. Os formatos (%s, %d) são os mesmos da versão do teclado.
+static const char *const TEXTOS_CONTROLE[TXT_TOTAL] = {
+    [TXT_INTRO_PULAR] = "A pula",
+    [TXT_ID_DICA_GENERO] = "← → escolhem · A confirma",
+    [TXT_ID_DICA_NOME] = "A confirma · sem teclado, fica \"%s\"",
+    [TXT_MIRA_CONSOLE] = "A — usar o console",
+    [TXT_MIRA_PAINEL] = "A — abrir o painel de circuito",
+    [TXT_MIRA_DIARIO] = "A — ler o bilhete",
+    [TXT_MIRA_ARMARIO] = "A — esconder-se no armário",
+    [TXT_MIRA_PORTA] = "A — porta da sala de observação",
+    [TXT_ARMARIO_SAIR] = "A — sair do armário",
+    [TXT_OBJETIVO_SALA] = "Vá ao console (A) e descubra o que ele diz.",
+    [TXT_TERMINAL_OBSERVE] =
+        "Acenda e apague a LUZ A [X] e veja o que ele responde. A tabela se preenche sozinha.",
+    [TXT_TERMINAL_OBSERVE_DUAS] = "Teste as 4 combinações das luzes A [X] e B [Y] e veja o que ele responde.",
+    [TXT_TERMINAL_SELO_AJUDA] = "[VIEW] AJUDA",
+    [TXT_TERMINAL_SELO_FECHAR] = "[VIEW] FECHAR AJUDA",
+    [TXT_DIARIO_FECHAR] = "A ou B — fechar",
+    [TXT_FIM_VER_PLACAR] = "A — ver o placar  (%d)",
+    [TXT_FIM_ENTER] = "Pressione A",
+};
+
+static bool usa_controle = false;
+
+void dialogo_usa_controle(bool controle) {
+    usa_controle = controle;
+}
+
 const char *dialogo_texto(TextoId id) {
     if (id < 0 || id >= TXT_TOTAL || TEXTOS[id] == NULL) return "";
+    if (usa_controle && TEXTOS_CONTROLE[id] != NULL) return TEXTOS_CONTROLE[id];
     return TEXTOS[id];
 }
 

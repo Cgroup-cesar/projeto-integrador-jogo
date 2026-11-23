@@ -42,7 +42,8 @@ Vector3 jogador_direcao(const Estado *e) {
 
 // ------------------------------------------------------------------ olhar
 // [REQ:RF2] câmera em 1ª pessoa pelo mouse (o deslocamento do mouse já é por quadro: não multiplica por dt)
-static void olha(Estado *e) {
+// e pelo analógico direito (esse é uma velocidade: radianos por segundo, multiplicado por dt)
+static void olha(Estado *e, float dt) {
     Jogador *j = &e->jog;
     // No terminal, no painel e no bilhete o cursor fica à mostra para clicar: a câmera não acompanha o mouse.
     if (j->modo == MODO_TERMINAL || j->modo == MODO_PAINEL || j->modo == MODO_DIARIO) return;
@@ -51,8 +52,9 @@ static void olha(Estado *e) {
         j->pitch = 0.0f;
         return;
     }
-    j->yaw -= e->in.mouse.x * SENSIBILIDADE_MOUSE;
-    j->pitch -= e->in.mouse.y * SENSIBILIDADE_MOUSE;
+    j->yaw -= e->in.mouse.x * SENSIBILIDADE_MOUSE + e->in.olhar.x * CONTROLE_GIRO_RAD_S * dt;
+    j->pitch -= e->in.mouse.y * SENSIBILIDADE_MOUSE +
+                e->in.olhar.y * CONTROLE_GIRO_RAD_S * CONTROLE_GIRO_VERTICAL * dt;
     if (j->pitch > PITCH_MAXIMO) j->pitch = PITCH_MAXIMO;
     if (j->pitch < -PITCH_MAXIMO) j->pitch = -PITCH_MAXIMO;
 }
@@ -184,7 +186,7 @@ static void atualiza_modos(Estado *e) {
 }
 
 void jogador_atualiza(Estado *e, float dt) {
-    olha(e);
+    olha(e, dt);
     Jogador *j = &e->jog;
     if (j->modo == MODO_ANDANDO) {
         anda(e, dt);

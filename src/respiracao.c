@@ -182,6 +182,11 @@ static void chances(Vector2 pos, int erros, float s) {
     }
 }
 
+// A tecla de segurar o ar desenhada na tela: no controle, o A.
+static const char *tecla_respirar(const Estado *e) {
+    return e->in.controle ? "A" : "ESPAÇO";
+}
+
 // Desafio: a barra no meio, os acertos à esquerda, as chances à direita e quanto ele ainda espera embaixo.
 static void desenha_desafio(const Estado *e, Rectangle b) {
     const Respiracao *r = &e->resp;
@@ -201,8 +206,8 @@ static void desenha_desafio(const Estado *e, Rectangle b) {
     DrawRectangleRec((Rectangle){b.x, b.y + b.height + 14 * s, b.width * resta, 5 * s},
                      Fade(COR_AMBAR, 0.8f));
     // A única explicação: a tecla ESPAÇO embaixo da barra (afunda ao apertar e logo depois do acerto).
-    float alt = 40 * s, larg = ui_mede(e, "ESPAÇO", alt * 0.5f).x + 24 * s;
-    tecla(e, "ESPAÇO", (Vector2){b.x + (b.width - larg) * 0.5f, b.y + b.height + 34 * s}, alt,
+    float alt = 40 * s, larg = ui_mede(e, tecla_respirar(e), alt * 0.5f).x + 24 * s;
+    tecla(e, tecla_respirar(e), (Vector2){b.x + (b.width - larg) * 0.5f, b.y + b.height + 34 * s}, alt,
           e->in.respirar || r->acerto_t > 0.5f);
     if (r->acerto_t > 0.0f)
         ui_texto_centro(e, dialogo_texto(TXT_RESP_SEGUROU), b.y - 110 * s, 34 * s, COR_FOSFORO);

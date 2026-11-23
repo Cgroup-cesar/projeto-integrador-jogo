@@ -32,6 +32,7 @@
 #include "bancada.h"
 #include "efeitos.h"
 #include "qualidade.h"
+#include "controle.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -48,7 +49,7 @@ static const char *pasta_galeria = NULL;   // --galeria-vhs <pasta>: uma captura
 
 // ================================================================== entrada
 // [REQ:RF2] controle por teclado e mouse: lido uma vez por quadro (WASD, mouse, Shift, E, 1/2/3, setas,
-// Enter, Esc)
+// Enter, Esc); o controle de Xbox entra por cima, em controle.c
 static void le_entrada(Entrada *in) {
     memset(in, 0, sizeof(*in));
     in->mover.x = (float)(IsKeyDown(KEY_D) - IsKeyDown(KEY_A));
@@ -57,6 +58,7 @@ static void le_entrada(Entrada *in) {
     in->correr = IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT);
     in->interagir = IsKeyPressed(KEY_E);
     in->voltar = IsKeyPressed(KEY_ESCAPE);
+    in->pausa = in->voltar;
     in->confirmar = IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER);
     in->cima = IsKeyPressed(KEY_UP);
     in->baixo = IsKeyPressed(KEY_DOWN);
@@ -91,6 +93,8 @@ static void le_entrada(Entrada *in) {
     in->ponteiro_moveu = in->ponteiro_livre && (in->mouse.x != 0.0f || in->mouse.y != 0.0f);
     in->clique = in->ponteiro_livre && IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
     clique_aperta_teclas(in); // clicar numa tecla da barra do rodapé vale como apertá-la
+    controle_le(in); // [REQ:RF2] o controle soma por cima (depois do teclado: usa in->alguma)
+    dialogo_usa_controle(in->controle);
 }
 
 // ================================================================== piloto automático (--smoke)

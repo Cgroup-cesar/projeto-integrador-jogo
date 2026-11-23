@@ -84,6 +84,9 @@ typedef struct {
 
 Vector3 regras_frente(float yaw);
 Vector3 regras_nova_posicao(Vector3 pos, float yaw, Vector2 mover, float velocidade, float dt);
+// Analógico do controle: zona morta radial (abaixo dela, zero), o resto reescalado para 0..1 e elevado a
+// `curva` (2 = ao quadrado: precisão perto do centro, velocidade total na ponta). Mantém a direção.
+Vector2 regras_analogico(Vector2 bruto, float zona_morta, float curva);
 bool regras_criatura_ve_jogador(Vector3 olho, Vector3 frente, Vector3 alvo, bool caminho_livre,
                                 bool escondido);
 float regras_ruido_percebido(Ruido ruido, Vector3 ouvinte);

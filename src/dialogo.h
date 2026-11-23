@@ -223,6 +223,9 @@ typedef enum {
     TXT_TOTAL
 } TextoId;
 
+// Com o controle em uso, as dicas que citam teclas ("E —", "ENTER", "ESPAÇO", "Esc") trocam pelos botões
+// (A, B, X, Y). main.c avisa a cada quadro; dialogo_texto escolhe sozinho.
+void dialogo_usa_controle(bool controle);
 const char *dialogo_texto(TextoId id);
 
 // Troca os marcadores de um texto pelo que o jogador escolheu no início: {NOME}, {PROF} ("Professor" ou

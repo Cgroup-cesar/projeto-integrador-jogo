@@ -27,6 +27,18 @@ static void testa_movimento(void) {
     CHECK(perto(meio_dt.z, 0.125f)); // movimento proporcional ao dt
 }
 
+// Analógico: a zona morta zera, a direção se mantém, a ponta chega a 1 e a curva deixa o meio mais suave
+static void testa_analogico(void) {
+    Vector2 parado = regras_analogico((Vector2){0.1f, 0.05f}, 0.2f, 2.0f);
+    CHECK(perto(parado.x, 0) && perto(parado.y, 0));
+    Vector2 ponta = regras_analogico((Vector2){0.0f, -1.0f}, 0.2f, 2.0f);
+    CHECK(perto(ponta.x, 0) && perto(ponta.y, -1.0f));
+    Vector2 alem = regras_analogico((Vector2){1.0f, 1.0f}, 0.2f, 2.0f); // canto do quadrado: não passa de 1
+    CHECK(perto(Vector2Length(alem), 1.0f) && perto(alem.x, alem.y));
+    Vector2 meio = regras_analogico((Vector2){0.6f, 0.0f}, 0.2f, 2.0f); // (0,4/0,8)² = 0,25
+    CHECK(perto(meio.x, 0.25f) && perto(meio.y, 0));
+}
+
 // [REQ:PURA-regras_criatura_ve_jogador] testa o cone, a distância, a parede no meio e o esconderijo
 static void testa_visao(void) {
     Vector3 olho = {0, 1.6f, 0}, frente = {0, 0, 1};
@@ -897,6 +909,7 @@ static void testa_som_espacial(void) {
 int main(void) {
     SetTraceLogLevel(LOG_ERROR); // o aviso de vetor cheio é esperado aqui
     testa_movimento();
+    testa_analogico();
     testa_visao();
     testa_ruido_percebido();
     testa_estados_criatura();

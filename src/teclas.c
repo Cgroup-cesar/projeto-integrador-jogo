@@ -106,6 +106,28 @@ static int itens_do_contexto(const Estado *e, TeclaAcao *t) {
     }
 }
 
+// ================================================================== controle
+// Com o controle em uso, o rótulo da tecla vira o botão (as setas ficam: são o direcional). Devolve NULL
+// para o que não tem botão próprio (o atalho "1 2 3" do painel: lá o direcional + A já faz tudo).
+typedef struct {
+    const char *tecla, *botao;
+} TeclaBotao;
+
+static const TeclaBotao BOTOES[] = {
+    {"WASD", "L"}, {"MOUSE", "R"}, {"SHIFT", "LB"}, {"E", "A"}, {"ENTER", "A"}, {"ESPAÇO", "A"},
+    {"ESC", "B"},  {"F", "Y"},     {"H", "VIEW"},   {"1", "X"}, {"2", "Y"},
+};
+
+static const char *rotulo(const Estado *e, const TeclaAcao *t) {
+    if (!e->in.controle) return t->tecla;
+    if (strcmp(t->tecla, "1 2 3") == 0) return NULL;
+    if (strcmp(t->tecla, "ESC") == 0 && t->acao == TXT_TECLA_PAUSA) return "START"; // andando, o B não pausa
+    int total = (int)(sizeof(BOTOES) / sizeof(BOTOES[0]));
+    for (int i = 0; i < total; i++) // padrão FOLD: o botão desta tecla (ou ela mesma, se for seta)
+        if (strcmp(BOTOES[i].tecla, t->tecla) == 0) return BOTOES[i].botao;
+    return t->tecla;
+}
+
 // ================================================================== desenho de uma tecla
 static void seta(Vector2 c, float r, int direcao, Color cor) { // 0 cima, 1 baixo, 2 esquerda, 3 direita
     Vector2 a, b, d;
@@ -182,8 +204,10 @@ static void desenha_barra(const Estado *e, bool faixa, float k) {
         DrawRectangle(0, (int)(y - 10 * s), GetScreenWidth(), (int)(altura + 22 * s), (Color){4, 7, 5, 235});
     float x = 90 * s; // na margem do texto do menu e do HUD
     for (int i = 0; i < n; i++) { // padrão MAP: cada tecla com o que ela faz agora
+        const char *nome = rotulo(e, &itens[i]);
+        if (nome == NULL) continue;
         float x0 = x;
-        x += tecla(e, itens[i].tecla, (Vector2){x, y}, altura, COR_FOSFORO) + 8 * s;
+        x += tecla(e, nome, (Vector2){x, y}, altura, COR_FOSFORO) + 8 * s;
         const char *acao = dialogo_texto(itens[i].acao);
         if (!faixa) ui_texto(e, acao, (Vector2){x + 1.5f * s, y + altura * 0.22f + 1.5f * s}, 17 * s, BLACK);
         ui_texto(e, acao, (Vector2){x, y + altura * 0.22f}, 17 * s, RAYWHITE);
