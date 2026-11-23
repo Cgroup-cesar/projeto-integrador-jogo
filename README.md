@@ -61,7 +61,7 @@ Projeto Integrador da disciplina **Programação Imperativa e Funcional (PIF)**,
 
 ![Sanidade em 20%: a barra vermelha no topo, as bordas embaçadas e o ruído de fita sobre o corredor](docs/img/sanidade_20.png)
 
-A barra fixa no topo da tela mostra a **SANIDADE** em porcentagem. Ela é verde, fica âmbar abaixo de 60% e vermelha e pulsando abaixo de 30%; o pedaço que a criatura acabou de tirar aparece em vermelho escuro por um instante.
+A barra no topo da tela mostra a **SANIDADE** em porcentagem (nas salas, cheia, ela some). Ela é verde, fica âmbar abaixo de 60% e vermelha e pulsando abaixo de 30%; o pedaço que a criatura acabou de tirar aparece em vermelho escuro por um instante.
 
 - **Cai** nos corredores quando o Precursor está a menos de 15 m, mais rápido quanto mais perto: cerca de 2 pontos por segundo na borda e 24 colado nele (de 100% a 0% em uns 4 s). Escondido no armário, cai pela metade.
 - **Sobe devagar** enquanto se joga (0,8 ponto por segundo; nos corredores, só depois de 3 s longe dele) e **sobe bastante** ao concluir tarefas: +35 por rodada, +40 por saída e +10 por conectivo decifrado. Ser pego ou romper o vidro recomeça a fase com pelo menos 60%.
@@ -143,7 +143,7 @@ src/rodadas.c/.h         dados e fluxo das 3 rodadas
 src/terminal.c/.h        interface do ANALISADOR SEMÂNTICO SNI-85
 src/manual.c/.h          o manual dos conectivos (lâmpada, ✓/✗, mini-tabela, cartão), do terminal e dos painéis
 src/crt.c/.h             a cara de monitor das telas de tarefa: moldura com quinas, scanlines, varredura, caixas e faixas
-src/teclas.c/.h          a barra de teclas do rodapé e o minimapa do teclado (só as teclas que valem agora)
+src/teclas.c/.h          a barra de teclas do rodapé (só as teclas que valem agora; andando, só no começo da fase)
 src/clique.c/.h          o mouse nas telas: as áreas clicáveis de cada quadro e o clique nas teclas da barra
 src/compositor.c/.h      resposta final por fichas e os dois finais
 src/circuito.c/.h        painéis de circuito 1 e 2
