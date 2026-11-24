@@ -47,11 +47,21 @@ static void caminho_cano(const Estado *e, Vector3 *pos, float *yaw) {
     *yaw = angulo_entre(*yaw, 0.0f, suave(t, ANIM_CANO_VIRA_S + ANIM_CANO_ANDA_S, ANIM_CANO_VIRA_S));
 }
 
+static float tempo_bueiro(const Estado *e);
+
+// O corpo segue a cena da tubulação só até começar a subir pelo duto do corredor. O relógio da cena
+// (e->cano) continua ligado na saída inteira, porque os passos por baixo do chão usam ele (tubulacao_som.c);
+// sem este teste, depois de subir, o corpo continuava desenhado enterrado na boca da tubulação, dentro da
+// cela, e o Precursor perseguia invisível.
+static bool na_cena_do_cano(const Estado *e) {
+    return e->cano && !e->cri.ativo && tempo_bueiro(e) < 0.0f;
+}
+
 // ================================================================== posição desenhada
 static Vector3 pos_da_ia(const Estado *e) { // a da IA, ou a do caminho até a tubulação
     Vector3 pos = e->cri.pos;
     float yaw;
-    if (e->cano) caminho_cano(e, &pos, &yaw);
+    if (na_cena_do_cano(e)) caminho_cano(e, &pos, &yaw);
     return pos;
 }
 
@@ -62,7 +72,7 @@ Vector3 animacao_pos(const Estado *e) {
 float animacao_yaw(const Estado *e) {
     Vector3 pos;
     float yaw = e->cri.yaw;
-    if (e->cano) caminho_cano(e, &pos, &yaw);
+    if (na_cena_do_cano(e)) caminho_cano(e, &pos, &yaw);
     return yaw;
 }
 
@@ -103,7 +113,7 @@ bool animacao_visivel(const Estado *e) {
 #define CANO_ROTEIRO_VISTO 0.4f
 
 static float tempo_descida(const Estado *e) {
-    if (!e->cano || e->cano_t < ANIM_CANO_DESCE_EM) return -1.0f;
+    if (!na_cena_do_cano(e) || e->cano_t < ANIM_CANO_DESCE_EM) return -1.0f;
     float k = Clamp((e->cano_t - ANIM_CANO_DESCE_EM) / ANIM_CANO_DESCE_S, 0.0f, 1.0f);
     float v = ANIM_CANO_VISTO, r = CANO_ROTEIRO_VISTO;
     float f = k < v ? r * k / v : r + (1.0f - r) * (k - v) / (1.0f - v);
