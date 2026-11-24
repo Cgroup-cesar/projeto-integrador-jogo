@@ -19,6 +19,8 @@
 #define MENU_FALHA_LEVE       0.4f // intensidade da falha nas opções da pausa e das perguntas (1 = a do menu)
 #define TELAS_ESTATICA_ALFA   0.03f // chuvisco da pausa e das perguntas da intro: bem mínimo
 #define TELAS_ESTATICA_PICO   0.02f
+// Os ícones dos botões do controle na barra de teclas (botoes.c): um por botão citado nela.
+#define BOTOES_TOTAL 12
 // A fita do avistamento na intro (fita.c): três fotos de assets/fita/ por trás do texto datilografado.
 #define FITA_FOTOS         3
 #define FITA_LINHA_QUEDA   2     // na 3ª linha da intro o sinal cai: falha, chuvisco e tela preta

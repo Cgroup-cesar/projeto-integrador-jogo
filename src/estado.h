@@ -123,6 +123,8 @@ typedef struct {
     Texture2D halo;             // brilho radial das lâmpadas
     Texture2D fita[FITA_FOTOS]; // fotos do avistamento (fita.c); opcionais: sem elas, a intro fica preta
     bool tem_fita[FITA_FOTOS];
+    Texture2D botao[BOTOES_TOTAL]; // ícones do controle (botoes.c); opcionais: sem eles, o botão vira texto
+    bool tem_botao[BOTOES_TOTAL];
 } Recursos;
 
 // ------------------------------------------------------------------ nível (gerado do mapa ASCII)
