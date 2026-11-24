@@ -38,15 +38,23 @@ static void poeira(const Estado *e, Vector3 centro, int dx, int dz, float f) {
     texturas_quadro(e->rec.decalque[DECALQUE_POEIRA], p, direita, cima, WHITE);
 }
 
-// Um caco: caixa pequena, achatada e girada, num tom de reboco ou de concreto.
+// Um caco: caixa pequena, achatada e girada. Metade é reboco (cinza), metade é azulejo que caiu da parede
+// (verde-água, mais fino): `tom` sorteia qual e o quanto de sujeira.
 static void caco(Vector3 p, float tamanho, float giro, float tom) {
     rlPushMatrix();
     rlTranslatef(p.x, tamanho * 0.25f, p.z);
     rlRotatef(giro, 0.0f, 1.0f, 0.0f);
     rlRotatef(giro * 0.37f, 1.0f, 0.0f, 0.0f); // não fica de pé nem deitado certinho
-    unsigned char c = (unsigned char)(70.0f + 60.0f * tom);
-    DrawCubeV((Vector3){0}, (Vector3){tamanho, tamanho * 0.45f, tamanho * 0.75f},
-              (Color){c, (unsigned char)(c * 0.98f), (unsigned char)(c * 0.9f), 255});
+    if (tom < 0.5f) { // azulejo: o esmalte por cima, a peça fina
+        float k = 0.7f + 0.6f * tom;
+        DrawCubeV((Vector3){0}, (Vector3){tamanho, 0.008f, tamanho * 0.8f},
+                  (Color){(unsigned char)(0x5c * k), (unsigned char)(0x7e * k), (unsigned char)(0x76 * k),
+                          255});
+    } else {
+        unsigned char c = (unsigned char)(70.0f + 60.0f * (tom - 0.5f) * 2.0f);
+        DrawCubeV((Vector3){0}, (Vector3){tamanho, tamanho * 0.45f, tamanho * 0.75f},
+                  (Color){c, (unsigned char)(c * 0.98f), (unsigned char)(c * 0.9f), 255});
+    }
     rlPopMatrix();
 }
 

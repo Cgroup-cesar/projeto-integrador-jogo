@@ -392,6 +392,20 @@ static void desenha_mundo_3d(const Estado *e) {
     bool sem_energia = regras_fase_eh_saida(e->fase) && !e->painel.resolvido;
     float ambiente = LUZ_AMBIENTE * (sem_energia ? SEM_ENERGIA_AMBIENTE : 1.0f);
     if (e->apagao_t > 0.0f) ambiente = LUZ_AMBIENTE * 0.3f * (sem_energia ? SEM_ENERGIA_AMBIENTE : 1.0f);
+    if (posfx_comeca_reflexo(e)) { // a cena espelhada no chão (y = 0): câmera embaixo dele, olhando para cima
+        Camera3D espelho = e->camera;
+        espelho.position.y = -espelho.position.y;
+        espelho.target.y = -espelho.target.y;
+        BeginMode3D(espelho);
+        posfx_comeca_luz(e, pos, cor, cone, queda, n, ambiente);
+        posfx_olho(e, espelho.position);
+        nivel_desenha_reflexo(e);
+        criatura_desenha(e);
+        posfx_termina_luz(e);
+        nivel_desenha_emissivos(e);
+        EndMode3D();
+        posfx_termina_reflexo(e);
+    }
     BeginMode3D(e->camera);
     posfx_comeca_luz(e, pos, cor, cone, queda, n, ambiente);
     nivel_desenha(e);

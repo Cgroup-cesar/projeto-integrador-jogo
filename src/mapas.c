@@ -18,8 +18,8 @@ static CoresMaterial cores(TipoMaterial m) {
         return (CoresMaterial){{0x8c, 0x9c, 0x92, 255}, {0x24, 0x28, 0x24, 255}};
     case MATERIAL_AZULEJO: // esmalte verde-água; sujeira e rejunte escuros
         return (CoresMaterial){{0x5c, 0x7e, 0x76, 255}, {0x1c, 0x22, 0x20, 255}};
-    case MATERIAL_PISO:
-        return (CoresMaterial){{0x24, 0x2b, 0x26, 255}, {0x17, 0x16, 0x12, 255}};
+    case MATERIAL_PISO: // ladrilho cinza-esverdeado; a poeira e o rejunte, escuros
+        return (CoresMaterial){{0x3a, 0x44, 0x40, 255}, {0x18, 0x1a, 0x17, 255}};
     case MATERIAL_TETO: // a laje pintada; a mancha de infiltração, escura
         return (CoresMaterial){{0x5e, 0x68, 0x62, 255}, {0x1e, 0x22, 0x1e, 255}};
     case MATERIAL_METAL:

@@ -37,6 +37,13 @@ void posfx_contraluz(const Estado *e, Color cor, float intensidade);
 void posfx_material(const Estado *e, TipoMaterial m);
 void posfx_superficie(const Estado *e, float rugosidade, float metal);
 
+// O chão (entre comeca_luz e termina_luz): água em manchas e no rejunte, e o reflexo planar (true liga).
+void posfx_chao(const Estado *e, bool liga);
+
+// O passe espelhado do reflexo planar, ANTES da cena (fecha e reabre o alvo HDR). Devolve false sem reflexo.
+bool posfx_comeca_reflexo(const Estado *e);
+void posfx_termina_reflexo(const Estado *e);
+
 // Entre comeca_luz e termina_luz: o reflexo de água das luzes (chão molhado) no que for desenhado a seguir
 // (0 desliga). Também fora de rlPushMatrix/rlPopMatrix.
 void posfx_molhado(const Estado *e, float brilho);

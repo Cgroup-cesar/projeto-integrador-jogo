@@ -486,11 +486,15 @@ static void desenha_paredes(const Estado *e) {
     posfx_superficie(e, POSFX_RUGOSIDADE_PADRAO, 0.0f);
 }
 
-void nivel_desenha(const Estado *e) {
+// `com_chao`: false no passe espelhado (o chão é o espelho: ele não entra no próprio reflexo).
+static void desenha(const Estado *e, bool com_chao) {
     const Nivel *n = &e->nivel;
     float largura = MAPA_LARGURA * TAMANHO_CELULA, profundidade = MAPA_ALTURA * TAMANHO_CELULA;
-    texturas_caixa_mat(e, MATERIAL_PISO, (Vector3){largura * 0.5f, -0.05f, profundidade * 0.5f},
-                   (Vector3){largura, 0.1f, profundidade}, texturas_modo(MATERIAL_PISO, 0), WHITE);
+    posfx_chao(e, true);
+    if (com_chao)
+        texturas_caixa_mat(e, MATERIAL_PISO, (Vector3){largura * 0.5f, -0.05f, profundidade * 0.5f},
+                           (Vector3){largura, 0.1f, profundidade}, texturas_modo(MATERIAL_PISO, 0), WHITE);
+    posfx_chao(e, false);
     texturas_caixa_mat(e, MATERIAL_TETO,
                    (Vector3){largura * 0.5f, PE_DIREITO + 0.05f, profundidade * 0.5f},
                    (Vector3){largura, 0.1f, profundidade}, texturas_modo(MATERIAL_TETO, 0), WHITE);
@@ -504,6 +508,14 @@ void nivel_desenha(const Estado *e) {
     desenha_moveis(e);
     desenha_portas_e_duto(e);
     desenha_porta_da_sala(e);
+}
+
+void nivel_desenha(const Estado *e) {
+    desenha(e, true);
+}
+
+void nivel_desenha_reflexo(const Estado *e) {
+    desenha(e, false);
 }
 
 static Color cor_lampada(const Estado *e) {

@@ -14,6 +14,7 @@ static bool usa_glsl_100(void) {
 // Unidades de textura que a raylib não usa (ela usa a 0 e, no lote, da 1 à 4): os mapas ficam ligados nelas.
 #define UNIDADE_NORMAL 9
 #define UNIDADE_ORM    10
+#define UNIDADE_REFLEXO 11
 
 // A cena HDR: cor em ponto flutuante (16 bits por canal: o que passa de 1 não satura) e profundidade numa
 // textura (os passes de tela leem a distância de cada pixel).
@@ -56,6 +57,16 @@ static void cria_alvo(Recursos *rec, int largura_janela, int altura_janela) {
     rec->alvo_susto = LoadRenderTexture(w, h);
     SetTextureFilter(rec->alvo.texture, TEXTURE_FILTER_BILINEAR);
     rec->hdr = usa_glsl_100() ? (RenderTexture2D){0} : cria_hdr(w, h);
+    int rw = (int)(w * REFLEXO_ESCALA), rh = (int)(h * REFLEXO_ESCALA);
+    rec->reflexo = rec->hdr.id != 0 && REFLEXO_ESCALA > 0.0f ? cria_hdr(rw > 16 ? rw : 16, rh > 16 ? rh : 16)
+                                                             : (RenderTexture2D){0};
+    if (rec->reflexo.id != 0) { // os mipmaps são o borrado do reflexo no chão rugoso
+        int mips = 1;
+        rlGenTextureMipmaps(rec->reflexo.texture.id, rec->reflexo.texture.width, rec->reflexo.texture.height,
+                            rec->reflexo.texture.format, &mips);
+        rec->reflexo.texture.mipmaps = mips;
+        rlTextureParameters(rec->reflexo.texture.id, RL_TEXTURE_MIN_FILTER, RL_TEXTURE_FILTER_MIP_LINEAR);
+    }
     rec->alvo_largura = w;
     rec->alvo_altura = h;
 }
@@ -64,6 +75,7 @@ static void libera_alvo(Recursos *rec) {
     UnloadRenderTexture(rec->alvo);
     UnloadRenderTexture(rec->alvo_susto);
     libera_hdr(&rec->hdr);
+    libera_hdr(&rec->reflexo);
 }
 
 static void carrega_tom(Recursos *rec) {
@@ -93,9 +105,14 @@ static void carrega_luz(Recursos *rec) {
     rec->loc_luz_usa_mapas = GetShaderLocation(rec->luz, "usaMapas");
     rec->loc_luz_rugosidade = GetShaderLocation(rec->luz, "rugosidade");
     rec->loc_luz_metalico = GetShaderLocation(rec->luz, "metalico");
-    int normal = UNIDADE_NORMAL, orm = UNIDADE_ORM; // os samplers apontam sempre para as mesmas unidades
+    rec->loc_luz_reflexo = GetShaderLocation(rec->luz, "reflexo");
+    rec->loc_luz_agua = GetShaderLocation(rec->luz, "agua");
+    rec->loc_luz_tela = GetShaderLocation(rec->luz, "tela");
+    // os samplers apontam sempre para as mesmas unidades
+    int normal = UNIDADE_NORMAL, orm = UNIDADE_ORM, reflexo = UNIDADE_REFLEXO;
     SetShaderValue(rec->luz, GetShaderLocation(rec->luz, "mapaNormal"), &normal, SHADER_UNIFORM_INT);
     SetShaderValue(rec->luz, GetShaderLocation(rec->luz, "mapaOrm"), &orm, SHADER_UNIFORM_INT);
+    SetShaderValue(rec->luz, GetShaderLocation(rec->luz, "mapaReflexo"), &reflexo, SHADER_UNIFORM_INT);
     rec->loc_luz_cela_min = GetShaderLocation(rec->luz, "celaMin");
     rec->loc_luz_cela_max = GetShaderLocation(rec->luz, "celaMax");
     rec->loc_luz_cela_densidade = GetShaderLocation(rec->luz, "celaDensidade");
@@ -153,7 +170,11 @@ void posfx_comeca_luz(const Estado *e, const Vector3 *posicoes, const Vector3 *c
     SetShaderValueV(r->luz, r->loc_luz_queda, queda, SHADER_UNIFORM_FLOAT, LUZES_SHADER);
     SetShaderValue(r->luz, r->loc_luz_contraluz, &sem_contraluz, SHADER_UNIFORM_VEC3);
     float seco = 0.0f;
+    Vector2 tela = {(float)r->alvo_largura, (float)r->alvo_altura};
     SetShaderValue(r->luz, r->loc_luz_molhado, &seco, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(r->luz, r->loc_luz_reflexo, &seco, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(r->luz, r->loc_luz_agua, &seco, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(r->luz, r->loc_luz_tela, &tela, SHADER_UNIFORM_VEC2);
     SetShaderValue(r->luz, r->loc_luz_ambiente, &ambiente, SHADER_UNIFORM_FLOAT);
     SetShaderValue(r->luz, r->loc_luz_nevoa, &nevoa, SHADER_UNIFORM_FLOAT);
     SetShaderValue(r->luz, r->loc_luz_camera, &e->camera.position, SHADER_UNIFORM_VEC3);
@@ -212,6 +233,40 @@ void posfx_superficie(const Estado *e, float rugosidade, float metal) {
     SetShaderValue(r->luz, r->loc_luz_usa_mapas, &nao, SHADER_UNIFORM_FLOAT);
     SetShaderValue(r->luz, r->loc_luz_rugosidade, &rugosidade, SHADER_UNIFORM_FLOAT);
     SetShaderValue(r->luz, r->loc_luz_metalico, &metal, SHADER_UNIFORM_FLOAT);
+}
+
+// O chão: liga a água (manchas e rejunte) e o reflexo planar no que vem a seguir. Sem o alvo espelhado
+// (desligado ou sem HDR), só a água.
+void posfx_chao(const Estado *e, bool liga) {
+    const Recursos *r = &e->rec;
+    if (!r->luz_ok) return;
+    rlDrawRenderBatchActive();
+    float agua = liga ? AGUA_NO_CHAO : 0.0f, reflexo = liga && r->reflexo.id != 0 ? 1.0f : 0.0f;
+    SetShaderValue(r->luz, r->loc_luz_agua, &agua, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(r->luz, r->loc_luz_reflexo, &reflexo, SHADER_UNIFORM_FLOAT);
+}
+
+// O passe espelhado: fecha a cena HDR (nada foi desenhado nela ainda) e abre o alvo do reflexo.
+bool posfx_comeca_reflexo(const Estado *e) {
+    const Recursos *r = &e->rec;
+    if (r->reflexo.id == 0 || !r->luz_ok) return false;
+    EndTextureMode();
+    BeginTextureMode(r->reflexo);
+    ClearBackground(BLACK);
+    return true;
+}
+
+// Fecha o reflexo, refaz os mipmaps (o borrado), deixa ele ligado na unidade fixa e volta para a cena HDR.
+void posfx_termina_reflexo(const Estado *e) {
+    const Recursos *r = &e->rec;
+    EndTextureMode();
+    int mips = 1;
+    rlGenTextureMipmaps(r->reflexo.texture.id, r->reflexo.texture.width, r->reflexo.texture.height,
+                        r->reflexo.texture.format, &mips);
+    rlActiveTextureSlot(UNIDADE_REFLEXO);
+    rlEnableTexture(r->reflexo.texture.id);
+    rlActiveTextureSlot(0);
+    BeginTextureMode(r->hdr);
 }
 
 // Mesmo cuidado da contraluz: o lote pendente sai antes, com o brilho antigo.

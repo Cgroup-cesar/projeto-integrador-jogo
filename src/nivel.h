@@ -26,6 +26,7 @@ int nivel_luzes(const Estado *e, Vector3 *posicoes, Vector3 *cores, Vector4 *con
 
 void nivel_atualiza(Estado *e, float dt);
 void nivel_desenha(const Estado *e);           // geometria iluminada (dentro do shader de luz)
+void nivel_desenha_reflexo(const Estado *e);   // a mesma, sem o chão: o passe espelhado do reflexo
 void nivel_desenha_emissivos(const Estado *e); // lâmpadas, telas e LEDs (sem luz, brilham sozinhos)
 void nivel_desenha_vidro(const Estado *e);     // o vidro da contenção, transparente, por último
 

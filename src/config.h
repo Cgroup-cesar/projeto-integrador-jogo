@@ -282,6 +282,8 @@
 #define TEXTURA_METROS_TETO     2.0f  // 3 × 3 placas de forro
 #define TEXTURA_METROS_METAL    1.0f
 #define EXPOSICAO               1.6f  // multiplica a cena HDR antes do tone mapping (ACES)
+#define REFLEXO_ESCALA          0.5f  // o reflexo do chão, a esta fração da cena (0 = sem reflexo planar)
+#define AGUA_NO_CHAO            1.0f  // 0 = piso seco; 1 = manchas de água e o rejunte cheio
 #define TEXTURA_ARQUIVO_MAX_PX  1024  // PNG maior que isso (ou fora de potência de 2) é redimensionado
 #define BARRADO_ALTURA          1.45f // azulejo do chão até aqui (acima: reboco pintado, descascando)
 #define DECALQUE_PX             256   // manchas: 256 × 256; placas: 512 × 128
