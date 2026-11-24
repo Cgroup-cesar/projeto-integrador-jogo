@@ -77,6 +77,8 @@ static bool fase_com_camera(Fase f) {
 void cameras_atualiza(Estado *e, float dt) {
     if (!e->rec.tem_cameras) return;
     bool jogando = fase_com_camera(e->fase);
+    int motor = -1; // a câmera girando mais perto do jogador: é o motor dela que se ouve
+    float motor_dist = 1e9f, motor_tom = 1.0f;
     Vector3 alvo = Vector3Subtract(jogador_olho(e), (Vector3){0.0f, 0.2f, 0.0f}); // o peito
     for (int i = 0; i < N_ATIVAS; i++) { // padrão MAP: cada câmera persegue (ou não) o jogador
         float *giro = &e->camera_giro[i], *inclina = &e->camera_inclina[i];
@@ -84,8 +86,7 @@ void cameras_atualiza(Estado *e, float dt) {
         bool ve = jogando && ve_jogador(e, i, eixo, alvo);
         bool em_repouso = fabsf(*giro) < 0.05f && fabsf(*inclina) < 0.05f;
         if (!ve && em_repouso && e->camera_perdeu_t[i] > CAMERA_ESPERA_S) { // parada e sem ninguém: nada a
-            e->camera_som_t[i] = 0.0f;                                         // fazer (quase sempre)
-            e->camera_ve_t[i] = 0.0f;
+            e->camera_ve_t[i] = 0.0f;                                          // fazer (quase sempre)
             continue;
         }
         float *mira_giro = &e->camera_mira_giro[i], *mira_inclina = &e->camera_mira_inclina[i];
@@ -111,14 +112,19 @@ void cameras_atualiza(Estado *e, float dt) {
         *mira_inclina += (quer_inclina - *mira_inclina) * k;
         float passo = CAMERA_VELOCIDADE * dt;
         float andou = aproxima(giro, *mira_giro, dt) + aproxima(inclina, *mira_inclina, dt);
-        bool mexendo = andou > passo * 0.08f;
-        e->camera_som_t[i] = mexendo ? e->camera_som_t[i] - dt : 0.0f;
-        if (mexendo && e->camera_som_t[i] <= 0.0f) { // o zumbido do motor, refeito enquanto ela gira
-            e->camera_som_t[i] = CAMERA_SOM_INTERVALO;
-            float tom = 0.9f + 0.25f * Clamp(andou / passo, 0.0f, 1.0f);
-            audio_toca_em(e, SOM_CAMERA_MOTOR, eixo, CAMERA_SOM_ALCANCE_M, tom);
+        float dist = Vector3Distance(eixo, alvo);
+        if (andou > passo * 0.08f && dist < motor_dist) { // girando: candidata ao som do motor
+            motor = i;
+            motor_dist = dist;
+            motor_tom = 0.92f + 0.16f * Clamp(andou / passo, 0.0f, 1.0f); // mais rápido, mais agudo
         }
     }
+    // o motor soa enquanto alguma câmera gira (contínuo: um arquivo longo toca inteiro) e cala quando para
+    e->camera_motor_parado_t = motor >= 0 ? 0.0f : e->camera_motor_parado_t + dt;
+    if (motor >= 0)
+        audio_mantem_em(e, SOM_CAMERA_MOTOR, eixo_de(&CAMERAS[motor]), CAMERA_SOM_ALCANCE_M, motor_tom);
+    else if (e->camera_motor_parado_t > 0.12f)
+        audio_para(e, SOM_CAMERA_MOTOR);
 }
 
 void cameras_carrega(Recursos *rec) {
