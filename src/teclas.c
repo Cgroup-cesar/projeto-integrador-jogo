@@ -2,6 +2,7 @@
 // bilhete). Na partida, a tela fica limpa: só um "B Comandos" pequeno no canto inferior esquerdo, e o B abre
 // e fecha a lista das teclas logo acima dele. No menu e nas telas depois do final, a barra do rodapé.
 #include "teclas.h"
+#include "botoes.h"
 #include "rodadas.h"
 #include "susto.h"
 #include "ui.h"
@@ -106,6 +107,28 @@ static int itens_do_contexto(const Estado *e, TeclaAcao *t) {
     }
 }
 
+// ================================================================== controle
+// Com o controle em uso, o rótulo da tecla vira o botão (as setas ficam: são o direcional). Devolve NULL
+// para o que não tem botão próprio (o atalho "1 2 3" do painel: lá o direcional + A já faz tudo).
+typedef struct {
+    const char *tecla, *botao;
+} TeclaBotao;
+
+static const TeclaBotao BOTOES[] = {
+    {"WASD", "L"}, {"MOUSE", "R"}, {"SHIFT", "LB"}, {"E", "A"}, {"ENTER", "A"}, {"ESPAÇO", "A"},
+    {"ESC", "B"},  {"F", "Y"},     {"H", "VIEW"},   {"1", "X"}, {"2", "Y"},     {"B", "RB"},
+};
+
+static const char *rotulo(const Estado *e, const TeclaAcao *t) {
+    if (!e->in.controle) return t->tecla;
+    if (strcmp(t->tecla, "1 2 3") == 0) return NULL;
+    if (strcmp(t->tecla, "ESC") == 0 && t->acao == TXT_TECLA_PAUSA) return "START"; // andando, o B não pausa
+    int total = (int)(sizeof(BOTOES) / sizeof(BOTOES[0]));
+    for (int i = 0; i < total; i++) // padrão FOLD: o botão desta tecla (ou ela mesma, se for seta)
+        if (strcmp(BOTOES[i].tecla, t->tecla) == 0) return BOTOES[i].botao;
+    return t->tecla;
+}
+
 // ================================================================== desenho de uma tecla
 static void seta(Vector2 c, float r, int direcao, Color cor) { // 0 cima, 1 baixo, 2 esquerda, 3 direita
     Vector2 a, b, d;
@@ -124,8 +147,20 @@ static void seta(Vector2 c, float r, int direcao, Color cor) { // 0 cima, 1 baix
     DrawTriangle(a, b, d, cor);
 }
 
+// No controle, o botão desenhado (assets/botoes/), com sombra, centrado na altura da tecla. Devolve a largura
+// usada, ou 0 se não houver ícone (aí a tecla vira a caixinha com o nome).
+static float icone(const Estado *e, const char *rotulo, Vector2 pos, float altura, Color cor) {
+    if (!e->in.controle) return 0;
+    float s = ui_escala(), h = altura * 1.15f, y = pos.y - (h - altura) * 0.5f;
+    float largura = botoes_desenha(e, rotulo, (Vector2){pos.x + 2 * s, y + 3 * s}, h, Fade(BLACK, 0.8f));
+    if (largura > 0) botoes_desenha(e, rotulo, (Vector2){pos.x, y}, h, cor);
+    return largura;
+}
+
 // Desenha a tecla como uma tecla de verdade (caixinha com borda) e devolve a largura usada.
 static float tecla(const Estado *e, const char *rotulo, Vector2 pos, float altura, Color cor) {
+    float usada = icone(e, rotulo, pos, altura, cor);
+    if (usada > 0) return usada;
     float s = ui_escala(), tamanho = altura * 0.55f;
     int setas = strcmp(rotulo, "SETAS_V") == 0   ? 2
                 : strcmp(rotulo, "SETAS_H") == 0 ? 2
@@ -182,8 +217,10 @@ static void desenha_barra(const Estado *e, bool faixa, float k) {
         DrawRectangle(0, (int)(y - 10 * s), GetScreenWidth(), (int)(altura + 22 * s), (Color){4, 7, 5, 235});
     float x = 90 * s; // na margem do texto do menu e do HUD
     for (int i = 0; i < n; i++) { // padrão MAP: cada tecla com o que ela faz agora
+        const char *nome = rotulo(e, &itens[i]);
+        if (nome == NULL) continue;
         float x0 = x;
-        x += tecla(e, itens[i].tecla, (Vector2){x, y}, altura, COR_FOSFORO) + 8 * s;
+        x += tecla(e, nome, (Vector2){x, y}, altura, COR_FOSFORO) + 8 * s;
         const char *acao = dialogo_texto(itens[i].acao);
         if (!faixa) ui_texto(e, acao, (Vector2){x + 1.5f * s, y + altura * 0.22f + 1.5f * s}, 17 * s, BLACK);
         ui_texto(e, acao, (Vector2){x, y + altura * 0.22f}, 17 * s, RAYWHITE);
@@ -222,16 +259,19 @@ static void brilho(const Estado *e, const char *rotulo, Vector2 pos, float altur
 
 // Uma linha: a tecla e o que ela faz, com sombra (fica por cima da cena). Devolve a largura usada.
 // `destaque` (0..1) acende o brilho em volta e puxa a tecla e o texto para o amarelo (a dica da lanterna).
-static float linha_comando(const Estado *e, const char *rotulo, const char *acao, Vector2 pos, float k,
+// `item` é a tecla do teclado: no controle, o desenho mostra o botão, mas o clique continua sendo a tecla.
+static float linha_comando(const Estado *e, const TeclaAcao *item, const char *acao, Vector2 pos, float k,
                            float destaque) {
     float s = ui_escala() * k, altura = 30 * s, x = pos.x;
-    brilho(e, rotulo, pos, altura, destaque);
-    x += tecla(e, rotulo, pos, altura, ColorLerp(COR_FOSFORO, DICA_LANTERNA_COR, destaque)) + 8 * s;
+    const char *nome = rotulo(e, item);
+    if (nome == NULL) return 0;
+    brilho(e, nome, pos, altura, destaque);
+    x += tecla(e, nome, pos, altura, ColorLerp(COR_FOSFORO, DICA_LANTERNA_COR, destaque)) + 8 * s;
     Vector2 t = {x, pos.y + altura * 0.22f};
     ui_texto(e, acao, (Vector2){t.x + 1.5f * s, t.y + 1.5f * s}, 17 * s, BLACK);
     ui_texto(e, acao, t, 17 * s, ColorLerp(Fade(RAYWHITE, 0.85f), DICA_LANTERNA_COR, destaque));
     x += ui_mede(e, acao, 17 * s).x;
-    TeclaClique c = tecla_clicavel(rotulo);
+    TeclaClique c = tecla_clicavel(item->tecla);
     if (c != TECLA_NENHUMA) clique_area(CLIQUE_TECLA, c, (Rectangle){pos.x, pos.y, x - pos.x, altura});
     return x - pos.x;
 }
@@ -239,34 +279,36 @@ static float linha_comando(const Estado *e, const char *rotulo, const char *acao
 // Aberta, a lista sobe do B, numa caixa escura translúcida, uma tecla por linha.
 static void desenha_lista(const Estado *e, float y_base, float k) {
     TeclaAcao itens[MAX_ITENS];
-    int n = itens_do_contexto(e, itens);
+    int total = itens_do_contexto(e, itens), n = 0;
+    for (int i = 0; i < total; i++) // padrão FILTER: no controle, sai o que não tem botão ("1 2 3")
+        if (rotulo(e, &itens[i]) != NULL) itens[n++] = itens[i];
     if (n == 0) return; // nada vale agora (ele está indo embora do armário): só o B
     float s = ui_escala() * k, passo = 38 * s, margem = 10 * s, x = 24 * ui_escala();
     float topo = y_base - n * passo - margem, largura = 0.0f;
     for (int i = 0; i < n; i++) { // padrão FOLD: a linha mais larga dá a largura da caixa
         const char *acao = dialogo_texto(itens[i].acao);
         float l =
-            ui_mede(e, acao, 17 * s).x + fmaxf(30 * s, ui_mede(e, itens[i].tecla, 16.5f * s).x + 16 * s);
+            ui_mede(e, acao, 17 * s).x + fmaxf(30 * s, ui_mede(e, rotulo(e, &itens[i]), 16.5f * s).x + 16 * s);
         largura = fmaxf(largura, l + 8 * s + 22 * s); // a seta desenhada é mais larga que o rótulo
     }
     DrawRectangleRounded((Rectangle){x - margem, topo - margem, largura + 2 * margem, n * passo + margem},
                          0.08f, 4, (Color){4, 7, 5, 190});
     for (int i = 0; i < n; i++) // padrão MAP: cada tecla com o que ela faz agora
-        linha_comando(e, itens[i].tecla, dialogo_texto(itens[i].acao), (Vector2){x, topo + i * passo}, k,
-                      0.0f);
+        linha_comando(e, &itens[i], dialogo_texto(itens[i].acao), (Vector2){x, topo + i * passo}, k, 0.0f);
 }
 
 void teclas_desenha(const Estado *e) {
     if (!jogando(e) || e->pausado || susto_ativo(e)) return;
     float k = TECLAS_ESCALA_JOGO, s = ui_escala() * k, y = GetScreenHeight() - 30 * s - 18 * ui_escala();
-    TextoId rotulo = e->comandos_abertos ? TXT_TECLA_FECHAR : TXT_TECLA_COMANDOS;
+    const TeclaAcao comandos = {"B", e->comandos_abertos ? TXT_TECLA_FECHAR : TXT_TECLA_COMANDOS};
+    const TeclaAcao lanterna = {"F", TXT_TECLA_LANTERNA};
     float x = 24 * ui_escala();
-    x += linha_comando(e, "B", dialogo_texto(rotulo), (Vector2){x, y}, k, 0.0f) + 20 * s;
+    x += linha_comando(e, &comandos, dialogo_texto(comandos.acao), (Vector2){x, y}, k, 0.0f) + 20 * s;
     // A lanterna sempre à vista: é a tecla que mais se esquece. Até a 1ª vez que acende, pulsa em amarelo.
     float pulso = 0.5f - 0.5f * cosf(e->tempo_total * 2.0f * PI * DICA_LANTERNA_HZ);
     float destaque = e->lanterna.ja_acesa ? 0.0f : pulso;
     if (e->jog.modo == MODO_ANDANDO)
-        linha_comando(e, "F", dialogo_texto(TXT_TECLA_LANTERNA), (Vector2){x, y}, k, destaque);
+        linha_comando(e, &lanterna, dialogo_texto(lanterna.acao), (Vector2){x, y}, k, destaque);
     if (e->comandos_abertos) desenha_lista(e, y - 8 * s, k);
 }
 

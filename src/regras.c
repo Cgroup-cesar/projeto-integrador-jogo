@@ -149,6 +149,15 @@ Vector3 regras_nova_posicao(Vector3 pos, float yaw, Vector2 mover, float velocid
     return Vector3Add(pos, Vector3Scale(direcao, velocidade * dt / tamanho));
 }
 
+// O analógico nunca volta exatamente a zero e é mais sensível do que precisa perto do centro: a zona morta
+// tira a deriva e a curva dá precisão para mirar devagar sem perder a volta rápida.
+Vector2 regras_analogico(Vector2 bruto, float zona_morta, float curva) {
+    float tamanho = Vector2Length(bruto);
+    if (tamanho <= zona_morta || zona_morta >= 1.0f) return (Vector2){0.0f, 0.0f};
+    float util = fminf((tamanho - zona_morta) / (1.0f - zona_morta), 1.0f);
+    return Vector2Scale(bruto, powf(util, curva) / tamanho);
+}
+
 // [REQ:PURA-regras_criatura_ve_jogador] cone de 70° e 14 m; o raycast contra as paredes chega pronto
 bool regras_criatura_ve_jogador(Vector3 olho, Vector3 frente, Vector3 alvo, bool caminho_livre,
                                 bool escondido) {

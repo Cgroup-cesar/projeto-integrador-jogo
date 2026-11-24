@@ -355,7 +355,7 @@ void jogo_atualiza(Estado *e, float dt) {
     }
     bool anda_livre = e->fase != FASE_MENU && e->fase != FASE_FIM_BOM && e->fase != FASE_FIM_RUIM &&
                       !(e->fase == FASE_INTRO && e->intro.etapa != INTRO_RADIO);
-    if (e->in.voltar && anda_livre && e->jog.modo == MODO_ANDANDO) {
+    if (e->in.pausa && anda_livre && e->jog.modo == MODO_ANDANDO) { // Esc ou Start (o B não pausa)
         e->pausado = true;
         e->menu.cursor = 0;
         return;

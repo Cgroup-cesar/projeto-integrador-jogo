@@ -13,14 +13,16 @@
 #include "regras_animacao.h"
 
 // ------------------------------------------------------------------ entrada do quadro
-// main.c lê teclado e mouse e preenche isto; os módulos só leem daqui.
+// main.c lê teclado e mouse, controle.c soma o controle, e preenche isto; os módulos só leem daqui.
 // No modo --smoke, quem preenche é o piloto automático.
 typedef struct {
     Vector2 mover; // x: lado (A/D), y: frente (W/S)
     Vector2 mouse; // deslocamento do mouse no quadro
+    Vector2 olhar; // analógico direito já com zona morta e curva (-1..1); vira giro por segundo
     bool correr;
     bool interagir;
-    bool voltar;
+    bool voltar; // Esc ou B: sai do terminal, do painel, do bilhete; fecha a pausa
+    bool pausa;  // Esc ou Start: pausa a partida andando (o B sozinho não pausa)
     bool confirmar;
     bool cima, baixo, esquerda, direita;
     bool tecla1, tecla2, tecla3;
@@ -38,6 +40,7 @@ typedef struct {
     bool ponteiro_livre; // o cursor está à mostra
     bool ponteiro_moveu; // passou por cima de uma opção: ela fica escolhida
     bool clique;         // botão esquerdo: escolhe e confirma
+    bool controle;       // a última coisa mexida foi o controle: as dicas mostram os botões dele
 } Entrada;
 
 // ------------------------------------------------------------------ recursos carregados uma vez
@@ -120,6 +123,8 @@ typedef struct {
     Texture2D halo;             // brilho radial das lâmpadas
     Texture2D fita[FITA_FOTOS]; // fotos do avistamento (fita.c); opcionais: sem elas, a intro fica preta
     bool tem_fita[FITA_FOTOS];
+    Texture2D botao[BOTOES_TOTAL]; // ícones do controle (botoes.c); opcionais: sem eles, o botão vira texto
+    bool tem_botao[BOTOES_TOTAL];
 } Recursos;
 
 // ------------------------------------------------------------------ nível (gerado do mapa ASCII)
