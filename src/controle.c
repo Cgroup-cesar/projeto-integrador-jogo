@@ -70,6 +70,7 @@ static void le_botoes(int c, Entrada *in) {
     in->tecla1 = in->tecla1 || apertou(c, GAMEPAD_BUTTON_RIGHT_FACE_LEFT); // X: LUZ A, chave A
     in->tecla2 = in->tecla2 || apertou(c, GAMEPAD_BUTTON_RIGHT_FACE_UP);   // Y: LUZ B, chave B
     in->ajuda = in->ajuda || apertou(c, GAMEPAD_BUTTON_MIDDLE_LEFT);
+    in->comandos = in->comandos || apertou(c, GAMEPAD_BUTTON_RIGHT_TRIGGER_1); // RB: a lista de comandos
     in->cima = in->cima || apertou(c, GAMEPAD_BUTTON_LEFT_FACE_UP);
     in->baixo = in->baixo || apertou(c, GAMEPAD_BUTTON_LEFT_FACE_DOWN);
     in->esquerda = in->esquerda || apertou(c, GAMEPAD_BUTTON_LEFT_FACE_LEFT);
