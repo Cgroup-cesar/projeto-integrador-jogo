@@ -16,6 +16,8 @@ typedef struct {
     Color base, secundaria; // a mistura do pixel vai de uma à outra
 } CoresMaterial;
 
+static const Color COR_TIJOLO = {0x4a, 0x30, 0x26, 255}; // onde a parede descascou até o tijolo
+
 static CoresMaterial cores(TipoMaterial m) {
     switch (m) {
     case MATERIAL_CONCRETO:
@@ -38,10 +40,10 @@ static unsigned char canal(float valor) {
 }
 
 static Color cor_do_pixel(CoresMaterial c, PixelMaterial p) {
-    float t = Clamp(p.mistura, 0.0f, 1.0f);
-    return (Color){canal(Lerp(c.base.r, c.secundaria.r, t) * p.brilho),
-                   canal(Lerp(c.base.g, c.secundaria.g, t) * p.brilho),
-                   canal(Lerp(c.base.b, c.secundaria.b, t) * p.brilho), 255};
+    float t = Clamp(p.mistura, 0.0f, 1.0f), k = Clamp(p.tijolo, 0.0f, 1.0f);
+    return (Color){canal(Lerp(Lerp(c.base.r, c.secundaria.r, t), COR_TIJOLO.r, k) * p.brilho),
+                   canal(Lerp(Lerp(c.base.g, c.secundaria.g, t), COR_TIJOLO.g, k) * p.brilho),
+                   canal(Lerp(Lerp(c.base.b, c.secundaria.b, t), COR_TIJOLO.b, k) * p.brilho), 255};
 }
 
 // ------------------------------------------------------------------ geração (só no carregamento)
@@ -176,6 +178,11 @@ void texturas_carrega(Recursos *rec) {
         sobe(gera_mancha(DECALQUE_UMIDADE, (Color){0x10, 0x13, 0x0d, 255}, TEXTURA_SEMENTE), false);
     rec->decalque[DECALQUE_ARRASTO] =
         sobe(gera_mancha(DECALQUE_ARRASTO, (Color){0x0c, 0x08, 0x06, 255}, TEXTURA_SEMENTE), false);
+    rec->decalque[DECALQUE_POEIRA] =
+        sobe(gera_mancha(DECALQUE_POEIRA, (Color){0x14, 0x12, 0x0e, 255}, TEXTURA_SEMENTE + 9u), false);
+    for (int d = DECALQUE_MOLHADO; d <= DECALQUE_POCA; d++) // carregamento: as manchas de água
+        rec->decalque[d] =
+            sobe(gera_mancha((Decalque)d, (Color){0x05, 0x07, 0x08, 255}, TEXTURA_SEMENTE + 7u), false);
     char caminho[512]; // o sangue só existe como arquivo: sem ele, a textura fica vazia e não é desenhada
     if (ui_caminho_asset("texturas/sangue.png", caminho, sizeof(caminho))) {
         Image sangue = LoadImage(caminho);

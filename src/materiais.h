@@ -27,6 +27,11 @@ typedef enum {
     DECALQUE_CAIXA_2,  // "CHÃ DE ALEGRIA - PE"
     DECALQUE_UMIDADE,  // mancha de umidade com escorridos (parede)
     DECALQUE_ARRASTO,  // marcas de arrasto saindo do duto (chão)
+    DECALQUE_MOLHADO,   // chão molhado: borrão irregular, com ilhas secas no meio (chão)
+    DECALQUE_ESCORRIDO, // água que escorreu: um filete torto que alarga e empoça no fim (chão)
+    DECALQUE_RESPINGO,  // respingos: gotas soltas em volta de uma mancha pequena (chão)
+    DECALQUE_POCA,      // poça d'água parada, de borda nítida (chão, embaixo da goteira)
+    DECALQUE_POEIRA,    // poeira e sujeira acumuladas no pé da parede (chão; v = 0 encostado nela)
     DECALQUE_SANGUE,   // respingo de sangue (assets/texturas/sangue.png; sem o arquivo, não aparece)
     DECALQUE_TOTAL
 } Decalque;
@@ -36,6 +41,7 @@ typedef enum {
 typedef struct {
     float brilho;  // multiplica a cor base (≈1 = a cor da paleta)
     float mistura; // 0 = cor base, 1 = cor secundária
+    float tijolo;  // 0..1: o tijolo aparecendo por baixo (por cima das outras duas cores)
 } PixelMaterial;
 
 // Número em [0, 1) a partir de um ponto inteiro da grade e da semente (sem rand()).

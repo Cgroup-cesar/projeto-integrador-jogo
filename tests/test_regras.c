@@ -432,6 +432,10 @@ static void testa_decalques(void) {
     CHECK(materiais_mancha(DECALQUE_ARRASTO, 0.5f, 1.0f, 1u) == 0.0f);
     CHECK(materiais_mancha(DECALQUE_UMIDADE, 0.5f, 0.35f, 1u) > 0.3f); // e existe no meio
     CHECK(materiais_mancha(DECALQUE_POSTO, 0.5f, 0.5f, 1u) == 0.0f);   // placa de texto não é mancha
+    for (int d = DECALQUE_MOLHADO; d <= DECALQUE_POEIRA; d++) { // padrão MAP: água e poeira somem na borda
+        CHECK(materiais_mancha((Decalque)d, 0.0f, 0.5f, 1u) == 0.0f);
+        CHECK(materiais_mancha((Decalque)d, 0.5f, 1.0f, 1u) == 0.0f);
+    }
     float minimo = 1.0f, maximo = 0.0f;
     // padrão FOLD: faixa do desgaste da tinta de estêncil
     for (int i = 0; i < 256; i++) {

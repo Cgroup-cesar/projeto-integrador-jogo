@@ -17,6 +17,7 @@ static const char *const NOMES[SOM_TOTAL] = {
     "passo_criatura",  "vidro_estalo",     "estrondo",       "alarme",
     "respiracao",      "ambiente_sala",    "ambiente_saida", "papel",
     "energia",         "distorcao",        "jumpscare",      "respiracao_ofegante",
+    "gota",
 };
 
 // ================================================================== ferramentas de síntese
@@ -125,6 +126,18 @@ static void passo_pesado(Buffer *b) {
     }
 }
 
+// Pingo na poça: o "plim" de uma bolha (o tom sobe rápido e some) e um toque seco na água.
+static void gota(Buffer *b) {
+    float fase = 0.0f;
+    for (int i = 0; i < b->n; i++) {
+        float t = (float)i / TAXA;
+        fase += DOIS_PI * (700.0f + 1300.0f * (1.0f - expf(-t * 55.0f))) / TAXA;
+        float bolha = expf(-t * 32.0f) * sinf(fase);
+        float toque = expf(-t * 380.0f) * ruido();
+        b->amostras[i] = 0.6f * bolha + 0.3f * toque;
+    }
+}
+
 static void estalo(Buffer *b) { // estalo de vidro: ruído seco e parciais agudos que soam um pouco
     for (int i = 0; i < b->n; i++) {
         float t = (float)i / TAXA;
@@ -207,7 +220,8 @@ static void distorcao(Buffer *b) {
 // ================================================================== montagem
 static float duracao(IdSom som) {
     static const float d[SOM_TOTAL] = {1.0f, 1.6f, 0.6f, 0.5f, 0.25f, 0.05f, 0.06f, 0.14f, 0.3f, 0.45f,
-                                       1.2f, 1.0f, 2.0f, 4.0f, 4.0f,  0.3f,  1.2f,  1.0f,  1.2f};
+                                       1.2f, 1.0f, 2.0f, 4.0f, 4.0f,  0.3f,  1.2f,  1.0f,  1.2f,
+                                       0.0f, 0.3f}; // a respiração ofegante só existe como arquivo
     return d[som];
 }
 
@@ -240,6 +254,9 @@ static void sintetiza(IdSom som, Buffer *b) {
         break;
     case SOM_PASSO_CRIATURA:
         passo_pesado(b);
+        break;
+    case SOM_GOTA:
+        gota(b);
         break;
     case SOM_VIDRO_ESTALO:
         estalo(b);

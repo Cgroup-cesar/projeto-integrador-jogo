@@ -60,6 +60,7 @@ typedef struct {
     Shader luz;
     bool luz_ok;
     int loc_luz_pos, loc_luz_cor, loc_luz_ambiente, loc_luz_nevoa, loc_luz_camera, loc_luz_modelo;
+    int loc_luz_molhado, loc_luz_relevo;
     int loc_luz_cone, loc_luz_contraluz, loc_luz_queda;
     int loc_luz_cela_min, loc_luz_cela_max, loc_luz_cela_densidade, loc_luz_cela_cor, loc_luz_cela_espalha;
     int loc_luz_cela_lanterna;
@@ -320,6 +321,7 @@ typedef struct Estado {
     float sanidade_barra;    // o que a barra mostra: desce junto, sobe suave nos bônus
     float sanidade_eco;      // o pedaço recém-perdido (mais escuro), que alcança a barra devagar
     int sanidade_conectivos; // conectivos decifrados no quadro anterior (para dar o bônus uma vez só)
+    int goteira_gota;        // a última gota da goteira que já pingou (para tocar o som uma vez só)
     bool modo_smoke, modo_feira;
     float tempo_inativo;
 

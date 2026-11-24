@@ -10,6 +10,7 @@
 #define TEXTO(x)    #x
 #define TEXTO_DE(x) TEXTO(x)
 #define N_LUZES     TEXTO_DE(LUZES_SHADER)
+#define BRILHO_AGUA "90.0" // expoente do reflexo no chão molhado: maior = ponto de luz menor e mais nítido
 // Até LUZES_SHADER luzes pontuais, ambiente bem baixo e névoa exponencial quase preta. A normal sai das
 // derivadas da posição (sombreado chapado, bom para low-poly); na versão 100 só há atenuação por distância.
 // luzCone[i]: xyz = direção do holofote, w = cosseno da meia-abertura (w < -1: luz pontual comum); fora
@@ -33,7 +34,7 @@ static const char *LUZ_FS_330 =
     "uniform vec3 luzPos[" N_LUZES "]; uniform vec3 luzCor[" N_LUZES "]; uniform vec4 luzCone[" N_LUZES "];\n"
     "uniform float luzQueda[" N_LUZES "];\n"
     "uniform float ambiente; uniform float nevoa; uniform vec3 camera;\n"
-    "uniform vec3 contraluz;\n"
+    "uniform vec3 contraluz; uniform float molhado; uniform float relevo;\n"
     "out vec4 finalColor;\n"
     "float foco(vec4 cone, vec3 paraLuz) {\n"
     "    if (cone.w < -1.0) return 1.0;\n"
@@ -77,17 +78,35 @@ static const char *LUZ_FS_330 =
     "    vec3 n = normalize(cross(dFdx(fragPosition), dFdy(fragPosition)));\n"
     "    vec3 paraCamera = camera - fragPosition;\n"
     "    if (dot(n, paraCamera) < 0.0) n = -n;\n"
-    "    vec3 luz = vec3(ambiente);\n"
+    // relevo tirado da própria textura (o escuro é fundo: rachaduras, juntas, o descascado), sem mapa de
+    // normais nem tangentes: o gradiente da altura na tela vira inclinação da normal (Mikkelsen, 2010).
+    // A água é lisa: no molhado, sem relevo.
+    "    float altura = dot(texture(texture0, fragTexCoord).rgb, vec3(0.3, 0.59, 0.11));\n"
+    "    vec3 dpx = dFdx(fragPosition), dpy = dFdy(fragPosition);\n"
+    "    vec3 r1 = cross(dpy, n), r2 = cross(n, dpx);\n"
+    "    float det = dot(dpx, r1);\n"
+    "    vec3 grad = sign(det) * (dFdx(altura) * r1 + dFdy(altura) * r2);\n"
+    "    n = normalize(abs(det) * n - relevo * (1.0 - step(0.001, molhado)) * grad);\n"
+    "    vec3 vista = normalize(paraCamera);\n"
+    "    vec3 luz = vec3(ambiente), brilho = vec3(0.0);\n"
     "    for (int i = 0; i < " N_LUZES "; i++) {\n"
     "        vec3 l = luzPos[i] - fragPosition;\n"
     "        float d = length(l);\n"
     "        vec3 dir = l / max(d, 0.001);\n"
-    "        float atenua = 1.0 / (1.0 + luzQueda[i] * (0.09 * d + 0.07 * d * d));\n"
+    "        float atenua = foco(luzCone[i], dir) / (1.0 + luzQueda[i] * (0.09 * d + 0.07 * d * d));\n"
     "        float difusa = max(dot(n, dir), 0.0) * 0.85 + 0.15;\n"
-    "        luz += luzCor[i] * atenua * difusa * foco(luzCone[i], dir);\n"
+    "        luz += luzCor[i] * atenua * difusa;\n"
+    // chão molhado: o reflexo de cada luz (lanterna, lâmpadas) num ponto, como na água parada
+    "        if (molhado > 0.0)\n"
+    "            brilho += luzCor[i] * atenua *\n"
+    "                      pow(max(dot(n, normalize(dir + vista)), 0.0), " BRILHO_AGUA ");\n"
     "    }\n"
-    "    float borda = 1.0 - clamp(dot(n, normalize(paraCamera)), 0.0, 1.0);\n"
-    "    vec3 cor = nevoaDaCela(base.rgb * luz + contraluz * pow(borda, 2.5), fragPosition);\n"
+    "    float borda = 1.0 - clamp(dot(n, vista), 0.0, 1.0);\n"
+    // água: vista de lado, ela reflete o ambiente (Fresnel); de cima, quase só o escuro do chão
+    "    float fresnel = 0.03 + 0.97 * pow(borda, 5.0);\n"
+    "    vec3 agua = (brilho + luz * fresnel * 0.3) * molhado;\n"
+    "    vec3 cor = base.rgb * luz + agua + contraluz * pow(borda, 2.5);\n"
+    "    cor = nevoaDaCela(cor, fragPosition);\n"
     "    float fator = clamp(1.0 - exp(-nevoa * length(paraCamera)), 0.0, 1.0);\n"
     "    finalColor = vec4(mix(cor, vec3(0.012, 0.016, 0.013), fator), base.a);\n"
     "}\n";
@@ -111,7 +130,7 @@ static const char *LUZ_FS_100 =
     "uniform vec3 luzPos[" N_LUZES "]; uniform vec3 luzCor[" N_LUZES "]; uniform vec4 luzCone[" N_LUZES "];\n"
     "uniform float luzQueda[" N_LUZES "];\n"
     "uniform float ambiente; uniform float nevoa; uniform vec3 camera;\n"
-    "uniform vec3 contraluz;\n"
+    "uniform vec3 contraluz; uniform float molhado; uniform float relevo;\n"
     "float foco(vec4 cone, vec3 paraLuz) {\n"
     "    if (cone.w < -1.0) return 1.0;\n"
     "    return mix(0.15, 1.0, smoothstep(cone.w, cone.w + 0.06, dot(-paraLuz, cone.xyz)));\n"
@@ -151,18 +170,23 @@ static const char *LUZ_FS_100 =
     "}\n"
     "void main() {\n"
     "    vec4 base = texture2D(texture0, fragTexCoord) * colDiffuse * fragColor;\n"
-    "    vec3 luz = vec3(ambiente);\n"
+    "    vec3 luz = vec3(ambiente), brilho = vec3(0.0);\n"
+    "    vec3 vista = normalize(camera - fragPosition);\n"
     "    for (int i = 0; i < " N_LUZES "; i++) {\n"
     "        vec3 l = luzPos[i] - fragPosition;\n"
     "        float d = length(l);\n"
     "        vec4 cone = luzCone[i];\n"
     "        float foco = cone.w < -1.0 ? 1.0\n"
     "            : mix(0.15, 1.0, smoothstep(cone.w, cone.w + 0.06, dot(-l / max(d, 0.001), cone.xyz)));\n"
-    "        luz += luzCor[i] * foco / (1.0 + luzQueda[i] * (0.09 * d + 0.07 * d * d));\n"
+    "        float atenua = foco / (1.0 + luzQueda[i] * (0.09 * d + 0.07 * d * d));\n"
+    "        luz += luzCor[i] * atenua;\n"
+    // sem normal na versão 100: o molhado só existe no chão, então a normal é para cima
+    "        vec3 meio = normalize(l / max(d, 0.001) + vista);\n"
+    "        if (molhado > 0.0) brilho += luzCor[i] * atenua * pow(max(meio.y, 0.0), " BRILHO_AGUA ");\n"
     "    }\n"
-    "    vec3 cor = nevoaDaCela(base.rgb * luz + contraluz * 0.2, fragPosition);\n" // sem normal na versão
-                                                                                    // 100: um brilho fraco
-                                                                                    // por igual
+    // contraluz: sem normal na versão 100, um brilho fraco por igual
+    "    vec3 agua = (brilho + luz * (0.03 + 0.97 * pow(1.0 - max(vista.y, 0.0), 5.0)) * 0.3) * molhado;\n"
+    "    vec3 cor = nevoaDaCela(base.rgb * luz + agua + contraluz * 0.2, fragPosition);\n"
     "    float fator = clamp(1.0 - exp(-nevoa * length(camera - fragPosition)), 0.0, 1.0);\n"
     "    gl_FragColor = vec4(mix(cor, vec3(0.012, 0.016, 0.013), fator), base.a);\n"
     "}\n";
@@ -200,6 +224,8 @@ static void carrega_luz(Recursos *rec) {
     rec->loc_luz_cone = GetShaderLocation(rec->luz, "luzCone");
     rec->loc_luz_queda = GetShaderLocation(rec->luz, "luzQueda");
     rec->loc_luz_contraluz = GetShaderLocation(rec->luz, "contraluz");
+    rec->loc_luz_molhado = GetShaderLocation(rec->luz, "molhado");
+    rec->loc_luz_relevo = GetShaderLocation(rec->luz, "relevo");
     rec->loc_luz_cela_min = GetShaderLocation(rec->luz, "celaMin");
     rec->loc_luz_cela_max = GetShaderLocation(rec->luz, "celaMax");
     rec->loc_luz_cela_densidade = GetShaderLocation(rec->luz, "celaDensidade");
@@ -255,6 +281,9 @@ void posfx_comeca_luz(const Estado *e, const Vector3 *posicoes, const Vector3 *c
     SetShaderValueV(r->luz, r->loc_luz_cone, cone, SHADER_UNIFORM_VEC4, LUZES_SHADER);
     SetShaderValueV(r->luz, r->loc_luz_queda, queda, SHADER_UNIFORM_FLOAT, LUZES_SHADER);
     SetShaderValue(r->luz, r->loc_luz_contraluz, &sem_contraluz, SHADER_UNIFORM_VEC3);
+    float seco = 0.0f, relevo = RELEVO_TEXTURAS;
+    SetShaderValue(r->luz, r->loc_luz_molhado, &seco, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(r->luz, r->loc_luz_relevo, &relevo, SHADER_UNIFORM_FLOAT);
     SetShaderValue(r->luz, r->loc_luz_ambiente, &ambiente, SHADER_UNIFORM_FLOAT);
     SetShaderValue(r->luz, r->loc_luz_nevoa, &nevoa, SHADER_UNIFORM_FLOAT);
     SetShaderValue(r->luz, r->loc_luz_camera, &e->camera.position, SHADER_UNIFORM_VEC3);
@@ -286,6 +315,14 @@ void posfx_contraluz(const Estado *e, Color cor, float intensidade) {
     rlDrawRenderBatchActive();
     Vector3 v = {cor.r / 255.0f * intensidade, cor.g / 255.0f * intensidade, cor.b / 255.0f * intensidade};
     SetShaderValue(r->luz, r->loc_luz_contraluz, &v, SHADER_UNIFORM_VEC3);
+}
+
+// Mesmo cuidado da contraluz: o lote pendente sai antes, com o brilho antigo.
+void posfx_molhado(const Estado *e, float brilho) {
+    const Recursos *r = &e->rec;
+    if (!r->luz_ok) return;
+    rlDrawRenderBatchActive();
+    SetShaderValue(r->luz, r->loc_luz_molhado, &brilho, SHADER_UNIFORM_FLOAT);
 }
 
 void posfx_nevoa_cela(const Estado *e, float densidade) {

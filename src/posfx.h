@@ -29,6 +29,10 @@ void posfx_olho(const Estado *e, Vector3 olho);
 // Chame fora de rlPushMatrix/rlPopMatrix (envia o lote pendente com a transformação atual).
 void posfx_contraluz(const Estado *e, Color cor, float intensidade);
 
+// Entre comeca_luz e termina_luz: o reflexo de água das luzes (chão molhado) no que for desenhado a seguir
+// (0 desliga). Também fora de rlPushMatrix/rlPopMatrix.
+void posfx_molhado(const Estado *e, float brilho);
+
 // Entre comeca_luz e termina_luz: a densidade da névoa da cela para o que for desenhado a seguir (0 desliga).
 // Também fora de rlPushMatrix/rlPopMatrix, pelo mesmo motivo da contraluz.
 void posfx_nevoa_cela(const Estado *e, float densidade);

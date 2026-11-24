@@ -273,14 +273,15 @@
 
 // ---------------------------------------------------------------- texturas do mapa (procedurais; override
 // opcional em assets/texturas/<material>.png). Geradas uma vez ao abrir o jogo, com semente fixa.
-#define TEXTURA_LADO_PX         256   // lado das texturas quadradas (piso, teto, oliva, metal, porta)
-#define TEXTURA_CONCRETO_PX     512   // o concreto é 512 × 256: cobre 6 m × 3 m sem repetir à vista
+#define TEXTURA_LADO_PX         1024  // lado das texturas quadradas (piso, teto, oliva, metal, porta)
+#define TEXTURA_CONCRETO_PX     2048  // o concreto é 2048 × 1024: cobre 6 m × 3 m sem repetir à vista
 #define TEXTURA_SEMENTE         1985u // mesma semente → mesma imagem em toda execução
 #define TEXTURA_SUJEIRA         0.8f  // 0 = limpo; 1 = manchas, escorridos e descascado no máximo
 #define TEXTURA_METROS_CONCRETO 6.0f  // metros por repetição na horizontal (na vertical: PE_DIREITO)
 #define TEXTURA_METROS_PISO     2.0f  // 4 × 4 placas de 0,5 m
 #define TEXTURA_METROS_TETO     2.0f  // 3 × 3 placas de forro
 #define TEXTURA_METROS_METAL    1.0f
+#define RELEVO_TEXTURAS         0.08f // relevo tirado do escuro da textura (shader de luz); 0 = chapado
 #define TEXTURA_ARQUIVO_MAX_PX  1024  // PNG maior que isso (ou fora de potência de 2) é redimensionado
 #define BARRADO_ALTURA          1.2f  // tinta oliva do chão até aqui (acima: concreto aparente)
 #define DECALQUE_PX             256   // manchas: 256 × 256; placas: 512 × 128
@@ -345,6 +346,13 @@
 #define SOM_ATRAS_DB             3.0f  // bem atrás soa um pouco mais baixo: ajuda a saber se é na frente
 #define SOM_PAREDE_DB            8.0f  // com parede no meio, abafado
 #define SOM_PAN_MAX              0.85f // o mais para um lado que vai (nunca 100% num ouvido)
+#define GOTA_INTERVALO_S         1.3f  // goteira: uma gota a cada ~1,3 s (o instante é sorteado no intervalo)
+#define GOTA_QUEDA_S             0.6f  // da boca do cano até a poça
+#define GOTA_INCHA_S             0.3f  // a gota cresce na boca antes de cair
+#define GOTA_ONDA_S              0.9f  // quanto dura a onda na poça
+#define GOTA_ONDA_RAIO_M         0.3f
+#define GOTA_ALCANCE_M           14.0f // até onde se ouve o pingo
+#define CHAO_MOLHADO_BRILHO      2.5f  // força do reflexo das luzes no chão molhado e na poça
 #define PASSO_CRIATURA_TOM       0.8f  // abaixo de 1 soa pesado; mais baixo, o grave some na caixa de som
 
 // ---------------------------------------------------------------- paleta (só use onde a raylib já foi

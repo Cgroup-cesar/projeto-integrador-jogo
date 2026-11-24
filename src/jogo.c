@@ -20,6 +20,7 @@
 #include "respiracao.h"
 #include "sanidade.h"
 #include "clique.h"
+#include "goteira.h"
 #include <string.h>
 
 // ================================================================== início e fim
@@ -367,6 +368,7 @@ void jogo_atualiza(Estado *e, float dt) {
     atualiza_fase(e, dt);
     if (!respiracao_segura_criatura(e)) criatura_atualiza(e, dt); // na porta do armário, ele só espera
     sanidade_atualiza(e, dt); // depois da criatura e do jogador: usa a distância deste quadro
+    goteira_atualiza(e, dt);
     glifos_atualiza(e, dt);
     col_ruidos_atualiza(&e->ruidos, dt);
     col_particulas_atualiza(
