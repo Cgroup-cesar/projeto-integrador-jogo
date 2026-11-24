@@ -184,7 +184,7 @@ src/armario_modelo.c/.h  a aparência dos armários de esconderijo (assets/model
 src/porta_bunker.c/.h    o modelo da porta de bunker da sala de observação (a folha gira na dobradiça)
 src/porta_sala.c/.h      a porta da sala de observação: trancada nas rodadas; nas saídas, abre e fecha com E, sem som
 src/retorno.c/.h         a volta à sala sem corte: vira, fecha a porta e entra; a rodada seguinte começa no meio da cena
-src/cameras.c/.h         câmeras de segurança nas salas e corredores (LED de REC piscando); as que veem o jogador viram para ele, com o som do motor
+src/cameras.c/.h         câmeras de segurança nas salas e corredores (LED de REC piscando); as que veem o jogador viram para ele, em silêncio
 src/quadro.c/.h          o quadro de investigação da sala de observação (jornal Rede Bola, relatório do SNI, fichas)
 src/chave.c/.h           a porta trancada do Arquivo (a sala do segundo gerador) e a chave dela, no chaveiro ao lado do quadro
 src/lampada_sala.c/.h    a lâmpada pendurada da sala de observação, com o bulbo aceso (assets/modelos/lampada.glb, opcional)
