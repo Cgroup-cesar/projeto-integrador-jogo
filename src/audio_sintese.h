@@ -28,8 +28,6 @@ typedef enum {
     SOM_RESPIRACAO_OFEGANTE, // so toca ao sair do armario depois de muito tempo escondido
     SOM_GOTA,                // o pingo da goteira na poça (sala do gerador)
     SOM_CAMERA_MOTOR,        // o motor de uma câmera de segurança virando
-    SOM_PORTA_ABRE,          // a porta de aço da sala de observação: a trava e o rangido
-    SOM_PORTA_FECHA,         // o rangido e a batida no batente
     SOM_ARMARIO_ABRE,        // a trava e o rangido da porta do armário abrindo
     SOM_ARMARIO_FECHA,       // o rangido curto e a batida dela fechando (batida ARMARIO_BATIDA_S depois)
     SOM_TOTAL

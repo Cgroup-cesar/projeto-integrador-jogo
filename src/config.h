@@ -60,7 +60,6 @@
 #define PORTA_ABRE_S          1.8f  // quanto a folha leva para abrir (E na porta, nas saídas)
 #define PORTA_FECHA_S         1.2f  // e para fechar (o som bate junto com a folha no batente)
 #define PORTA_SOLIDA_ATE      0.35f // abaixo desta abertura a folha já fecha o vão (colisão)
-#define PORTA_SOM_ALCANCE_M   16.0f // até onde se ouve a porta abrindo e fechando
 #define PORTA_CRIATURA_ABRE_M 2.2f  // a criatura chegando a esta distância da porta fechada, ela abre...
 #define PORTA_CRIATURA_ABRE_S 0.45f // ...com um tranco: a folha abre nesse tempo
 #define CAMERA_COMPRIMENTO_M  0.65f // da placa do suporte até a frente da carcaça

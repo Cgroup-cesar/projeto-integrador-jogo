@@ -3,7 +3,6 @@
 #include "porta_sala.h"
 #include "porta_bunker.h"
 #include "nivel.h"
-#include "audio_sintese.h"
 #include "dialogo.h"
 #include "texturas.h"
 #include "ui.h"
@@ -38,12 +37,11 @@ static void acerta_colisao(Estado *e) {
         tira_parede(&e->paredes);
 }
 
-// Abrir e fechar faz barulho: a criatura ouve (o tranco dela mesma, não).
+// A porta não tem som (pedido da equipe), mas abrir e fechar ainda faz o ruído que a criatura ouve (o
+// tranco dela mesma, não).
 static void move_folha(Estado *e, bool abre, float duracao, bool barulho) {
     e->porta.aberta = abre;
     e->porta.duracao = duracao;
-    float tom = duracao < PORTA_ABRE_S * 0.5f ? 1.5f : 1.0f; // o tranco da criatura: rápido e mais agudo
-    audio_toca_em(e, abre ? SOM_PORTA_ABRE : SOM_PORTA_FECHA, e->nivel.porta_sala, PORTA_SOM_ALCANCE_M, tom);
     if (barulho && regras_fase_eh_saida(e->fase))
         col_ruidos_adiciona(&e->ruidos, (Ruido){e->nivel.porta_sala, RUIDO_RAIO_PORTA, 1.0f, RUIDO_PORTA});
 }
