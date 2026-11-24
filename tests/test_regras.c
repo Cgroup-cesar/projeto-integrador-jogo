@@ -406,6 +406,29 @@ static void testa_evento_do_erro(void) {
     CHECK(regras_evento_do_erro(0) == EV_VIDRO_ROMPEU);
 }
 
+// [REQ:PURA-regras_tenta_porta_arquivo] testa a porta do Arquivo: antes da hora, sem a chave e com ela
+static void testa_porta_arquivo(void) {
+    CHECK(regras_tenta_porta_arquivo(FASE_S1, false) == PORTA_ARQUIVO_ANTES_DA_HORA);
+    CHECK(regras_tenta_porta_arquivo(FASE_S1, true) == PORTA_ARQUIVO_ANTES_DA_HORA); // na S1, nem com a chave
+    CHECK(regras_tenta_porta_arquivo(FASE_R2, true) == PORTA_ARQUIVO_ANTES_DA_HORA);
+    CHECK(regras_tenta_porta_arquivo(FASE_S2, false) == PORTA_ARQUIVO_SEM_CHAVE);
+    CHECK(regras_tenta_porta_arquivo(FASE_S2, true) == PORTA_ARQUIVO_ABRE);
+}
+
+// [REQ:PURA-regras_chave_visivel] testa que a chave só aparece na 2ª queda de energia, até ser pega
+static void testa_chave_visivel(void) {
+    CHECK(!regras_chave_visivel(FASE_S1, false)); // 1ª queda: o chaveiro está vazio
+    CHECK(!regras_chave_visivel(FASE_R2, false));
+    CHECK(regras_chave_visivel(FASE_S2, false));
+    CHECK(!regras_chave_visivel(FASE_S2, true)); // já está com o jogador
+    CHECK(!regras_chave_visivel(FASE_R3, false));
+    CHECK(regras_interativo_ativo(INTER_CHAVEIRO, FASE_S2));
+    CHECK(!regras_interativo_ativo(INTER_CHAVEIRO, FASE_S1));
+    CHECK(regras_interativo_ativo(INTER_PORTA_ARQUIVO, FASE_S1)); // trancada, mas responde ("não é por aqui")
+    CHECK(regras_interativo_ativo(INTER_PORTA_ARQUIVO, FASE_S2));
+    CHECK(!regras_interativo_ativo(INTER_PORTA_ARQUIVO, FASE_R1));
+}
+
 // [REQ:PURA-regras_integridade_vidro] testa as vidas depois de 0, 1, 2 e 3 erros
 static void testa_vidro(void) {
     CHECK(regras_integridade_vidro(NULL, 0, VIDAS_VIDRO) == 3); // sem rachaduras
@@ -932,6 +955,8 @@ int main(void) {
     testa_ranking_linha();
     testa_vidro();
     testa_evento_do_erro();
+    testa_porta_arquivo();
+    testa_chave_visivel();
     testa_monta_texto();
     testa_nome_edita();
     testa_falha_texto();

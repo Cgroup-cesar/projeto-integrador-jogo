@@ -118,6 +118,8 @@ typedef struct {
     int armario_etapa;       // 2ª partida, S1: 0 escondido à toa, 1 monta a perseguição, 2 espera, 3 ok
     float armario_t;         // tempo_fase em que a perseguição foi montada
     float placar_t;          // quanto tempo o placar final ficou na tela (precisa aparecer de verdade)
+    bool porta_tentada;      // S2: já tentou a porta do Arquivo sem a chave
+    bool porta_conferida;    // S2: a porta segurou sem a chave e abriu com ela
     int codigo_saida;        // −1 = ainda jogando; 0 = ok; 1 = falhou
 } Piloto;
 
@@ -311,9 +313,35 @@ static bool piloto_le_diario(Estado *e, Entrada *in) {
     return true;
 }
 
+// Na S2 a porta do Arquivo está trancada: tenta abrir sem a chave (tem de continuar trancada e sólida), pega
+// a chave no chaveiro ao lado do quadro e abre a porta.
+static bool piloto_chave(Estado *e, Entrada *in) {
+    if (e->fase != FASE_S2 || e->jog.modo != MODO_ANDANDO) return false;
+    Vector3 p = e->nivel.porta_arquivo;
+    bool parede = col_paredes_colide(&e->paredes, (Vector3){p.x, 0.0f, p.z}, 0.3f, 1.8f);
+    if (e->chave.porta_aberta) {
+        if (piloto.porta_conferida) return false;
+        piloto.porta_conferida = true;
+        if (!e->chave.pega || parede)
+            piloto_falha("a porta do Arquivo abriu sem a chave ou continuou sólida");
+        else
+            printf("SMOKE  porta ok: trancada sem a chave; com a chave do chaveiro, abriu\n");
+        return false;
+    }
+    if (piloto.porta_tentada && !parede) piloto_falha("a porta do Arquivo trancada não segura o jogador");
+    Vector3 diante_da_porta = {p.x + 1.6f, 0.0f, p.z};
+    if (!e->chave.pega && piloto.porta_tentada) // pega a chave: de frente para o chaveiro
+        jogador_teleporta(e, (Vector3){CHAVEIRO_X, 0.0f, QUADRO_PAREDE_Z - 1.1f}, 0.0f);
+    else
+        jogador_teleporta(e, diante_da_porta, -PI * 0.5f); // de frente para a porta (oeste)
+    piloto.porta_tentada = true;
+    in->interagir = true;
+    return true;
+}
+
 static void piloto_saida(Estado *e, Entrada *in) {
     bool painel1 = e->fase == FASE_S1;
-    if (piloto_testa_armario(e, in) || piloto_le_diario(e, in)) return;
+    if (piloto_testa_armario(e, in) || piloto_chave(e, in) || piloto_le_diario(e, in)) return;
     if (e->painel.resolvido) {
         jogador_teleporta(e, e->nivel.inicio, PI); // volta para a sala de observação
         return;
@@ -393,6 +421,7 @@ static void piloto_entrada(Estado *e, Entrada *in, float dt) {
         piloto_confere_troca(piloto.fase_vista, e->fase);
         piloto.fase_vista = e->fase;
         piloto.tempo_na_fase = 0.0f;
+        piloto.porta_tentada = piloto.porta_conferida = false;
         piloto.tempo_fase_anterior = 0.0f;
     }
     if (e->tempo_fase + 0.001f < piloto.tempo_fase_anterior)

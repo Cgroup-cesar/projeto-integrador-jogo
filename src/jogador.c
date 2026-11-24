@@ -8,6 +8,7 @@
 #include "audio_sintese.h"
 #include "trilhas.h"
 #include "criatura.h"
+#include "chave.h"
 #include <math.h>
 
 #define PITCH_MAXIMO 1.35f
@@ -170,6 +171,12 @@ static void interage(Estado *e, const Interativo *it) {
         break;
     case INTER_PORTA:
         ui_fala(e, FALAS_PORTA_TRANCADA);
+        break;
+    case INTER_CHAVEIRO:
+        chave_pega(e);
+        break;
+    case INTER_PORTA_ARQUIVO:
+        chave_tenta_porta(e);
         break;
     }
 }

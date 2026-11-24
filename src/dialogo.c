@@ -35,6 +35,7 @@ static const Legenda APOS_R2[] = {
 };
 static const Legenda INICIO_S2[] = {
     {"De novo, {PROF} {NOME}. O painel da contenção fica no Arquivo.", 4.0f, V},
+    {"A porta do Arquivo está trancada. A chave fica atrás de você, no chaveiro ao lado do quadro.", 5.0f, V},
     {"Eu vou descer até a cela. Se eu não voltar...", 3.5f, V},
 };
 static const Legenda FIM_S2[] = {
@@ -166,10 +167,21 @@ static const char *const TEXTOS[TXT_TOTAL] = {
     [TXT_MIRA_DIARIO] = "E — ler o bilhete",
     [TXT_MIRA_ARMARIO] = "E — esconder-se no armário",
     [TXT_MIRA_PORTA] = "E — porta da sala de observação",
+    [TXT_MIRA_CHAVEIRO] = "E — pegar a chave do Arquivo",
+    [TXT_MIRA_PORTA_ARQUIVO] = "E — porta do Arquivo",
     [TXT_ARMARIO_SAIR] = "E — sair do armário",
     [TXT_OBJETIVO_SALA] = "Vá ao console (E) e descubra o que ele diz.",
     [TXT_OBJETIVO_S1] = "Religue o gerador: painel 1, no fim do corredor (ao norte).",
     [TXT_OBJETIVO_S2] = "Religue a contenção: painel 2, no Arquivo, ao sul da sala.",
+    [TXT_OBJETIVO_S2_CHAVE] = "Pegue a chave atrás de você, no chaveiro ao lado do quadro.",
+    [TXT_AVISO_CHAVE] =
+        "A sala do segundo gerador está trancada. Pegue a chave atrás de você, no chaveiro ao "
+        "lado do quadro, para abrir a porta e voltar a energia.",
+    [TXT_AVISO_CHAVE_PEGA] =
+        "Você pegou a chave. Saia da sala e siga o corredor para o sul: a porta do Arquivo fica à direita.",
+    [TXT_AVISO_PORTA_SEM_CHAVE] =
+        "Trancada. A chave fica no chaveiro da sala de observação, ao lado do quadro.",
+    [TXT_AVISO_PORTA_ANTES] = "Trancada. Não é por aqui agora: o gerador fica no fim do corredor, ao norte.",
     [TXT_OBJETIVO_VOLTAR] = "Volte para a sala de observação.",
     [TXT_OBJETIVO_RESPOSTA] = "Responda pelo console.",
     [TXT_TERMINAL_TITULO] = "ANALISADOR SEMÂNTICO SNI-85",
@@ -353,6 +365,8 @@ static const char *const TEXTOS_CONTROLE[TXT_TOTAL] = {
     [TXT_MIRA_DIARIO] = "A — ler o bilhete",
     [TXT_MIRA_ARMARIO] = "A — esconder-se no armário",
     [TXT_MIRA_PORTA] = "A — porta da sala de observação",
+    [TXT_MIRA_CHAVEIRO] = "A — pegar a chave do Arquivo",
+    [TXT_MIRA_PORTA_ARQUIVO] = "A — porta do Arquivo",
     [TXT_ARMARIO_SAIR] = "A — sair do armário",
     [TXT_OBJETIVO_SALA] = "Vá ao console (A) e descubra o que ele diz.",
     [TXT_TERMINAL_OBSERVE] =

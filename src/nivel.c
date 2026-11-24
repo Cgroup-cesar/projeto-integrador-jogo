@@ -9,6 +9,7 @@
 #include "cameras.h"
 #include "quadro.h"
 #include "lampada_sala.h"
+#include "chave.h"
 #include "texturas.h"
 #include "cenario.h"
 #include "posfx.h"
@@ -52,6 +53,7 @@ char nivel_celula(const Nivel *n, int coluna, int linha) {
 }
 
 bool nivel_caminhavel(const Nivel *n, int coluna, int linha) {
+    if (linha * MAPA_LARGURA + coluna == n->celula_trancada) return false; // a porta trancada do Arquivo
     char c = nivel_celula(n, coluna, linha);
     return strchr("#CGT12N", c) == NULL;
 }
@@ -167,8 +169,25 @@ static void calcula_alcance_luz(Nivel *n) {
         }
 }
 
+// A porta do Arquivo: das portas 'D' (fora a da sala de observação), a mais perto do painel 2.
+static Vector3 acha_porta_arquivo(const Nivel *n) {
+    Vector3 melhor = n->porta_sala;
+    float menor = 1e9f;
+    for (int l = 0; l < MAPA_ALTURA; l++) // padrão FOLD: a porta mais perto do painel 2
+        for (int c = 0; c < MAPA_LARGURA; c++) {
+            Vector3 p = nivel_centro_celula(c, l);
+            float d = Vector3Distance(p, n->painel2);
+            if (n->celulas[l][c] == 'D' && Vector3Distance(p, n->porta_sala) > 0.5f && d < menor) {
+                menor = d;
+                melhor = p;
+            }
+        }
+    return melhor;
+}
+
 void nivel_carrega(Nivel *n) {
     memset(n, 0, sizeof(*n));
+    n->celula_trancada = -1;
     n->cela_min = (Vector3){1e9f, 0.0f, 1e9f};
     n->cela_max = (Vector3){-1e9f, PE_DIREITO, -1e9f};
     for (int l = 0; l < MAPA_ALTURA; l++)
@@ -176,6 +195,7 @@ void nivel_carrega(Nivel *n) {
     for (int l = 0; l < MAPA_ALTURA; l++)
         for (int c = 0; c < MAPA_LARGURA; c++)
             registra_celula(n, n->celulas[l][c], c, l);
+    n->porta_arquivo = acha_porta_arquivo(n);
     if (n->vidro_z > 0.0f) n->cela_max.z = n->vidro_z - 0.2f; // a névoa vai até o vidro
     int total = (int)(sizeof(LAMPADAS) / sizeof(LAMPADAS[0]));
     for (int i = 0; i < total && n->n_lampadas < MAX_LAMPADAS; i++) {
@@ -273,6 +293,11 @@ void nivel_constroi_interativos(const Nivel *n, ColInterativos *c) {
     Vector3 porta = {n->porta_sala.x, 1.1f, n->porta_sala.z};
     col_interativos_adiciona(
         c, interativo(INTER_PORTA, porta, (Vector3){0.2f, 1.1f, 1.0f}, (Vector3){-1, 0, 0}));
+    col_interativos_adiciona(c, interativo(INTER_CHAVEIRO, chave_chaveiro_centro(),
+                                           (Vector3){0.24f, 0.2f, 0.12f}, (Vector3){0, 0, -1}));
+    Vector3 arquivo = {n->porta_arquivo.x, 1.1f, n->porta_arquivo.z};
+    col_interativos_adiciona(
+        c, interativo(INTER_PORTA_ARQUIVO, arquivo, (Vector3){0.9f, 1.1f, 0.95f}, (Vector3){1, 0, 0}));
 }
 
 // ================================================================== luzes
@@ -453,6 +478,7 @@ static void desenha_moveis(const Estado *e, bool completo) {
         quadro_desenha(e);
         console_modelo_desenha(e); // o computador de época na mesa (sem o modelo, a tela verde abaixo)
         lampada_sala_desenha(e);   // a lâmpada pendurada da sala (fica fora do reflexo: é pequena)
+        chave_desenha_chaveiro(e); // o chaveiro ao lado do quadro (e a chave, só na S2)
     }
     metal(e, (Vector3){con.x + 0.62f, 1.18f, con.z - 0.88f}, (Vector3){0.22f, 0.3f, 0.1f}, cinza,
           3); // interfone
@@ -517,6 +543,7 @@ static void desenha_portas_e_duto(const Estado *e) {
                            WHITE); // verga
         }
     }
+    chave_desenha_porta(e); // a porta do Arquivo (trancada até a S2 e a chave)
     Vector3 d = n->duto;
     DrawCubeV((Vector3){d.x, 0.01f, d.z}, (Vector3){1.2f, 0.02f, 1.2f}, (Color){0x08, 0x09, 0x08, 255});
     for (int i = 0; i < 5; i++)
@@ -653,6 +680,7 @@ void nivel_desenha_emissivos(const Estado *e) {
         cenario_halo(e, n->lampadas[i], lamp);
     if (!saida && sala > 0.5f) cenario_halo(e, lampada_sala, cor_sala);
     mesa_bilhete_desenha_brilho(e);
+    chave_desenha_brilho(e); // o brilho da chave e o LED da porta do Arquivo
     cenario_termina_halos();
     bool menu = e->fase == FASE_MENU || e->fase == FASE_INTRO;
     bool a_acesa = e->fase == FASE_MENU || (!menu && e->rod.luz_a); // na intro, apagado

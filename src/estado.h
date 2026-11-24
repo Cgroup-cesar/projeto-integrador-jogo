@@ -140,6 +140,8 @@ typedef struct {
 typedef struct {
     char celulas[MAPA_ALTURA][MAPA_LARGURA + 1];
     Vector3 inicio, console, cela_precursor, duto, painel1, painel2, diario, porta_sala;
+    Vector3 porta_arquivo; // a porta do Arquivo (a 'D' mais perto do painel 2)
+    int celula_trancada;   // célula de uma porta trancada (−1 = nenhuma): a criatura não passa por ela
     Vector3 lampadas[MAX_LAMPADAS];
     bool lampada_em_x[MAX_LAMPADAS]; // a luminária corre ao longo de x (senão, de z)
     // bit i da célula (linha, coluna): a luminária i a alcança sem passar por parede; o bit LUZ_BIT_MESA é a
@@ -242,6 +244,16 @@ typedef struct {
     int movimentos; // trocas de chave ou de porta (o cursor não conta): poucas = bônus
     float barulho;  // 0..1: sobe a cada clique e desce devagar (o medidor do painel)
 } Painel;
+
+// ------------------------------------------------------------------ a porta do Arquivo e a chave (chave.c)
+typedef struct {
+    bool pega;         // a chave saiu do chaveiro (ela só existe na S2)
+    bool porta_aberta; // a porta do Arquivo foi destrancada
+    float porta_t;     // s desde que abriu: a folha desliza para dentro da parede
+    int aviso;         // TextoId do aviso na tela (dialogo.h)
+    float aviso_t;     // > 0 enquanto o aviso aparece
+    float aviso_dur;   // quanto o aviso dura (para o fade)
+} ChaveArquivo;
 
 // ------------------------------------------------------------------ resposta final
 typedef struct {
@@ -379,6 +391,7 @@ typedef struct Estado {
     Criatura cri;
     Rodada rod;
     Painel painel;
+    ChaveArquivo chave;
     Compositor comp;
     Intro intro;
     Identidade ident;

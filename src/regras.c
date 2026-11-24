@@ -344,8 +344,23 @@ bool regras_interativo_ativo(TipoInterativo tipo, int fase) {
         return saida;
     case INTER_ARMARIO:
         return saida;
+    case INTER_CHAVEIRO:
+        return fase == FASE_S2;
+    case INTER_PORTA_ARQUIVO:
+        return saida; // na S1 ela também fica trancada: o jogador fica sabendo que não é por ali
     }
     return false;
+}
+
+// [REQ:PURA-regras_tenta_porta_arquivo] a porta do Arquivo só abre na S2 e com a chave do chaveiro
+ResultadoPortaArquivo regras_tenta_porta_arquivo(int fase, bool tem_chave) {
+    if (fase != FASE_S2) return PORTA_ARQUIVO_ANTES_DA_HORA;
+    return tem_chave ? PORTA_ARQUIVO_ABRE : PORTA_ARQUIVO_SEM_CHAVE;
+}
+
+// [REQ:PURA-regras_chave_visivel] a chave fica no chaveiro só na S2 (a 2ª queda de energia), até ser pega
+bool regras_chave_visivel(int fase, bool chave_pega) {
+    return fase == FASE_S2 && !chave_pega;
 }
 
 // ================================================================== circuitos dos painéis
