@@ -207,6 +207,8 @@ static void escolhe_destino(Estado *e, PercepcaoCriatura p, Vector3 ruido, float
         if (p.chegou_ao_destino) c->patrulha_i = (c->patrulha_i + 1) % N_PATRULHA;
         if (p.chegou_ao_destino || c->caminho_n == 0 || replaneja)
             planeja(e, nivel_centro_celula(PATRULHA[c->patrulha_i][0], PATRULHA[c->patrulha_i][1]));
+        if (c->caminho_n == 0 && !p.chegou_ao_destino) // sem caminho (atrás da porta trancada do Arquivo)
+            c->patrulha_i = (c->patrulha_i + 1) % N_PATRULHA;
         break;
     case CRIATURA_INVESTIGA:
         if (p.ouviu_ruido && (replaneja || Vector3Distance(ruido, c->destino) > 2.0f)) planeja(e, ruido);

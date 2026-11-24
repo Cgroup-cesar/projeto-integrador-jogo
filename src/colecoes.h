@@ -86,7 +86,9 @@ typedef enum {
     INTER_PAINEL2,
     INTER_DIARIO,
     INTER_ARMARIO,
-    INTER_PORTA
+    INTER_PORTA,
+    INTER_CHAVEIRO,     // a chave do Arquivo, no chaveiro da sala de observação (só na S2)
+    INTER_PORTA_ARQUIVO // a porta trancada do Arquivo, a sala do segundo gerador (chave.c)
 } TipoInterativo;
 
 typedef struct {
@@ -103,10 +105,11 @@ typedef struct {
 
 // ------------------------------------------------------------------ paredes (geradas do mapa)
 typedef enum {
-    PAREDE_MURO,  // corrida de '#' do mapa
-    PAREDE_VIDRO, // o vidro da contenção: sólido, mas transparente
-    PAREDE_PORTA, // a porta trancada da sala de observação (só nas fases de sala)
-    PAREDE_MOVEL  // console, painéis, mesa do diário, armários
+    PAREDE_MURO,         // corrida de '#' do mapa
+    PAREDE_VIDRO,        // o vidro da contenção: sólido, mas transparente
+    PAREDE_PORTA,        // a porta trancada da sala de observação (só nas fases de sala)
+    PAREDE_MOVEL,        // console, painéis, mesa do diário, armários
+    PAREDE_PORTA_ARQUIVO // a porta do Arquivo, enquanto trancada (chave.c a desenha)
 } TipoParede;
 
 typedef struct {

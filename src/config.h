@@ -77,6 +77,17 @@
 #define QUADRO_X         8.6f   // centro, no meio da parede sul
 #define QUADRO_PAREDE_Z  13.995f // a parede sul da sala (linha 7 do mapa: z = 14)
 #define QUADRO_BASE_Y    0.95f  // onde fica a borda de baixo
+// O chaveiro com a chave do Arquivo (chave.c): na mesma parede, à direita do quadro para quem olha a parede,
+// bem atrás de quem começa a S2 de frente para o console.
+#define CHAVEIRO_X           6.3f
+#define CHAVEIRO_Y           1.68f // logo acima do azulejo (BARRADO_ALTURA)
+#define CHAVEIRO_LARGURA_M   0.34f
+#define CHAVEIRO_ALTURA_M    0.24f
+#define CHAVEIRO_FUNDO_M     0.025f
+#define COR_CHAVE            (Color){0xd4, 0xa8, 0x4a, 255} // latão
+#define CHAVE_AVISO_S        9.0f                           // o aviso da chave no começo da S2
+#define CHAVE_AVISO_CURTO_S  3.5f                           // porta trancada, chave pega
+#define PORTA_ARQUIVO_ABRE_S 1.2f                           // a folha desliza para dentro da parede
 #define FITA_HORA_INICIO   (21 * 3600 + 47 * 60 + 52) // a câmera às 21:47:52, durante o canto
 #define TECLAS_ESCALA_JOGO 0.62f // tamanho do B — Comandos e da lista na partida (1 = a barra do menu)
 #define MIRA_RAIO_PX       1.6f  // a mira: um ponto branco pequeno (px na tela de 1280x720)

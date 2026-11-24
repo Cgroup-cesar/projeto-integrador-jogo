@@ -18,6 +18,7 @@
 #include "teclas.h"
 #include "ui.h"
 #include "cenario.h"
+#include "chave.h"
 #include "respiracao.h"
 #include "sanidade.h"
 #include "clique.h"
@@ -92,7 +93,9 @@ static void entra_rodada(Estado *e, Fase fase, bool reinicio) {
 static void entra_saida(Estado *e, Fase fase, bool reinicio) {
     circuito_inicia(e, fase == FASE_S1 ? 1 : 2);
     criatura_inicia_saida(e);
-    jogador_teleporta(e, e->nivel.inicio, PI * 0.5f); // olhando para a porta da sala, a leste (+x)
+    // Na S1, olhando para a porta da sala, a leste (+x). Na S2, de frente para o console, como estava quando
+    // a luz caiu: o chaveiro com a chave do Arquivo fica atrás, ao lado do quadro (o aviso diz isso).
+    jogador_teleporta(e, e->nivel.inicio, fase == FASE_S2 ? PI : PI * 0.5f);
     ui_fala(e, reinicio ? FALAS_PEGO : fase == FASE_S1 ? FALAS_INICIO_S1 : FALAS_INICIO_S2);
     // A porta da sala abre (e faz barulho); as luzes ficam vermelhas e fracas até a energia voltar.
     col_ruidos_adiciona(&e->ruidos, (Ruido){e->nivel.porta_sala, RUIDO_RAIO_PORTA, 1.0f, RUIDO_PORTA});
@@ -139,6 +142,7 @@ static void entra_fase(Estado *e, Fase fase, bool reinicio) {
     }
     e->sanidade_longe_t = 0.0f;
     prepara_mundo(e, fase);
+    chave_entra_fase(e, fase, reinicio); // a porta do Arquivo trancada e a chave (só na S2)
     switch (fase) {
     case FASE_MENU:
         entra_menu(e);
@@ -369,6 +373,7 @@ void jogo_atualiza(Estado *e, float dt) {
         respiracao_atualiza(e, dt);
     }
     nivel_atualiza(e, dt);
+    chave_atualiza(e, dt);
     atualiza_fase(e, dt);
     if (!respiracao_segura_criatura(e)) criatura_atualiza(e, dt); // na porta do armário, ele só espera
     animacao_atualiza(e, dt); // a animação segue mesmo com a IA parada (ele escuta na porta)
@@ -468,7 +473,8 @@ void jogo_desenha_interface(const Estado *e) {
     }
     sanidade_desenha(e);
     identidade_desenha(e);
-    respiracao_desenha(e); // a barrinha do armário (e o tutorial por cima de tudo)
+    chave_desenha_aviso(e); // a porta do Arquivo trancada: onde está a chave
+    respiracao_desenha(e);  // a barrinha do armário (e o tutorial por cima de tudo)
     teclas_desenha(e);     // o B — Comandos do canto (e a lista), por baixo das legendas e da pausa
     ui_desenha(e);
 }

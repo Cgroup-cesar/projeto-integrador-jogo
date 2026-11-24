@@ -153,6 +153,17 @@ int regras_integridade_vidro(const Rachadura *rachaduras, int n, int vidas_max);
 EventoFase regras_evento_do_erro(int vidas_restantes);
 bool regras_interativo_ativo(TipoInterativo tipo, int fase);
 
+// A porta do Arquivo (a sala do segundo gerador) e a chave dela, no chaveiro da sala de observação.
+typedef enum {
+    PORTA_ARQUIVO_ABRE,
+    PORTA_ARQUIVO_ANTES_DA_HORA,
+    PORTA_ARQUIVO_SEM_CHAVE
+} ResultadoPortaArquivo;
+// O que acontece ao tentar abrir: só abre na S2 (a 2ª queda de energia) e com a chave.
+ResultadoPortaArquivo regras_tenta_porta_arquivo(int fase, bool tem_chave);
+// A chave só aparece no chaveiro na S2, até o jogador pegá-la.
+bool regras_chave_visivel(int fase, bool chave_pega);
+
 // ------------------------------------------------------------------ sanidade (regras_sanidade.c)
 // Um quadro de sanidade (0..SANIDADE_MAX). Nos corredores (`fase_saida`), cai com a criatura a menos de
 // SANIDADE_RAIO (de QUEDA_MIN × ACELERA_LONGE na borda a QUEDA_MAX × ACELERA_PERTO em SANIDADE_PERTO,
