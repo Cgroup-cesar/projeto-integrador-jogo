@@ -3,8 +3,8 @@
 #include "regras.h"
 #include <math.h>
 
-// [REQ:PURA-regras_som_espacial] volume em decibéis pela distância (curva), mais baixo atrás e do outro lado de
-// uma parede; pan pelo lado em relação a onde a pessoa olha (−1 esquerda, 1 direita)
+// [REQ:PURA-regras_som_espacial] volume em decibéis pela distância (curva), mais baixo atrás e do outro
+// lado de uma parede; pan pelo lado em relação a onde a pessoa olha (−1 esquerda, 1 direita)
 SomEspacial regras_som_espacial(Vector3 ouvinte, float yaw, Vector3 fonte, float alcance,
                                 bool atras_da_parede) {
     Vector3 para = {fonte.x - ouvinte.x, 0.0f, fonte.z - ouvinte.z};

@@ -2,6 +2,7 @@
 //   --olhar x,z,yaw,pitch   põe o jogador nesse ponto e olhando para lá, ao entrar na fase (capturas)
 //   --lanterna              entra com a lanterna acesa
 //   --energia               entra com a energia já religada (as lâmpadas do corredor acesas)
+//   --tamanho LxA           abre a janela nesse tamanho (ex.: 1920x1080), para medir na resolução certa
 //   --medir <s>             mede o tempo de quadro por <s> segundos, imprime a média e o pior 1% e fecha
 // Sem essas opções, nada aqui muda o jogo.
 #ifndef BANCADA_H

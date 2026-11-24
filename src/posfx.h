@@ -10,8 +10,10 @@ void posfx_finaliza(Recursos *rec);
 // Recria o render target quando a janela muda de tamanho.
 void posfx_atualiza(Estado *e, float dt);
 
-// Tudo que for desenhado entre estas duas chamadas vai para o render target (e recebe o VHS).
+// Tudo que for desenhado entre estas duas chamadas vai para o render target (e recebe o VHS). A cena 3D vai
+// para o alvo HDR; posfx_resolve passa ela para o quadro LDR (tone mapping) e o resto cai direto nele.
 void posfx_inicia_cena(const Estado *e);
+void posfx_resolve(const Estado *e);
 void posfx_termina_cena(const Estado *e);
 
 // Liga o shader de luz e névoa com as luzes do quadro (até LUZES_SHADER). Desenhe a geometria iluminada entre
@@ -28,6 +30,12 @@ void posfx_olho(const Estado *e, Vector3 olho);
 // Entre comeca_luz e termina_luz: contraluz nas bordas do que for desenhado a seguir (intensidade 0 desliga).
 // Chame fora de rlPushMatrix/rlPopMatrix (envia o lote pendente com a transformação atual).
 void posfx_contraluz(const Estado *e, Color cor, float intensidade);
+
+// Entre comeca_luz e termina_luz: o material PBR do que vem a seguir (mapas de normal e ORM do material), ou
+// uma superfície sem mapas (rugosidade e metal fixos). Fora de rlPushMatrix/rlPopMatrix (enviam o lote).
+#define POSFX_RUGOSIDADE_PADRAO 0.7f
+void posfx_material(const Estado *e, TipoMaterial m);
+void posfx_superficie(const Estado *e, float rugosidade, float metal);
 
 // Entre comeca_luz e termina_luz: o reflexo de água das luzes (chão molhado) no que for desenhado a seguir
 // (0 desliga). Também fora de rlPushMatrix/rlPopMatrix.

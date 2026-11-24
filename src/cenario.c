@@ -135,14 +135,15 @@ static const Vector3 FIOS[][3] = {
 };
 
 static void desenha_dutos(const Estado *e) {
-    Texture2D metal = e->rec.material[MATERIAL_METAL];
     Color cor = {0x30, 0x33, 0x2e, 255};
     // laço de desenho: cada trecho vira uma caixa fina entre os dois pontos
     for (size_t i = 0; i < sizeof(DUTOS) / sizeof(DUTOS[0]); i++) {
         Vector3 a = DUTOS[i][0], b = DUTOS[i][1];
         Vector3 tam = {fabsf(b.x - a.x) + 0.07f, 0.07f, fabsf(b.z - a.z) + 0.07f};
-        texturas_caixa(metal, Vector3Lerp(a, b, 0.5f), tam, texturas_modo(MATERIAL_METAL, 30 + (int)i), cor);
-        texturas_caixa(metal, a, (Vector3){0.2f, 0.16f, 0.2f}, texturas_modo(MATERIAL_METAL, 40 + (int)i),
+        ModoUV uv = texturas_modo(MATERIAL_METAL, 30 + (int)i);
+        texturas_caixa_mat(e, MATERIAL_METAL, Vector3Lerp(a, b, 0.5f), tam, uv, cor);
+        uv = texturas_modo(MATERIAL_METAL, 40 + (int)i);
+        texturas_caixa_mat(e, MATERIAL_METAL, a, (Vector3){0.2f, 0.16f, 0.2f}, uv,
                        cor);
     }
 }
@@ -151,7 +152,7 @@ static void desenha_grelhas(const Estado *e) {
     // laço de desenho: moldura de metal e quatro aletas escuras por grelha
     for (size_t i = 0; i < sizeof(GRELHAS) / sizeof(GRELHAS[0]); i++) {
         Vector3 c = GRELHAS[i];
-        texturas_caixa(e->rec.material[MATERIAL_METAL], c, (Vector3){0.7f, 0.36f, 0.04f},
+        texturas_caixa_mat(e, MATERIAL_METAL, c, (Vector3){0.7f, 0.36f, 0.04f},
                        texturas_modo(MATERIAL_METAL, 50 + (int)i), (Color){0x2a, 0x2d, 0x28, 255});
         for (int k = 0; k < 4; k++)
             DrawCubeV((Vector3){c.x, c.y - 0.12f + k * 0.08f, c.z}, (Vector3){0.6f, 0.035f, 0.06f},

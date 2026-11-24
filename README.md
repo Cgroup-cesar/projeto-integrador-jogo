@@ -180,7 +180,9 @@ src/texturas.c/.h        gera/carrega as texturas uma vez, libera ao sair; caixa
 src/cenario.c/.h         ambientação sem colisão: placas, umidade, arrasto, chão molhado, eletrodutos, fios, halos
 src/goteira.c/.h         o cano pingando na sala do gerador: gota, ondas na poça e o pingo no espaço
 src/entulho.c/.h         sujeira do chão sorteada por célula: poeira no pé da parede, cacos, papéis, lascas
-src/bancada.c/.h         bancada de capturas e desempenho: --olhar, --lanterna, --energia, --medir
+src/bancada.c/.h         bancada de capturas e desempenho: --olhar, --lanterna, --energia, --tamanho, --medir
+src/mapas.c/.h           mapas PBR dos materiais gerados em C: cor, normal (da altura) e ORM
+src/sombreadores.c/.h    os textos GLSL: luz PBR (330) e o fallback 100, tone mapping
 src/menu_inicial.c/.h    menu inicial com visual VHS/CRT (em desenvolvimento; teste visual: make test-menu)
 tests/checagem.h         a macro CHECK
 tests/test_logica.c      conectivos, classificações, parser, painéis
@@ -236,7 +238,7 @@ Cada trecho que cumpre um requisito tem, logo acima, um comentário-âncora `// 
 | :---- | :---- | :---- | :---- |
 | RF1 Janela e game loop a 60 FPS com `GetFrameTime()` | [src/main.c#L602-L603](src/main.c#L602-L603)<br>[src/main.c#L522-L531](src/main.c#L522-L531)<br>[src/criatura.c#L273-L274](src/criatura.c#L273-L274) | `[REQ:RF1]` | `SetTargetFPS(60)`; `dt = GetFrameTime()` limitado a 0,05 s e passado a todo `xxx_atualiza`, que multiplica movimento, temporizadores e animações (aqui, o passo da criatura). |
 | RF2 Controle do jogador por teclado/mouse | [src/main.c#L48-L90](src/main.c#L48-L90)<br>[src/jogador.c#L44-L58](src/jogador.c#L44-L58)<br>[src/jogador.c#L107-L115](src/jogador.c#L107-L115) | `[REQ:RF2]` | Câmera em 1ª pessoa pelo mouse; WASD, Shift (corrida com fôlego), E, 1/2/3, setas, ENTER e Esc, lidos uma vez por quadro numa `struct Entrada`. |
-| RF3 Coleção (vetor) de múltiplos objetos | [src/estado.h#L347-L353](src/estado.h#L347-L353) | `[REQ:RF3]` | Seis coleções de capacidade fixa com contador (ruídos, partículas, rachaduras, eventos, interativos, paredes), sem `malloc` por quadro; ver a tabela de map, filter e fold. |
+| RF3 Coleção (vetor) de múltiplos objetos | [src/estado.h#L353-L359](src/estado.h#L353-L359) | `[REQ:RF3]` | Seis coleções de capacidade fixa com contador (ruídos, partículas, rachaduras, eventos, interativos, paredes), sem `malloc` por quadro; ver a tabela de map, filter e fold. |
 | RF4 Colisões com funções da Raylib | [src/jogador.c#L61-L68](src/jogador.c#L61-L68)<br>[src/colecoes.c#L186-L196](src/colecoes.c#L186-L196)<br>[src/colecoes.c#L145-L165](src/colecoes.c#L145-L165)<br>[src/criatura.c#L176-L177](src/criatura.c#L176-L177)<br>[src/criatura.c#L287-L294](src/criatura.c#L287-L294) | `[REQ:RF4]` | `CheckCollisionBoxes` (jogador × paredes, vidro, móveis e armários, eixo por eixo), `GetRayCollisionBox` (mira de interação e visão da criatura contra as paredes) e `CheckCollisionSpheres` (captura). |
 | RF5 Placar, vidas, telas de início e fim | [src/jogo.c#L57-L62](src/jogo.c#L57-L62)<br>[src/menu.c#L156-L187](src/menu.c#L156-L187)<br>[src/tela_fim.c#L88-L124](src/tela_fim.c#L88-L124) | `[REQ:RF5]` | Placar = fold dos eventos; vidas = integridade do vidro (fold das rachaduras), recalculados a cada quadro; tela de início com o título, o gancho, as opções INICIAR, RANKING e SAIR, o convite do 1º lugar ("você pode ser o próximo") e o aviso de nome provisório, intro e tela de fim só com o principal: resultado, placar e lugar no ranking, mais a avaliação do jogo em estrelas. |
 | RF6 Condição de vitória/derrota | [src/compositor.c#L62-L76](src/compositor.c#L62-L76)<br>[src/tela_fim.c#L88-L124](src/tela_fim.c#L88-L124) | `[REQ:RF6]` | A frase transmitida vai para `regras_avalia_transmissao`: contradição → final bom (VITÓRIA); satisfazível → final ruim (DERROTA); inválida → SINTAXE INVÁLIDA, sem penalidade. |
@@ -304,10 +306,10 @@ Cada laço leva o comentário `// padrão MAP`, `// padrão FILTER` ou `// padr�
 | Requisito | Onde | Âncora | Como foi cumprido |
 | :---- | :---- | :---- | :---- |
 | RNF1 Legibilidade | [.clang-format#L1-L12](.clang-format#L1-L12) | `[REQ:RNF1]` | Nomes em português, claros e consistentes (`atualiza_…`, `desenha_…`, `colidiu_…`); funções de até ~40 linhas (a única exceção, em `audio_sintese.c`, está comentada); o código segue o `.clang-format` (`clang-format --dry-run` sem avisos). |
-| RNF2 Modularização | [src/estado.h#L306-L369](src/estado.h#L306-L369) | `[REQ:RNF2]` | Uma struct por objeto, uma função por responsabilidade, um módulo por sistema; o maior arquivo tem menos de 500 linhas. |
+| RNF2 Modularização | [src/estado.h#L312-L376](src/estado.h#L312-L376) | `[REQ:RNF2]` | Uma struct por objeto, uma função por responsabilidade, um módulo por sistema; o maior arquivo tem menos de 500 linhas. |
 | RNF3 Separação update/render | [src/main.c#L419-L432](src/main.c#L419-L432) | `[REQ:RNF3]` | Todo módulo tem `xxx_atualiza(Estado *e, float dt)` e `xxx_desenha(const Estado *e)`; o `const` garante que desenhar não muda nada; nenhum `Draw*` em `*_atualiza` (auditado com grep). |
 | RNF4 Robustez | [src/colecoes.c#L9-L14](src/colecoes.c#L9-L14)<br>[src/main.c#L522-L531](src/main.c#L522-L531)<br>[src/nivel.c#L44-L48](src/nivel.c#L44-L48)<br>[src/ui.c#L33-L60](src/ui.c#L33-L60)<br>[src/criatura.c#L26-L42](src/criatura.c#L26-L42) | `[REQ:RNF4]` | Vetor cheio descarta com `TraceLog`, sem travar; listas vazias (sem ruídos, sem eventos) testadas; `dt` limitado; fora do mapa conta como parede; sem fonte, som ou modelo, entra o placeholder. |
-| RNF5 Documentação | [README.md#L228-L228](README.md#L228-L228) | `[REQ:RNF5]` | Este README, `docs/ARQUITETURA.md`, `docs/DECISOES.md` (as escolhas e por quê), `docs/PROGRESSO.md` e `CLAUDE.md`. |
+| RNF5 Documentação | [README.md#L230-L230](README.md#L230-L230) | `[REQ:RNF5]` | Este README, `docs/ARQUITETURA.md`, `docs/DECISOES.md` (as escolhas e por quê), `docs/PROGRESSO.md` e `CLAUDE.md`. |
 | RNF6 Versionamento + Makefile | [Makefile#L1-L2](Makefile#L1-L2) | `[REQ:RNF6]` | `Makefile` como build principal (com `test`, `smoke`, `readme-check`); um commit por marco na v0 (M0 a M9) e, daqui em diante, branch por card e PR (ver Metodologia). |
 
 ### Critérios de avaliação

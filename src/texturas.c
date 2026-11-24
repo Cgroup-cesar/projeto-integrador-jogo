@@ -3,6 +3,8 @@
 // sair. Também desenha com elas: caixa (6 faces, UV em metros) e quadro (decalque).
 // Nada aqui roda por quadro além do desenho: nenhum GenImage, LoadTexture nem upload depois do carregamento.
 #include "texturas.h"
+#include "mapas.h"
+#include "posfx.h"
 #include "dialogo.h"
 #include "rlgl.h"
 #include "ui.h"
@@ -12,53 +14,8 @@
 // ------------------------------------------------------------------ cores e nomes
 static const char *const NOMES[MATERIAL_TOTAL] = {"concreto", "oliva", "piso", "teto", "metal", "porta"};
 
-typedef struct {
-    Color base, secundaria; // a mistura do pixel vai de uma à outra
-} CoresMaterial;
-
-static const Color COR_TIJOLO = {0x4a, 0x30, 0x26, 255}; // onde a parede descascou até o tijolo
-
-static CoresMaterial cores(TipoMaterial m) {
-    switch (m) {
-    case MATERIAL_CONCRETO:
-        return (CoresMaterial){COR_CONCRETO, {0x1c, 0x22, 0x1b, 255}}; // umidade
-    case MATERIAL_OLIVA:
-        return (CoresMaterial){COR_OLIVA, {0x48, 0x4b, 0x44, 255}}; // reboco por baixo da tinta
-    case MATERIAL_PISO:
-        return (CoresMaterial){{0x24, 0x2b, 0x26, 255}, {0x17, 0x16, 0x12, 255}};
-    case MATERIAL_TETO:
-        return (CoresMaterial){{0x18, 0x1c, 0x19, 255}, {0x2a, 0x24, 0x16, 255}}; // infiltração
-    case MATERIAL_METAL:
-        return (CoresMaterial){{0xf0, 0xf0, 0xf0, 255}, {0xa0, 0x5a, 0x34, 255}}; // neutro; ferrugem
-    default:
-        return (CoresMaterial){{0x35, 0x38, 0x2a, 255}, {0x44, 0x2c, 0x1c, 255}}; // porta
-    }
-}
-
 static unsigned char canal(float valor) {
     return (unsigned char)Clamp(valor, 0.0f, 255.0f);
-}
-
-static Color cor_do_pixel(CoresMaterial c, PixelMaterial p) {
-    float t = Clamp(p.mistura, 0.0f, 1.0f), k = Clamp(p.tijolo, 0.0f, 1.0f);
-    return (Color){canal(Lerp(Lerp(c.base.r, c.secundaria.r, t), COR_TIJOLO.r, k) * p.brilho),
-                   canal(Lerp(Lerp(c.base.g, c.secundaria.g, t), COR_TIJOLO.g, k) * p.brilho),
-                   canal(Lerp(Lerp(c.base.b, c.secundaria.b, t), COR_TIJOLO.b, k) * p.brilho), 255};
-}
-
-// ------------------------------------------------------------------ geração (só no carregamento)
-static Image gera_material(TipoMaterial m) {
-    int largura = m == MATERIAL_CONCRETO ? TEXTURA_CONCRETO_PX : TEXTURA_LADO_PX, altura = TEXTURA_LADO_PX;
-    Image img = GenImageColor(largura, altura, BLANK);
-    Color *px = (Color *)img.data;
-    CoresMaterial c = cores(m);
-    // padrão MAP: cada pixel (u, v) → a cor do material
-    for (int y = 0; y < altura; y++)
-        for (int x = 0; x < largura; x++) {
-            float u = (x + 0.5f) / (float)largura, v = (y + 0.5f) / (float)altura;
-            px[y * largura + x] = cor_do_pixel(c, materiais_pixel(m, u, v, TEXTURA_SUJEIRA, TEXTURA_SEMENTE));
-        }
-    return img;
 }
 
 // Cola o recorte `origem` em `destino`, redimensionado para `alvo` e misturado pelo alfa (como o ImageDraw).
@@ -149,18 +106,36 @@ static Texture2D sobe(Image img, bool repete) {
     return t;
 }
 
-// [REQ:RNF4] asset ausente: sem assets/texturas/<nome>.png, a textura é gerada em código (nunca falha)
-static void carrega_material(Recursos *rec, TipoMaterial m) {
+// assets/texturas/<nome><sufixo>.png, se existir (sem ele, uma imagem vazia).
+static Image do_arquivo(TipoMaterial m, const char *sufixo) {
     char relativo[64], caminho[512];
-    snprintf(relativo, sizeof(relativo), "texturas/%s.png", NOMES[m]);
+    snprintf(relativo, sizeof(relativo), "texturas/%s%s.png", NOMES[m], sufixo);
     Image img = {0};
     if (ui_caminho_asset(relativo, caminho, sizeof(caminho))) img = LoadImage(caminho);
-    rec->material_de_arquivo[m] = img.data != NULL;
     if (img.data != NULL)
-        TraceLog(LOG_INFO, "PRECURSOR: textura %s carregada de %s", NOMES[m], caminho);
-    else
-        img = gera_material(m);
-    rec->material[m] = sobe(img, true);
+        TraceLog(LOG_INFO, "PRECURSOR: textura %s%s carregada de %s", NOMES[m], sufixo, caminho);
+    return img;
+}
+
+// [REQ:RNF4] asset ausente: sem assets/texturas/<nome>.png, os mapas são gerados em código (nunca falha).
+// Com o arquivo, ele é a cor; a normal e o ORM vêm de <nome>_normal.png e <nome>_orm.png, ou ficam lisos.
+static void carrega_material(Recursos *rec, TipoMaterial m) {
+    Image cor = do_arquivo(m, "");
+    rec->material_de_arquivo[m] = cor.data != NULL;
+    MapasMaterial mapas;
+    if (cor.data != NULL) {
+        mapas = mapas_lisos(0.7f);
+        mapas.cor = cor;
+        Image normal = do_arquivo(m, "_normal"), orm = do_arquivo(m, "_orm");
+        if (normal.data != NULL) UnloadImage(mapas.normal), mapas.normal = normal;
+        if (orm.data != NULL) UnloadImage(mapas.orm), mapas.orm = orm;
+    } else {
+        int largura = m == MATERIAL_CONCRETO ? TEXTURA_CONCRETO_PX : TEXTURA_LADO_PX;
+        mapas = mapas_gera(m, largura, TEXTURA_LADO_PX);
+    }
+    rec->material[m] = sobe(mapas.cor, true);
+    rec->material_normal[m] = sobe(mapas.normal, true);
+    rec->material_orm[m] = sobe(mapas.orm, true);
 }
 
 void texturas_carrega(Recursos *rec) {
@@ -200,8 +175,11 @@ static void libera(Texture2D *t) {
 }
 
 void texturas_descarrega(Recursos *rec) {
-    for (int m = 0; m < MATERIAL_TOTAL; m++) // liberação: uma vez por textura (não é map/filter/fold)
+    for (int m = 0; m < MATERIAL_TOTAL; m++) { // liberação: os três mapas de cada material
         libera(&rec->material[m]);
+        libera(&rec->material_normal[m]);
+        libera(&rec->material_orm[m]);
+    }
     for (int d = 0; d < DECALQUE_TOTAL; d++)
         libera(&rec->decalque[d]);
     libera(&rec->halo);
@@ -277,6 +255,13 @@ void texturas_caixa(Texture2D textura, Vector3 centro, Vector3 tamanho, ModoUV u
     }
     rlEnd();
     rlSetTexture(0);
+}
+
+void texturas_caixa_mat(const Estado *e, TipoMaterial m, Vector3 centro, Vector3 tamanho, ModoUV uv,
+                        Color tinta) {
+    posfx_material(e, m);
+    texturas_caixa(e->rec.material[m], centro, tamanho, uv, tinta);
+    posfx_superficie(e, POSFX_RUGOSIDADE_PADRAO, 0.0f);
 }
 
 void texturas_quadro(Texture2D textura, Vector3 centro, Vector3 direita, Vector3 cima, Color tinta) {

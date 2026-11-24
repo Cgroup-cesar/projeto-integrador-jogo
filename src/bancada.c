@@ -11,6 +11,7 @@ static struct {
     bool olhar, lanterna, energia;
     float x, z, yaw, pitch;
     float medir_s; // 0 = não mede
+    int largura, altura; // --tamanho LxA: a janela nesse tamanho (0 = a de sempre)
     float tempo;
     int quadros, n;
     float amostras[MAX_AMOSTRAS]; // tempo de cada quadro, em segundos
@@ -26,12 +27,17 @@ bool bancada_le_argumento(int argc, char **argv, int *i) {
         banca.medir_s = (float)atof(argv[++*i]);
         return true;
     }
+    if (strcmp(a, "--tamanho") == 0 && *i + 1 < argc) {
+        sscanf(argv[++*i], "%dx%d", &banca.largura, &banca.altura);
+        return true;
+    }
     if (strcmp(a, "--lanterna") == 0) return banca.lanterna = true;
     if (strcmp(a, "--energia") == 0) return banca.energia = true;
     return false;
 }
 
 void bancada_aplica(Estado *e) {
+    if (banca.largura > 0 && banca.altura > 0) SetWindowSize(banca.largura, banca.altura);
     if (banca.olhar) {
         jogador_teleporta(e, (Vector3){banca.x, 0.0f, banca.z}, banca.yaw);
         e->jog.pitch = banca.pitch;
@@ -64,7 +70,8 @@ bool bancada_quadro(float tempo_real) {
     for (int k = 0; k < um_porcento; k++) // padrão FOLD: média do 1% mais lento
         pior += banca.amostras[k];
     double media_ms = soma / banca.n * 1000.0, pior_ms = pior / um_porcento * 1000.0;
-    printf("MEDIDA: %d quadros, %.2f ms em média (%.1f FPS), pior 1%%: %.2f ms (%.1f FPS)\n", banca.n, media_ms,
+    printf("MEDIDA: %d quadros, %.2f ms em média (%.1f FPS), pior 1%%: %.2f ms (%.1f FPS)\n", banca.n,
+           media_ms,
            1000.0 / media_ms, pior_ms, 1000.0 / pior_ms);
     return true;
 }

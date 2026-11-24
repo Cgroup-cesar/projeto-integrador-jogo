@@ -281,7 +281,7 @@
 #define TEXTURA_METROS_PISO     2.0f  // 4 × 4 placas de 0,5 m
 #define TEXTURA_METROS_TETO     2.0f  // 3 × 3 placas de forro
 #define TEXTURA_METROS_METAL    1.0f
-#define RELEVO_TEXTURAS         0.08f // relevo tirado do escuro da textura (shader de luz); 0 = chapado
+#define EXPOSICAO               1.6f  // multiplica a cena HDR antes do tone mapping (ACES)
 #define TEXTURA_ARQUIVO_MAX_PX  1024  // PNG maior que isso (ou fora de potência de 2) é redimensionado
 #define BARRADO_ALTURA          1.2f  // tinta oliva do chão até aqui (acima: concreto aparente)
 #define DECALQUE_PX             256   // manchas: 256 × 256; placas: 512 × 128

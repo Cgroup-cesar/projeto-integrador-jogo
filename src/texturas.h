@@ -22,6 +22,10 @@ ModoUV texturas_modo(TipoMaterial m, int variacao);
 // Caixa com textura nas 6 faces (mesma ordem de vértices de DrawCubeV). Sem textura, cai em DrawCubeV.
 // Desenhe fora de rlPushMatrix: as coordenadas já são de mundo.
 void texturas_caixa(Texture2D textura, Vector3 centro, Vector3 tamanho, ModoUV uv, Color tinta);
+// A caixa com o material PBR inteiro (cor, normal e ORM): liga o material, desenha e volta para a superfície
+// padrão (sem mapas). Para uma peça solta; laços de muitas peças ligam o material uma vez (posfx_material).
+void texturas_caixa_mat(const Estado *e, TipoMaterial m, Vector3 centro, Vector3 tamanho, ModoUV uv,
+                        Color tinta);
 // Quadro com textura (decalque): `direita` e `cima` são os semieixos inteiros (a normal é direita × cima).
 void texturas_quadro(Texture2D textura, Vector3 centro, Vector3 direita, Vector3 cima, Color tinta);
 

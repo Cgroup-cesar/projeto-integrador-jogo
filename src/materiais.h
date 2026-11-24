@@ -38,10 +38,14 @@ typedef enum {
 
 #define DECALQUES_ESTENCIL 5 // os primeiros DECALQUES_ESTENCIL do enum são texto
 
+// Um pixel de material PBR: a cor (brilho e misturas sobre a paleta do material) e a superfície.
 typedef struct {
-    float brilho;  // multiplica a cor base (≈1 = a cor da paleta)
-    float mistura; // 0 = cor base, 1 = cor secundária
-    float tijolo;  // 0..1: o tijolo aparecendo por baixo (por cima das outras duas cores)
+    float brilho;     // multiplica a cor base (≈1 = a cor da paleta)
+    float mistura;    // 0 = cor base, 1 = cor secundária
+    float tijolo;     // 0..1: o tijolo aparecendo por baixo (por cima das outras duas cores)
+    float altura;     // 0..1: relevo (0 = fundo: rejunte, rachadura, buraco; 1 = a face da peça)
+    float rugosidade; // 0..1: 0 = espelho (esmalte, água), 1 = fosco (reboco, poeira)
+    float metal;      // 0..1: 1 = metal nu (a cor vira a do reflexo)
 } PixelMaterial;
 
 // Número em [0, 1) a partir de um ponto inteiro da grade e da semente (sem rand()).

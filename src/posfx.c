@@ -1,198 +1,50 @@
-// posfx.c — render target e luz e névoa (GLSL embutido, versões 330 e 100); o VHS fica em vhs.c.
+// posfx.c — os render targets (cena HDR com profundidade e o quadro LDR), o shader de luz (PBR, textos em
+// sombreadores.c), os mapas de material e o tone mapping. O VHS fica em vhs.c.
 #include "posfx.h"
 #include "vhs.h"
+#include "sombreadores.h"
 #include "rlgl.h"
 #include "raymath.h"
 #include <stddef.h>
 
-// ------------------------------------------------------------------ shaders de luz e névoa
-// O número de luzes entra no texto do shader a partir de LUZES_SHADER (config.h): um lugar só para mudar.
-#define TEXTO(x)    #x
-#define TEXTO_DE(x) TEXTO(x)
-#define N_LUZES     TEXTO_DE(LUZES_SHADER)
-#define BRILHO_AGUA "90.0" // expoente do reflexo no chão molhado: maior = ponto de luz menor e mais nítido
-// Até LUZES_SHADER luzes pontuais, ambiente bem baixo e névoa exponencial quase preta. A normal sai das
-// derivadas da posição (sombreado chapado, bom para low-poly); na versão 100 só há atenuação por distância.
-// luzCone[i]: xyz = direção do holofote, w = cosseno da meia-abertura (w < -1: luz pontual comum); fora
-// do cone sobram 15%. luzQueda[i]: quanto a luz enfraquece com a distância (1 = lâmpada comum; menor
-// = vai mais longe, como a lanterna). contraluz: cor somada nas bordas (só o Precursor liga; o resto recebe
-// zero).
-static const char *LUZ_VS_330 = "#version 330\n"
-                                "in vec3 vertexPosition; in vec2 vertexTexCoord; in vec4 vertexColor;\n"
-                                "uniform mat4 mvp; uniform mat4 matModel;\n"
-                                "out vec3 fragPosition; out vec4 fragColor; out vec2 fragTexCoord;\n"
-                                "void main() {\n"
-                                "    fragPosition = vec3(matModel * vec4(vertexPosition, 1.0));\n"
-                                "    fragColor = vertexColor; fragTexCoord = vertexTexCoord;\n"
-                                "    gl_Position = mvp * vec4(vertexPosition, 1.0);\n"
-                                "}\n";
-
-static const char *LUZ_FS_330 =
-    "#version 330\n"
-    "in vec3 fragPosition; in vec4 fragColor; in vec2 fragTexCoord;\n"
-    "uniform sampler2D texture0; uniform vec4 colDiffuse;\n"
-    "uniform vec3 luzPos[" N_LUZES "]; uniform vec3 luzCor[" N_LUZES "]; uniform vec4 luzCone[" N_LUZES "];\n"
-    "uniform float luzQueda[" N_LUZES "];\n"
-    "uniform float ambiente; uniform float nevoa; uniform vec3 camera;\n"
-    "uniform vec3 contraluz; uniform float molhado; uniform float relevo;\n"
-    "out vec4 finalColor;\n"
-    "float foco(vec4 cone, vec3 paraLuz) {\n"
-    "    if (cone.w < -1.0) return 1.0;\n"
-    "    return mix(0.15, 1.0, smoothstep(cone.w, cone.w + 0.06, dot(-paraLuz, cone.xyz)));\n"
-    "}\n"
-    "uniform vec3 celaMin; uniform vec3 celaMax; uniform float celaDensidade; uniform vec3 celaCor;\n"
-    "uniform float celaEspalha; uniform float celaEspalhaLanterna;\n"
-    "vec3 luzNaNevoa(vec3 p) {\n"
-    "    vec3 soma = vec3(0.0);\n"
-    "    for (int i = 0; i < " N_LUZES "; i++) {\n"
-    "        vec3 l = luzPos[i] - p;\n"
-    "        float d = length(l);\n"
-    "        float atenua = 1.0 / (1.0 + luzQueda[i] * (0.09 * d + 0.07 * d * d));\n"
-    "        bool dentro = all(greaterThanEqual(luzPos[i], celaMin)) &&\n"
-    "                      all(lessThanEqual(luzPos[i], celaMax));\n"
-    // a névoa devolve as luzes de dentro da cela (holofotes e flash) e, bem menos, a lanterna (a última)
-    "        float peso = i == " N_LUZES " - 1 ? celaEspalhaLanterna : (dentro ? celaEspalha : 0.0);\n"
-    "        soma += luzCor[i] * atenua * foco(luzCone[i], l / max(d, 0.001)) * peso;\n"
-    "    }\n"
-    "    return soma;\n"
-    "}\n"
-    "vec3 nevoaDaCela(vec3 cor, vec3 ponto) {\n"
-    "    vec3 raio = ponto - camera;\n"
-    "    float dist = length(raio);\n"
-    "    vec3 d = raio / max(dist, 0.0001);\n"
-    "    vec3 dd = mix(d, vec3(0.00001), vec3(lessThan(abs(d), vec3(0.00001))));\n"
-    "    vec3 t0 = (celaMin - camera) / dd, t1 = (celaMax - camera) / dd;\n"
-    "    vec3 tmin = min(t0, t1), tmax = max(t0, t1);\n"
-    "    float a = max(max(max(tmin.x, tmin.y), tmin.z), 0.0);\n"
-    "    float b = min(min(min(tmax.x, tmax.y), tmax.z), dist);\n"
-    "    float dentro = max(b - a, 0.0);\n"
-    "    if (dentro <= 0.0 || celaDensidade <= 0.0) return cor;\n"
-    "    vec3 meio = camera + d * (a + b) * 0.5;\n"
-    // o fundo da cela (z menor, longe do vidro) brilha um pouco mais: ele vira silhueta contra a névoa
-    "    float fundo = clamp((celaMax.z - meio.z) / max(celaMax.z - celaMin.z, 0.01), 0.0, 1.0);\n"
-    "    vec3 nevoa_cor = celaCor * mix(0.35, 2.2, fundo) + luzNaNevoa(meio);\n"
-    "    return mix(cor, nevoa_cor, 1.0 - exp(-celaDensidade * dentro));\n"
-    "}\n"
-    "void main() {\n"
-    "    vec4 base = texture(texture0, fragTexCoord) * colDiffuse * fragColor;\n"
-    "    vec3 n = normalize(cross(dFdx(fragPosition), dFdy(fragPosition)));\n"
-    "    vec3 paraCamera = camera - fragPosition;\n"
-    "    if (dot(n, paraCamera) < 0.0) n = -n;\n"
-    // relevo tirado da própria textura (o escuro é fundo: rachaduras, juntas, o descascado), sem mapa de
-    // normais nem tangentes: o gradiente da altura na tela vira inclinação da normal (Mikkelsen, 2010).
-    // A água é lisa: no molhado, sem relevo.
-    "    float altura = dot(texture(texture0, fragTexCoord).rgb, vec3(0.3, 0.59, 0.11));\n"
-    "    vec3 dpx = dFdx(fragPosition), dpy = dFdy(fragPosition);\n"
-    "    vec3 r1 = cross(dpy, n), r2 = cross(n, dpx);\n"
-    "    float det = dot(dpx, r1);\n"
-    "    vec3 grad = sign(det) * (dFdx(altura) * r1 + dFdy(altura) * r2);\n"
-    "    n = normalize(abs(det) * n - relevo * (1.0 - step(0.001, molhado)) * grad);\n"
-    "    vec3 vista = normalize(paraCamera);\n"
-    "    vec3 luz = vec3(ambiente), brilho = vec3(0.0);\n"
-    "    for (int i = 0; i < " N_LUZES "; i++) {\n"
-    "        vec3 l = luzPos[i] - fragPosition;\n"
-    "        float d = length(l);\n"
-    "        vec3 dir = l / max(d, 0.001);\n"
-    "        float atenua = foco(luzCone[i], dir) / (1.0 + luzQueda[i] * (0.09 * d + 0.07 * d * d));\n"
-    "        float difusa = max(dot(n, dir), 0.0) * 0.85 + 0.15;\n"
-    "        luz += luzCor[i] * atenua * difusa;\n"
-    // chão molhado: o reflexo de cada luz (lanterna, lâmpadas) num ponto, como na água parada
-    "        if (molhado > 0.0)\n"
-    "            brilho += luzCor[i] * atenua *\n"
-    "                      pow(max(dot(n, normalize(dir + vista)), 0.0), " BRILHO_AGUA ");\n"
-    "    }\n"
-    "    float borda = 1.0 - clamp(dot(n, vista), 0.0, 1.0);\n"
-    // água: vista de lado, ela reflete o ambiente (Fresnel); de cima, quase só o escuro do chão
-    "    float fresnel = 0.03 + 0.97 * pow(borda, 5.0);\n"
-    "    vec3 agua = (brilho + luz * fresnel * 0.3) * molhado;\n"
-    "    vec3 cor = base.rgb * luz + agua + contraluz * pow(borda, 2.5);\n"
-    "    cor = nevoaDaCela(cor, fragPosition);\n"
-    "    float fator = clamp(1.0 - exp(-nevoa * length(paraCamera)), 0.0, 1.0);\n"
-    "    finalColor = vec4(mix(cor, vec3(0.012, 0.016, 0.013), fator), base.a);\n"
-    "}\n";
-
-static const char *LUZ_VS_100 =
-    "#version 100\n"
-    "attribute vec3 vertexPosition; attribute vec2 vertexTexCoord; attribute vec4 vertexColor;\n"
-    "uniform mat4 mvp; uniform mat4 matModel;\n"
-    "varying vec3 fragPosition; varying vec4 fragColor; varying vec2 fragTexCoord;\n"
-    "void main() {\n"
-    "    fragPosition = vec3(matModel * vec4(vertexPosition, 1.0));\n"
-    "    fragColor = vertexColor; fragTexCoord = vertexTexCoord;\n"
-    "    gl_Position = mvp * vec4(vertexPosition, 1.0);\n"
-    "}\n";
-
-static const char *LUZ_FS_100 =
-    "#version 100\n"
-    "precision mediump float;\n"
-    "varying vec3 fragPosition; varying vec4 fragColor; varying vec2 fragTexCoord;\n"
-    "uniform sampler2D texture0; uniform vec4 colDiffuse;\n"
-    "uniform vec3 luzPos[" N_LUZES "]; uniform vec3 luzCor[" N_LUZES "]; uniform vec4 luzCone[" N_LUZES "];\n"
-    "uniform float luzQueda[" N_LUZES "];\n"
-    "uniform float ambiente; uniform float nevoa; uniform vec3 camera;\n"
-    "uniform vec3 contraluz; uniform float molhado; uniform float relevo;\n"
-    "float foco(vec4 cone, vec3 paraLuz) {\n"
-    "    if (cone.w < -1.0) return 1.0;\n"
-    "    return mix(0.15, 1.0, smoothstep(cone.w, cone.w + 0.06, dot(-paraLuz, cone.xyz)));\n"
-    "}\n"
-    "uniform vec3 celaMin; uniform vec3 celaMax; uniform float celaDensidade; uniform vec3 celaCor;\n"
-    "uniform float celaEspalha; uniform float celaEspalhaLanterna;\n"
-    "vec3 luzNaNevoa(vec3 p) {\n"
-    "    vec3 soma = vec3(0.0);\n"
-    "    for (int i = 0; i < " N_LUZES "; i++) {\n"
-    "        vec3 l = luzPos[i] - p;\n"
-    "        float d = length(l);\n"
-    "        float atenua = 1.0 / (1.0 + luzQueda[i] * (0.09 * d + 0.07 * d * d));\n"
-    "        bool dentro = all(greaterThanEqual(luzPos[i], celaMin)) &&\n"
-    "                      all(lessThanEqual(luzPos[i], celaMax));\n"
-    // a névoa devolve as luzes de dentro da cela (holofotes e flash) e, bem menos, a lanterna (a última)
-    "        float peso = i == " N_LUZES " - 1 ? celaEspalhaLanterna : (dentro ? celaEspalha : 0.0);\n"
-    "        soma += luzCor[i] * atenua * foco(luzCone[i], l / max(d, 0.001)) * peso;\n"
-    "    }\n"
-    "    return soma;\n"
-    "}\n"
-    "vec3 nevoaDaCela(vec3 cor, vec3 ponto) {\n"
-    "    vec3 raio = ponto - camera;\n"
-    "    float dist = length(raio);\n"
-    "    vec3 d = raio / max(dist, 0.0001);\n"
-    "    vec3 dd = mix(d, vec3(0.00001), vec3(lessThan(abs(d), vec3(0.00001))));\n"
-    "    vec3 t0 = (celaMin - camera) / dd, t1 = (celaMax - camera) / dd;\n"
-    "    vec3 tmin = min(t0, t1), tmax = max(t0, t1);\n"
-    "    float a = max(max(max(tmin.x, tmin.y), tmin.z), 0.0);\n"
-    "    float b = min(min(min(tmax.x, tmax.y), tmax.z), dist);\n"
-    "    float dentro = max(b - a, 0.0);\n"
-    "    if (dentro <= 0.0 || celaDensidade <= 0.0) return cor;\n"
-    "    vec3 meio = camera + d * (a + b) * 0.5;\n"
-    // o fundo da cela (z menor, longe do vidro) brilha um pouco mais: ele vira silhueta contra a névoa
-    "    float fundo = clamp((celaMax.z - meio.z) / max(celaMax.z - celaMin.z, 0.01), 0.0, 1.0);\n"
-    "    vec3 nevoa_cor = celaCor * mix(0.35, 2.2, fundo) + luzNaNevoa(meio);\n"
-    "    return mix(cor, nevoa_cor, 1.0 - exp(-celaDensidade * dentro));\n"
-    "}\n"
-    "void main() {\n"
-    "    vec4 base = texture2D(texture0, fragTexCoord) * colDiffuse * fragColor;\n"
-    "    vec3 luz = vec3(ambiente), brilho = vec3(0.0);\n"
-    "    vec3 vista = normalize(camera - fragPosition);\n"
-    "    for (int i = 0; i < " N_LUZES "; i++) {\n"
-    "        vec3 l = luzPos[i] - fragPosition;\n"
-    "        float d = length(l);\n"
-    "        vec4 cone = luzCone[i];\n"
-    "        float foco = cone.w < -1.0 ? 1.0\n"
-    "            : mix(0.15, 1.0, smoothstep(cone.w, cone.w + 0.06, dot(-l / max(d, 0.001), cone.xyz)));\n"
-    "        float atenua = foco / (1.0 + luzQueda[i] * (0.09 * d + 0.07 * d * d));\n"
-    "        luz += luzCor[i] * atenua;\n"
-    // sem normal na versão 100: o molhado só existe no chão, então a normal é para cima
-    "        vec3 meio = normalize(l / max(d, 0.001) + vista);\n"
-    "        if (molhado > 0.0) brilho += luzCor[i] * atenua * pow(max(meio.y, 0.0), " BRILHO_AGUA ");\n"
-    "    }\n"
-    // contraluz: sem normal na versão 100, um brilho fraco por igual
-    "    vec3 agua = (brilho + luz * (0.03 + 0.97 * pow(1.0 - max(vista.y, 0.0), 5.0)) * 0.3) * molhado;\n"
-    "    vec3 cor = nevoaDaCela(base.rgb * luz + agua + contraluz * 0.2, fragPosition);\n"
-    "    float fator = clamp(1.0 - exp(-nevoa * length(camera - fragPosition)), 0.0, 1.0);\n"
-    "    gl_FragColor = vec4(mix(cor, vec3(0.012, 0.016, 0.013), fator), base.a);\n"
-    "}\n";
-
 static bool usa_glsl_100(void) {
     return rlGetVersion() == RL_OPENGL_ES_20;
+}
+
+// Unidades de textura que a raylib não usa (ela usa a 0 e, no lote, da 1 à 4): os mapas ficam ligados nelas.
+#define UNIDADE_NORMAL 9
+#define UNIDADE_ORM    10
+
+// A cena HDR: cor em ponto flutuante (16 bits por canal: o que passa de 1 não satura) e profundidade numa
+// textura (os passes de tela leem a distância de cada pixel).
+static RenderTexture2D cria_hdr(int w, int h) {
+    RenderTexture2D t = {0};
+    t.id = rlLoadFramebuffer();
+    if (t.id == 0) return t;
+    rlEnableFramebuffer(t.id);
+    t.texture = (Texture2D){rlLoadTexture(NULL, w, h, PIXELFORMAT_UNCOMPRESSED_R16G16B16A16, 1), w, h, 1,
+                            PIXELFORMAT_UNCOMPRESSED_R16G16B16A16};
+    t.depth = (Texture2D){rlLoadTextureDepth(w, h, false), w, h, 1, 19};
+    rlFramebufferAttach(t.id, t.texture.id, RL_ATTACHMENT_COLOR_CHANNEL0, RL_ATTACHMENT_TEXTURE2D, 0);
+    rlFramebufferAttach(t.id, t.depth.id, RL_ATTACHMENT_DEPTH, RL_ATTACHMENT_TEXTURE2D, 0);
+    bool completo = rlFramebufferComplete(t.id);
+    rlDisableFramebuffer();
+    if (!completo) {
+        TraceLog(LOG_WARNING, "PRECURSOR: a cena HDR não montou; seguindo em LDR");
+        rlUnloadFramebuffer(t.id);
+        return (RenderTexture2D){0};
+    }
+    rlTextureParameters(t.texture.id, RL_TEXTURE_MIN_FILTER, RL_TEXTURE_FILTER_LINEAR);
+    rlTextureParameters(t.texture.id, RL_TEXTURE_MAG_FILTER, RL_TEXTURE_FILTER_LINEAR);
+    return t;
+}
+
+static void libera_hdr(RenderTexture2D *t) {
+    if (t->id == 0) return;
+    rlUnloadTexture(t->texture.id);
+    rlUnloadTexture(t->depth.id);
+    rlUnloadFramebuffer(t->id);
+    *t = (RenderTexture2D){0};
 }
 
 static void cria_alvo(Recursos *rec, int largura_janela, int altura_janela) {
@@ -203,13 +55,26 @@ static void cria_alvo(Recursos *rec, int largura_janela, int altura_janela) {
     rec->alvo = LoadRenderTexture(w, h);
     rec->alvo_susto = LoadRenderTexture(w, h);
     SetTextureFilter(rec->alvo.texture, TEXTURE_FILTER_BILINEAR);
+    rec->hdr = usa_glsl_100() ? (RenderTexture2D){0} : cria_hdr(w, h);
     rec->alvo_largura = w;
     rec->alvo_altura = h;
 }
 
+static void libera_alvo(Recursos *rec) {
+    UnloadRenderTexture(rec->alvo);
+    UnloadRenderTexture(rec->alvo_susto);
+    libera_hdr(&rec->hdr);
+}
+
+static void carrega_tom(Recursos *rec) {
+    rec->tom = usa_glsl_100() ? (Shader){0} : LoadShaderFromMemory(NULL, sombreador_tom_fs());
+    rec->tom_ok = rec->tom.id != 0 && IsShaderValid(rec->tom);
+    if (rec->tom_ok) rec->loc_tom_exposicao = GetShaderLocation(rec->tom, "exposicao");
+}
+
 static void carrega_luz(Recursos *rec) {
     bool v100 = usa_glsl_100();
-    rec->luz = LoadShaderFromMemory(v100 ? LUZ_VS_100 : LUZ_VS_330, v100 ? LUZ_FS_100 : LUZ_FS_330);
+    rec->luz = LoadShaderFromMemory(sombreador_luz_vs(v100), sombreador_luz_fs(v100));
     rec->luz_ok = IsShaderValid(rec->luz);
     if (!rec->luz_ok) {
         TraceLog(LOG_WARNING, "PRECURSOR: shader de luz não compilou; seguindo com cores chapadas");
@@ -225,7 +90,12 @@ static void carrega_luz(Recursos *rec) {
     rec->loc_luz_queda = GetShaderLocation(rec->luz, "luzQueda");
     rec->loc_luz_contraluz = GetShaderLocation(rec->luz, "contraluz");
     rec->loc_luz_molhado = GetShaderLocation(rec->luz, "molhado");
-    rec->loc_luz_relevo = GetShaderLocation(rec->luz, "relevo");
+    rec->loc_luz_usa_mapas = GetShaderLocation(rec->luz, "usaMapas");
+    rec->loc_luz_rugosidade = GetShaderLocation(rec->luz, "rugosidade");
+    rec->loc_luz_metalico = GetShaderLocation(rec->luz, "metalico");
+    int normal = UNIDADE_NORMAL, orm = UNIDADE_ORM; // os samplers apontam sempre para as mesmas unidades
+    SetShaderValue(rec->luz, GetShaderLocation(rec->luz, "mapaNormal"), &normal, SHADER_UNIFORM_INT);
+    SetShaderValue(rec->luz, GetShaderLocation(rec->luz, "mapaOrm"), &orm, SHADER_UNIFORM_INT);
     rec->loc_luz_cela_min = GetShaderLocation(rec->luz, "celaMin");
     rec->loc_luz_cela_max = GetShaderLocation(rec->luz, "celaMax");
     rec->loc_luz_cela_densidade = GetShaderLocation(rec->luz, "celaDensidade");
@@ -238,13 +108,14 @@ void posfx_inicia(Recursos *rec) {
     cria_alvo(rec, GetScreenWidth(), GetScreenHeight());
     vhs_carrega(rec);
     carrega_luz(rec);
+    carrega_tom(rec);
 }
 
 void posfx_finaliza(Recursos *rec) {
-    UnloadRenderTexture(rec->alvo);
-    UnloadRenderTexture(rec->alvo_susto);
+    libera_alvo(rec);
     vhs_descarrega(rec);
     if (rec->luz_ok) UnloadShader(rec->luz);
+    if (rec->tom_ok) UnloadShader(rec->tom);
 }
 
 // A névoa da cela: a caixa vem do mapa (nivel.c); densidade e cor em config.h.
@@ -281,14 +152,14 @@ void posfx_comeca_luz(const Estado *e, const Vector3 *posicoes, const Vector3 *c
     SetShaderValueV(r->luz, r->loc_luz_cone, cone, SHADER_UNIFORM_VEC4, LUZES_SHADER);
     SetShaderValueV(r->luz, r->loc_luz_queda, queda, SHADER_UNIFORM_FLOAT, LUZES_SHADER);
     SetShaderValue(r->luz, r->loc_luz_contraluz, &sem_contraluz, SHADER_UNIFORM_VEC3);
-    float seco = 0.0f, relevo = RELEVO_TEXTURAS;
+    float seco = 0.0f;
     SetShaderValue(r->luz, r->loc_luz_molhado, &seco, SHADER_UNIFORM_FLOAT);
-    SetShaderValue(r->luz, r->loc_luz_relevo, &relevo, SHADER_UNIFORM_FLOAT);
     SetShaderValue(r->luz, r->loc_luz_ambiente, &ambiente, SHADER_UNIFORM_FLOAT);
     SetShaderValue(r->luz, r->loc_luz_nevoa, &nevoa, SHADER_UNIFORM_FLOAT);
     SetShaderValue(r->luz, r->loc_luz_camera, &e->camera.position, SHADER_UNIFORM_VEC3);
     SetShaderValueMatrix(r->luz, r->loc_luz_modelo, MatrixIdentity());
     envia_nevoa_da_cela(e);
+    posfx_superficie(e, POSFX_RUGOSIDADE_PADRAO, 0.0f);
     BeginShaderMode(r->luz);
 }
 
@@ -317,6 +188,32 @@ void posfx_contraluz(const Estado *e, Color cor, float intensidade) {
     SetShaderValue(r->luz, r->loc_luz_contraluz, &v, SHADER_UNIFORM_VEC3);
 }
 
+// O material da geometria que vem a seguir: liga a normal e o ORM dele nas unidades fixas. Sai o lote
+// pendente antes (ele foi montado com o material anterior).
+void posfx_material(const Estado *e, TipoMaterial m) {
+    const Recursos *r = &e->rec;
+    if (!r->luz_ok || r->material_normal[m].id == 0) return;
+    rlDrawRenderBatchActive();
+    rlActiveTextureSlot(UNIDADE_NORMAL);
+    rlEnableTexture(r->material_normal[m].id);
+    rlActiveTextureSlot(UNIDADE_ORM);
+    rlEnableTexture(r->material_orm[m].id);
+    rlActiveTextureSlot(0);
+    float sim = 1.0f;
+    SetShaderValue(r->luz, r->loc_luz_usa_mapas, &sim, SHADER_UNIFORM_FLOAT);
+}
+
+// Sem mapas: a superfície inteira com a mesma rugosidade e o mesmo metal (modelos, decalques, caixas soltas).
+void posfx_superficie(const Estado *e, float rugosidade, float metal) {
+    const Recursos *r = &e->rec;
+    if (!r->luz_ok) return;
+    rlDrawRenderBatchActive();
+    float nao = 0.0f;
+    SetShaderValue(r->luz, r->loc_luz_usa_mapas, &nao, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(r->luz, r->loc_luz_rugosidade, &rugosidade, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(r->luz, r->loc_luz_metalico, &metal, SHADER_UNIFORM_FLOAT);
+}
+
 // Mesmo cuidado da contraluz: o lote pendente sai antes, com o brilho antigo.
 void posfx_molhado(const Estado *e, float brilho) {
     const Recursos *r = &e->rec;
@@ -337,14 +234,33 @@ void posfx_atualiza(Estado *e, float dt) {
     int w = (int)(GetScreenWidth() * ESCALA_RENDER);
     int h = (int)(GetScreenHeight() * ESCALA_RENDER);
     if (w != e->rec.alvo_largura || h != e->rec.alvo_altura) {
-        UnloadRenderTexture(e->rec.alvo);
-        UnloadRenderTexture(e->rec.alvo_susto);
+        libera_alvo(&e->rec);
         cria_alvo(&e->rec, GetScreenWidth(), GetScreenHeight());
     }
 }
 
+// A cena 3D vai para o alvo HDR (sem ele, direto para o quadro LDR, como antes).
 void posfx_inicia_cena(const Estado *e) {
-    BeginTextureMode(e->rec.alvo);
+    BeginTextureMode(e->rec.hdr.id != 0 ? e->rec.hdr : e->rec.alvo);
+}
+
+// Fecha a cena HDR e a passa para o quadro LDR com o tone mapping. Depois daqui, o que for desenhado (ripas
+// do armário, o susto, os escurecimentos) cai direto no quadro final, sem tone mapping.
+void posfx_resolve(const Estado *e) {
+    const Recursos *r = &e->rec;
+    if (r->hdr.id == 0) return;
+    EndTextureMode();
+    BeginTextureMode(r->alvo);
+    ClearBackground(BLACK);
+    float exposicao = EXPOSICAO;
+    if (r->tom_ok) {
+        SetShaderValue(r->tom, r->loc_tom_exposicao, &exposicao, SHADER_UNIFORM_FLOAT);
+        BeginShaderMode(r->tom);
+    }
+    Rectangle origem = {0, 0, (float)r->hdr.texture.width, -(float)r->hdr.texture.height};
+    DrawTexturePro(r->hdr.texture, origem, (Rectangle){0, 0, (float)r->alvo_largura, (float)r->alvo_altura},
+                   (Vector2){0, 0}, 0.0f, WHITE);
+    if (r->tom_ok) EndShaderMode();
 }
 
 void posfx_termina_cena(const Estado *e) {

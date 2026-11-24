@@ -60,11 +60,15 @@ typedef struct {
     Shader luz;
     bool luz_ok;
     int loc_luz_pos, loc_luz_cor, loc_luz_ambiente, loc_luz_nevoa, loc_luz_camera, loc_luz_modelo;
-    int loc_luz_molhado, loc_luz_relevo;
+    int loc_luz_molhado, loc_luz_usa_mapas, loc_luz_rugosidade, loc_luz_metalico;
     int loc_luz_cone, loc_luz_contraluz, loc_luz_queda;
     int loc_luz_cela_min, loc_luz_cela_max, loc_luz_cela_densidade, loc_luz_cela_cor, loc_luz_cela_espalha;
     int loc_luz_cela_lanterna;
-    RenderTexture2D alvo;       // cena 3D renderizada a ESCALA_RENDER da janela
+    RenderTexture2D hdr;        // a cena 3D em HDR (cor em ponto flutuante + profundidade); id 0 = sem HDR
+    Shader tom;                 // tone mapping (HDR → LDR)
+    bool tom_ok;
+    int loc_tom_exposicao;
+    RenderTexture2D alvo;       // o quadro (LDR), a ESCALA_RENDER da janela: a cena já com tone mapping
     RenderTexture2D alvo_susto; // o rosto do susto (mesmo tamanho), colado por cima da cena
     int alvo_largura, alvo_altura;
     Sound sons[SOM_MAXIMO];
@@ -93,7 +97,9 @@ typedef struct {
     Music trilhas[TRILHA_TOTAL]; // opcionais: sons longos de assets/audio (trilhas.c)
     bool tem_trilha[TRILHA_TOTAL];
     // Texturas do mapa (texturas.c): criadas uma vez em carrega_recursos, liberadas em descarrega_recursos.
-    Texture2D material[MATERIAL_TOTAL];
+    Texture2D material[MATERIAL_TOTAL];        // cor (albedo)
+    Texture2D material_normal[MATERIAL_TOTAL]; // normal (espaço da textura: u, v, fora)
+    Texture2D material_orm[MATERIAL_TOTAL];    // R = oclusão, G = rugosidade, B = metal
     bool material_de_arquivo[MATERIAL_TOTAL]; // true = assets/texturas/<nome>.png; false = procedural
     Texture2D decalque[DECALQUE_TOTAL];
     Texture2D halo;             // brilho radial das lâmpadas

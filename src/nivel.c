@@ -10,6 +10,7 @@
 #include "quadro.h"
 #include "texturas.h"
 #include "cenario.h"
+#include "posfx.h"
 #include <math.h>
 #include <string.h>
 
@@ -368,7 +369,7 @@ static Vector3 tamanho_de(const Parede *p) {
 
 // Metal pintado: a textura é cinza neutro e a cor vem do objeto.
 static void metal(const Estado *e, Vector3 centro, Vector3 tamanho, Color cor, int variacao) {
-    texturas_caixa(e->rec.material[MATERIAL_METAL], centro, tamanho, texturas_modo(MATERIAL_METAL, variacao),
+    texturas_caixa_mat(e, MATERIAL_METAL, centro, tamanho, texturas_modo(MATERIAL_METAL, variacao),
                    cor);
 }
 
@@ -411,12 +412,12 @@ static void desenha_moveis(const Estado *e) {
 static void desenha_porta_da_sala(const Estado *e) {
     Vector3 p = e->nivel.porta_sala;
     for (int lado = -1; lado <= 1; lado += 2) // padrão MAP: um pilar de cada lado do batente
-        texturas_caixa(e->rec.material[MATERIAL_CONCRETO], (Vector3){p.x, 1.1f, p.z + lado * 0.83f},
+        texturas_caixa_mat(e, MATERIAL_CONCRETO, (Vector3){p.x, 1.1f, p.z + lado * 0.83f},
                        (Vector3){0.3f, 2.2f, 0.34f}, texturas_modo(MATERIAL_CONCRETO, 7 + lado), WHITE);
     if (porta_bunker_desenha(e)) return;
     if (!regras_fase_eh_saida(e->fase)) return;
     float abre = fminf(1.0f, e->tempo_fase / 1.2f);
-    texturas_caixa(e->rec.material[MATERIAL_PORTA], (Vector3){p.x, 1.1f, p.z + 1.4f * abre},
+    texturas_caixa_mat(e, MATERIAL_PORTA, (Vector3){p.x, 1.1f, p.z + 1.4f * abre},
                    (Vector3){0.16f, 2.2f, 1.32f}, texturas_modo(MATERIAL_PORTA, 0), WHITE);
 }
 
@@ -426,7 +427,7 @@ static void desenha_portas_e_duto(const Estado *e) {
         for (int c = 0; c < MAPA_LARGURA; c++) {
             if (n->celulas[l][c] != 'D') continue;
             Vector3 p = nivel_centro_celula(c, l);
-            texturas_caixa(e->rec.material[MATERIAL_CONCRETO], (Vector3){p.x, 2.6f, p.z},
+            texturas_caixa_mat(e, MATERIAL_CONCRETO, (Vector3){p.x, 2.6f, p.z},
                            (Vector3){2.0f, 0.8f, 2.0f}, texturas_modo(MATERIAL_CONCRETO, c + l),
                            WHITE); // verga
         }
@@ -443,12 +444,15 @@ static void desenha_portas_e_duto(const Estado *e) {
 static void desenha_paredes(const Estado *e) {
     const ColParedes *ps = &e->paredes;
     Texture2D concreto = e->rec.material[MATERIAL_CONCRETO], oliva = e->rec.material[MATERIAL_OLIVA];
+    // cada passada liga o seu material uma vez (normal e ORM) e desenha todas as peças dele
     float barrado = BARRADO_ALTURA - 0.16f;
+    posfx_material(e, MATERIAL_CONCRETO);
     // laço de desenho: só percorre a coleção para desenhar (não é map/filter/fold)
     for (int i = 0; i < ps->n; i++)
         if (ps->itens[i].tipo == PAREDE_MURO)
             texturas_caixa(concreto, centro_de(&ps->itens[i]), tamanho_de(&ps->itens[i]),
                            texturas_modo(MATERIAL_CONCRETO, i), WHITE);
+    posfx_material(e, MATERIAL_OLIVA);
     // laço de desenho: o barrado oliva de cada muro
     for (int i = 0; i < ps->n; i++) {
         if (ps->itens[i].tipo != PAREDE_MURO) continue;
@@ -456,31 +460,38 @@ static void desenha_paredes(const Estado *e) {
         texturas_caixa(oliva, (Vector3){c.x, 0.16f + barrado * 0.5f, c.z},
                        (Vector3){t.x + 0.02f, barrado, t.z + 0.02f}, texturas_modo(MATERIAL_OLIVA, i), WHITE);
     }
-    // laço de desenho: rodapé, friso do barrado e a porta trancada da sala
+    posfx_material(e, MATERIAL_PORTA);
+    // laço de desenho: a porta trancada da sala
+    for (int i = 0; i < ps->n; i++)
+        if (ps->itens[i].tipo == PAREDE_PORTA)
+            texturas_caixa(e->rec.material[MATERIAL_PORTA], centro_de(&ps->itens[i]),
+                           tamanho_de(&ps->itens[i]), texturas_modo(MATERIAL_PORTA, 0), WHITE);
+    posfx_material(e, MATERIAL_METAL);
+    Texture2D metal = e->rec.material[MATERIAL_METAL];
+    // laço de desenho: rodapé e friso do barrado de cada muro
     for (int i = 0; i < ps->n; i++) {
         const Parede *p = &ps->itens[i];
-        Vector3 c = centro_de(p), t = tamanho_de(p);
-        if (p->tipo == PAREDE_PORTA)
-            texturas_caixa(e->rec.material[MATERIAL_PORTA], c, t, texturas_modo(MATERIAL_PORTA, 0), WHITE);
         if (p->tipo != PAREDE_MURO) continue;
-        metal(e, (Vector3){c.x, 0.08f, c.z}, (Vector3){t.x + 0.03f, 0.16f, t.z + 0.03f},
-              (Color){0x16, 0x1c, 0x18, 255}, i);
-        metal(e, (Vector3){c.x, BARRADO_ALTURA, c.z}, (Vector3){t.x + 0.03f, 0.04f, t.z + 0.03f},
-              (Color){0x22, 0x26, 0x20, 255}, i);
+        Vector3 c = centro_de(p), t = tamanho_de(p);
+        texturas_caixa(metal, (Vector3){c.x, 0.08f, c.z}, (Vector3){t.x + 0.03f, 0.16f, t.z + 0.03f},
+                       texturas_modo(MATERIAL_METAL, i), (Color){0x16, 0x1c, 0x18, 255});
+        texturas_caixa(metal, (Vector3){c.x, BARRADO_ALTURA, c.z}, (Vector3){t.x + 0.03f, 0.04f, t.z + 0.03f},
+                       texturas_modo(MATERIAL_METAL, i), (Color){0x22, 0x26, 0x20, 255});
     }
+    posfx_superficie(e, POSFX_RUGOSIDADE_PADRAO, 0.0f);
 }
 
 void nivel_desenha(const Estado *e) {
     const Nivel *n = &e->nivel;
     float largura = MAPA_LARGURA * TAMANHO_CELULA, profundidade = MAPA_ALTURA * TAMANHO_CELULA;
-    texturas_caixa(e->rec.material[MATERIAL_PISO], (Vector3){largura * 0.5f, -0.05f, profundidade * 0.5f},
+    texturas_caixa_mat(e, MATERIAL_PISO, (Vector3){largura * 0.5f, -0.05f, profundidade * 0.5f},
                    (Vector3){largura, 0.1f, profundidade}, texturas_modo(MATERIAL_PISO, 0), WHITE);
-    texturas_caixa(e->rec.material[MATERIAL_TETO],
+    texturas_caixa_mat(e, MATERIAL_TETO,
                    (Vector3){largura * 0.5f, PE_DIREITO + 0.05f, profundidade * 0.5f},
                    (Vector3){largura, 0.1f, profundidade}, texturas_modo(MATERIAL_TETO, 0), WHITE);
     desenha_paredes(e);
     float meio_x = (n->vidro_x0 + n->vidro_x1) * 0.5f, vl = n->vidro_x1 - n->vidro_x0;
-    texturas_caixa(e->rec.material[MATERIAL_CONCRETO], (Vector3){meio_x, 0.45f, n->vidro_z},
+    texturas_caixa_mat(e, MATERIAL_CONCRETO, (Vector3){meio_x, 0.45f, n->vidro_z},
                    (Vector3){vl, 0.9f, 0.4f}, texturas_modo(MATERIAL_CONCRETO, 99), WHITE); // mureta
     for (int i = 0; i <= 3; i++) // montantes do vidro
         metal(e, (Vector3){n->vidro_x0 + i * vl / 3.0f, 1.95f, n->vidro_z}, (Vector3){0.12f, 2.1f, 0.14f},

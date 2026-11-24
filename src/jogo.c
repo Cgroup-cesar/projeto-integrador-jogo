@@ -413,6 +413,7 @@ void jogo_desenha_cena(const Estado *e) {
     ClearBackground(BLACK);
     bool tela_preta = e->fase == FASE_INTRO && e->intro.etapa != INTRO_RADIO;
     if (!tela_preta) desenha_mundo_3d(e);
+    posfx_resolve(e); // a cena HDR vira o quadro; daqui em diante, desenho direto no quadro
     jogador_desenha(e);
     susto_desenha(e);
     if (e->fase == FASE_INTRO && e->intro.etapa == INTRO_RADIO) // a sala saindo do preto

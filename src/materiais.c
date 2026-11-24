@@ -95,7 +95,14 @@ static PixelMaterial concreto(float u, float v, float sujeira, unsigned s) {
     float umido = passo(0.72f, 0.95f, nivel);
     float mare = fmaxf(0.0f, passo(0.68f, 0.71f, nivel) - passo(0.71f, 0.74f, nivel));
     brilho *= (1.0f - sujeira * (0.55f * escorre + 0.4f * umido)) * (1.0f - 0.25f * sujeira * mare);
-    return (PixelMaterial){brilho, sujeira * fmaxf(0.85f * escorre, 0.85f * umido), 0.0f};
+    float rach = sujeira * rachadura(u, v, 6, 3, s + 4u) * regiao;
+    float furo = 1.0f - passo(0.018f, 0.03f, sqrtf(du * du + dv * dv));
+    float junta = 1.0f - passo(0.0f, 0.02f, fabsf(faixa - floorf(faixa + 0.5f)));
+    float altura = 0.7f + 0.3f * materiais_fbm(u, v, 48, 24, 3, s + 1u);
+    altura -= 0.6f * rach + 0.5f * furo + 0.2f * junta;
+    float rug = 0.88f - 0.25f * sujeira * escorre - 0.2f * umido; // onde a água corre, mais liso
+    float mistura = sujeira * fmaxf(0.85f * escorre, 0.85f * umido);
+    return (PixelMaterial){brilho, mistura, 0.0f, Clamp(altura, 0.0f, 1.0f), rug, 0.0f};
 }
 
 // Tijolo (12 fiadas na textura, meia-vez desencontradas): 1 no tijolo, 0 na argamassa.
@@ -131,7 +138,10 @@ static PixelMaterial oliva(float u, float v, float sujeira, unsigned s) {
     float pe = passo(0.8f, 1.0f, v + 0.08f * (materiais_fbm(u, v, 16, 4, 3, s + 21u) - 0.5f));
     brilho *= 1.0f - 0.45f * sujeira * pe;
     brilho *= 1.0f - 0.6f * sujeira * rachadura(u, v, 4, 4, s + 23u) * passo(0.55f, 0.65f, p);
-    return (PixelMaterial){brilho, Clamp(descascado + 0.6f * sujeira * pe, 0.0f, 1.0f), tij};
+    float altura = 1.0f - 0.35f * descascado - 0.15f * fundo - 0.25f * fundo * (1.0f - tb) + 0.05f * lasca;
+    float rug = Lerp(0.5f, 0.92f, descascado) + 0.1f * sujeira * pe; // tinta acetinada; reboco fosco
+    return (PixelMaterial){brilho, Clamp(descascado + 0.6f * sujeira * pe, 0.0f, 1.0f), tij,
+                           Clamp(altura, 0.0f, 1.0f), Clamp(rug, 0.0f, 1.0f), 0.0f};
 }
 
 // Distância (0..0,5) do ponto à borda da placa numa grade de `n` × `n` placas.
@@ -156,7 +166,11 @@ static PixelMaterial piso(float u, float v, float sujeira, unsigned s) {
     float lascada = materiais_hash(px, pz, s + 8u) < 0.3f ? 1.0f - passo(0.05f, 0.07f, quina) : 0.0f;
     float poeira = passo(0.5f, 0.8f, materiais_fbm(u, v, 3, 3, 5, s + 9u)) * sujeira;
     brilho *= (1.0f - 0.3f * poeira) * (1.0f - 0.6f * rejunte) * (1.0f - 0.5f * lascada);
-    return (PixelMaterial){brilho, Clamp(poeira + 0.7f * lascada, 0.0f, 1.0f), 0.0f};
+    float trinca = trincada ? rachadura(u, v, 4, 4, s + 7u) : 0.0f;
+    float altura = 1.0f - 0.7f * rejunte - 0.5f * trinca - 0.4f * lascada;
+    float rug = 0.42f + 0.4f * poeira + 0.35f * rejunte; // granilite polido; o rejunte e a poeira são foscos
+    float mistura = Clamp(poeira + 0.7f * lascada, 0.0f, 1.0f);
+    return (PixelMaterial){brilho, mistura, 0.0f, Clamp(altura, 0.0f, 1.0f), Clamp(rug, 0.0f, 1.0f), 0.0f};
 }
 // Forro (2 m, 3 × 3 placas): juntas, tom por placa e manchas de infiltração com anel mais escuro.
 static PixelMaterial teto(float u, float v, float sujeira, unsigned s) {
@@ -166,7 +180,8 @@ static PixelMaterial teto(float u, float v, float sujeira, unsigned s) {
     float mancha = passo(limiar, limiar + 0.05f, f);
     float anel = fmaxf(0.0f, passo(limiar - 0.015f, limiar, f) - passo(limiar, limiar + 0.015f, f));
     brilho *= (1.0f - 0.55f * junta) * (1.0f - 0.3f * anel * sujeira);
-    return (PixelMaterial){brilho, sujeira * fminf(1.0f, 0.6f * mancha + anel), 0.0f};
+    return (PixelMaterial){brilho, sujeira * fminf(1.0f, 0.6f * mancha + anel), 0.0f, 1.0f - 0.8f * junta,
+                           0.9f, 0.0f};
 }
 
 // Metal pintado (1 m), cinza neutro (a cor vem do objeto): escovado vertical, riscos claros e ferrugem.
@@ -175,7 +190,10 @@ static PixelMaterial metal(float u, float v, float sujeira, unsigned s) {
                    0.12f * materiais_fbm(u, v, 6, 6, 3, s + 33u);
     brilho *= 1.0f + 0.35f * passo(0.97f, 1.0f, materiais_ruido(u * 96.0f, v * 6.0f, 96, 6, s + 35u));
     float ferrugem = passo(0.68f - 0.08f * sujeira, 0.76f, materiais_fbm(u, v, 8, 8, 4, s + 37u)) * sujeira;
-    return (PixelMaterial){brilho, ferrugem, 0.0f};
+    // metal pintado: a tinta é dielétrica (metal 0); onde a tinta gastou (riscos), aparece o metal nu
+    float risco = passo(0.97f, 1.0f, materiais_ruido(u * 96.0f, v * 6.0f, 96, 6, s + 35u));
+    return (PixelMaterial){brilho, ferrugem, 0.0f, 1.0f - 0.3f * ferrugem, Lerp(0.45f, 0.9f, ferrugem),
+                           risco * (1.0f - ferrugem)};
 }
 
 // Porta (UV local da face): duas almofadas com friso escuro, mão encardida perto da maçaneta, pé riscado.
@@ -187,6 +205,7 @@ static PixelMaterial porta(float u, float v, float sujeira, unsigned s) {
     float bv = fminf(fminf(fabsf(v - 0.08f), fabsf(v - 0.45f)), fminf(fabsf(v - 0.55f), fabsf(v - 0.92f)));
     bool friso = (dentro_u && bv < 0.012f) || (bu < 0.012f && v > 0.08f && v < 0.92f);
     m.brilho *= friso ? 0.55f : almofada ? 0.92f : 1.0f;
+    m.altura = friso ? 0.2f : almofada ? 0.75f : 1.0f; // as almofadas são rebaixadas e o friso, um sulco
     float mao = passo(0.7f, 0.78f, u) * (1.0f - passo(0.6f, 0.68f, fabsf(v - 0.5f) + 0.55f));
     m.brilho *= 1.0f - 0.3f * sujeira * mao;
     m.brilho *=
@@ -212,7 +231,7 @@ PixelMaterial materiais_pixel(TipoMaterial m, float u, float v, float sujeira, u
     case MATERIAL_PORTA:
         return porta(u, v, sujeira, semente);
     default:
-        return (PixelMaterial){1.0f, 0.0f, 0.0f};
+        return (PixelMaterial){1.0f, 0.0f, 0.0f, 1.0f, 0.8f, 0.0f};
     }
 }
 
