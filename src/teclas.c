@@ -2,6 +2,7 @@
 // bilhete). Na partida, a tela fica limpa: só um "B Comandos" pequeno no canto inferior esquerdo, e o B abre
 // e fecha a lista das teclas logo acima dele. No menu e nas telas depois do final, a barra do rodapé.
 #include "teclas.h"
+#include "botoes.h"
 #include "rodadas.h"
 #include "susto.h"
 #include "ui.h"
@@ -146,8 +147,20 @@ static void seta(Vector2 c, float r, int direcao, Color cor) { // 0 cima, 1 baix
     DrawTriangle(a, b, d, cor);
 }
 
+// No controle, o botão desenhado (assets/botoes/), com sombra, centrado na altura da tecla. Devolve a largura
+// usada, ou 0 se não houver ícone (aí a tecla vira a caixinha com o nome).
+static float icone(const Estado *e, const char *rotulo, Vector2 pos, float altura, Color cor) {
+    if (!e->in.controle) return 0;
+    float s = ui_escala(), h = altura * 1.15f, y = pos.y - (h - altura) * 0.5f;
+    float largura = botoes_desenha(e, rotulo, (Vector2){pos.x + 2 * s, y + 3 * s}, h, Fade(BLACK, 0.8f));
+    if (largura > 0) botoes_desenha(e, rotulo, (Vector2){pos.x, y}, h, cor);
+    return largura;
+}
+
 // Desenha a tecla como uma tecla de verdade (caixinha com borda) e devolve a largura usada.
 static float tecla(const Estado *e, const char *rotulo, Vector2 pos, float altura, Color cor) {
+    float usada = icone(e, rotulo, pos, altura, cor);
+    if (usada > 0) return usada;
     float s = ui_escala(), tamanho = altura * 0.55f;
     int setas = strcmp(rotulo, "SETAS_V") == 0   ? 2
                 : strcmp(rotulo, "SETAS_H") == 0 ? 2
