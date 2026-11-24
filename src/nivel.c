@@ -8,6 +8,7 @@
 #include "porta_bunker.h"
 #include "cameras.h"
 #include "quadro.h"
+#include "lampada_sala.h"
 #include "texturas.h"
 #include "cenario.h"
 #include "posfx.h"
@@ -181,6 +182,7 @@ void nivel_carrega(Nivel *n) {
         int c = LAMPADAS[i][0], l = LAMPADAS[i][1];
         Vector3 p = nivel_centro_celula(c, l);
         p.y = PE_DIREITO - LUMINARIA_LUZ_ABAIXO_M; // a luz logo abaixo do painel do teto
+        if (nivel_na_sala_de_observacao(n, p)) p = lampada_sala_bulbo(); // a sala tem a lâmpada pendurada
         // a luminária fica no sentido do corredor: ao longo de x se dá para andar para os lados
         n->lampada_em_x[n->n_lampadas] = nivel_caminhavel(n, c - 1, l) || nivel_caminhavel(n, c + 1, l);
         n->lampadas[n->n_lampadas++] = p;
@@ -313,7 +315,7 @@ static int luzes_sala(const Estado *e, Vector3 *pos, Vector3 *cor, Vector4 *cone
     float cela = (menu ? 0.9f : 2.2f) * HOLOFOTE_GANHO * (e->apagao_t > 0.0f ? 0.0f : 1.0f);
     float sala = brilho_sala(e) * (menu ? 0.7f : 1.5f);
     Vector3 peito = Vector3Add(e->nivel.cela_precursor, (Vector3){0.0f, 1.5f, 0.0f});
-    pos[0] = (Vector3){8.0f, PE_DIREITO - 0.25f, 11.0f};
+    pos[0] = lampada_sala_bulbo();
     cor[0] = e->alarme_t > 0.0f ? cor_luz(COR_ALARME, 0.6f + 0.5f * sinf(e->tempo_total * 6.0f))
                                 : cor_luz(COR_LAMPADA, sala);
     pos[1] = HOLOFOTE_A;
@@ -450,6 +452,7 @@ static void desenha_moveis(const Estado *e, bool completo) {
         cameras_desenha(e);
         quadro_desenha(e);
         console_modelo_desenha(e); // o computador de época na mesa (sem o modelo, a tela verde abaixo)
+        lampada_sala_desenha(e);   // a lâmpada pendurada da sala (fica fora do reflexo: é pequena)
     }
     metal(e, (Vector3){con.x + 0.62f, 1.18f, con.z - 0.88f}, (Vector3){0.22f, 0.3f, 0.1f}, cinza,
           3); // interfone
@@ -494,6 +497,7 @@ static void desenha_luminarias(const Estado *e) {
     const Nivel *n = &e->nivel;
     posfx_material(e, MATERIAL_METAL);
     for (int i = 0; i < n->n_lampadas; i++) { // laço de desenho: só percorre as luminárias
+        if (nivel_na_sala_de_observacao(n, n->lampadas[i])) continue; // a sala tem a lâmpada pendurada
         Vector3 p = {n->lampadas[i].x, PE_DIREITO - 0.035f, n->lampadas[i].z};
         Vector3 t = n->lampada_em_x[i] ? (Vector3){1.3f, 0.07f, 0.34f} : (Vector3){0.34f, 0.07f, 1.3f};
         texturas_caixa(e->rec.material[MATERIAL_METAL], p, t, texturas_modo(MATERIAL_METAL, 60 + i),
@@ -626,6 +630,10 @@ void nivel_desenha_emissivos(const Estado *e) {
         for (int i = 0; i < n->n_lampadas; i++) { // laço de desenho: o painel aceso de cada luminária
             float k = energia ? LUMINARIA_EMISSAO * corte * nivel_luminaria_brilho(e, i) : 0.0f; // apagada
             posfx_emissivo(e, k);
+            if (nivel_na_sala_de_observacao(n, n->lampadas[i])) { // a lâmpada pendurada: só o bulbo acende
+                lampada_sala_desenha_bulbo(COR_LUMINARIA, energia ? 1.0f : 0.0f);
+                continue;
+            }
             Vector3 p = {n->lampadas[i].x, PE_DIREITO - 0.074f, n->lampadas[i].z};
             Vector3 painel = n->lampada_em_x[i] ? (Vector3){1.16f, 0.004f, 0.22f}
                                                 : (Vector3){0.22f, 0.004f, 1.16f};
@@ -637,9 +645,9 @@ void nivel_desenha_emissivos(const Estado *e) {
                      ColorBrightness(MESA_COR_LUZ, mesa_bilhete_piscada(e) - 1.0f));
     }
     float sala = brilho_sala(e);
-    Vector3 lampada_sala = {8.0f, PE_DIREITO - 0.25f, 11.0f};
+    Vector3 lampada_sala = lampada_sala_bulbo();
     Color cor_sala = e->alarme_t > 0 ? COR_ALARME : lamp;
-    if (!saida && sala > 0.5f) DrawSphereEx(lampada_sala, 0.11f, 8, 8, cor_sala);
+    if (!saida && sala > 0.5f) lampada_sala_desenha_bulbo(cor_sala, 1.0f);
     cenario_comeca_halos();
     for (int i = 0; saida && e->painel.resolvido && i < n->n_lampadas; i++) // o halo de cada lâmpada acesa
         cenario_halo(e, n->lampadas[i], lamp);

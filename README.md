@@ -182,6 +182,7 @@ src/armario_modelo.c/.h  a aparência dos armários de esconderijo (assets/model
 src/porta_bunker.c/.h    a porta de bunker da sala de observação: fechada nas rodadas, abre para o corredor na saída
 src/cameras.c/.h         câmeras de segurança nas salas e corredores, com o LED de REC piscando
 src/quadro.c/.h          o quadro de investigação da sala de observação (jornal Rede Bola, relatório do SNI, fichas)
+src/lampada_sala.c/.h    a lâmpada pendurada da sala de observação, com o bulbo aceso (assets/modelos/lampada.glb, opcional)
 src/tela_fim.c/.h        depois do final: desempenho, avaliação do jogo em estrelas e o ranking
 src/ranking.c/.h         ranking.txt e avaliacoes.csv no disco do estande (nada no --smoke)
 src/identidade.c/.h      "Professor ou professora?" e o nome, no começo da intro (só em memória, só na partida)
@@ -204,7 +205,7 @@ tests/test_logica.c      conectivos, classificações, parser, painéis
 tests/test_regras.c      regras puras (inclusive sanidade) e coleções, com as bordas
 tests/test_fluxo.c       partidas inteiras pela máquina de fases
 tests/test_menu.c        teste visual do menu inicial (abre janela; não entra no make test)
-assets/fontes/ · assets/modelos/ · assets/audio/ · assets/texturas/   opcionais (por enquanto, modelos/precursor.glb, modelos/lanterna.glb, modelos/terminal.glb, modelos/caixas.glb, modelos/mesa.glb, modelos/papeis.glb, modelos/armario.glb, modelos/porta_bunker.glb, modelos/camera.glb, modelos/quadro.glb, texturas/sangue.png, audio/jumpscare.mp3 e os sons gravados em audio/; texturas: ver "Texturas do mapa")
+assets/fontes/ · assets/modelos/ · assets/audio/ · assets/texturas/   opcionais (por enquanto, modelos/precursor.glb, modelos/lanterna.glb, modelos/terminal.glb, modelos/caixas.glb, modelos/mesa.glb, modelos/papeis.glb, modelos/armario.glb, modelos/porta_bunker.glb, modelos/camera.glb, modelos/quadro.glb, modelos/lampada.glb, texturas/sangue.png, audio/jumpscare.mp3 e os sons gravados em audio/; texturas: ver "Texturas do mapa")
 docs/ESPECIFICACAO_PROJETO_PRECURSOR.md   a especificação (fonte da verdade do design)
 docs/ARQUITETURA.md · docs/DECISOES.md · docs/PROGRESSO.md   arquitetura · decisões · progresso da v0
 docs/img/                capturas de tela
@@ -251,9 +252,9 @@ Cada trecho que cumpre um requisito tem, logo acima, um comentário-âncora `// 
 
 | Requisito | Onde | Âncora | Como foi cumprido |
 | :---- | :---- | :---- | :---- |
-| RF1 Janela e game loop a 60 FPS com `GetFrameTime()` | [src/main.c#L616-L617](src/main.c#L616-L617)<br>[src/main.c#L533-L542](src/main.c#L533-L542)<br>[src/criatura.c#L277-L278](src/criatura.c#L277-L278) | `[REQ:RF1]` | `SetTargetFPS(60)`; `dt = GetFrameTime()` limitado a 0,05 s e passado a todo `xxx_atualiza`, que multiplica movimento, temporizadores e animações (aqui, o passo da criatura). |
+| RF1 Janela e game loop a 60 FPS com `GetFrameTime()` | [src/main.c#L619-L620](src/main.c#L619-L620)<br>[src/main.c#L533-L542](src/main.c#L533-L542)<br>[src/criatura.c#L277-L278](src/criatura.c#L277-L278) | `[REQ:RF1]` | `SetTargetFPS(60)`; `dt = GetFrameTime()` limitado a 0,05 s e passado a todo `xxx_atualiza`, que multiplica movimento, temporizadores e animações (aqui, o passo da criatura). |
 | RF2 Controle do jogador por teclado/mouse (e controle de Xbox) | [src/main.c#L50-L94](src/main.c#L50-L94)<br>[src/jogador.c#L44-L60](src/jogador.c#L44-L60)<br>[src/jogador.c#L109-L117](src/jogador.c#L109-L117) | `[REQ:RF2]` | Câmera em 1ª pessoa pelo mouse; WASD, Shift (corrida com fôlego), E, 1/2/3, setas, ENTER e Esc, lidos uma vez por quadro numa `struct Entrada`; o controle soma por cima em `src/controle.c` (o analógico direito gira a câmera em rad/s, multiplicado por `dt`). |
-| RF3 Coleção (vetor) de múltiplos objetos | [src/estado.h#L381-L387](src/estado.h#L381-L387) | `[REQ:RF3]` | Seis coleções de capacidade fixa com contador (ruídos, partículas, rachaduras, eventos, interativos, paredes), sem `malloc` por quadro; ver a tabela de map, filter e fold. |
+| RF3 Coleção (vetor) de múltiplos objetos | [src/estado.h#L385-L392](src/estado.h#L385-L392) | `[REQ:RF3]` | Seis coleções de capacidade fixa com contador (ruídos, partículas, rachaduras, eventos, interativos, paredes), sem `malloc` por quadro; ver a tabela de map, filter e fold. |
 | RF4 Colisões com funções da Raylib | [src/jogador.c#L63-L70](src/jogador.c#L63-L70)<br>[src/colecoes.c#L186-L196](src/colecoes.c#L186-L196)<br>[src/colecoes.c#L145-L165](src/colecoes.c#L145-L165)<br>[src/criatura.c#L180-L181](src/criatura.c#L180-L181)<br>[src/criatura.c#L285-L292](src/criatura.c#L285-L292) | `[REQ:RF4]` | `CheckCollisionBoxes` (jogador × paredes, vidro, móveis e armários, eixo por eixo), `GetRayCollisionBox` (mira de interação e visão da criatura contra as paredes) e `CheckCollisionSpheres` (captura). |
 | RF5 Placar, vidas, telas de início e fim | [src/jogo.c#L60-L65](src/jogo.c#L60-L65)<br>[src/menu.c#L156-L187](src/menu.c#L156-L187)<br>[src/tela_fim.c#L88-L124](src/tela_fim.c#L88-L124) | `[REQ:RF5]` | Placar = fold dos eventos; vidas = integridade do vidro (fold das rachaduras), recalculados a cada quadro; tela de início com o título, o gancho, as opções INICIAR, RANKING e SAIR, o convite do 1º lugar ("você pode ser o próximo") e o aviso de nome provisório, intro e tela de fim só com o principal: resultado, placar e lugar no ranking, mais a avaliação do jogo em estrelas. |
 | RF6 Condição de vitória/derrota | [src/compositor.c#L62-L76](src/compositor.c#L62-L76)<br>[src/tela_fim.c#L88-L124](src/tela_fim.c#L88-L124) | `[REQ:RF6]` | A frase transmitida vai para `regras_avalia_transmissao`: contradição → final bom (VITÓRIA); satisfazível → final ruim (DERROTA); inválida → SINTAXE INVÁLIDA, sem penalidade. |
@@ -322,9 +323,9 @@ Cada laço leva o comentário `// padrão MAP`, `// padrão FILTER` ou `// padr�
 | Requisito | Onde | Âncora | Como foi cumprido |
 | :---- | :---- | :---- | :---- |
 | RNF1 Legibilidade | [.clang-format#L1-L12](.clang-format#L1-L12) | `[REQ:RNF1]` | Nomes em português, claros e consistentes (`atualiza_…`, `desenha_…`, `colidiu_…`); funções de até ~40 linhas (a única exceção, em `audio_sintese.c`, está comentada); o código segue o `.clang-format` (`clang-format --dry-run` sem avisos). |
-| RNF2 Modularização | [src/estado.h#L340-L405](src/estado.h#L340-L405) | `[REQ:RNF2]` | Uma struct por objeto, uma função por responsabilidade, um módulo por sistema; o maior arquivo tem menos de 500 linhas. |
-| RNF3 Separação update/render | [src/main.c#L428-L441](src/main.c#L428-L441) | `[REQ:RNF3]` | Todo módulo tem `xxx_atualiza(Estado *e, float dt)` e `xxx_desenha(const Estado *e)`; o `const` garante que desenhar não muda nada; nenhum `Draw*` em `*_atualiza` (auditado com grep). |
-| RNF4 Robustez | [src/colecoes.c#L9-L14](src/colecoes.c#L9-L14)<br>[src/main.c#L533-L542](src/main.c#L533-L542)<br>[src/nivel.c#L44-L48](src/nivel.c#L44-L48)<br>[src/ui.c#L33-L60](src/ui.c#L33-L60)<br>[src/criatura.c#L29-L48](src/criatura.c#L29-L48) | `[REQ:RNF4]` | Vetor cheio descarta com `TraceLog`, sem travar; listas vazias (sem ruídos, sem eventos) testadas; `dt` limitado; fora do mapa conta como parede; sem fonte, som ou modelo, entra o placeholder. |
+| RNF2 Modularização | [src/estado.h#L344-L409](src/estado.h#L344-L409) | `[REQ:RNF2]` | Uma struct por objeto, uma função por responsabilidade, um módulo por sistema; o maior arquivo tem menos de 500 linhas. |
+| RNF3 Separação update/render | [src/main.c#L429-L442](src/main.c#L429-L442) | `[REQ:RNF3]` | Todo módulo tem `xxx_atualiza(Estado *e, float dt)` e `xxx_desenha(const Estado *e)`; o `const` garante que desenhar não muda nada; nenhum `Draw*` em `*_atualiza` (auditado com grep). |
+| RNF4 Robustez | [src/colecoes.c#L9-L14](src/colecoes.c#L9-L14)<br>[src/main.c#L533-L542](src/main.c#L533-L542)<br>[src/nivel.c#L48-L52](src/nivel.c#L48-L52)<br>[src/ui.c#L33-L60](src/ui.c#L33-L60)<br>[src/criatura.c#L29-L48](src/criatura.c#L29-L48) | `[REQ:RNF4]` | Vetor cheio descarta com `TraceLog`, sem travar; listas vazias (sem ruídos, sem eventos) testadas; `dt` limitado; fora do mapa conta como parede; sem fonte, som ou modelo, entra o placeholder. |
 | RNF5 Documentação | [README.md#L245-L245](README.md#L245-L245) | `[REQ:RNF5]` | Este README, `docs/ARQUITETURA.md`, `docs/DECISOES.md` (as escolhas e por quê), `docs/PROGRESSO.md` e `CLAUDE.md`. |
 | RNF6 Versionamento + Makefile | [Makefile#L1-L2](Makefile#L1-L2) | `[REQ:RNF6]` | `Makefile` como build principal (com `test`, `smoke`, `readme-check`); um commit por marco na v0 (M0 a M9) e, daqui em diante, branch por card e PR (ver Metodologia). |
 
@@ -344,7 +345,7 @@ Cada laço leva o comentário `// padrão MAP`, `// padrão FILTER` ou `// padr�
 **O game loop (RF1):** `dt` limitado e o quadro entrada → atualiza → desenha.
 
 ```c
-// src/main.c#L532-L542
+// src/main.c#L533-L543
 static void quadro(Estado *e) {
     // [REQ:RF1] [REQ:RNF4] dt de GetFrameTime() limitado a DT_MAXIMO; no smoke, passo fixo (velocidade
     // acelerada)
@@ -462,7 +463,7 @@ static void testa_vidro(void) {
 **Desenhar só lê o estado (RNF3):**
 
 ```c
-// src/main.c#L428-L441
+// src/main.c#L429-L442
 // [REQ:RNF3] desenhar recebe const Estado *: não muda nada; o loop é entrada → atualiza → desenha
 static void desenha(const Estado *e) {
     clique_limpa();   // as telas registram de novo, ao se desenhar, onde estão as opções clicáveis
@@ -572,6 +573,7 @@ SMOKE OK: a partida foi jogada até os dois finais.
 - **Fonte VT323** (opcional), de Peter Hull, licença SIL Open Font License 1.1: [fonts.google.com/specimen/VT323](https://fonts.google.com/specimen/VT323). É baixada por `tools/baixa_fonte` e não vem no repositório.
 - **Modelo 3D do Precursor** (`assets/modelos/precursor.glb`): *"Gaunt Horror Creature – Free Creepy 3D Model"* by **Purple.Point**, publicado no Sketchfab, licensed under [Creative Commons Attribution 4.0 (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/). <!-- colar aqui o link da página do modelo no Sketchfab --> Alteração feita pela equipe: as texturas JPEG embutidas foram convertidas para PNG (a raylib padrão não lê JPEG); a geometria não foi alterada. Sem o arquivo, o jogo usa o corpo procedural.
 - **Modelo 3D da lanterna** (`assets/modelos/lanterna.glb`): *"Lowpoly Flashlight (Lanterna)"* by **EnrycoDosSantos**, publicado no Sketchfab, licensed under [Creative Commons Attribution 4.0 (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/). <!-- colar aqui o link da página do modelo no Sketchfab --> Usado sem alterações. Sem o arquivo, o jogo desenha uma lanterna de cilindros.
+- **Modelo 3D da lâmpada da sala de observação** (`assets/modelos/lampada.glb`): *"Old Lamp"* by **_surovic_** ([Samuel Surovic](https://sketchfab.com/samuelsurovic)), publicado no [Sketchfab](https://sketchfab.com/3d-models/old-lamp-9ba4921431114368887bf058dee1f752), licensed under [Creative Commons Attribution 4.0 (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/). Alterações feitas pela equipe: a malha foi simplificada de ~471 mil para ~37 mil triângulos e as texturas reduzidas de 1024 para 512 px (com o [gltf-transform](https://gltf-transform.dev)); no jogo, o vidro ganhou um tom fraco no lugar da "transmissão", que a raylib não lê. Sem o arquivo, o jogo desenha uma lâmpada simples.
 - **Sons gravados** (`assets/audio/`: trilha do menu, voz do Precursor, voz do rádio, coração e passos): reunidos pela equipe. <!-- preencher: origem (site/autor) e licença de cada som --> A trilha do menu foi amplificada 5× e os arquivos foram convertidos para WAV de 16 bits quando preciso.
 - **Função de ruído do shader VHS** (`hash12` de *"Hash without Sine"*), de **Dave Hoskins**, licença MIT: [shadertoy.com/view/4djSRW](https://www.shadertoy.com/view/4djSRW). Adaptada em `src/vhs.c`.
 - **Fotos do avistamento** (`assets/fita/avistamento_1..3.png`): escolhidas pela equipe para a intro. A equipe recortou as fotos para 16:9 (saíram a borda serrilhada, o "REC" gravado e o ruído de baixo) e reduziu para 1024 × 576; o OSD da câmera é desenhado pelo jogo. Sem os arquivos, a intro fica com a tela preta.

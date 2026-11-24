@@ -105,6 +105,10 @@ typedef struct {
     bool tem_cameras;
     Model modelo_quadro; // opcional: assets/modelos/quadro.glb (o quadro de investigação)
     bool tem_quadro;
+    Model modelo_lampada; // opcional: assets/modelos/lampada.glb (a lâmpada da sala de observação)
+    bool tem_lampada;
+    Vector3 lampada_pos; // onde o modelo é desenhado e a escala dele (calculados ao carregar)
+    float lampada_escala;
 
     // O rig do Precursor (rig.c): pesos dos ossos calculados ao carregar e o skinning no shader de luz.
     bool rig_ok;                    // false = o modelo aparece sem se deformar (pose de repouso)
