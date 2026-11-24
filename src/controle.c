@@ -12,6 +12,12 @@ static const char *MAPEAMENTOS =
     "03000000373500008210000010010000,GameSir-K1 Controller for Xbox,a:b0,b:b1,x:b3,y:b4,back:b10,start:b11,"
     "guide:b12,leftshoulder:b6,rightshoulder:b7,leftstick:b13,rightstick:b14,dpup:h0.1,dpdown:h0.4,"
     "dpleft:h0.8,dpright:h0.2,leftx:a0,lefty:a1,rightx:a2,righty:a3,lefttrigger:a5,righttrigger:a4,"
+    "platform:Linux,\n"
+    // Xbox Series S|X original com firmware 5.09 (USB 045e:0b12, versão 0905) pelo driver xpad: a raylib
+    // só traz as versões 0105 e 0505; o layout é o mesmo delas
+    "030000005e040000120b000009050000,Xbox Series Controller,a:b0,b:b1,back:b6,dpdown:h0.4,dpleft:h0.8,"
+    "dpright:h0.2,dpup:h0.1,guide:b8,leftshoulder:b4,leftstick:b9,lefttrigger:a2,leftx:a0,lefty:a1,"
+    "rightshoulder:b5,rightstick:b10,righttrigger:a5,rightx:a3,righty:a4,start:b7,x:b2,y:b3,"
     "platform:Linux,\n";
 
 static bool usando_controle = false; // o último a mexer foi o controle (as dicas da tela seguem isto)
