@@ -108,6 +108,8 @@ stateDiagram-v2
 | `manual.c` | o manual dos conectivos que o terminal e os painéis compartilham: lâmpada, ✓/✗, mini-tabela e cartão |
 | `crt.c` | a cara de monitor de fósforo das telas de tarefa (analisador, painéis, manual): moldura com quinas, scanlines, varredura descendo, caixas com legenda e opções em faixa |
 | `teclas.c` | as teclas que valem no contexto: na partida, um "B Comandos" pequeno no canto inferior esquerdo abre e fecha a lista; no menu e nas telas depois do final, a barra do rodapé |
+| `controle.c` | o controle de Xbox: soma botões e analógicos na mesma `Entrada` do teclado e decide se as dicas mostram botões ou teclas; `controle_inicia` ensina à raylib os controles que ela não conhece (`MAPEAMENTOS` e, opcional, `assets/gamecontrollerdb.txt`) |
+| `botoes.c` | os ícones dos botões do controle (`assets/botoes/`), carregados uma vez; sem um arquivo, a barra de teclas mostra o nome do botão em texto |
 | `clique.c` | o mouse nas telas de interface: ao desenhar, cada tela registra as áreas clicáveis do quadro (`clique_area`); no quadro seguinte, o atualiza pergunta o que está sob o ponteiro (`clique_escolhe`: passar por cima escolhe, clicar confirma). Um clique numa tecla da barra do rodapé vale como apertá-la |
 | `circuito.c` | os painéis 1 e 2: corrente nos fios, o ponto que trava (`regras_circuito_bloqueio`), barulho e movimentos |
 | `compositor.c` | a resposta final por fichas e os dois finais |
