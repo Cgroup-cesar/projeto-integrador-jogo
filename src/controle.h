@@ -11,6 +11,9 @@
 
 #include "estado.h"
 
+// Ensina à raylib os controles que ela não conhece (chame uma vez, depois do InitWindow).
+void controle_inicia(void);
+
 // Lê o primeiro controle ligado e soma na Entrada já preenchida pelo teclado e pelo mouse (chame depois
 // deles: usa in->alguma para saber se o teclado foi mexido neste quadro). Também decide in->controle, que
 // fica ligado até alguém voltar a usar o teclado ou o mouse.

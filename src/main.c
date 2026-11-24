@@ -500,6 +500,7 @@ static void abre_janela(void) {
     InitWindow(LARGURA_JANELA, ALTURA_JANELA, titulo);
     SetWindowMinSize(640, 360);
     SetExitKey(KEY_NULL); // Esc é do jogo (sair do terminal, pausar), não fecha a janela
+    controle_inicia();
 }
 
 // --galeria-vhs: desenha o mesmo quadro (tempo parado) com cada preset e salva pasta/vhs_<N>.png; o nome do

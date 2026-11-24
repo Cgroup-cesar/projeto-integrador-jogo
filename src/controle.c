@@ -1,8 +1,18 @@
 // controle.c — o controle somado à Entrada do quadro. Só lê a raylib e preenche campos; quem decide o que
 // cada ação faz continua sendo cada módulo (jogador.c, terminal.c, respiracao.c...).
 #include "controle.h"
+#include "ui.h"
 
 #define CONTROLES_MAX 4 // a raylib conhece até 4; vale o primeiro que estiver ligado
+
+// Mapeamentos no formato do SDL (gamecontrollerdb) para controles que a raylib não traz de fábrica: sem
+// mapeamento, ela até vê o controle, mas todos os botões e eixos ficam em zero. Uma linha por controle.
+static const char *MAPEAMENTOS =
+    // GameSir K1 "for Xbox" (USB 3537:1082) no Linux: entra como HID genérico, não pelo driver xpad
+    "03000000373500008210000010010000,GameSir-K1 Controller for Xbox,a:b0,b:b1,x:b3,y:b4,back:b10,start:b11,"
+    "guide:b12,leftshoulder:b6,rightshoulder:b7,leftstick:b13,rightstick:b14,dpup:h0.1,dpdown:h0.4,"
+    "dpleft:h0.8,dpright:h0.2,leftx:a0,lefty:a1,rightx:a2,righty:a3,lefttrigger:a5,righttrigger:a4,"
+    "platform:Linux,\n";
 
 static bool usando_controle = false; // o último a mexer foi o controle (as dicas da tela seguem isto)
 static bool seta_antes[4]; // o analógico esquerdo já estava empurrado: cima, baixo, esquerda, direita
@@ -84,6 +94,16 @@ static void avisa_troca(int c) {
     else
         TraceLog(LOG_INFO, "CONTROLE: desconectado");
     antes = c;
+}
+
+void controle_inicia(void) {
+    SetGamepadMappings(MAPEAMENTOS);
+    char caminho[512]; // opcional: assets/gamecontrollerdb.txt traz os mapeamentos de outros controles
+    if (!ui_caminho_asset("gamecontrollerdb.txt", caminho, sizeof(caminho))) return;
+    char *texto = LoadFileText(caminho);
+    if (texto == NULL) return;
+    TraceLog(LOG_INFO, "CONTROLE: %d mapeamentos de %s", SetGamepadMappings(texto), caminho);
+    UnloadFileText(texto);
 }
 
 void controle_le(Entrada *in) {
