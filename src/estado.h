@@ -186,6 +186,12 @@ typedef struct {
     bool armario_saindo;            // true: saindo; false: entrando
     Vector3 armario_de;             // de onde a câmera partiu
     float armario_yaw_de, armario_pitch_de; // para onde ela olhava ao começar a entrar
+    // o passo até o console (E nele) e o passo para trás ao sair dele: o corpo anda sozinho, sem teleporte
+    bool console_anda;                      // há um passo em andamento
+    bool console_vira;                      // chegando: vira para o vidro junto; saindo, o olhar fica livre
+    float console_t;                        // s desde que o passo começou
+    Vector3 console_de, console_para;       // onde os pés estavam e aonde vão
+    float console_yaw_de, console_pitch_de; // para onde ele olhava ao começar a chegar
     int mira;          // índice do interativo na mira (−1 = nenhum)
     float tempo_passo;
     float balanco;     // balanço da câmera ao andar

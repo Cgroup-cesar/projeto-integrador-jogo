@@ -5,7 +5,10 @@
 #include "estado.h"
 
 void jogador_teleporta(Estado *e, Vector3 pos, float yaw);
-void jogador_vai_ao_console(Estado *e); // posiciona na frente do console, olhando para o vidro
+void jogador_vai_ao_console(Estado *e); // um passo até a frente do console, virando para o vidro
+void jogador_poe_no_console(Estado *e); // o mesmo, na hora (piloto automático e atalhos de debug)
+void jogador_sai_do_console(Estado *e); // um passo para trás, sem virar (só se está na frente dele)
+bool jogador_na_sala(const Estado *e);  // dentro da sala de observação (onde as rodadas acontecem)
 Vector3 jogador_olho(const Estado *e);
 Vector3 jogador_direcao(const Estado *e);
 
