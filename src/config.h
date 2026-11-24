@@ -361,6 +361,13 @@
 #define LUMINARIA_FORCA     1.6f  // a luz de cada luminária com a energia de volta
 #define LUMINARIA_EMISSAO   7.0f  // o brilho do painel (HDR: estoura no bloom e no reflexo do chão)
 #define LUMINARIA_LUZ_ABAIXO_M 0.12f // a luz fica logo abaixo do painel do teto
+// A lâmpada pendurada da sala de observação (lampada_sala.c), no centro da célula S, em cima de quem começa.
+#define LAMPADA_SALA_X          7.0f
+#define LAMPADA_SALA_Z          11.0f
+#define LAMPADA_SALA_ALTURA_M   0.7f  // do gancho no teto ao fundo da gaiola (o modelo é escalado por ela)
+#define LAMPADA_SALA_BULBO      0.68f // altura do bulbo, em fração da lâmpada medida a partir do teto
+#define LAMPADA_SALA_BULBO_RAIO 0.04f
+#define LAMPADA_SALA_COR_VIDRO  (Color){0xd8, 0xe8, 0xe0, 40} // o vidro da gaiola: um tom fraco
 #define LUZ_CORREDOR_GANHO 0.8f   // força das lâmpadas dos corredores (a luz fraca no jogador fica igual)
 // Sem energia (nas saídas, até o painel ser resolvido): só as luzes de emergência, fracas, e quase nada de
 // ambiente. Sem a lanterna, dá para ver o vulto do corredor, mas não o que tem nele.
