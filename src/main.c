@@ -68,6 +68,7 @@ static void le_entrada(Entrada *in) {
     in->lanterna = IsKeyPressed(KEY_F);
     in->ajuda = IsKeyPressed(KEY_H);
     in->respirar = IsKeyPressed(KEY_SPACE);
+    in->comandos = IsKeyPressed(KEY_B);
 #if TECLAS_DEBUG
     in->f1 = IsKeyPressed(KEY_F1);
     in->f2 = IsKeyPressed(KEY_F2);

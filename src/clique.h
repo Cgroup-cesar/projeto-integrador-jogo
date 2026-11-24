@@ -33,6 +33,7 @@ typedef enum {
     TECLA_E,
     TECLA_F,
     TECLA_ESPACO,
+    TECLA_B,
     TECLA_NENHUMA
 } TeclaClique;
 

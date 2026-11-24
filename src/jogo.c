@@ -33,6 +33,7 @@ static void limpa_partida(Estado *e) {
     e->tempo_partida = 0.0f;
     e->diario_lido = false;
     e->ajuda_aberta = false;
+    e->comandos_abertos = false;
     memset(e->conectivo_decifrado, 0, sizeof(e->conectivo_decifrado));
 }
 
@@ -378,6 +379,7 @@ void jogo_atualiza(Estado *e, float dt) {
         &e->particulas, dt, (Vector3){0, -0.5f, 0},
         (Vector3){MAPA_LARGURA * TAMANHO_CELULA, PE_DIREITO, MAPA_ALTURA * TAMANHO_CELULA});
     ui_atualiza(e, dt);
+    teclas_atualiza(e, dt);
     jogador_atualiza_camera(e);
     atualiza_folds(e);
     EventoFase ev = e->evento;
@@ -465,6 +467,6 @@ void jogo_desenha_interface(const Estado *e) {
     sanidade_desenha(e);
     identidade_desenha(e);
     respiracao_desenha(e); // a barrinha do armário (e o tutorial por cima de tudo)
-    teclas_desenha(e);     // a barra de teclas do rodapé, por baixo das legendas e da pausa
+    teclas_desenha(e);     // o B — Comandos do canto (e a lista), por baixo das legendas e da pausa
     ui_desenha(e);
 }

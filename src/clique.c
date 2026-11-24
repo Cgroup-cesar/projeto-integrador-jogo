@@ -76,6 +76,9 @@ void clique_aperta_teclas(Entrada *in) {
     case TECLA_ESPACO:
         in->respirar = true;
         break;
+    case TECLA_B:
+        in->comandos = true;
+        break;
     default:
         return; // fora da barra: quem trata é a tela
     }
