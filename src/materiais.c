@@ -105,15 +105,27 @@ static PixelMaterial piso(float u, float v, float sujeira, unsigned s) {
     return (PixelMaterial){brilho, mistura, 0.0f, Clamp(altura, 0.0f, 1.0f), Clamp(rug, 0.0f, 1.0f), 0.0f};
 }
 // Metal pintado (1 m), cinza neutro (a cor vem do objeto): escovado vertical, riscos claros e ferrugem.
+// Aço pintado (1 m). A tinta é dielétrica (metal 0), com "casca de laranja", manchas de mão (rugosidade que
+// varia) e amassados largos. Nas lascas, a tinta saiu e aparece o aço nu: claro, metálico e liso. Em volta
+// das lascas nasce a ferrugem, que também escorre de cima. Riscos finos mostram o metal por baixo.
 static PixelMaterial metal(float u, float v, float sujeira, unsigned s) {
-    float brilho = 0.82f + 0.12f * materiais_ruido(u * 8.0f, v * 96.0f, 8, 96, s + 31u) +
-                   0.12f * materiais_fbm(u, v, 6, 6, 3, s + 33u);
-    brilho *= 1.0f + 0.35f * passo(0.97f, 1.0f, materiais_ruido(u * 96.0f, v * 6.0f, 96, 6, s + 35u));
-    float ferrugem = passo(0.68f - 0.08f * sujeira, 0.76f, materiais_fbm(u, v, 8, 8, 4, s + 37u)) * sujeira;
-    // metal pintado: a tinta é dielétrica (metal 0); onde a tinta gastou (riscos), aparece o metal nu
-    float risco = passo(0.97f, 1.0f, materiais_ruido(u * 96.0f, v * 6.0f, 96, 6, s + 35u));
-    return (PixelMaterial){brilho, ferrugem, 0.0f, 1.0f - 0.3f * ferrugem, Lerp(0.45f, 0.9f, ferrugem),
-                           risco * (1.0f - ferrugem)};
+    float casca = materiais_fbm(u, v, 48, 48, 2, s + 31u);
+    float amassado = materiais_fbm(u, v, 3, 3, 3, s + 33u);
+    float brilho = 0.86f + 0.16f * materiais_fbm(u, v, 6, 6, 3, s + 34u) + 0.06f * (casca - 0.5f);
+    float risco = passo(0.975f, 1.0f, materiais_ruido(u * 96.0f, v * 6.0f, 96, 6, s + 35u));
+    float f = materiais_fbm(u, v, 16, 16, 4, s + 36u);
+    float lasca = passo(0.76f, 0.775f, f) * sujeira; // lascas pequenas e esparsas
+    float ferrugem = fmaxf(passo(0.71f, 0.76f, f) * sujeira - lasca, 0.0f) * 0.8f; // o halo em volta delas
+    float escorre = 0.35f * sujeira * materiais_escorridos(u, v, 24, s + 38u);
+    float mancha = materiais_fbm(u, v, 4, 4, 2, s + 39u); // gordura de mão: a tinta brilha mais ou menos
+    brilho *= (1.0f + 0.4f * lasca + 0.3f * risco) * (1.0f - 0.25f * ferrugem);
+    float altura = 0.85f + 0.04f * (casca - 0.5f) + 0.2f * (amassado - 0.5f);
+    altura -= 0.3f * lasca + 0.15f * ferrugem;
+    float rug = 0.3f + 0.25f * mancha + 0.5f * ferrugem;
+    rug = Lerp(rug, 0.2f, fmaxf(lasca, risco));
+    float mistura = Clamp(fmaxf(ferrugem, escorre * (1.0f - lasca)), 0.0f, 1.0f);
+    return (PixelMaterial){brilho, mistura, 0.0f, Clamp(altura, 0.0f, 1.0f), Clamp(rug, 0.0f, 1.0f),
+                           Clamp(fmaxf(lasca, 0.8f * risco) * (1.0f - mistura), 0.0f, 1.0f)};
 }
 
 // Porta (UV local da face): duas almofadas com friso escuro, mão encardida perto da maçaneta, pé riscado.
@@ -241,6 +253,22 @@ static float poeira(float u, float v, unsigned s) {
     return fminf(1.0f, encosta * encosta * tufos + grao * (1.0f - v));
 }
 
+// Sujeira do vidro (v = 1 embaixo): poeira que assenta mais perto do chão, manchas de água secas, os arcos
+// de um pano que limpou mal (faixas mais limpas) e digitais na altura da mão.
+static float vidro(float u, float v, unsigned s) {
+    float poeira = 0.2f + 0.6f * passo(0.45f, 1.0f, v);
+    float manchas = materiais_fbm(u, v, 8, 3, 5, s + 71u);
+    float du = u - 0.5f, dv = (v - 0.55f) * 0.4f;
+    float arco = fabsf(fracao(sqrtf(du * du + dv * dv) * 9.0f + 0.3f * manchas) - 0.5f); // marcas de pano
+    float limpo = passo(0.18f, 0.06f, arco) * passo(0.55f, 0.75f, materiais_fbm(u, v, 3, 2, 2, s + 73u));
+    int cx = (int)(u * 24.0f), cy = (int)(v * 6.0f);
+    float pu = u * 24.0f - cx - 0.5f, pv = (v * 6.0f - cy - 0.5f) * 2.0f;
+    bool tem = materiais_hash(cx, cy, s + 75u) < 0.18f && v > 0.35f && v < 0.7f; // na altura da mão
+    float digital = tem ? 1.0f - passo(0.15f, 0.3f, sqrtf(pu * pu + pv * pv)) : 0.0f;
+    float alfa = 0.12f + 0.55f * passo(0.4f, 0.75f, manchas) * poeira + 0.35f * digital;
+    return Clamp(alfa * (1.0f - 0.6f * limpo), 0.0f, 1.0f);
+}
+
 float materiais_mancha(Decalque d, float u, float v, unsigned semente) {
     float alfa = d == DECALQUE_UMIDADE   ? umidade(u, v, semente)
                  : d == DECALQUE_ARRASTO ? arrasto(u, v, semente)
@@ -249,6 +277,7 @@ float materiais_mancha(Decalque d, float u, float v, unsigned semente) {
                  : d == DECALQUE_RESPINGO  ? respingo(u, v, semente)
                  : d == DECALQUE_POCA      ? poca(u, v, semente)
                  : d == DECALQUE_POEIRA    ? poeira(u, v, semente)
+                 : d == DECALQUE_VIDRO     ? vidro(u, v, semente)
                                            : 0.0f;
     return alfa * janela(u, v);
 }

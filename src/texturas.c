@@ -156,6 +156,8 @@ void texturas_carrega(Recursos *rec) {
         sobe(gera_mancha(DECALQUE_UMIDADE, (Color){0x10, 0x13, 0x0d, 255}, TEXTURA_SEMENTE), false);
     rec->decalque[DECALQUE_ARRASTO] =
         sobe(gera_mancha(DECALQUE_ARRASTO, (Color){0x0c, 0x08, 0x06, 255}, TEXTURA_SEMENTE), false);
+    rec->decalque[DECALQUE_VIDRO] =
+        sobe(gera_mancha(DECALQUE_VIDRO, (Color){0xc8, 0xd0, 0xcc, 255}, TEXTURA_SEMENTE + 11u), false);
     rec->decalque[DECALQUE_POEIRA] =
         sobe(gera_mancha(DECALQUE_POEIRA, (Color){0x14, 0x12, 0x0e, 255}, TEXTURA_SEMENTE + 9u), false);
     for (int d = DECALQUE_MOLHADO; d <= DECALQUE_POCA; d++) // carregamento: as manchas de água

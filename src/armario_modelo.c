@@ -3,6 +3,7 @@
 // caixa, para as frestas desenhadas em nivel.c caírem em cima da porta.
 #include "armario_modelo.h"
 #include "ui.h"
+#include "posfx.h"
 #include <math.h>
 
 void armario_modelo_carrega(Recursos *rec) {
@@ -39,7 +40,11 @@ bool armario_modelo_desenha(const Estado *e, Vector3 centro, Vector3 tam, Vector
     Vector3 meio = {(b.min.x + b.max.x) * 0.5f, b.min.y, (b.min.z + b.max.z) * 0.5f};
     Vector3 desloca = Vector3RotateByAxisAngle(Vector3Scale(meio, s), (Vector3){0, 1, 0}, giro);
     Vector3 pos = {alvo.x - desloca.x, -desloca.y, alvo.z - desloca.z};
+    // aço pintado de verdade: os mapas do metal do jogo (lascas, ferrugem, riscos, amassados) projetados pela
+    // posição no mundo, porque a UV do modelo não combina com as texturas do jogo
+    posfx_material_triplanar(e, MATERIAL_METAL, 0.9f);
     DrawModelEx(*m, pos, (Vector3){0, 1, 0}, giro * RAD2DEG, (Vector3){s, s, s},
-                (Color){0xb4, 0xba, 0xa8, 255}); // um pouco mais escuro: a lanterna estourava o metal claro
+                (Color){0xa8, 0xb0, 0xa0, 255}); // um pouco mais escuro: a lanterna estourava o metal claro
+    posfx_superficie(e, POSFX_RUGOSIDADE_PADRAO, 0.0f);
     return true;
 }

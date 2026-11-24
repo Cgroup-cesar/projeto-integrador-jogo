@@ -18,6 +18,7 @@ static bool usa_glsl_100(void) {
 #define UNIDADE_ORM    10
 #define UNIDADE_REFLEXO 11
 #define UNIDADE_ALCANCE 13 // o mapa de alcance das luzes (12 é a sombra da lanterna, em efeitos.c)
+#define UNIDADE_COR     14 // a cor do material, no modo triplanar
 
 static Texture2D alcance_luz; // Nivel.alcance_luz numa textura (o mapa não muda: criada uma vez)
 
@@ -136,6 +137,10 @@ static void carrega_luz(Recursos *rec) {
     rec->loc_luz_lanterna = GetShaderLocation(rec->luz, "indiceLanterna");
     rec->loc_luz_direto = GetShaderLocation(rec->luz, "direto");
     rec->loc_luz_id = GetShaderLocation(rec->luz, "luzId");
+    rec->loc_luz_triplanar = GetShaderLocation(rec->luz, "triplanar");
+    rec->loc_luz_vidro = GetShaderLocation(rec->luz, "vidro");
+    int cor = UNIDADE_COR;
+    SetShaderValue(rec->luz, GetShaderLocation(rec->luz, "mapaCor"), &cor, SHADER_UNIFORM_INT);
     int alcance = UNIDADE_ALCANCE;
     SetShaderValue(rec->luz, GetShaderLocation(rec->luz, "mapaAlcance"), &alcance, SHADER_UNIFORM_INT);
     float exposicao = EXPOSICAO;
@@ -290,8 +295,43 @@ void posfx_material(const Estado *e, TipoMaterial m) {
     rlActiveTextureSlot(UNIDADE_ORM);
     rlEnableTexture(r->material_orm[m].id);
     rlActiveTextureSlot(0);
-    float sim = 1.0f;
+    float sim = 1.0f, nao = 0.0f;
     SetShaderValue(r->luz, r->loc_luz_usa_mapas, &sim, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(r->luz, r->loc_luz_triplanar, &nao, SHADER_UNIFORM_FLOAT);
+}
+
+// O material inteiro (cor, normal e ORM) projetado pela posição no mundo, uma repetição a cada `metros`:
+// para modelos glTF cuja UV não combina com as texturas do jogo (o armário de metal).
+void posfx_material_triplanar(const Estado *e, TipoMaterial m, float metros) {
+    const Recursos *r = &e->rec;
+    if (!r->luz_ok || r->material_normal[m].id == 0 || !qualidade()->mapas) return;
+    posfx_material(e, m);
+    rlActiveTextureSlot(UNIDADE_COR);
+    rlEnableTexture(r->material[m].id);
+    rlActiveTextureSlot(0);
+    SetShaderValue(r->luz, r->loc_luz_triplanar, &metros, SHADER_UNIFORM_FLOAT);
+}
+
+// O vidro (depois dos emissivos, fora do shader de luz): volta ao shader de luz no modo vidro, sem escrever
+// profundidade (a névoa da cela e os passes de tela continuam vendo o que está atrás). false = sem o shader.
+bool posfx_comeca_vidro(const Estado *e) {
+    const Recursos *r = &e->rec;
+    if (!r->luz_ok || r->hdr.id == 0) return false;
+    posfx_retoma_luz(e);
+    posfx_superficie(e, 0.03f, 0.0f);
+    float sim = 1.0f;
+    SetShaderValue(r->luz, r->loc_luz_vidro, &sim, SHADER_UNIFORM_FLOAT);
+    rlDisableDepthMask();
+    return true;
+}
+
+void posfx_termina_vidro(const Estado *e) {
+    const Recursos *r = &e->rec;
+    rlDrawRenderBatchActive();
+    float nao = 0.0f;
+    SetShaderValue(r->luz, r->loc_luz_vidro, &nao, SHADER_UNIFORM_FLOAT);
+    rlEnableDepthMask();
+    posfx_termina_luz(e);
 }
 
 // Sem mapas: a superfície inteira com a mesma rugosidade e o mesmo metal (modelos, decalques, caixas soltas).
@@ -301,6 +341,7 @@ void posfx_superficie(const Estado *e, float rugosidade, float metal) {
     rlDrawRenderBatchActive();
     float nao = 0.0f;
     SetShaderValue(r->luz, r->loc_luz_usa_mapas, &nao, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(r->luz, r->loc_luz_triplanar, &nao, SHADER_UNIFORM_FLOAT);
     SetShaderValue(r->luz, r->loc_luz_rugosidade, &rugosidade, SHADER_UNIFORM_FLOAT);
     SetShaderValue(r->luz, r->loc_luz_metalico, &metal, SHADER_UNIFORM_FLOAT);
 }

@@ -11,6 +11,7 @@
 #include "texturas.h"
 #include "cenario.h"
 #include "posfx.h"
+#include "painel_modelo.h"
 #include <math.h>
 #include <string.h>
 
@@ -452,8 +453,8 @@ static void desenha_moveis(const Estado *e, bool completo) {
     }
     metal(e, (Vector3){con.x + 0.62f, 1.18f, con.z - 0.88f}, (Vector3){0.22f, 0.3f, 0.1f}, cinza,
           3); // interfone
-    metal(e, (Vector3){n->painel1.x, 0.9f, n->painel1.z}, (Vector3){1.2f, 1.8f, 0.5f}, COR_OLIVA, 4);
-    metal(e, (Vector3){n->painel2.x, 0.9f, n->painel2.z}, (Vector3){1.2f, 1.8f, 0.5f}, COR_OLIVA, 5);
+    painel_modelo_desenha(e, n->painel1, 4); // os quadros elétricos dos geradores (painel_modelo.c)
+    painel_modelo_desenha(e, n->painel2, 5);
     if (completo) mesa_bilhete_desenha(e);    // a mesa do bilhete, a lâmpada pendurada e as folhas
     for (int i = 0; i < n->n_armarios; i++) { // laço de desenho: só percorre os armários
         Vector3 d = Vector3Subtract(n->armarios[i], n->armario_saida[i]);
@@ -660,5 +661,17 @@ void nivel_desenha_vidro(const Estado *e) {
     float opacidade = 0.09f + (VIDAS_VIDRO - e->vidas) * 0.05f;
     if (e->fase == FASE_FIM_RUIM)
         opacidade *= fmaxf(0.0f, 1.0f - (e->fim.tempo - 4.5f) / 1.5f); // o vidro se dissolve
-    DrawCubeV((Vector3){meio_x, 1.95f, n->vidro_z}, (Vector3){vl, 2.1f, 0.05f}, Fade(COR_VIDRO, opacidade));
+    Vector3 centro = {meio_x, 1.95f, n->vidro_z};
+    if (opacidade <= 0.001f) return; // dissolvido (final ruim): nem o reflexo fica
+    if (!posfx_comeca_vidro(e)) { // sem o shader de luz: a caixa translúcida de antes
+        DrawCubeV(centro, (Vector3){vl, 2.1f, 0.05f}, Fade(COR_VIDRO, opacidade));
+        return;
+    }
+    // vidro de verdade (posfx: Fresnel, reflexo das luzes, sujeira): as duas faces, uma para cada lado
+    unsigned char alfa = (unsigned char)(255.0f * Clamp(opacidade, 0.0f, 1.0f));
+    Color tinta = {COR_VIDRO.r, COR_VIDRO.g, COR_VIDRO.b, alfa};
+    Texture2D sujeira = e->rec.decalque[DECALQUE_VIDRO];
+    texturas_quadro(sujeira, centro, (Vector3){vl, 0, 0}, (Vector3){0, 2.1f, 0}, tinta);
+    texturas_quadro(sujeira, centro, (Vector3){-vl, 0, 0}, (Vector3){0, 2.1f, 0}, tinta);
+    posfx_termina_vidro(e);
 }

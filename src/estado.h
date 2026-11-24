@@ -67,6 +67,7 @@ typedef struct {
     int loc_luz_pos, loc_luz_cor, loc_luz_ambiente, loc_luz_nevoa, loc_luz_camera, loc_luz_modelo;
     int loc_luz_molhado, loc_luz_usa_mapas, loc_luz_rugosidade, loc_luz_metalico;
     int loc_luz_reflexo, loc_luz_agua, loc_luz_tela, loc_luz_lanterna, loc_luz_direto, loc_luz_id;
+    int loc_luz_triplanar, loc_luz_vidro;
     int loc_luz_cone, loc_luz_contraluz, loc_luz_queda;
     int loc_luz_cela_min, loc_luz_cela_max, loc_luz_cela_densidade, loc_luz_cela_cor, loc_luz_cela_espalha;
     int loc_luz_cela_lanterna;

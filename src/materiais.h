@@ -32,6 +32,7 @@ typedef enum {
     DECALQUE_RESPINGO,  // respingos: gotas soltas em volta de uma mancha pequena (chão)
     DECALQUE_POCA,      // poça d'água parada, de borda nítida (chão, embaixo da goteira)
     DECALQUE_POEIRA,    // poeira e sujeira acumuladas no pé da parede (chão; v = 0 encostado nela)
+    DECALQUE_VIDRO,     // a sujeira do vidro da contenção: poeira embaixo, manchas, marcas de pano, digitais
     DECALQUE_SANGUE,   // respingo de sangue (assets/texturas/sangue.png; sem o arquivo, não aparece)
     DECALQUE_TOTAL
 } Decalque;
