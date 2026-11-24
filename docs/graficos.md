@@ -45,6 +45,11 @@ sRGB são convertidas), com saída HDR.
 - **Normal map sem tangentes na malha:** o *cotangent frame* tira a base da textura das derivadas da posição
   e da UV. Por isso as caixas em modo imediato da raylib aceitam normal map sem mudança.
 - **Até `LUZES_SHADER` (12) luzes** pontuais ou de cone. As que contribuem muito pouco são puladas.
+- **As luzes não atravessam paredes.** No carregamento, `nivel.c` calcula para cada célula do mapa quais
+  luminárias a alcançam (`Nivel.alcance_luz`). O teste é por linha de visão no plano, contra as células `#`,
+  a partir do centro e de quatro pontos perto dos cantos. O shader de luz e a névoa leem esse mapa numa textura
+  de 24 × 14 (unidade 13) e ignoram a luminária onde ela não chega. Sem isso, as luminárias do corredor
+  acendiam o chão molhado de uma sala fechada. A lanterna tem a própria sombra e fica de fora do mapa.
 - **Água no chão (`agua`):** manchas em coordenadas de mundo, que não repetem com a textura, mais a água
   parada no rejunte. A água escurece o piso, deixa liso e aplaina a normal.
 - **Reflexo planar (`reflexo`):** só no chão. Borra pela rugosidade (*mipmaps*), entorta pela normal e segue o
@@ -67,6 +72,7 @@ manda o lote pendente (`rlDrawRenderBatchActive`) antes de cada troca.
 | 10 | ORM do material: R = oclusão, G = rugosidade, B = metal |
 | 11 | reflexo do chão |
 | 12 | sombra da lanterna |
+| 13 | alcance das luzes (bits por célula do mapa) |
 
 **Cuidado:** um alvo de render nunca pode estar ligado como textura enquanto é desenhado. Se estiver, o driver
 sincroniza e o quadro trava. Por isso os passes de reflexo e de sombra desligam a sua unidade antes de abrir o
@@ -139,15 +145,16 @@ Medido na Intel Arc Graphics (integrada, Core Ultra 5 125H, driver 32.0.101.8132
 
 | Preset | Média | FPS | Pior 1% |
 |---|---|---|---|
-| Baixo | 5,7 ms | 175 | 11,1 ms |
-| Médio | 8,8 ms | 113 | 14,3 ms |
-| **Alto** | **13,3 ms** | **75** | **23 ms** |
-| Ultra | 16,8 ms | 60 | 33 ms |
+| Baixo | 5,7 ms | 176 | 10,5 ms |
+| Médio | 9,1 ms | 110 | 15,3 ms |
+| **Alto** | **14,7 ms** | **68** | **26 ms** |
+| Ultra | 18,8 ms | 53 | 35 ms |
 
 Antes do upgrade, a média era de 5,4 ms nesta mesma bancada, em 1280 × 720 e com a cena a 60%.
 
-O Alto cumpre a meta de 60 FPS em 1080p com folga, e o Ultra fica no limite dela. Em gameplay, o Alto
-continua acima de 60, mas há quedas pontuais do pior 1% para cerca de 40 FPS.
+O Alto cumpre a meta de 50 a 60 FPS em 1080p, e o Ultra fica dentro dessa faixa. Em gameplay, o Alto
+continua acima de 60, mas há quedas pontuais do pior 1% para cerca de 38 FPS. O teste de alcance das luzes
+custa cerca de 1 ms no Alto.
 
 Como medir:
 
@@ -156,7 +163,7 @@ bin/precursor --mudo --fase S1 --olhar 18.6,11,1.5708,-0.05 --energia --lanterna
 ```
 
 Para ver o custo de um efeito, repita a medição com `--sem <efeito>`. Nesta máquina, no Alto em 1080p (média
-com tudo ligado: 13,4 ms):
+com tudo ligado: 13,4 ms, medida antes do teste de alcance das luzes):
 
 | Efeito desligado | Média | O efeito custa |
 |---|---|---|

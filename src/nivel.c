@@ -133,6 +133,38 @@ static void registra_celula(Nivel *n, char ch, int c, int l) {
     }
 }
 
+// A luz em `de` (no plano, em metros) chega à célula (c, l)? Basta um dos 5 pontos dela (o centro e quatro
+// perto dos cantos) enxergar a luz sem cruzar uma célula de parede, andando de 10 em 10 cm.
+static bool luz_alcanca(const Nivel *n, Vector2 de, int c, int l) {
+    static const float PONTOS[5][2] = {{0.5f, 0.5f}, {0.1f, 0.1f}, {0.9f, 0.1f}, {0.1f, 0.9f}, {0.9f, 0.9f}};
+    for (int k = 0; k < 5; k++) { // padrão FOLD: algum ponto da célula vê a luz?
+        Vector2 alvo = {(c + PONTOS[k][0]) * TAMANHO_CELULA, (l + PONTOS[k][1]) * TAMANHO_CELULA};
+        int passos = (int)(Vector2Distance(de, alvo) / 0.1f) + 1;
+        bool livre = true;
+        for (int s = 1; s < passos && livre; s++) { // padrão FOLD: o caminho cruza alguma parede?
+            Vector2 p = Vector2Lerp(de, alvo, (float)s / (float)passos);
+            int pc = (int)floorf(p.x / TAMANHO_CELULA), pl = (int)floorf(p.y / TAMANHO_CELULA);
+            livre = nivel_celula(n, pc, pl) != '#';
+        }
+        if (livre) return true;
+    }
+    return false;
+}
+
+// O mapa de alcance: para cada célula, os bits das luzes que chegam nela (calculado uma vez, ao carregar).
+static void calcula_alcance_luz(Nivel *n) {
+    for (int l = 0; l < MAPA_ALTURA; l++)       // padrão MAP: cada célula → os bits das luzes que a alcançam
+        for (int c = 0; c < MAPA_LARGURA; c++) {
+            unsigned short bits = 0;
+            for (int i = 0; i < n->n_lampadas && i < LUZ_BIT_MESA; i++)
+                if (luz_alcanca(n, (Vector2){n->lampadas[i].x, n->lampadas[i].z}, c, l))
+                    bits |= (unsigned short)(1u << i);
+            if (luz_alcanca(n, (Vector2){n->diario.x, n->diario.z}, c, l))
+                bits |= (unsigned short)(1u << LUZ_BIT_MESA);
+            n->alcance_luz[l][c] = bits;
+        }
+}
+
 void nivel_carrega(Nivel *n) {
     memset(n, 0, sizeof(*n));
     n->cela_min = (Vector3){1e9f, 0.0f, 1e9f};
@@ -152,6 +184,7 @@ void nivel_carrega(Nivel *n) {
         n->lampada_em_x[n->n_lampadas] = nivel_caminhavel(n, c - 1, l) || nivel_caminhavel(n, c + 1, l);
         n->lampadas[n->n_lampadas++] = p;
     }
+    calcula_alcance_luz(n);
 }
 
 // ================================================================== paredes e interativos
@@ -293,10 +326,10 @@ static int luzes_sala(const Estado *e, Vector3 *pos, Vector3 *cor, Vector4 *cone
     return 4;
 }
 
-// Nas saídas: as LUMINARIAS_ACESAS luminárias mais próximas do jogador (frias com energia; vermelhas e fracas
-// até ela voltar), cada uma com a sua falha, e uma luz bem fraca no próprio jogador, só para ele não ficar
-// cego no corredor. A lâmpada da mesa do bilhete entra como uma delas.
-static int luzes_saida(const Estado *e, Vector3 *pos, Vector3 *cor) {
+// Nas saídas: as LUMINARIAS_ACESAS luminárias mais próximas do jogador (frias, cada uma com a sua falha) e
+// uma luz bem fraca no próprio jogador. Sem energia, as luminárias ficam APAGADAS (cor zero): sobram a
+// lanterna e esse resto de luz no jogador. A lâmpada da mesa do bilhete (a pilha dela) entra como uma delas.
+static int luzes_saida(const Estado *e, Vector3 *pos, Vector3 *cor, int *ids) {
     const Nivel *n = &e->nivel;
     Vector3 candidatos[MAX_LAMPADAS + 1];
     int indice[MAX_LAMPADAS + 1];
@@ -322,11 +355,12 @@ static int luzes_saida(const Estado *e, Vector3 *pos, Vector3 *cor) {
         indice[k] = indice[melhor];
         indice[melhor] = t;
         pos[k] = candidatos[k];
+        ids[k] = indice[k] >= 0 ? indice[k] : LUZ_BIT_MESA;
         float g = LUZ_CORREDOR_GANHO;
         float falha = indice[k] >= 0 ? nivel_luminaria_brilho(e, indice[k]) : 1.0f;
         cor[k] = indice[k] < 0 ? cor_luz(MESA_COR_LUZ, MESA_LUZ_FORCA * g * corte * mesa_bilhete_piscada(e))
                  : energia     ? cor_luz(COR_LUMINARIA, LUMINARIA_FORCA * g * falha)
-                               : cor_luz(COR_ALARME, SEM_ENERGIA_EMERGENCIA * g * corte * falha);
+                               : (Vector3){0.0f, 0.0f, 0.0f}; // sem energia: apagada
     }
     // A lâmpada da mesa precisa acender de longe: de dentro do Arquivo (ou da porta) ela entra no lugar da
     // última escolhida, mesmo que outras estejam mais perto. É o que chama o olho para a mesa.
@@ -336,18 +370,21 @@ static int luzes_saida(const Estado *e, Vector3 *pos, Vector3 *cor) {
         escolhida = escolhida || (pos[k].x == mesa.x && pos[k].z == mesa.z);
     if (!escolhida && Vector3Distance(mesa, e->jog.pos) < MESA_LUZ_ALCANCE_M) {
         pos[k_max - 1] = mesa;
+        ids[k_max - 1] = LUZ_BIT_MESA;
         cor[k_max - 1] =
             cor_luz(MESA_COR_LUZ, MESA_LUZ_FORCA * LUZ_CORREDOR_GANHO * corte * mesa_bilhete_piscada(e));
     }
     pos[k_max] = (Vector3){e->jog.pos.x, ALTURA_OLHOS + 0.3f, e->jog.pos.z};
-    cor[k_max] = cor_luz(energia ? COR_LUMINARIA : COR_LAMPADA, energia ? 0.32f : SEM_ENERGIA_JOGADOR);
+    cor[k_max] = cor_luz(COR_LUMINARIA, energia ? 0.32f : SEM_ENERGIA_JOGADOR);
     return k_max + 1;
 }
 
-int nivel_luzes(const Estado *e, Vector3 *posicoes, Vector3 *cores, Vector4 *cones) {
-    for (int i = 0; i < LUZES_SHADER; i++) // padrão MAP: tudo começa como luz pontual (a sala troca A e B)
+int nivel_luzes(const Estado *e, Vector3 *posicoes, Vector3 *cores, Vector4 *cones, int *ids) {
+    for (int i = 0; i < LUZES_SHADER; i++) { // padrão MAP: luz pontual que chega em todo lugar
         cones[i] = (Vector4){0.0f, -1.0f, 0.0f, -2.0f};
-    if (regras_fase_eh_saida(e->fase)) return luzes_saida(e, posicoes, cores);
+        ids[i] = -1;
+    }
+    if (regras_fase_eh_saida(e->fase)) return luzes_saida(e, posicoes, cores, ids);
     return luzes_sala(e, posicoes, cores, cones);
 }
 
@@ -482,24 +519,29 @@ static void desenha_portas_e_duto(const Estado *e) {
                   (Color){0x30, 0x34, 0x30, 255});
 }
 
-// Paredes em passadas por material (uma troca de textura por passada, não uma por parede): concreto
-// aparente em cima, barrado de tinta oliva até BARRADO_ALTURA, friso e rodapé de metal escuro.
+// Paredes em passadas por material (uma troca de material por passada, não uma por parede): azulejo até
+// BARRADO_ALTURA, com o arremate no topo e o rodapé, e o reboco pintado descascando. O azulejo vai primeiro:
+// ele fica na frente do reboco, e o teste de profundidade descarta a parte escondida antes de sombrear.
+// Nenhuma peça ocupa o mesmo lugar que outra (senão as faces brigam na profundidade e a borda serrilha).
 static void desenha_paredes(const Estado *e) {
     const ColParedes *ps = &e->paredes;
     Texture2D concreto = e->rec.material[MATERIAL_CONCRETO], azulejo = e->rec.material[MATERIAL_AZULEJO];
-    // cada passada liga o seu material uma vez (normal e ORM) e desenha todas as peças dele
-    float barrado = BARRADO_ALTURA - 0.16f;
+    float barrado = BARRADO_ALTURA - RODAPE_ALTURA;
     posfx_material(e, MATERIAL_AZULEJO);
     // laço de desenho: o azulejo de cada muro, o arremate no topo dele e o rodapé (peças mais escuras)
     for (int i = 0; i < ps->n; i++) {
         if (ps->itens[i].tipo != PAREDE_MURO) continue;
         Vector3 c = centro_de(&ps->itens[i]), t = tamanho_de(&ps->itens[i]);
         ModoUV uv = texturas_modo(MATERIAL_AZULEJO, i);
-        texturas_caixa(azulejo, (Vector3){c.x, 0.16f + barrado * 0.5f, c.z},
+        texturas_caixa(azulejo, (Vector3){c.x, RODAPE_ALTURA + barrado * 0.5f, c.z},
                        (Vector3){t.x + 0.02f, barrado, t.z + 0.02f}, uv, WHITE);
-        texturas_caixa(azulejo, (Vector3){c.x, BARRADO_ALTURA - 0.025f, c.z},
-                       (Vector3){t.x + 0.035f, 0.05f, t.z + 0.035f}, uv, (Color){0xd0, 0xd8, 0xd2, 255});
-        texturas_caixa(azulejo, (Vector3){c.x, 0.08f, c.z}, (Vector3){t.x + 0.03f, 0.16f, t.z + 0.03f}, uv,
+        // o arremate: uma fiada fina, mais saliente, com a junta vertical das peças e sem junta horizontal
+        // (a UV vertical cobre 60 m: os 5 cm dele caem no meio de uma peça da textura)
+        ModoUV arremate = {{uv.metros.x, 60.0f}, {uv.desloca.x, 0.0f}, false};
+        texturas_caixa(azulejo, (Vector3){c.x, BARRADO_ALTURA + 0.025f, c.z},
+                       (Vector3){t.x + 0.04f, 0.05f, t.z + 0.04f}, arremate, (Color){0xd0, 0xd8, 0xd2, 255});
+        texturas_caixa(azulejo, (Vector3){c.x, RODAPE_ALTURA * 0.5f, c.z},
+                       (Vector3){t.x + 0.03f, RODAPE_ALTURA, t.z + 0.03f}, uv,
                        (Color){0x70, 0x78, 0x74, 255});
     }
     posfx_material(e, MATERIAL_CONCRETO);
@@ -514,18 +556,6 @@ static void desenha_paredes(const Estado *e) {
         if (ps->itens[i].tipo == PAREDE_PORTA)
             texturas_caixa(e->rec.material[MATERIAL_PORTA], centro_de(&ps->itens[i]),
                            tamanho_de(&ps->itens[i]), texturas_modo(MATERIAL_PORTA, 0), WHITE);
-    posfx_material(e, MATERIAL_METAL);
-    Texture2D metal = e->rec.material[MATERIAL_METAL];
-    // laço de desenho: rodapé e friso do barrado de cada muro
-    for (int i = 0; i < ps->n; i++) {
-        const Parede *p = &ps->itens[i];
-        if (p->tipo != PAREDE_MURO) continue;
-        Vector3 c = centro_de(p), t = tamanho_de(p);
-        texturas_caixa(metal, (Vector3){c.x, 0.08f, c.z}, (Vector3){t.x + 0.03f, 0.16f, t.z + 0.03f},
-                       texturas_modo(MATERIAL_METAL, i), (Color){0x16, 0x1c, 0x18, 255});
-        texturas_caixa(metal, (Vector3){c.x, BARRADO_ALTURA, c.z}, (Vector3){t.x + 0.03f, 0.04f, t.z + 0.03f},
-                       texturas_modo(MATERIAL_METAL, i), (Color){0x22, 0x26, 0x20, 255});
-    }
     posfx_superficie(e, POSFX_RUGOSIDADE_PADRAO, 0.0f);
 }
 
@@ -563,7 +593,8 @@ void nivel_desenha_reflexo(const Estado *e) {
 }
 
 static Color cor_lampada(const Estado *e) {
-    if (regras_fase_eh_saida(e->fase)) return e->painel.resolvido ? COR_LUMINARIA : COR_ALARME;
+    if (regras_fase_eh_saida(e->fase)) // sem energia, a luminária apagada
+        return e->painel.resolvido ? COR_LUMINARIA : (Color){0x18, 0x1c, 0x1a, 255};
     return COR_LAMPADA;
 }
 
@@ -592,7 +623,7 @@ void nivel_desenha_emissivos(const Estado *e) {
         float corte = e->apagao_t > 0.0f ? 0.08f : 1.0f;
         posfx_comeca_emissivo(e);
         for (int i = 0; i < n->n_lampadas; i++) { // laço de desenho: o painel aceso de cada luminária
-            float k = (energia ? LUMINARIA_EMISSAO : 2.2f) * corte * nivel_luminaria_brilho(e, i);
+            float k = energia ? LUMINARIA_EMISSAO * corte * nivel_luminaria_brilho(e, i) : 0.0f; // apagada
             posfx_emissivo(e, k);
             Vector3 p = {n->lampadas[i].x, PE_DIREITO - 0.074f, n->lampadas[i].z};
             Vector3 painel = n->lampada_em_x[i] ? (Vector3){1.16f, 0.004f, 0.22f}
@@ -609,7 +640,7 @@ void nivel_desenha_emissivos(const Estado *e) {
     Color cor_sala = e->alarme_t > 0 ? COR_ALARME : lamp;
     if (!saida && sala > 0.5f) DrawSphereEx(lampada_sala, 0.11f, 8, 8, cor_sala);
     cenario_comeca_halos();
-    for (int i = 0; saida && i < n->n_lampadas; i++) // laço de desenho: o halo de cada lâmpada acesa
+    for (int i = 0; saida && e->painel.resolvido && i < n->n_lampadas; i++) // o halo de cada lâmpada acesa
         cenario_halo(e, n->lampadas[i], lamp);
     if (!saida && sala > 0.5f) cenario_halo(e, lampada_sala, cor_sala);
     mesa_bilhete_desenha_brilho(e);

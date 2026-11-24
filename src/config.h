@@ -297,7 +297,9 @@
 #define GRADACAO_ABERRACAO      0.012f
 #define AGUA_NO_CHAO            1.0f  // 0 = piso seco; 1 = manchas de água e o rejunte cheio
 #define TEXTURA_ARQUIVO_MAX_PX  1024  // PNG maior que isso (ou fora de potência de 2) é redimensionado
-#define BARRADO_ALTURA          1.45f // azulejo do chão até aqui (acima: reboco pintado, descascando)
+#define BARRADO_ALTURA          1.5f  // azulejo do chão até aqui (acima: reboco pintado, descascando); múltiplo
+                                      // de 15 cm a partir do teto: a fiada de cima não sai cortada
+#define RODAPE_ALTURA           0.15f // a fiada de baixo, mais escura (uma peça de 15 cm)
 #define DECALQUE_PX             256   // manchas: 256 × 256; placas: 512 × 128
 #define HALO_LAMPADA_M          1.3f  // tamanho do brilho em volta das lâmpadas
 #define HALO_LAMPADA_ALFA       0.35f // força do brilho (some com a névoa)
@@ -305,6 +307,7 @@
 // ---------------------------------------------------------------- luz e névoa
 #define LUZ_AMBIENTE       0.045f // era 0,06: o escuro pesa mais, mas a lanterna e os holofotes não mudaram
 #define NEVOA_DENSIDADE    0.095f // era 0,085: o fundo do corredor some um pouco antes
+#define LUZ_BIT_MESA       13    // o bit da lâmpada da mesa no mapa de alcance (as luminárias: 0..12)
 #define LUMINARIAS_ACESAS  7     // quantas luminárias (as mais próximas) entram no shader de luz
 #define LUMINARIAS_FALHANDO 0.3f // fração das luminárias que falham (flicker)
 #define LUMINARIA_FORCA     1.6f  // a luz de cada luminária com a energia de volta
@@ -314,8 +317,7 @@
 // Sem energia (nas saídas, até o painel ser resolvido): só as luzes de emergência, fracas, e quase nada de
 // ambiente. Sem a lanterna, dá para ver o vulto do corredor, mas não o que tem nele.
 #define SEM_ENERGIA_AMBIENTE   0.35f // multiplica LUZ_AMBIENTE
-#define SEM_ENERGIA_EMERGENCIA 0.6f  // força das lâmpadas vermelhas (antes 1,7)
-#define SEM_ENERGIA_JOGADOR    0.14f // a luz fraquinha no próprio jogador (com energia, 0,32)
+#define SEM_ENERGIA_JOGADOR    0.06f // sem energia as luminárias apagam: só a lanterna e este resto de luz
 // Holofotes da cela (luzes A e B): ficam à frente e acima do Precursor, apontados para o peito dele.
 #define HOLOFOTE_ABERTURA_GRAUS 30.0f // meia-abertura do cone; fora dele sobram 15% (a cela não fica preta)
 #define HOLOFOTE_GANHO          1.6f  // compensa a luz que deixou de se espalhar pela cela

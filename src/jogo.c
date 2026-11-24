@@ -390,12 +390,16 @@ static void desenha_mundo_3d(const Estado *e) {
     float queda[LUZES_SHADER];
     for (int i = 0; i < LUZES_SHADER; i++) // padrão MAP: as lâmpadas do cenário têm a queda comum
         queda[i] = 1.0f;
-    int n = nivel_luzes(e, pos, cor, cone), lanterna = -1;
-    if (lanterna_luz(e, &pos[n], &cor[n], &cone[n], &queda[n])) lanterna = n++; // a última: a lanterna
+    int ids[LUZES_SHADER];
+    int n = nivel_luzes(e, pos, cor, cone, ids), lanterna = -1;
+    if (lanterna_luz(e, &pos[n], &cor[n], &cone[n], &queda[n])) { // a última: a lanterna (tem sombra própria)
+        ids[n] = -1;
+        lanterna = n++;
+    }
     bool sem_energia = regras_fase_eh_saida(e->fase) && !e->painel.resolvido;
     float ambiente = LUZ_AMBIENTE * (sem_energia ? SEM_ENERGIA_AMBIENTE : 1.0f);
     if (e->apagao_t > 0.0f) ambiente = LUZ_AMBIENTE * 0.3f * (sem_energia ? SEM_ENERGIA_AMBIENTE : 1.0f);
-    efeitos_guarda_luzes(pos, cor, cone, queda, n, lanterna);
+    efeitos_guarda_luzes(pos, cor, cone, queda, ids, n, lanterna);
     Vector3 frente = {cone[lanterna >= 0 ? lanterna : 0].x, cone[lanterna >= 0 ? lanterna : 0].y,
                       cone[lanterna >= 0 ? lanterna : 0].z};
     if (lanterna >= 0 && efeitos_comeca_sombra(e, pos[lanterna], frente)) { // o mapa de sombra da lanterna
@@ -410,7 +414,7 @@ static void desenha_mundo_3d(const Estado *e) {
         espelho.position.y = -espelho.position.y;
         espelho.target.y = -espelho.target.y;
         BeginMode3D(espelho);
-        posfx_comeca_luz(e, pos, cor, cone, queda, n, lanterna, ambiente);
+        posfx_comeca_luz(e, pos, cor, cone, queda, ids, n, lanterna, ambiente);
         posfx_olho(e, espelho.position);
         nivel_desenha_reflexo(e);
         criatura_desenha(e);
@@ -421,7 +425,7 @@ static void desenha_mundo_3d(const Estado *e) {
     }
     BeginMode3D(e->camera);
     efeitos_guarda_camera(); // projeção e vista: os passes de tela reconstroem a posição pela profundidade
-    posfx_comeca_luz(e, pos, cor, cone, queda, n, lanterna, ambiente);
+    posfx_comeca_luz(e, pos, cor, cone, queda, ids, n, lanterna, ambiente);
     nivel_desenha(e);
     cenario_desenha(e);
     criatura_desenha(e);

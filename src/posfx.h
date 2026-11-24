@@ -20,8 +20,11 @@ void posfx_termina_cena(const Estado *e);
 // as duas. cones[i]: xyz = direção, w = cosseno da meia-abertura; w < -1 = luz pontual comum.
 // quedas[i]: quanto a luz enfraquece com a distância (1 = lâmpada comum; menor = vai mais longe).
 // lanterna: o índice dela entre as n luzes (-1 = apagada): a névoa da cela devolve menos a luz dela.
+// ids: o bit de cada luz no mapa de alcance (nivel_luzes; NULL ou -1 = chega em todo lugar).
 void posfx_comeca_luz(const Estado *e, const Vector3 *posicoes, const Vector3 *cores, const Vector4 *cones,
-                      const float *quedas, int n, int lanterna, float ambiente);
+                      const float *quedas, const int *ids, int n, int lanterna, float ambiente);
+// A textura do mapa de alcance das luzes (para a névoa volumétrica ler o mesmo).
+Texture2D posfx_textura_alcance(void);
 void posfx_termina_luz(const Estado *e);
 void posfx_retoma_luz(const Estado *e); // volta ao shader de luz (com os uniformes do quadro) após uma pausa
 

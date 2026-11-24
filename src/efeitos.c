@@ -28,6 +28,7 @@ static struct {
     Vector3 pos[LUZES_SHADER], cor[LUZES_SHADER];
     Vector4 cone[LUZES_SHADER];
     float queda[LUZES_SHADER];
+    int ids[LUZES_SHADER];
     int n, lanterna;
     Matrix mat_sombra;
     bool tem_sombra;
@@ -114,14 +115,17 @@ void efeitos_redimensiona(const Recursos *rec) {
 
 // ------------------------------------------------------------------ o quadro
 void efeitos_guarda_luzes(const Vector3 *pos, const Vector3 *cor, const Vector4 *cone, const float *queda,
-                          int n, int lanterna) {
+                          const int *ids, int n, int lanterna) {
     fx.n = n < LUZES_SHADER ? n : LUZES_SHADER;
     for (int i = 0; i < fx.n; i++) { // padrão MAP: cópia das luzes do quadro para a névoa
         fx.pos[i] = pos[i];
         fx.cor[i] = cor[i];
         fx.cone[i] = cone[i];
         fx.queda[i] = queda[i];
+        fx.ids[i] = ids[i];
     }
+    for (int i = fx.n; i < LUZES_SHADER; i++) // padrão MAP: as vagas sobrando, sem luz
+        fx.ids[i] = -1;
     fx.lanterna = lanterna;
 }
 
@@ -208,8 +212,9 @@ static void passe_volume(const Estado *e) {
     Matrix vp_inv = MatrixInvert(MatrixMultiply(fx.vista, fx.proj));
     float densidade = NEVOA_VOLUME_DENSIDADE, tempo = fmodf(e->tempo_total, 1000.0f), usa = fx.tem_sombra;
     bool energia = !regras_fase_eh_saida(e->fase) || e->painel.resolvido;
-    float a = NEVOA_VOLUME_AMBIENTE; // com energia, a névoa clareia fria; sem ela, um resto de vermelho
-    Vector3 ambiente = energia ? (Vector3){a * 0.6f, a, a * 0.9f} : (Vector3){a * 0.3f, a * 0.15f, a * 0.15f};
+    float a = NEVOA_VOLUME_AMBIENTE; // com energia, a névoa clareia fria; sem ela, quase nada
+    Vector3 ambiente = energia ? (Vector3){a * 0.6f, a, a * 0.9f}
+                               : (Vector3){a * 0.08f, a * 0.12f, a * 0.12f};
     int passos = qualidade()->volume_passos;
     SetShaderValueMatrix(s, loc(fx.volume, "vpInv"), vp_inv);
     SetShaderValue(s, loc(fx.volume, "camera"), &fx.camera, SHADER_UNIFORM_VEC3);
@@ -218,6 +223,7 @@ static void passe_volume(const Estado *e) {
     SetShaderValueV(s, loc(fx.volume, "luzCone"), fx.cone, SHADER_UNIFORM_VEC4, LUZES_SHADER);
     SetShaderValueV(s, loc(fx.volume, "luzQueda"), fx.queda, SHADER_UNIFORM_FLOAT, LUZES_SHADER);
     SetShaderValue(s, loc(fx.volume, "nLuzes"), &fx.n, SHADER_UNIFORM_INT);
+    SetShaderValueV(s, loc(fx.volume, "luzId"), fx.ids, SHADER_UNIFORM_INT, LUZES_SHADER);
     SetShaderValue(s, loc(fx.volume, "indiceLanterna"), &fx.lanterna, SHADER_UNIFORM_INT);
     SetShaderValueMatrix(s, loc(fx.volume, "matSombra"), fx.mat_sombra);
     SetShaderValue(s, loc(fx.volume, "usaSombra"), &usa, SHADER_UNIFORM_FLOAT);
@@ -225,9 +231,9 @@ static void passe_volume(const Estado *e) {
     SetShaderValue(s, loc(fx.volume, "tempo"), &tempo, SHADER_UNIFORM_FLOAT);
     SetShaderValue(s, loc(fx.volume, "corAmbiente"), &ambiente, SHADER_UNIFORM_VEC3);
     SetShaderValue(s, loc(fx.volume, "passos"), &passos, SHADER_UNIFORM_INT);
-    int l = loc(fx.volume, "mapaSombra");
-    Texture2D sombra = fx.sombra.texture;
-    desenha_passe(fx.volume, r->hdr.depth, fx.alvo_volume, fx.sombra.id != 0 ? 1 : 0, &l, &sombra);
+    int locs[2] = {loc(fx.volume, "mapaAlcance"), loc(fx.volume, "mapaSombra")};
+    Texture2D texturas[2] = {posfx_textura_alcance(), fx.sombra.texture};
+    desenha_passe(fx.volume, r->hdr.depth, fx.alvo_volume, fx.sombra.id != 0 ? 2 : 1, locs, texturas);
 }
 
 // Bloom: desce (com o corte só no primeiro nível) e sobe somando cada nível ao de cima.

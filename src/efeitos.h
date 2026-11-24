@@ -16,7 +16,7 @@ void efeitos_redimensiona(const Recursos *rec); // o alvo mudou de tamanho (jane
 
 // As luzes e a câmera do quadro (a névoa refaz a luz e os passes de tela reconstroem a posição).
 void efeitos_guarda_luzes(const Vector3 *pos, const Vector3 *cor, const Vector4 *cone, const float *queda,
-                          int n, int lanterna);
+                          const int *ids, int n, int lanterna);
 void efeitos_guarda_camera(void); // dentro do BeginMode3D da câmera principal
 
 // A sombra da lanterna, ANTES da cena (fecha e reabre o alvo HDR). Devolve false se a sombra está desligada.

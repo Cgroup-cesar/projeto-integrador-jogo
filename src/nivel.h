@@ -22,7 +22,8 @@ bool nivel_na_sala_de_observacao(const Nivel *n, Vector3 pos);
 
 // Até 4 luzes para o shader, escolhidas conforme a fase e a posição do jogador. cones[i] (ver posfx.h):
 // na sala, as luzes A e B da cela são holofotes no Precursor; as outras são pontuais.
-int nivel_luzes(const Estado *e, Vector3 *posicoes, Vector3 *cores, Vector4 *cones);
+// ids[i]: o bit da luz i no mapa de alcance (Nivel.alcance_luz); -1 = chega em todo lugar.
+int nivel_luzes(const Estado *e, Vector3 *posicoes, Vector3 *cores, Vector4 *cones, int *ids);
 // O brilho da luminária `i` agora (0..1): algumas falham (flicker), sem rand().
 float nivel_luminaria_brilho(const Estado *e, int i);
 

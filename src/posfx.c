@@ -17,6 +17,9 @@ static bool usa_glsl_100(void) {
 #define UNIDADE_NORMAL 9
 #define UNIDADE_ORM    10
 #define UNIDADE_REFLEXO 11
+#define UNIDADE_ALCANCE 13 // o mapa de alcance das luzes (12 é a sombra da lanterna, em efeitos.c)
+
+static Texture2D alcance_luz; // Nivel.alcance_luz numa textura (o mapa não muda: criada uma vez)
 
 // Um alvo de render com cor em ponto flutuante (o que passa de 1 não satura). profundidade: 0 = nenhuma,
 // 1 = numa textura (os passes de tela leem a distância de cada pixel), 2 = renderbuffer (só o teste de
@@ -132,6 +135,9 @@ static void carrega_luz(Recursos *rec) {
     rec->loc_luz_reflexo = GetShaderLocation(rec->luz, "reflexo");
     rec->loc_luz_lanterna = GetShaderLocation(rec->luz, "indiceLanterna");
     rec->loc_luz_direto = GetShaderLocation(rec->luz, "direto");
+    rec->loc_luz_id = GetShaderLocation(rec->luz, "luzId");
+    int alcance = UNIDADE_ALCANCE;
+    SetShaderValue(rec->luz, GetShaderLocation(rec->luz, "mapaAlcance"), &alcance, SHADER_UNIFORM_INT);
     float exposicao = EXPOSICAO;
     SetShaderValue(rec->luz, GetShaderLocation(rec->luz, "exposicao"), &exposicao, SHADER_UNIFORM_FLOAT);
     rec->loc_luz_agua = GetShaderLocation(rec->luz, "agua");
@@ -162,6 +168,8 @@ void posfx_finaliza(Recursos *rec) {
     vhs_descarrega(rec);
     if (rec->luz_ok) UnloadShader(rec->luz);
     if (rec->tom_ok) UnloadShader(rec->tom);
+    if (alcance_luz.id != 0) UnloadTexture(alcance_luz);
+    alcance_luz = (Texture2D){0};
     if (rec->emissivo_ok) UnloadShader(rec->emissivo);
 }
 
@@ -179,15 +187,41 @@ static void envia_nevoa_da_cela(const Estado *e) {
     SetShaderValue(r->luz, r->loc_luz_cela_lanterna, &lanterna, SHADER_UNIFORM_FLOAT);
 }
 
+// O mapa de alcance das luzes (bits por célula) numa textura RGBA8: R = bits 0..7, G = bits 8..15.
+static void liga_alcance(const Estado *e) {
+    if (alcance_luz.id == 0) {
+        Image img = GenImageColor(MAPA_LARGURA, MAPA_ALTURA, BLACK);
+        Color *px = (Color *)img.data;
+        for (int l = 0; l < MAPA_ALTURA; l++) // padrão MAP: cada célula → os bits em dois canais
+            for (int c = 0; c < MAPA_LARGURA; c++) {
+                unsigned short b = e->nivel.alcance_luz[l][c];
+                px[l * MAPA_LARGURA + c] =
+                    (Color){(unsigned char)(b & 0xffu), (unsigned char)(b >> 8), 0, 255};
+            }
+        alcance_luz = LoadTextureFromImage(img);
+        UnloadImage(img);
+        SetTextureFilter(alcance_luz, TEXTURE_FILTER_POINT);
+    }
+    rlActiveTextureSlot(UNIDADE_ALCANCE);
+    rlEnableTexture(alcance_luz.id);
+    rlActiveTextureSlot(0);
+}
+
+Texture2D posfx_textura_alcance(void) {
+    return alcance_luz;
+}
+
 void posfx_comeca_luz(const Estado *e, const Vector3 *posicoes, const Vector3 *cores, const Vector4 *cones,
-                      const float *quedas, int n, int lanterna, float ambiente) {
+                      const float *quedas, const int *ids, int n, int lanterna, float ambiente) {
     const Recursos *r = &e->rec;
     if (!r->luz_ok) return;
     Vector3 pos[LUZES_SHADER] = {0}, cor[LUZES_SHADER] = {0}, sem_contraluz = {0};
     Vector4 cone[LUZES_SHADER];
     float queda[LUZES_SHADER];
+    int id[LUZES_SHADER];
     for (int i = 0; i < LUZES_SHADER; i++) { // padrão MAP: as luzes do quadro → os vetores do shader
         bool tem = i < n;
+        id[i] = tem && ids != NULL ? ids[i] : -1;
         pos[i] = tem ? posicoes[i] : (Vector3){0};
         cor[i] = tem ? cores[i] : (Vector3){0};
         cone[i] = tem ? cones[i] : (Vector4){0, -1, 0, -2.0f};
@@ -199,6 +233,8 @@ void posfx_comeca_luz(const Estado *e, const Vector3 *posicoes, const Vector3 *c
     SetShaderValueV(r->luz, r->loc_luz_cor, cor, SHADER_UNIFORM_VEC3, LUZES_SHADER);
     SetShaderValueV(r->luz, r->loc_luz_cone, cone, SHADER_UNIFORM_VEC4, LUZES_SHADER);
     SetShaderValueV(r->luz, r->loc_luz_queda, queda, SHADER_UNIFORM_FLOAT, LUZES_SHADER);
+    SetShaderValueV(r->luz, r->loc_luz_id, id, SHADER_UNIFORM_INT, LUZES_SHADER);
+    liga_alcance(e);
     SetShaderValue(r->luz, r->loc_luz_contraluz, &sem_contraluz, SHADER_UNIFORM_VEC3);
     float seco = 0.0f;
     Vector2 tela = {(float)r->alvo_largura, (float)r->alvo_altura};
