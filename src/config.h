@@ -273,16 +273,33 @@
 
 // ---------------------------------------------------------------- texturas do mapa (procedurais; override
 // opcional em assets/texturas/<material>.png). Geradas uma vez ao abrir o jogo, com semente fixa.
-#define TEXTURA_LADO_PX         256   // lado das texturas quadradas (piso, teto, oliva, metal, porta)
-#define TEXTURA_CONCRETO_PX     512   // o concreto é 512 × 256: cobre 6 m × 3 m sem repetir à vista
+#define TEXTURA_LADO_PX         1024  // lado das texturas quadradas (piso, teto, oliva, metal, porta)
+#define TEXTURA_CONCRETO_PX     2048  // o concreto é 2048 × 1024: cobre 6 m × 3 m sem repetir à vista
 #define TEXTURA_SEMENTE         1985u // mesma semente → mesma imagem em toda execução
 #define TEXTURA_SUJEIRA         0.8f  // 0 = limpo; 1 = manchas, escorridos e descascado no máximo
 #define TEXTURA_METROS_CONCRETO 6.0f  // metros por repetição na horizontal (na vertical: PE_DIREITO)
 #define TEXTURA_METROS_PISO     2.0f  // 4 × 4 placas de 0,5 m
 #define TEXTURA_METROS_TETO     2.0f  // 3 × 3 placas de forro
 #define TEXTURA_METROS_METAL    1.0f
+#define EXPOSICAO               1.25f // multiplica a cena HDR antes do tone mapping (ACES)
+// Névoa volumétrica, bloom e gradação de cor (efeitos.c; os presets de qualidade ligam e desligam)
+#define NEVOA_VOLUME_DENSIDADE  0.05f    // por metro; a poeira faz variar em volta disso
+#define NEVOA_VOLUME_AMBIENTE   0.004f   // a luz que a névoa espalha sozinha: o fundo do corredor clareia
+#define BLOOM_CORTE             1.0f     // só o que passa disso (em HDR) brilha em volta
+#define BLOOM_FORCA             0.18f
+#define GRADACAO_SOMBRA         {0.78f, 1.02f, 1.0f}  // as sombras puxam para o azul-petróleo
+#define GRADACAO_LUZ            {0.92f, 1.06f, 0.95f} // as luzes, para o verde-claro
+#define GRADACAO_SATURACAO      0.78f
+#define GRADACAO_CONTRASTE      1.06f
+#define GRADACAO_ELEVACAO       {0.012f, 0.028f, 0.03f} // o preto vira azul-petróleo bem escuro
+#define GRADACAO_VINHETA        0.85f
+#define GRADACAO_GRAO           0.03f
+#define GRADACAO_ABERRACAO      0.012f
+#define AGUA_NO_CHAO            1.0f  // 0 = piso seco; 1 = manchas de água e o rejunte cheio
 #define TEXTURA_ARQUIVO_MAX_PX  1024  // PNG maior que isso (ou fora de potência de 2) é redimensionado
-#define BARRADO_ALTURA          1.2f  // tinta oliva do chão até aqui (acima: concreto aparente)
+#define BARRADO_ALTURA          1.5f  // azulejo do chão até aqui (acima: reboco pintado, descascando); múltiplo
+                                      // de 15 cm a partir do teto: a fiada de cima não sai cortada
+#define RODAPE_ALTURA           0.15f // a fiada de baixo, mais escura (uma peça de 15 cm)
 #define DECALQUE_PX             256   // manchas: 256 × 256; placas: 512 × 128
 #define HALO_LAMPADA_M          1.3f  // tamanho do brilho em volta das lâmpadas
 #define HALO_LAMPADA_ALFA       0.35f // força do brilho (some com a névoa)
@@ -290,12 +307,17 @@
 // ---------------------------------------------------------------- luz e névoa
 #define LUZ_AMBIENTE       0.045f // era 0,06: o escuro pesa mais, mas a lanterna e os holofotes não mudaram
 #define NEVOA_DENSIDADE    0.095f // era 0,085: o fundo do corredor some um pouco antes
+#define LUZ_BIT_MESA       13    // o bit da lâmpada da mesa no mapa de alcance (as luminárias: 0..12)
+#define LUMINARIAS_ACESAS  7     // quantas luminárias (as mais próximas) entram no shader de luz
+#define LUMINARIAS_FALHANDO 0.3f // fração das luminárias que falham (flicker)
+#define LUMINARIA_FORCA     1.6f  // a luz de cada luminária com a energia de volta
+#define LUMINARIA_EMISSAO   7.0f  // o brilho do painel (HDR: estoura no bloom e no reflexo do chão)
+#define LUMINARIA_LUZ_ABAIXO_M 0.12f // a luz fica logo abaixo do painel do teto
 #define LUZ_CORREDOR_GANHO 0.8f   // força das lâmpadas dos corredores (a luz fraca no jogador fica igual)
 // Sem energia (nas saídas, até o painel ser resolvido): só as luzes de emergência, fracas, e quase nada de
 // ambiente. Sem a lanterna, dá para ver o vulto do corredor, mas não o que tem nele.
 #define SEM_ENERGIA_AMBIENTE   0.35f // multiplica LUZ_AMBIENTE
-#define SEM_ENERGIA_EMERGENCIA 0.6f  // força das lâmpadas vermelhas (antes 1,7)
-#define SEM_ENERGIA_JOGADOR    0.14f // a luz fraquinha no próprio jogador (com energia, 0,32)
+#define SEM_ENERGIA_JOGADOR    0.06f // sem energia as luminárias apagam: só a lanterna e este resto de luz
 // Holofotes da cela (luzes A e B): ficam à frente e acima do Precursor, apontados para o peito dele.
 #define HOLOFOTE_ABERTURA_GRAUS 30.0f // meia-abertura do cone; fora dele sobram 15% (a cela não fica preta)
 #define HOLOFOTE_GANHO          1.6f  // compensa a luz que deixou de se espalhar pela cela
@@ -317,7 +339,7 @@
 #define NEVOA_CELA_COR_R 0.045f // a cor da névoa sem luz: só um pouco acima do preto, para a silhueta
 #define NEVOA_CELA_COR_G 0.050f // escura dele aparecer contra ela
 #define NEVOA_CELA_COR_B 0.055f
-#define LUZES_SHADER 5
+#define LUZES_SHADER 12 // até 9 luminárias + a luz fraca no jogador + a lanterna (+1 de folga)
 
 // ---------------------------------------------------------------- lanterna (tecla F, sem bateria)
 #define LANTERNA_ABERTURA_GRAUS 22.0f // meia-abertura do cone
@@ -345,6 +367,13 @@
 #define SOM_ATRAS_DB             3.0f  // bem atrás soa um pouco mais baixo: ajuda a saber se é na frente
 #define SOM_PAREDE_DB            8.0f  // com parede no meio, abafado
 #define SOM_PAN_MAX              0.85f // o mais para um lado que vai (nunca 100% num ouvido)
+#define GOTA_INTERVALO_S         1.3f  // goteira: uma gota a cada ~1,3 s (o instante é sorteado no intervalo)
+#define GOTA_QUEDA_S             0.6f  // da boca do cano até a poça
+#define GOTA_INCHA_S             0.3f  // a gota cresce na boca antes de cair
+#define GOTA_ONDA_S              0.9f  // quanto dura a onda na poça
+#define GOTA_ONDA_RAIO_M         0.3f
+#define GOTA_ALCANCE_M           14.0f // até onde se ouve o pingo
+#define CHAO_MOLHADO_BRILHO      2.5f  // força do reflexo das luzes no chão molhado e na poça
 #define PASSO_CRIATURA_TOM       0.8f  // abaixo de 1 soa pesado; mais baixo, o grave some na caixa de som
 
 // ---------------------------------------------------------------- paleta (só use onde a raylib já foi
@@ -353,6 +382,7 @@
 #define COR_CONCRETO  (Color){0x2b, 0x3a, 0x33, 255}
 #define COR_OLIVA     (Color){0x4a, 0x4f, 0x3a, 255}
 #define COR_LAMPADA   (Color){0xd9, 0xa4, 0x41, 255}
+#define COR_LUMINARIA (Color){0xb4, 0xe2, 0xd2, 255} // a luz fria das luminárias com a energia de volta
 #define COR_FOSFORO   (Color){0x7d, 0xff, 0x9a, 255}
 #define COR_VIDRO     (Color){0x5a, 0xa0, 0xc8, 255}
 #define COR_ALARME    (Color){0xff, 0x5a, 0x4f, 255}

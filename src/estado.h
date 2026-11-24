@@ -26,7 +26,7 @@ typedef struct {
     bool lanterna; // F: liga e desliga a lanterna
     bool ajuda;    // H: abre e fecha a ajuda dos conectivos no terminal
     bool respirar; // ESPAÇO: segura a respiração no armário
-    bool f1, f2, f3, f5, f9, f12;
+    bool f1, f2, f3, f5, f7, f9, f12;
     bool alguma;                   // qualquer tecla ou movimento (modo feira)
     int letras[MAX_LETRAS_QUADRO]; // letras digitadas neste quadro (Unicode), para o campo do nome
     int n_letras;
@@ -60,10 +60,20 @@ typedef struct {
     Shader luz;
     bool luz_ok;
     int loc_luz_pos, loc_luz_cor, loc_luz_ambiente, loc_luz_nevoa, loc_luz_camera, loc_luz_modelo;
+    int loc_luz_molhado, loc_luz_usa_mapas, loc_luz_rugosidade, loc_luz_metalico;
+    int loc_luz_reflexo, loc_luz_agua, loc_luz_tela, loc_luz_lanterna, loc_luz_direto, loc_luz_id;
     int loc_luz_cone, loc_luz_contraluz, loc_luz_queda;
     int loc_luz_cela_min, loc_luz_cela_max, loc_luz_cela_densidade, loc_luz_cela_cor, loc_luz_cela_espalha;
     int loc_luz_cela_lanterna;
-    RenderTexture2D alvo;       // cena 3D renderizada a ESCALA_RENDER da janela
+    RenderTexture2D hdr;        // a cena 3D em HDR (cor em ponto flutuante + profundidade); id 0 = sem HDR
+    RenderTexture2D reflexo;    // a cena espelhada no chão (reflexão planar), a REFLEXO_ESCALA da cena
+    Shader tom;                 // tone mapping (HDR → LDR)
+    Shader emissivo;            // luzes acesas: cor × intensidade (passa de 1 na cena HDR)
+    bool emissivo_ok;
+    int loc_emissivo_intensidade;
+    bool tom_ok;
+    int loc_tom_exposicao;
+    RenderTexture2D alvo;       // o quadro (LDR), a ESCALA_RENDER da janela: a cena já com tone mapping
     RenderTexture2D alvo_susto; // o rosto do susto (mesmo tamanho), colado por cima da cena
     int alvo_largura, alvo_altura;
     Sound sons[SOM_MAXIMO];
@@ -92,7 +102,9 @@ typedef struct {
     Music trilhas[TRILHA_TOTAL]; // opcionais: sons longos de assets/audio (trilhas.c)
     bool tem_trilha[TRILHA_TOTAL];
     // Texturas do mapa (texturas.c): criadas uma vez em carrega_recursos, liberadas em descarrega_recursos.
-    Texture2D material[MATERIAL_TOTAL];
+    Texture2D material[MATERIAL_TOTAL];        // cor (albedo)
+    Texture2D material_normal[MATERIAL_TOTAL]; // normal (espaço da textura: u, v, fora)
+    Texture2D material_orm[MATERIAL_TOTAL];    // R = oclusão, G = rugosidade, B = metal
     bool material_de_arquivo[MATERIAL_TOTAL]; // true = assets/texturas/<nome>.png; false = procedural
     Texture2D decalque[DECALQUE_TOTAL];
     Texture2D halo;             // brilho radial das lâmpadas
@@ -109,6 +121,10 @@ typedef struct {
     char celulas[MAPA_ALTURA][MAPA_LARGURA + 1];
     Vector3 inicio, console, cela_precursor, duto, painel1, painel2, diario, porta_sala;
     Vector3 lampadas[MAX_LAMPADAS];
+    bool lampada_em_x[MAX_LAMPADAS]; // a luminária corre ao longo de x (senão, de z)
+    // bit i da célula (linha, coluna): a luminária i a alcança sem passar por parede; o bit LUZ_BIT_MESA é a
+    // lâmpada da mesa do bilhete. O shader de luz lê isso numa textura (as luzes não atravessam paredes).
+    unsigned short alcance_luz[MAPA_ALTURA][MAPA_LARGURA];
     int n_lampadas;
     Vector3 armarios[MAX_ARMARIOS];      // centro do armário
     Vector3 armario_saida[MAX_ARMARIOS]; // onde o jogador fica ao sair
@@ -320,6 +336,7 @@ typedef struct Estado {
     float sanidade_barra;    // o que a barra mostra: desce junto, sobe suave nos bônus
     float sanidade_eco;      // o pedaço recém-perdido (mais escuro), que alcança a barra devagar
     int sanidade_conectivos; // conectivos decifrados no quadro anterior (para dar o bônus uma vez só)
+    int goteira_gota;        // a última gota da goteira que já pingou (para tocar o som uma vez só)
     bool modo_smoke, modo_feira;
     float tempo_inativo;
 

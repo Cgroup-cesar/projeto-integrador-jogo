@@ -172,7 +172,8 @@ static void acende_luzes(const Estado *e, Vector3 olho, float t) {
     Vector3 cor[3] = {{p, p, p * 0.95f}, {0.35f, 0.35f, 0.38f}, {0.12f, 0.12f, 0.13f}};
     Vector4 cone[3] = {{0, -1, 0, -2.0f}, {0, -1, 0, -2.0f}, {0, -1, 0, -2.0f}}; // pontuais
     float queda[3] = {1.0f, 1.0f, 1.0f};
-    posfx_comeca_luz(e, pos, cor, cone, queda, 3, 0.02f);
+    posfx_comeca_luz(e, pos, cor, cone, queda, NULL, 3, -1, 0.02f);
+    posfx_saida_direta(e); // o rosto vai para um alvo LDR próprio: sem passar pelo tone mapping da cena
     posfx_olho(e, olho);
 }
 
