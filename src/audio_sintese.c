@@ -416,9 +416,10 @@ void audio_toca_em(const Estado *e, IdSom som, Vector3 fonte, float alcance, flo
 
 // Um som que dura enquanto algo acontece (o motor da câmera): começa se não está tocando e, se está, só
 // acompanha o volume e o lado (sem recomeçar: um arquivo longo toca inteiro e emenda no fim).
-void audio_mantem_em(const Estado *e, IdSom som, Vector3 fonte, float alcance, float tom) {
+void audio_mantem_em(const Estado *e, IdSom som, Vector3 fonte, float alcance, float tom, float ganho) {
     if (!e->rec.audio_ok || som < 0 || som >= SOM_TOTAL) return;
     SomEspacial s = espacial(e, fonte, alcance);
+    s.volume *= ganho;
     Sound snd = e->rec.sons[som];
     if (!IsSoundPlaying(snd)) {
         if (s.volume > 0.0f) toca(e, som, s.volume, tom, s.pan);

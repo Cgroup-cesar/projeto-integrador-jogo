@@ -122,7 +122,8 @@ void cameras_atualiza(Estado *e, float dt) {
     // o motor soa enquanto alguma câmera gira (contínuo: um arquivo longo toca inteiro) e cala quando para
     e->camera_motor_parado_t = motor >= 0 ? 0.0f : e->camera_motor_parado_t + dt;
     if (motor >= 0)
-        audio_mantem_em(e, SOM_CAMERA_MOTOR, eixo_de(&CAMERAS[motor]), CAMERA_SOM_ALCANCE_M, motor_tom);
+        audio_mantem_em(e, SOM_CAMERA_MOTOR, eixo_de(&CAMERAS[motor]), CAMERA_SOM_ALCANCE_M, motor_tom,
+                        CAMERA_SOM_VOLUME);
     else if (e->camera_motor_parado_t > 0.12f)
         audio_para(e, SOM_CAMERA_MOTOR);
 }

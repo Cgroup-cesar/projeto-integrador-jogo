@@ -70,7 +70,8 @@
 #define CAMERA_REACAO_S       0.35f // ao avistar o jogador, demora isto para começar a virar
 #define CAMERA_ATRASO_S       0.55f // a mira persegue onde o jogador esteve (constante de tempo, em s)
 #define CAMERA_ESPERA_S       2.5f  // depois de perder o jogador, fica parada olhando antes de voltar
-#define CAMERA_SOM_ALCANCE_M  12.0f // até onde se ouve o motor
+#define CAMERA_SOM_ALCANCE_M  6.0f  // até onde se ouve o motor: só chegando perto da câmera
+#define CAMERA_SOM_VOLUME     0.3f  // o motor é discreto: mesmo colado nela, 30% do volume
 // O quadro de investigação na parede sul da sala de observação (quadro.c), atrás de quem está no console.
 #define QUADRO_LARGURA_M 1.95f
 #define QUADRO_X         8.6f   // centro, no meio da parede sul
