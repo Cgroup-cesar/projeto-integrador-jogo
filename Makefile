@@ -74,7 +74,7 @@ bin/test_fluxo$(EXE): obj/test_fluxo.o obj/logica.o obj/regras.o obj/regras_text
 
 # test_regras também testa as coleções, que usam TraceLog e CheckCollisionBoxes (sem abrir janela)
 bin/test_regras$(EXE): obj/test_regras.o obj/regras.o obj/regras_texto.o obj/regras_ranking.o obj/regras_sanidade.o \
-                        obj/logica.o obj/colecoes.o obj/materiais.o | bin
+                        obj/regras_som.o obj/logica.o obj/colecoes.o obj/materiais.o | bin
 	$(CC) $^ -o $@ $(RAYLIB_LIBS)
 
 $(TEST_MENU): obj/test_menu.o obj/menu_inicial.o | bin

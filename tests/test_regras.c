@@ -701,6 +701,37 @@ static void testa_intro_escuro(void) {
     CHECK(desce);
 }
 
+// [REQ:PURA-regras_som_espacial] cai em dB com a distância, vem do lado certo e abafa atrás da parede
+static void testa_som_espacial(void) {
+    Vector3 eu = {0, 0, 0}; // olhando para +z (yaw 0); a direita é −x
+    float a = 22.0f;
+    SomEspacial colado = regras_som_espacial(eu, 0.0f, (Vector3){0, 0, 1.0f}, a, false);
+    SomEspacial meio = regras_som_espacial(eu, 0.0f, (Vector3){0, 0, (SOM_PERTO_M + a) * 0.5f}, a, false);
+    CHECK(perto(colado.volume, 1.0f) && perto(colado.pan, 0.0f)); // perto e na frente: cheio, no centro
+    CHECK(perto(regras_som_espacial(eu, 0.0f, (Vector3){0, 0, SOM_PERTO_M}, a, false).volume, 1.0f));
+    CHECK(perto(meio.volume, powf(10.0f, -SOM_QUEDA_DB * powf(0.5f, SOM_CURVA) / 20.0f))); // no meio: a curva
+    CHECK(regras_som_espacial(eu, 0.0f, (Vector3){0, 0, a}, a, false).volume == 0.0f); // além do alcance
+    bool desce = true;
+    float antes = 2.0f;
+    for (int d = 1; d < 22; d++) { // padrão FOLD: quanto mais longe, mais baixo
+        float v = regras_som_espacial(eu, 0.0f, (Vector3){0, 0, (float)d}, a, false).volume;
+        desce = desce && v <= antes;
+        antes = v;
+    }
+    CHECK(desce);
+    SomEspacial dir = regras_som_espacial(eu, 0.0f, (Vector3){-8.0f, 0, 0}, a, false);
+    SomEspacial esq = regras_som_espacial(eu, 0.0f, (Vector3){8.0f, 0, 0}, a, false);
+    CHECK(perto(dir.pan, SOM_PAN_MAX) && perto(esq.pan, -SOM_PAN_MAX)); // de lado: quase todo num ouvido
+    SomEspacial virou = regras_som_espacial(eu, PI, (Vector3){-8.0f, 0, 0}, a, false);
+    CHECK(perto(virou.pan, -SOM_PAN_MAX)); // virou de costas: o mesmo som troca de ouvido
+    SomEspacial atras = regras_som_espacial(eu, 0.0f, (Vector3){0, 0, -8.0f}, a, false);
+    SomEspacial frente = regras_som_espacial(eu, 0.0f, (Vector3){0, 0, 8.0f}, a, false);
+    SomEspacial parede = regras_som_espacial(eu, 0.0f, (Vector3){0, 0, 8.0f}, a, true);
+    CHECK(perto(atras.volume, frente.volume * powf(10.0f, -SOM_ATRAS_DB / 20.0f)));
+    CHECK(perto(parede.volume, frente.volume * powf(10.0f, -SOM_PAREDE_DB / 20.0f)));
+    CHECK(perto(regras_som_espacial(eu, 0.0f, eu, a, false).volume, 1.0f)); // em cima: cheio, sem divisão
+}
+
 int main(void) {
     SetTraceLogLevel(LOG_ERROR); // o aviso de vetor cheio é esperado aqui
     testa_movimento();
@@ -741,5 +772,6 @@ int main(void) {
     testa_sanidade_bonus();
     testa_sanidade_intensidade();
     testa_surto();
+    testa_som_espacial();
     return resultado_final("test_regras");
 }
