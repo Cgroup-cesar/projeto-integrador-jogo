@@ -338,7 +338,8 @@
 #define GRADACAO_LUZ            {0.92f, 1.06f, 0.95f} // as luzes, para o verde-claro
 #define GRADACAO_SATURACAO      0.78f
 #define GRADACAO_CONTRASTE      1.06f
-#define GRADACAO_ELEVACAO       {0.012f, 0.028f, 0.03f} // o preto vira azul-petróleo bem escuro
+#define GRADACAO_ELEVACAO       {0.012f, 0.028f, 0.03f} // os escuros puxam para o azul-petróleo...
+#define GRADACAO_PISO_PRETO     0.08f // ...com força total só a partir deste brilho: o preto fica preto
 #define GRADACAO_VINHETA        0.85f
 #define GRADACAO_GRAO           0.03f
 #define GRADACAO_ABERRACAO      0.012f

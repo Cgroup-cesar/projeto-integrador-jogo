@@ -289,6 +289,8 @@ static void envia_composicao(const Estado *e) {
     SetShaderValue(s, loc(fx.compoe, "luzCor"), &luz, SHADER_UNIFORM_VEC3);
     SetShaderValue(s, loc(fx.compoe, "tela"), &tela, SHADER_UNIFORM_VEC2);
     SetShaderValue(s, loc(fx.compoe, "elevacao"), &elevacao, SHADER_UNIFORM_VEC3);
+    float piso_preto = GRADACAO_PISO_PRETO;
+    SetShaderValue(s, loc(fx.compoe, "pisoPreto"), &piso_preto, SHADER_UNIFORM_FLOAT);
 }
 
 bool efeitos_compoe(const Estado *e) {

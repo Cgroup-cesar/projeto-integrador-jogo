@@ -170,8 +170,8 @@ static const char *BLOOM_SOBE_FS =
 // ------------------------------------------------------------------ composição
 // A cena × oclusão, a névoa volumétrica por cima (a cena atenuada pela transmitância), o bloom; depois a
 // exposição, a curva ACES, a gradação de cor (sombras puxando para o azul-petróleo, luzes para o verde-claro,
-// menos saturação, contraste, a elevação fria dos pretos), a vinheta e o grão (os dois parametrizáveis), e a
-// volta para sRGB.
+// menos saturação, contraste, o tom frio nos escuros, mas não no preto), a vinheta e o grão (os dois
+// parametrizáveis), e a volta para sRGB.
 static const char *COMPOE_FS =
     "#version 330\n"
     "in vec2 fragTexCoord;\n"
@@ -180,7 +180,7 @@ static const char *COMPOE_FS =
     "uniform float exposicao; uniform float usaAo; uniform float usaVolume; uniform float bloom;\n"
     "uniform vec3 sombraCor; uniform vec3 luzCor; uniform float saturacao; uniform float contraste;\n"
     "uniform float vinheta; uniform float grao; uniform float aberracao; uniform float tempo;\n"
-    "uniform vec2 tela; uniform vec3 elevacao;\n"
+    "uniform vec2 tela; uniform vec3 elevacao; uniform float pisoPreto;\n"
     "out vec4 finalColor;\n"
     "vec3 aces(vec3 x) {\n"
     "    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0);\n"
@@ -201,7 +201,7 @@ static const char *COMPOE_FS =
     "    c = mix(vec3(luma), c, saturacao);\n"
     "    c = mix(c * sombraCor, c * luzCor, smoothstep(0.0, 0.6, luma));\n" // split toning
     "    c = clamp((c - 0.5) * contraste + 0.5, 0.0, 1.0);\n"
-    "    c = c + elevacao * (1.0 - c);\n" // as sombras não chegam ao preto puro: ficam azul-petróleo
+    "    c = c + elevacao * smoothstep(0.0, pisoPreto, luma) * (1.0 - c);\n" // o preto puro fica preto
     "    float borda = length(centro * vec2(tela.x / tela.y, 1.0)) * 0.85;\n"
     "    c *= mix(1.0, smoothstep(0.95, 0.25, borda), vinheta);\n"
     "    c = pow(c, vec3(1.0 / 2.2));\n"
