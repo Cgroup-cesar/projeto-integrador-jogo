@@ -39,6 +39,11 @@ void posfx_contraluz(const Estado *e, Color cor, float intensidade);
 // uma superfície sem mapas (rugosidade e metal fixos). Fora de rlPushMatrix/rlPopMatrix (enviam o lote).
 #define POSFX_RUGOSIDADE_PADRAO 0.7f
 void posfx_material(const Estado *e, TipoMaterial m);
+// O mesmo, projetado pela posição no mundo (uma repetição a cada `metros`), para modelos com UV própria.
+void posfx_material_triplanar(const Estado *e, TipoMaterial m, float metros);
+// O vidro: entre as duas, o shader de luz no modo vidro, sem escrever profundidade. false = sem shader.
+bool posfx_comeca_vidro(const Estado *e);
+void posfx_termina_vidro(const Estado *e);
 void posfx_superficie(const Estado *e, float rugosidade, float metal);
 
 // Luzes acesas, fora do shader de luz: entre comeca e termina_emissivo, posfx_emissivo dá a intensidade (HDR)

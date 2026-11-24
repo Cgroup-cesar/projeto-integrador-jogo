@@ -86,7 +86,10 @@ alvo.
 | Tinta descascando (`MATERIAL_CONCRETO`, metade de cima, pilares, verga, mureta) | Procedural (`materiais_tinta`): FBM com o domínio entortado, mais Voronoi nas lascas da borda | A máscara de descascado, a borda levantada e a sombra dela, o tijolo nos buracos fundos, as rachaduras ramificadas e os escorridos saem de uma função só, coerentes entre si |
 | Laje do teto (`MATERIAL_TETO`) | Procedural (`materiais_laje`) | O mesmo descascado, mais escuro, com manchas de infiltração |
 | Piso (`MATERIAL_PISO`) | Procedural (ladrilho de 50 cm) + água no shader | As placas trincadas e lascadas vêm da textura; a água vem do mundo, para não repetir com a textura |
-| Metal e porta | Procedural | Riscos com o metal nu, ferrugem e almofadas rebaixadas |
+| Metal e porta | Procedural (`metal` em `materiais.c`): aço pintado | A tinta tem "casca de laranja", manchas de mão e amassados; nas lascas aparece o aço nu (metálico e liso), com ferrugem em volta e escorrida; a porta tem almofadas rebaixadas |
+| Quadros elétricos dos geradores | Geometria em código (`painel_modelo.c`) + o aço pintado | Têm corpo, porta com vão, dobradiças, puxador, venezianas, placa de perigo e eletrodutos até o teto; a colisão é a mesma caixa de antes |
+| Armários (`armario.glb`) | O modelo + o aço pintado em projeção triplanar | A UV do modelo não combina com as texturas do jogo: o shader projeta os mapas do metal pela posição no mundo (`posfx_material_triplanar`) |
+| Vidro da contenção | Modo vidro do shader de luz + a sujeira procedural (`DECALQUE_VIDRO`) | Tem o Fresnel (quase transparente de frente, espelhado de lado), o reflexo das luzes, poeira embaixo, digitais e marcas de pano; não escreve profundidade, então a névoa da cela continua atrás |
 | Decalques de água, poeira, umidade e arrasto | Procedural (`materiais_mancha`) | Variam por formato e semente, e o chão molhado ganha o reflexo |
 | Modelos glTF (criatura, armários, caixotes...) | Os do arquivo, com rugosidade fixa | Os `.glb` atuais não trazem mapas PBR completos |
 

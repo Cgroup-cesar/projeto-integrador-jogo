@@ -69,7 +69,7 @@ static float profundidade(TipoMaterial m) {
     case MATERIAL_TETO:
         return 0.005f;
     case MATERIAL_METAL:
-        return 0.0015f;
+        return 0.003f;
     default:
         return 0.006f;
     }

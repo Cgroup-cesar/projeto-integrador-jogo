@@ -55,6 +55,7 @@ static const char *LUZ_FS_330 =
     "uniform vec3 contraluz; uniform float molhado;\n"
     "uniform sampler2D mapaReflexo; uniform float reflexo; uniform float agua; uniform vec2 tela;\n"
     "uniform float direto; uniform float exposicao;\n"
+    "uniform sampler2D mapaCor; uniform float triplanar; uniform float vidro;\n"
     "uniform float modoSombra; uniform vec3 luzSombra;\n"
     // as luzes não atravessam paredes: o bit da luz na célula do ponto (Nivel.alcance_luz)
     "uniform sampler2D mapaAlcance; uniform int luzId[" N_LUZES "];\n"
@@ -168,10 +169,27 @@ static const char *LUZ_FS_330 =
     "    if (dot(n, paraCamera) < 0.0) n = -n;\n"
     "    vec3 nGeo = n;\n" // a normal da face, antes do mapa (a água fica plana)
     "    float ao = 1.0, rug = rugosidade, met = metalico;\n"
+    // triplanar: os mapas do material pela posição no mundo (para modelos com UV própria, como o armário):
+    // a face escolhe o plano pelo eixo dominante da normal; a cor do material tinge a do modelo
+    "    vec2 uvMat = fragTexCoord;\n"
+    "    if (triplanar > 0.0) {\n"
+    "        vec3 eixo = abs(nGeo);\n"
+    "        uvMat = (eixo.x > eixo.y && eixo.x > eixo.z ? fragPosition.zy\n"
+    "                 : (eixo.y > eixo.z ? fragPosition.xz : fragPosition.xy)) / triplanar;\n"
+    "        albedo *= pow(texture(mapaCor, uvMat).rgb, vec3(2.2)) * 1.25;\n"
+    "    }\n"
     "    if (usaMapas > 0.5) {\n"
-    "        vec3 orm = texture(mapaOrm, fragTexCoord).rgb;\n"
+    "        vec3 orm = texture(mapaOrm, uvMat).rgb;\n"
     "        ao = orm.r; rug = orm.g; met = orm.b;\n"
-    "        n = normalDoMapa(n, fragPosition, fragTexCoord);\n"
+    "        n = normalDoMapa(n, fragPosition, uvMat);\n"
+    "    }\n"
+    // vidro: a textura diz onde há sujeira (poeira, manchas, digitais); o resto é vidro liso e quase preto
+    "    float sujo = 0.0;\n"
+    "    if (vidro > 0.5) {\n"
+    "        sujo = texture(texture0, fragTexCoord).a;\n"
+    "        albedo = vec3(0.06, 0.065, 0.06) * sujo;\n"
+    "        rug = mix(0.025, 0.45, sujo);\n"
+    "        met = 0.0;\n"
     "    }\n"
     // o chão molhado: manchas grandes de água (em metros, no mundo: não repetem com a textura) e a água
     // parada no rejunte (onde a oclusão é baixa). A água escurece o piso, deixa liso e aplaina a normal.
@@ -220,6 +238,16 @@ static const char *LUZ_FS_330 =
     "        vec3 fr = f0 + (max(vec3(1.0 - rug), f0) - f0) * pow(1.0 - nv, 5.0);\n"
     "        cor += espelho * fr * reflexo * ao * (1.0 - rug) * (1.0 - rug);\n" // fosco: quase não espelha
     "    }\n"
+    // vidro: quase transparente de frente e espelhado de lado (Fresnel), com o reflexo das luzes (já em
+    // `direta`) e um pouco do ambiente; a cor é dividida pelo alfa para o reflexo somar em vez de sumir na
+    // mistura com o que está atrás. O alfa do vértice é a opacidade de base (sobe quando o vidro trinca).
+    "    float alfa = base.a;\n"
+    "    if (vidro > 0.5) {\n"
+    "        float fres = 0.04 + 0.96 * pow(1.0 - nv, 5.0);\n"
+    "        alfa = clamp(fragColor.a * 0.6 + fres * 0.8 + sujo * 0.16, 0.0, 1.0);\n"
+    "        vec3 tinta = pow(fragColor.rgb, vec3(2.2)) * fragColor.a * (ambiente + 0.02);\n"
+    "        cor = (cor + vec3(0.012, 0.02, 0.02) * fres + tinta) / max(alfa, 0.02);\n"
+    "    }\n"
     "    cor = nevoaDaCela(cor, fragPosition);\n"
     "    float fator = clamp(1.0 - exp(-nevoa * length(paraCamera)), 0.0, 1.0);\n"
     "    cor = mix(cor, vec3(0.0008, 0.0012, 0.001), fator);\n"
@@ -229,7 +257,7 @@ static const char *LUZ_FS_330 =
     "        x = clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0);\n"
     "        cor = pow(x, vec3(1.0 / 2.2));\n"
     "    }\n"
-    "    finalColor = vec4(cor, base.a);\n"
+    "    finalColor = vec4(cor, alfa);\n"
     "}\n";
 
 static const char *LUZ_VS_100 =
