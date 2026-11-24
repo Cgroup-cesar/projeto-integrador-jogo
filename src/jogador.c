@@ -20,6 +20,7 @@ void jogador_teleporta(Estado *e, Vector3 pos, float yaw) {
     e->jog.pitch = 0.0f;
     e->jog.mira = -1;
     e->jog.correndo = false;
+    e->jog.armario_anima = false; // teleporte (fase nova, recomeço): sem animação de armário pela metade
 }
 
 void jogador_vai_ao_console(Estado *e) {
@@ -130,13 +131,20 @@ static int armario_mais_proximo(const Estado *e, Vector3 pos) {
 
 static void entra_no_armario(Estado *e, const Interativo *it) {
     Jogador *j = &e->jog;
+    // a animação parte de onde a câmera está e de para onde ela olha (de frente para o armário)
+    j->armario_de = jogador_olho(e);
+    j->armario_yaw_de = j->yaw;
+    j->armario_pitch_de = j->pitch;
+    j->armario_saindo = false;
+    j->armario_anima = true;
+    j->armario_t = 0.0f;
     j->armario = armario_mais_proximo(e, it->pos);
     j->modo = MODO_ARMARIO;
     Vector3 fora = Vector3Subtract(e->nivel.armario_saida[j->armario], e->nivel.armarios[j->armario]);
     j->yaw = atan2f(fora.x, fora.z);
     j->armario_yaw = j->yaw;
     j->pitch = 0.0f;
-    audio_toca(e, SOM_INTERRUPTOR, 0.7f, 0.6f);
+    audio_toca(e, SOM_ARMARIO_ABRE, 0.85f, 1.0f); // a trava e o rangido: a porta abre para ele entrar
     // Entrar no armário a menos de 2 m dele enquanto ele te vê não adianta.
     bool visto = e->cri.ativo && e->cri.ve_jogador;
     if (visto && Vector3Distance(e->cri.pos, j->pos) < CRIATURA_DIST_ARMARIO) criatura_captura(e);
@@ -145,9 +153,13 @@ static void entra_no_armario(Estado *e, const Interativo *it) {
 
 static void sai_do_armario(Estado *e) {
     Jogador *j = &e->jog;
+    j->armario_de = jogador_olho(e); // ainda lá dentro
+    j->armario_saindo = true;
+    j->armario_anima = true;
+    j->armario_t = 0.0f;
     j->modo = MODO_ANDANDO;
     j->pos = e->nivel.armario_saida[j->armario];
-    audio_toca(e, SOM_INTERRUPTOR, 0.7f, 0.55f);
+    audio_toca(e, SOM_ARMARIO_ABRE, 0.8f, 1.0f);
 }
 
 // ------------------------------------------------------------------ interação
@@ -184,7 +196,9 @@ static void interage(Estado *e, const Interativo *it) {
 
 static void atualiza_modos(Estado *e) {
     Jogador *j = &e->jog;
-    if (j->modo == MODO_ARMARIO && e->in.interagir && !respiracao_ativa(e)) { // segurando o ar, não sai
+    bool entrando = j->armario_anima && !j->armario_saindo && j->armario_t < ARMARIO_ENTRA_S; // nem fechou
+    if (j->modo == MODO_ARMARIO && e->in.interagir && !respiracao_ativa(e) && !entrando) { // segurando o ar,
+                                                                                          // não sai
         sai_do_armario(e);
     } else if (j->modo == MODO_DIARIO && (e->in.interagir || e->in.voltar)) {
         j->modo = MODO_ANDANDO;
@@ -193,9 +207,78 @@ static void atualiza_modos(Estado *e) {
     }
 }
 
+// ------------------------------------------------------------------ animação do armário
+static float suave(float t) {
+    t = Clamp(t, 0.0f, 1.0f);
+    return t * t * (3.0f - 2.0f * t);
+}
+
+// Quando a porta termina de fechar, em s desde o começo: no fim da entrada (por dentro); na saída, um pouco
+// depois de o jogador sair (atrás dele).
+static float fim_da_porta(const Jogador *j) {
+    return j->armario_saindo ? ARMARIO_SAI_S + ARMARIO_FECHA_ATRAS_S + ARMARIO_FECHA_S : ARMARIO_ENTRA_S;
+}
+
+// 0 no começo do movimento da câmera, 1 no fim (ou parada).
+static float progresso(const Jogador *j) {
+    float dur = j->armario_saindo ? ARMARIO_SAI_S : ARMARIO_ENTRA_S;
+    return j->armario_anima ? fminf(1.0f, j->armario_t / dur) : 1.0f;
+}
+
+// O relógio da animação e o som de fechar, que começa ARMARIO_BATIDA_S antes, para a batida cair quando a
+// porta fecha (o de abrir toca ao apertar o botão, em entra_no_armario e sai_do_armario).
+static void anima_armario(Estado *e, float dt) {
+    Jogador *j = &e->jog;
+    if (!j->armario_anima) return;
+    float fim = fim_da_porta(j), batida = fim - ARMARIO_BATIDA_S, antes = j->armario_t;
+    j->armario_t += dt;
+    if (antes < batida && j->armario_t >= batida) // por fora (saindo), um pouco mais baixo
+        audio_toca(e, SOM_ARMARIO_FECHA, j->armario_saindo ? 0.6f : 0.85f, 1.0f);
+    if (j->armario_t > fim + 0.05f) j->armario_anima = false;
+}
+
+// Entrando: o passo para dentro (até 65% do tempo) e, a partir de 25%, a volta para a porta (dá meia-volta
+// sempre pelo mesmo lado). Saindo: a porta abre primeiro e o passo para fora vem depois (a partir de 30%).
+static void camera_do_armario(const Jogador *j, Vector3 *olho, Vector3 *dir) {
+    float t = progresso(j);
+    if (t >= 1.0f) return;
+    if (j->armario_saindo) {
+        *olho = Vector3Lerp(j->armario_de, *olho, suave((t - 0.3f) / 0.7f));
+        return;
+    }
+    *olho = Vector3Lerp(j->armario_de, *olho, suave(t / 0.65f));
+    float volta = j->armario_yaw - j->armario_yaw_de;
+    while (volta > PI) volta -= 2.0f * PI;
+    while (volta <= -PI) volta += 2.0f * PI;
+    if (fabsf(volta) > PI - 0.05f) volta = PI; // meia-volta exata: sempre pelo mesmo lado
+    float giro = suave((t - 0.25f) / 0.75f);
+    float yaw = j->armario_yaw_de + volta * giro, pitch = j->armario_pitch_de * (1.0f - giro);
+    *dir = (Vector3){sinf(yaw) * cosf(pitch), sinf(pitch), cosf(yaw) * cosf(pitch)};
+}
+
+// As folhas da porta abrem nos primeiros ARMARIO_ABRE_S e fecham nos ARMARIO_FECHA_S antes de fim_da_porta.
+float jogador_porta_aberta(const Estado *e) {
+    const Jogador *j = &e->jog;
+    if (!j->armario_anima) return 0.0f;
+    float fecha = suave((j->armario_t - (fim_da_porta(j) - ARMARIO_FECHA_S)) / ARMARIO_FECHA_S);
+    return suave(j->armario_t / ARMARIO_ABRE_S) * (1.0f - fecha);
+}
+
+// O quanto a porta cobre a tela (0 = nada, 1 = as frestas inteiras). Com o modelo, a porta de verdade
+// abre e fecha, e as frestas só entram com o jogador lá dentro e ela fechada. Sem ele, a porta da tela varre
+// a tela: fecha no fim da entrada e abre no começo da saída.
+float jogador_porta_armario(const Estado *e) {
+    const Jogador *j = &e->jog;
+    float t = progresso(j);
+    if (e->rec.tem_armario) return j->modo == MODO_ARMARIO && t >= 1.0f ? 1.0f : 0.0f;
+    if (j->modo != MODO_ARMARIO) return j->armario_saindo && t < 1.0f ? 1.0f - suave(t / 0.4f) : 0.0f;
+    return t >= 1.0f ? 1.0f : suave((t - 0.72f) / 0.28f);
+}
+
 void jogador_atualiza(Estado *e, float dt) {
     olha(e, dt);
     Jogador *j = &e->jog;
+    anima_armario(e, dt);
     if (j->modo == MODO_ANDANDO) {
         anda(e, dt);
         j->mira = col_interativos_na_mira(&e->interativos, jogador_olho(e), jogador_direcao(e),
@@ -208,22 +291,27 @@ void jogador_atualiza(Estado *e, float dt) {
 }
 
 void jogador_atualiza_camera(Estado *e) {
-    Vector3 olho = jogador_olho(e);
+    Vector3 olho = jogador_olho(e), dir = jogador_direcao(e);
+    camera_do_armario(&e->jog, &olho, &dir);
     e->camera.position = olho;
-    e->camera.target = Vector3Add(olho, jogador_direcao(e));
+    e->camera.target = Vector3Add(olho, dir);
     e->camera.up = (Vector3){0.0f, 1.0f, 0.0f};
     e->camera.fovy = 70.0f;
     e->camera.projection = CAMERA_PERSPECTIVE;
 }
 
-// Escondido: a câmera olha pelas frestas (barras pretas por cima da cena).
+// Escondido: a câmera olha pelas frestas (barras pretas por cima da cena). A porta varre a tela ao fechar e
+// ao abrir: ela entra pela direita (a borda dela, escura, vem na frente) até cobrir tudo.
 void jogador_desenha(const Estado *e) {
-    if (e->jog.modo != MODO_ARMARIO) return;
+    float fechada = jogador_porta_armario(e);
+    if (fechada <= 0.0f) return;
     int w = e->rec.alvo_largura, h = e->rec.alvo_altura;
+    int x0 = (int)((1.0f - fechada) * (float)w); // onde está a borda da porta
     // Ripas finas (cerca de 30% da altura): dá para ver o Precursor inteiro na porta, mas ainda é uma fresta.
     int passo = h / 7, ripa = passo * 3 / 10;
     for (int y = passo / 2; y < h; y += passo) // padrão MAP: cada ripa da porta
-        DrawRectangle(0, y, w, ripa, BLACK);
-    DrawRectangle(0, 0, w / 7, h, BLACK);
-    DrawRectangle(w - w / 7, 0, w / 7, h, BLACK);
+        DrawRectangle(x0, y, w - x0, ripa, BLACK);
+    DrawRectangle(x0 + (w - x0) - w / 7, 0, w / 7, h, BLACK);     // o batente do outro lado
+    if (fechada < 1.0f) DrawRectangle(x0, 0, w / 7, h, BLACK);    // a borda da porta, vindo na frente
+    else DrawRectangle(0, 0, w / 7, h, BLACK);
 }

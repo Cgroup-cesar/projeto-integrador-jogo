@@ -44,7 +44,7 @@ typedef struct {
 } Entrada;
 
 // ------------------------------------------------------------------ recursos carregados uma vez
-#define SOM_MAXIMO 24
+#define SOM_MAXIMO 32 // vagas para os sons (audio_sintese.h: SOM_TOTAL não pode passar daqui)
 
 // A mandíbula do precursor.glb (o modelo não tem esqueleto): os vértices do queixo e quanto cada um gira.
 typedef struct {
@@ -98,6 +98,11 @@ typedef struct {
     bool tem_mesa, tem_papeis;
     Model modelo_armario; // opcional: assets/modelos/armario.glb (os armários de esconderijo)
     bool tem_armario;
+    // a porta dele separada em duas folhas ao carregar (armario_modelo.c), para abrir e fechar de verdade
+    Mesh armario_folha[ARMARIO_MAX_PARTES];
+    int armario_folha_lado[ARMARIO_MAX_PARTES], armario_folha_mat[ARMARIO_MAX_PARTES], armario_n_folhas;
+    bool armario_eh_porta[ARMARIO_MAX_PARTES]; // a malha i do modelo é da porta (vai pelas folhas)
+    Vector3 armario_dobradica[2];              // o eixo de cada folha (esquerda, direita), no modelo
     Model modelo_porta; // opcional: assets/modelos/porta_bunker.glb (a porta da sala de observação)
     Mesh porta_batente, porta_folha; // as duas peças do modelo, separadas ao carregar (porta_bunker.c)
     bool tem_porta;
@@ -174,6 +179,13 @@ typedef struct {
     ModoJogador modo;
     int armario;       // índice em Nivel.armarios quando escondido
     float armario_yaw; // direção da porta: centro do cone de visão enquanto escondido
+    // a animação de entrar e sair do armário (a câmera, a porta e os sons: a regra de estar escondido não
+    // espera por ela)
+    bool armario_anima;             // há uma entrada ou saída em andamento (até a porta fechar)
+    float armario_t;                // s desde que ela começou
+    bool armario_saindo;            // true: saindo; false: entrando
+    Vector3 armario_de;             // de onde a câmera partiu
+    float armario_yaw_de, armario_pitch_de; // para onde ela olhava ao começar a entrar
     int mira;          // índice do interativo na mira (−1 = nenhum)
     float tempo_passo;
     float balanco;     // balanço da câmera ao andar

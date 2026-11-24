@@ -67,6 +67,14 @@
 #define CAMERA_ALTURA_M       2.5f  // onde a placa encosta na parede
 #define CAMERA_INCLINA_GRAUS  22.0f // a lente aponta um pouco para baixo
 #define MAX_CAMERAS           8     // vagas para o estado de cada câmera (cameras.c tem 7)
+#define ARMARIO_ENTRA_S       0.7f  // a animação de entrar no armário: o passo para dentro, a volta e a porta
+#define ARMARIO_SAI_S         0.55f // a de sair: a porta abre e o passo para fora
+#define ARMARIO_ABRE_S        0.25f // as folhas da porta abrem (no começo da entrada e da saída)
+#define ARMARIO_FECHA_S       0.2f  // e fecham: no fim da entrada (por dentro) e depois da saída (por fora)
+#define ARMARIO_FECHA_ATRAS_S 0.2f  // fora do armário, a porta fecha atrás do jogador depois desse tempo
+#define ARMARIO_PORTA_GRAUS   100.0f // o quanto cada folha gira aberta
+#define ARMARIO_BATIDA_S      0.15f // no som de fechar (armario_fecha), a batida vem depois do rangido
+#define ARMARIO_MAX_PARTES    8     // malhas do armario.glb que a porta separa em folhas
 #define CAMERA_BRACO_M        0.16f // a câmera gira na ponta de um braço curto, fora da parede
 #define CAMERA_VISAO_M        16.0f // até onde uma câmera enxerga o jogador
 #define CAMERA_GIRO_MAX_GRAUS 70.0f // o quanto ela vira para cada lado, a partir de para onde aponta

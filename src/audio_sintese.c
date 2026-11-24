@@ -18,7 +18,9 @@ static const char *const NOMES[SOM_TOTAL] = {
     "respiracao",      "ambiente_sala",    "ambiente_saida", "papel",
     "energia",         "distorcao",        "jumpscare",      "respiracao_ofegante",
     "gota",            "camera_motor",     "porta_abre",     "porta_fecha",
+    "armario_abre",    "armario_fecha",
 };
+typedef char cabem_os_sons[SOM_TOTAL <= SOM_MAXIMO ? 1 : -1]; // não compila se Recursos.sons não couber
 
 // ================================================================== ferramentas de síntese
 typedef struct {
@@ -188,6 +190,65 @@ static void porta(Buffer *b, bool fecha) {
         b->amostras[i] *= 0.9f / pico;
 }
 
+// Um ressoador de dois polos: faz o ruído ou um pulso "soar" numa frequência (a chapa, a dobradiça).
+typedef struct {
+    float y1, y2, a1, a2;
+} Ressoa;
+
+static Ressoa ressoador(float hz, float decai_s) {
+    float r = expf(-1.0f / (decai_s * TAXA));
+    return (Ressoa){0.0f, 0.0f, 2.0f * r * cosf(DOIS_PI * hz / TAXA), -r * r};
+}
+
+static float ressoa(Ressoa *r, float x) {
+    float y = x + r->a1 * r->y1 + r->a2 * r->y2;
+    r->y2 = r->y1;
+    r->y1 = y;
+    return y;
+}
+
+// O rangido da dobradiça: pulsos de atrito (uns 40 por segundo, com o ritmo variando) soando na chapa.
+static float rangido(Ressoa *chapa, float *fase, float t) {
+    *fase += (38.0f + 22.0f * sinf(DOIS_PI * 1.7f * t)) / TAXA;
+    float pulso = 0.0f;
+    if (*fase >= 1.0f) {
+        *fase -= 1.0f;
+        pulso = 1.0f;
+    }
+    return ressoa(chapa, pulso + 0.02f * ruido());
+}
+
+// Sem assets/audio/armario_abre.*: o clique da trava (aos 0,06 s) e o rangido da porta abrindo.
+static void armario_abre(Buffer *b) {
+    Ressoa trava = ressoador(2400.0f, 0.03f), chapa = ressoador(950.0f, 0.012f);
+    float fase = 0.0f, d = (float)b->n / TAXA;
+    for (int i = 0; i < b->n; i++) {
+        float t = (float)i / TAXA, dt = t - 0.06f;
+        float clique = dt >= 0.0f ? ressoa(&trava, dt < 0.002f ? ruido() : 0.0f) : 0.0f;
+        float range = t > 0.09f ? rangido(&chapa, &fase, t) * fminf(1.0f, (d - t) / 0.15f) : 0.0f;
+        b->amostras[i] = 0.04f * clique + 0.015f * range;
+    }
+}
+
+// Sem assets/audio/armario_fecha.*: o rangido curto, a batida da chapa (aos 0,15 s, ARMARIO_BATIDA_S) com o
+// baque grave e a vibração do metal, e o clique da trava logo depois.
+static void armario_fecha(Buffer *b) {
+    Ressoa chapa = ressoador(950.0f, 0.012f), trava = ressoador(2400.0f, 0.03f);
+    Ressoa metal1 = ressoador(420.0f, 0.25f), metal2 = ressoador(780.0f, 0.15f);
+    float fase = 0.0f, lp = 0.0f;
+    for (int i = 0; i < b->n; i++) {
+        float t = (float)i / TAXA, bt = t - 0.15f, tt = t - 0.19f;
+        float range = t < 0.15f ? rangido(&chapa, &fase, t) : 0.0f;
+        float golpe = bt >= 0.0f && bt < 0.004f ? ruido() : 0.0f;
+        float baque = 0.0f;
+        if (bt >= 0.0f) // o baque grave da chapa
+            baque = expf(-bt * 14.0f) * (sinf(DOIS_PI * 85.0f * bt) + filtra(&lp, ruido(), 0.08f));
+        float vibra = ressoa(&metal1, golpe) + 0.6f * ressoa(&metal2, golpe);
+        float clique = tt >= 0.0f ? ressoa(&trava, tt < 0.002f ? ruido() : 0.0f) : 0.0f;
+        b->amostras[i] = tanhf(0.015f * range + 0.7f * baque + 0.008f * vibra + 0.03f * clique);
+    }
+}
+
 static void estalo(Buffer *b) { // estalo de vidro: ruído seco e parciais agudos que soam um pouco
     for (int i = 0; i < b->n; i++) {
         float t = (float)i / TAXA;
@@ -271,8 +332,8 @@ static void distorcao(Buffer *b) {
 static float duracao(IdSom som) {
     static const float d[SOM_TOTAL] = {1.0f, 1.6f, 0.6f, 0.5f, 0.25f, 0.05f, 0.06f, 0.14f, 0.3f, 0.45f,
                                        1.2f, 1.0f, 2.0f, 4.0f, 4.0f,  0.3f,  1.2f,  1.0f,  1.2f,
-                                       0.0f, 0.3f, 1.2f,  2.0f,  1.65f}; // respiração ofegante: só arquivo // a respiração ofegante: só
-                                                                               // arquivo
+                                       0.0f, 0.3f, 1.2f,  2.0f,  1.65f, // respiração ofegante (0): arquivo
+                                       0.55f, 1.2f};
     return d[som];
 }
 
@@ -315,6 +376,12 @@ static void sintetiza(IdSom som, Buffer *b) {
     case SOM_PORTA_ABRE:
     case SOM_PORTA_FECHA:
         porta(b, som == SOM_PORTA_FECHA);
+        break;
+    case SOM_ARMARIO_ABRE:
+        armario_abre(b);
+        break;
+    case SOM_ARMARIO_FECHA:
+        armario_fecha(b);
         break;
     case SOM_VIDRO_ESTALO:
         estalo(b);

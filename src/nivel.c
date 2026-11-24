@@ -13,6 +13,7 @@
 #include "texturas.h"
 #include "cenario.h"
 #include "posfx.h"
+#include "jogador.h"
 #include "painel_modelo.h"
 #include <math.h>
 #include <string.h>
@@ -475,7 +476,7 @@ static void metal(const Estado *e, Vector3 centro, Vector3 tamanho, Color cor, i
 // peças grandes); os modelos pequenos (câmeras, quadro, console, caixotes, a mesa) ficam só na cena.
 static void desenha_moveis(const Estado *e, bool completo) {
     const Nivel *n = &e->nivel;
-    int armario_oculto = e->jog.modo == MODO_ARMARIO ? e->jog.armario : -1; // a câmera está dentro dele
+    Vector3 cam = e->camera.position; // sem o modelo, a caixa em que a câmera está (entrando ou saindo) some
     Color cinza = {0x22, 0x26, 0x24, 255};
     Vector3 con = n->console;
     metal(e, (Vector3){con.x, 0.5f, con.z - 0.6f}, (Vector3){1.6f, 1.0f, 0.8f}, COR_OLIVA, 1);
@@ -498,9 +499,14 @@ static void desenha_moveis(const Estado *e, bool completo) {
         bool em_x = fabsf(d.x) > fabsf(d.z);
         Vector3 tam = em_x ? (Vector3){0.75f, 2.1f, 1.3f} : (Vector3){1.3f, 2.1f, 0.75f};
         Vector3 c = {n->armarios[i].x, 1.05f, n->armarios[i].z};
-        if (i == armario_oculto) continue; // escondido: a camera esta dentro, nao desenha o armario
-        if (armario_modelo_desenha(e, c, tam, Vector3Negate(Vector3Normalize(d))))
+        // o do jogador abre e fecha a porta quando ele entra e sai; escondido, a porta é a da tela
+        float graus = i == e->jog.armario ? jogador_porta_aberta(e) * ARMARIO_PORTA_GRAUS : 0.0f;
+        if (i == e->jog.armario && jogador_porta_armario(e) >= 1.0f) graus = -1.0f;
+        if (armario_modelo_desenha(e, c, tam, Vector3Negate(Vector3Normalize(d)), graus))
             continue; // o modelo já tem a porta com venezianas: as frestas desenhadas são só da caixa
+        Vector3 meio = Vector3Scale(tam, 0.5f);
+        if (fabsf(cam.x - c.x) < meio.x + 0.05f && fabsf(cam.z - c.z) < meio.z + 0.05f && cam.y < tam.y)
+            continue; // sem o modelo, a caixa não tem lado de dentro: com a câmera dentro dela, não desenha
         metal(e, c, tam, (Color){0x3b, 0x40, 0x31, 255}, 10 + i); // sem o modelo: a caixa de metal
         Vector3 frente = Vector3Scale(Vector3Normalize(d), -(em_x ? tam.x : tam.z) * 0.5f - 0.005f);
         for (int f = 0; f < 4; f++) { // frestas
