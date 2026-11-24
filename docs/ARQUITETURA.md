@@ -66,9 +66,9 @@ stateDiagram-v2
     note right of INTRO: etapas: professor ou professora, nome, texto datilografado, carta pelo rádio
     INTRO --> R1: INTRO_TERMINOU
     R1 --> S1: RODADA_CONCLUIDA
-    S1 --> R2: SAIDA_CONCLUIDA
+    S1 --> R2: SAIDA_CONCLUIDA (na volta à sala, quando a porta bate)
     R2 --> S2: RODADA_CONCLUIDA
-    S2 --> R3: SAIDA_CONCLUIDA
+    S2 --> R3: SAIDA_CONCLUIDA (idem)
     R3 --> RESPOSTA_FINAL: RODADA_CONCLUIDA
     RESPOSTA_FINAL --> FIM_BOM: TRANSMITIU_CONTRADICAO
     RESPOSTA_FINAL --> FIM_RUIM: TRANSMITIU_SATISFAZIVEL
@@ -89,7 +89,7 @@ stateDiagram-v2
 | `main.c` | janela, game loop, leitura da entrada, capturas, `--smoke` (piloto automático) |
 | `jogo.c` | aplica `regras_proxima_fase`, prepara cada fase, pontua, pausa, debug, modo feira |
 | `config.h` · `estado.h` | constantes · todo o estado do jogo |
-| `logica.c` · `regras.c` · `regras_texto.c` · `regras_ranking.c` · `funcional.h` · `colecoes.c` | a camada pura (`regras_texto.c`: marcadores do roteiro, nome digitado e legenda com defeito do rádio falso; `regras_ranking.c`: o lugar da partida no ranking e a linha do arquivo) |
+| `logica.c` · `regras.c` · `regras_texto.c` · `regras_ranking.c` · `regras_porta.c` · `funcional.h` · `colecoes.c` | a camada pura (`regras_texto.c`: marcadores do roteiro, nome digitado e legenda com defeito do rádio falso; `regras_ranking.c`: o lugar da partida no ranking e a linha do arquivo; `regras_porta.c`: a folha da porta da sala e a coreografia da volta à sala) |
 | `nivel.c` | mapa ASCII → paredes, móveis, interativos, luzes; desenho do bloco de contenção com as texturas |
 | `materiais.c` | puro: ruído contínuo nas bordas, o desenho de cada material (`materiais_pixel`), manchas, desgaste do estêncil e `materiais_uv` (UV em metros) |
 | `texturas.c` | gera ou carrega as texturas uma vez, libera ao sair; `texturas_caixa` (6 faces, UV de mundo ou local) e `texturas_quadro` (decalque) |
@@ -127,7 +127,9 @@ stateDiagram-v2
 | `caixas.c` | pilhas de caixotes de madeira encostadas nas paredes das salas (`assets/modelos/caixas.glb`), com colisão e as placas "EXÉRCITO BRASILEIRO / CHÃ DE ALEGRIA - PE" sobre o "Fragile" do modelo; sem o arquivo, caixas simples |
 | `mesa_bilhete.c` | a mesa do bilhete no fundo do Arquivo, de frente para a porta (`mesa.glb`, `papeis.glb`), a lâmpada âmbar pendurada que pisca (a única luz da sala, sempre acesa a até 14 m) e o brilho que respira no bilhete até ele ser lido |
 | `armario_modelo.c` | o armário de metal de duas portas no lugar da caixa dos esconderijos, girado para o corredor e com a frente rente à colisão; só o desenho (o esconderijo e a respiração não mudam) |
-| `porta_bunker.c` | a porta da sala de observação: ao carregar, separa a folha do batente (peças da mesma malha) pelo plano da folha; a folha gira na dobradiça, fechada nas rodadas e abrindo em 1,8 s na saída |
+| `porta_bunker.c` | o modelo da porta da sala de observação: ao carregar, separa a folha do batente (peças da mesma malha) pelo plano da folha; a folha gira na dobradiça até a abertura que `porta_sala.c` manda |
+| `porta_sala.c` | a porta da sala de observação: trancada nas rodadas; nas saídas começa fechada e abre e fecha com E (com som); a criatura, chegando nela fechada, abre com um tranco; quase fechada (`regras_porta_solida`), a folha entra nas paredes de colisão, e ao abrir sai delas (filter) |
+| `retorno.c` | a volta à sala depois de religar a energia, como cena: ao entrar na sala, vira para a porta, fecha, e entra virando para a cela, com faixas de cinema; a saída é concluída quando a folha bate e a rodada seguinte começa com o jogador ali (`jogo.c` não teleporta); a coreografia é `regras_retorno_pose` |
 | `cameras.c` | 7 câmeras de segurança presas retas no alto das paredes das salas e corredores, inclinadas para baixo, com o LED de REC |
 | `quadro.c` | o quadro de investigação na parede sul da sala de observação, atrás do console; desenhado sem descartar faces de trás (os papéis do modelo vêm com a face invertida) |
 | `tela_fim.c` | depois do final: desempenho (resultado, placar, lugar no ranking), avaliação em estrelas e a tabela do ranking |
