@@ -3,6 +3,8 @@
 #include "posfx.h"
 #include "vhs.h"
 #include "sombreadores.h"
+#include "efeitos.h"
+#include "qualidade.h"
 #include "rlgl.h"
 #include "raymath.h"
 #include <stddef.h>
@@ -16,50 +18,66 @@ static bool usa_glsl_100(void) {
 #define UNIDADE_ORM    10
 #define UNIDADE_REFLEXO 11
 
-// A cena HDR: cor em ponto flutuante (16 bits por canal: o que passa de 1 não satura) e profundidade numa
-// textura (os passes de tela leem a distância de cada pixel).
-static RenderTexture2D cria_hdr(int w, int h) {
+// Um alvo de render com cor em ponto flutuante (o que passa de 1 não satura). profundidade: 0 = nenhuma,
+// 1 = numa textura (os passes de tela leem a distância de cada pixel), 2 = renderbuffer (só o teste de
+// profundidade). id 0 = não montou (o chamador segue sem o efeito).
+RenderTexture2D posfx_cria_alvo_float(int w, int h, int formato, int profundidade) {
     RenderTexture2D t = {0};
     t.id = rlLoadFramebuffer();
     if (t.id == 0) return t;
     rlEnableFramebuffer(t.id);
-    t.texture = (Texture2D){rlLoadTexture(NULL, w, h, PIXELFORMAT_UNCOMPRESSED_R16G16B16A16, 1), w, h, 1,
-                            PIXELFORMAT_UNCOMPRESSED_R16G16B16A16};
-    t.depth = (Texture2D){rlLoadTextureDepth(w, h, false), w, h, 1, 19};
+    t.texture = (Texture2D){rlLoadTexture(NULL, w, h, formato, 1), w, h, 1, formato};
     rlFramebufferAttach(t.id, t.texture.id, RL_ATTACHMENT_COLOR_CHANNEL0, RL_ATTACHMENT_TEXTURE2D, 0);
-    rlFramebufferAttach(t.id, t.depth.id, RL_ATTACHMENT_DEPTH, RL_ATTACHMENT_TEXTURE2D, 0);
+    if (profundidade > 0) {
+        t.depth = (Texture2D){rlLoadTextureDepth(w, h, profundidade == 2), w, h, 1, 19};
+        rlFramebufferAttach(t.id, t.depth.id, RL_ATTACHMENT_DEPTH,
+                            profundidade == 2 ? RL_ATTACHMENT_RENDERBUFFER : RL_ATTACHMENT_TEXTURE2D, 0);
+    }
     bool completo = rlFramebufferComplete(t.id);
     rlDisableFramebuffer();
     if (!completo) {
-        TraceLog(LOG_WARNING, "PRECURSOR: a cena HDR não montou; seguindo em LDR");
-        rlUnloadFramebuffer(t.id);
+        TraceLog(LOG_WARNING, "PRECURSOR: um alvo de render (%d x %d) não montou; o efeito fica desligado", w,
+                 h);
+        posfx_libera_alvo_float(&t);
         return (RenderTexture2D){0};
     }
     rlTextureParameters(t.texture.id, RL_TEXTURE_MIN_FILTER, RL_TEXTURE_FILTER_LINEAR);
     rlTextureParameters(t.texture.id, RL_TEXTURE_MAG_FILTER, RL_TEXTURE_FILTER_LINEAR);
+    rlTextureParameters(t.texture.id, RL_TEXTURE_WRAP_S, RL_TEXTURE_WRAP_CLAMP);
+    rlTextureParameters(t.texture.id, RL_TEXTURE_WRAP_T, RL_TEXTURE_WRAP_CLAMP);
     return t;
 }
 
-static void libera_hdr(RenderTexture2D *t) {
+void posfx_libera_alvo_float(RenderTexture2D *t) {
     if (t->id == 0) return;
     rlUnloadTexture(t->texture.id);
-    rlUnloadTexture(t->depth.id);
+    if (t->depth.id != 0) rlUnloadTexture(t->depth.id);
     rlUnloadFramebuffer(t->id);
     *t = (RenderTexture2D){0};
 }
 
+static RenderTexture2D cria_hdr(int w, int h) {
+    return posfx_cria_alvo_float(w, h, PIXELFORMAT_UNCOMPRESSED_R16G16B16A16, 1);
+}
+
+static void libera_hdr(RenderTexture2D *t) {
+    posfx_libera_alvo_float(t);
+}
+
 static void cria_alvo(Recursos *rec, int largura_janela, int altura_janela) {
-    int w = (int)(largura_janela * ESCALA_RENDER);
-    int h = (int)(altura_janela * ESCALA_RENDER);
+    float escala = usa_glsl_100() ? ESCALA_RENDER : qualidade()->escala;
+    int w = (int)(largura_janela * escala);
+    int h = (int)(altura_janela * escala);
     if (w < 64) w = 64;
     if (h < 36) h = 36;
     rec->alvo = LoadRenderTexture(w, h);
     rec->alvo_susto = LoadRenderTexture(w, h);
     SetTextureFilter(rec->alvo.texture, TEXTURE_FILTER_BILINEAR);
     rec->hdr = usa_glsl_100() ? (RenderTexture2D){0} : cria_hdr(w, h);
-    int rw = (int)(w * REFLEXO_ESCALA), rh = (int)(h * REFLEXO_ESCALA);
-    rec->reflexo = rec->hdr.id != 0 && REFLEXO_ESCALA > 0.0f ? cria_hdr(rw > 16 ? rw : 16, rh > 16 ? rh : 16)
-                                                             : (RenderTexture2D){0};
+    float fr = qualidade()->reflexo;
+    int rw = (int)(w * fr), rh = (int)(h * fr);
+    rec->reflexo = rec->hdr.id != 0 && fr > 0.0f ? cria_hdr(rw > 16 ? rw : 16, rh > 16 ? rh : 16)
+                                                 : (RenderTexture2D){0};
     if (rec->reflexo.id != 0) { // os mipmaps são o borrado do reflexo no chão rugoso
         int mips = 1;
         rlGenTextureMipmaps(rec->reflexo.texture.id, rec->reflexo.texture.width, rec->reflexo.texture.height,
@@ -76,6 +94,12 @@ static void libera_alvo(Recursos *rec) {
     UnloadRenderTexture(rec->alvo_susto);
     libera_hdr(&rec->hdr);
     libera_hdr(&rec->reflexo);
+}
+
+static void carrega_emissivo(Recursos *rec) {
+    rec->emissivo = usa_glsl_100() ? (Shader){0} : LoadShaderFromMemory(NULL, sombreador_emissivo_fs());
+    rec->emissivo_ok = rec->emissivo.id != 0 && IsShaderValid(rec->emissivo);
+    if (rec->emissivo_ok) rec->loc_emissivo_intensidade = GetShaderLocation(rec->emissivo, "intensidade");
 }
 
 static void carrega_tom(Recursos *rec) {
@@ -106,6 +130,10 @@ static void carrega_luz(Recursos *rec) {
     rec->loc_luz_rugosidade = GetShaderLocation(rec->luz, "rugosidade");
     rec->loc_luz_metalico = GetShaderLocation(rec->luz, "metalico");
     rec->loc_luz_reflexo = GetShaderLocation(rec->luz, "reflexo");
+    rec->loc_luz_lanterna = GetShaderLocation(rec->luz, "indiceLanterna");
+    rec->loc_luz_direto = GetShaderLocation(rec->luz, "direto");
+    float exposicao = EXPOSICAO;
+    SetShaderValue(rec->luz, GetShaderLocation(rec->luz, "exposicao"), &exposicao, SHADER_UNIFORM_FLOAT);
     rec->loc_luz_agua = GetShaderLocation(rec->luz, "agua");
     rec->loc_luz_tela = GetShaderLocation(rec->luz, "tela");
     // os samplers apontam sempre para as mesmas unidades
@@ -126,6 +154,7 @@ void posfx_inicia(Recursos *rec) {
     vhs_carrega(rec);
     carrega_luz(rec);
     carrega_tom(rec);
+    carrega_emissivo(rec);
 }
 
 void posfx_finaliza(Recursos *rec) {
@@ -133,6 +162,7 @@ void posfx_finaliza(Recursos *rec) {
     vhs_descarrega(rec);
     if (rec->luz_ok) UnloadShader(rec->luz);
     if (rec->tom_ok) UnloadShader(rec->tom);
+    if (rec->emissivo_ok) UnloadShader(rec->emissivo);
 }
 
 // A névoa da cela: a caixa vem do mapa (nivel.c); densidade e cor em config.h.
@@ -150,7 +180,7 @@ static void envia_nevoa_da_cela(const Estado *e) {
 }
 
 void posfx_comeca_luz(const Estado *e, const Vector3 *posicoes, const Vector3 *cores, const Vector4 *cones,
-                      const float *quedas, int n, float ambiente) {
+                      const float *quedas, int n, int lanterna, float ambiente) {
     const Recursos *r = &e->rec;
     if (!r->luz_ok) return;
     Vector3 pos[LUZES_SHADER] = {0}, cor[LUZES_SHADER] = {0}, sem_contraluz = {0};
@@ -163,7 +193,8 @@ void posfx_comeca_luz(const Estado *e, const Vector3 *posicoes, const Vector3 *c
         cone[i] = tem ? cones[i] : (Vector4){0, -1, 0, -2.0f};
         queda[i] = tem ? quedas[i] : 1.0f;
     }
-    float nevoa = NEVOA_DENSIDADE;
+    // com a névoa volumétrica, a névoa simples fica bem mais fraca (a volumétrica faz o resto)
+    float nevoa = NEVOA_DENSIDADE * (qualidade()->volume_passos > 0 && r->hdr.id != 0 ? 0.35f : 1.0f);
     SetShaderValueV(r->luz, r->loc_luz_pos, pos, SHADER_UNIFORM_VEC3, LUZES_SHADER);
     SetShaderValueV(r->luz, r->loc_luz_cor, cor, SHADER_UNIFORM_VEC3, LUZES_SHADER);
     SetShaderValueV(r->luz, r->loc_luz_cone, cone, SHADER_UNIFORM_VEC4, LUZES_SHADER);
@@ -176,6 +207,9 @@ void posfx_comeca_luz(const Estado *e, const Vector3 *posicoes, const Vector3 *c
     SetShaderValue(r->luz, r->loc_luz_agua, &seco, SHADER_UNIFORM_FLOAT);
     SetShaderValue(r->luz, r->loc_luz_tela, &tela, SHADER_UNIFORM_VEC2);
     SetShaderValue(r->luz, r->loc_luz_ambiente, &ambiente, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(r->luz, r->loc_luz_lanterna, &lanterna, SHADER_UNIFORM_INT);
+    float direto = r->hdr.id == 0 ? 1.0f : 0.0f; // sem o alvo HDR, o tone mapping sai no próprio shader
+    SetShaderValue(r->luz, r->loc_luz_direto, &direto, SHADER_UNIFORM_FLOAT);
     SetShaderValue(r->luz, r->loc_luz_nevoa, &nevoa, SHADER_UNIFORM_FLOAT);
     SetShaderValue(r->luz, r->loc_luz_camera, &e->camera.position, SHADER_UNIFORM_VEC3);
     SetShaderValueMatrix(r->luz, r->loc_luz_modelo, MatrixIdentity());
@@ -213,7 +247,7 @@ void posfx_contraluz(const Estado *e, Color cor, float intensidade) {
 // pendente antes (ele foi montado com o material anterior).
 void posfx_material(const Estado *e, TipoMaterial m) {
     const Recursos *r = &e->rec;
-    if (!r->luz_ok || r->material_normal[m].id == 0) return;
+    if (!r->luz_ok || r->material_normal[m].id == 0 || !qualidade()->mapas) return;
     rlDrawRenderBatchActive();
     rlActiveTextureSlot(UNIDADE_NORMAL);
     rlEnableTexture(r->material_normal[m].id);
@@ -235,6 +269,32 @@ void posfx_superficie(const Estado *e, float rugosidade, float metal) {
     SetShaderValue(r->luz, r->loc_luz_metalico, &metal, SHADER_UNIFORM_FLOAT);
 }
 
+// Luzes acesas (fora do shader de luz): o que vier a seguir brilha `intensidade` vezes a cor (HDR). Sem o
+// shader emissivo, a cor sai como está. Envia o lote antes de trocar a intensidade.
+void posfx_emissivo(const Estado *e, float intensidade) {
+    const Recursos *r = &e->rec;
+    if (!r->emissivo_ok || r->hdr.id == 0) return;
+    rlDrawRenderBatchActive();
+    SetShaderValue(r->emissivo, r->loc_emissivo_intensidade, &intensidade, SHADER_UNIFORM_FLOAT);
+}
+
+void posfx_comeca_emissivo(const Estado *e) {
+    if (e->rec.emissivo_ok && e->rec.hdr.id != 0) BeginShaderMode(e->rec.emissivo);
+}
+
+void posfx_termina_emissivo(const Estado *e) {
+    if (e->rec.emissivo_ok && e->rec.hdr.id != 0) EndShaderMode();
+}
+
+// Saída direta para um alvo LDR (o rosto do susto): o tone mapping no próprio shader de luz.
+void posfx_saida_direta(const Estado *e) {
+    const Recursos *r = &e->rec;
+    if (!r->luz_ok) return;
+    rlDrawRenderBatchActive();
+    float sim = 1.0f;
+    SetShaderValue(r->luz, r->loc_luz_direto, &sim, SHADER_UNIFORM_FLOAT);
+}
+
 // O chão: liga a água (manchas e rejunte) e o reflexo planar no que vem a seguir. Sem o alvo espelhado
 // (desligado ou sem HDR), só a água.
 void posfx_chao(const Estado *e, bool liga) {
@@ -251,6 +311,10 @@ bool posfx_comeca_reflexo(const Estado *e) {
     const Recursos *r = &e->rec;
     if (r->reflexo.id == 0 || !r->luz_ok) return false;
     EndTextureMode();
+    // a textura não pode ser lida enquanto é o alvo (o driver para tudo para resolver)
+    rlActiveTextureSlot(UNIDADE_REFLEXO);
+    rlEnableTexture(0);
+    rlActiveTextureSlot(0);
     BeginTextureMode(r->reflexo);
     ClearBackground(BLACK);
     return true;
@@ -291,6 +355,7 @@ void posfx_atualiza(Estado *e, float dt) {
     if (w != e->rec.alvo_largura || h != e->rec.alvo_altura) {
         libera_alvo(&e->rec);
         cria_alvo(&e->rec, GetScreenWidth(), GetScreenHeight());
+        efeitos_redimensiona(&e->rec);
     }
 }
 
@@ -304,6 +369,7 @@ void posfx_inicia_cena(const Estado *e) {
 void posfx_resolve(const Estado *e) {
     const Recursos *r = &e->rec;
     if (r->hdr.id == 0) return;
+    if (efeitos_compoe(e)) return; // os passes de tela e a composição (AO, névoa, bloom, gradação)
     EndTextureMode();
     BeginTextureMode(r->alvo);
     ClearBackground(BLACK);

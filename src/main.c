@@ -30,6 +30,8 @@
 #include "respiracao.h"
 #include "clique.h"
 #include "bancada.h"
+#include "efeitos.h"
+#include "qualidade.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -458,6 +460,7 @@ static void captura_numerada(void) {
 static void le_argumentos(Estado *e, int argc, char **argv) {
     for (int i = 1; i < argc; i++) {
         if (bancada_le_argumento(argc, argv, &i)) continue; // --olhar, --lanterna, --energia, --medir
+        if (qualidade_le_argumento(argc, argv, &i)) continue; // --qualidade, --sem
         if (strcmp(argv[i], "--smoke") == 0) e->modo_smoke = true;
         if (strcmp(argv[i], "--feira") == 0) e->modo_feira = true;
         if (strcmp(argv[i], "--mudo") == 0) mudo = true;
@@ -549,6 +552,7 @@ static void quadro(Estado *e) {
 // Carrega tudo o que depende da janela: render target e shaders, fonte, sons e o modelo opcional.
 static void carrega_recursos(void) {
     posfx_inicia(&estado.rec);
+    efeitos_carrega(&estado.rec); // depois do shader de luz e dos alvos
     ui_carrega_fonte(&estado.rec);
     texturas_carrega(&estado.rec); // depois da fonte: as placas de estêncil usam a fonte
     fita_carrega(&estado.rec);
@@ -583,6 +587,7 @@ static void descarrega_recursos(void) {
     fita_descarrega(&estado.rec);
     texturas_descarrega(&estado.rec);
     ui_descarrega_fonte(&estado.rec);
+    efeitos_descarrega();
     posfx_finaliza(&estado.rec);
     CloseWindow();
 }

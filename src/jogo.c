@@ -21,6 +21,7 @@
 #include "sanidade.h"
 #include "clique.h"
 #include "goteira.h"
+#include "efeitos.h"
 #include <string.h>
 
 // ================================================================== início e fim
@@ -386,18 +387,30 @@ void jogo_atualiza(Estado *e, float dt) {
 static void desenha_mundo_3d(const Estado *e) {
     Vector3 pos[LUZES_SHADER], cor[LUZES_SHADER];
     Vector4 cone[LUZES_SHADER];
-    float queda[LUZES_SHADER] = {1.0f, 1.0f, 1.0f, 1.0f, 1.0f}; // as lâmpadas do cenário: queda comum
-    int n = nivel_luzes(e, pos, cor, cone);
-    if (lanterna_luz(e, &pos[n], &cor[n], &cone[n], &queda[n])) n++; // a 5ª luz
+    float queda[LUZES_SHADER];
+    for (int i = 0; i < LUZES_SHADER; i++) // padrão MAP: as lâmpadas do cenário têm a queda comum
+        queda[i] = 1.0f;
+    int n = nivel_luzes(e, pos, cor, cone), lanterna = -1;
+    if (lanterna_luz(e, &pos[n], &cor[n], &cone[n], &queda[n])) lanterna = n++; // a última: a lanterna
     bool sem_energia = regras_fase_eh_saida(e->fase) && !e->painel.resolvido;
     float ambiente = LUZ_AMBIENTE * (sem_energia ? SEM_ENERGIA_AMBIENTE : 1.0f);
     if (e->apagao_t > 0.0f) ambiente = LUZ_AMBIENTE * 0.3f * (sem_energia ? SEM_ENERGIA_AMBIENTE : 1.0f);
+    efeitos_guarda_luzes(pos, cor, cone, queda, n, lanterna);
+    Vector3 frente = {cone[lanterna >= 0 ? lanterna : 0].x, cone[lanterna >= 0 ? lanterna : 0].y,
+                      cone[lanterna >= 0 ? lanterna : 0].z};
+    if (lanterna >= 0 && efeitos_comeca_sombra(e, pos[lanterna], frente)) { // o mapa de sombra da lanterna
+        nivel_desenha_reflexo(e); // o chão não faz sombra em nada: fica de fora
+        criatura_desenha(e);
+        efeitos_termina_sombra(e);
+    } else {
+        efeitos_sem_sombra(e);
+    }
     if (posfx_comeca_reflexo(e)) { // a cena espelhada no chão (y = 0): câmera embaixo dele, olhando para cima
         Camera3D espelho = e->camera;
         espelho.position.y = -espelho.position.y;
         espelho.target.y = -espelho.target.y;
         BeginMode3D(espelho);
-        posfx_comeca_luz(e, pos, cor, cone, queda, n, ambiente);
+        posfx_comeca_luz(e, pos, cor, cone, queda, n, lanterna, ambiente);
         posfx_olho(e, espelho.position);
         nivel_desenha_reflexo(e);
         criatura_desenha(e);
@@ -407,7 +420,8 @@ static void desenha_mundo_3d(const Estado *e) {
         posfx_termina_reflexo(e);
     }
     BeginMode3D(e->camera);
-    posfx_comeca_luz(e, pos, cor, cone, queda, n, ambiente);
+    efeitos_guarda_camera(); // projeção e vista: os passes de tela reconstroem a posição pela profundidade
+    posfx_comeca_luz(e, pos, cor, cone, queda, n, lanterna, ambiente);
     nivel_desenha(e);
     cenario_desenha(e);
     criatura_desenha(e);

@@ -281,8 +281,19 @@
 #define TEXTURA_METROS_PISO     2.0f  // 4 × 4 placas de 0,5 m
 #define TEXTURA_METROS_TETO     2.0f  // 3 × 3 placas de forro
 #define TEXTURA_METROS_METAL    1.0f
-#define EXPOSICAO               1.6f  // multiplica a cena HDR antes do tone mapping (ACES)
-#define REFLEXO_ESCALA          0.5f  // o reflexo do chão, a esta fração da cena (0 = sem reflexo planar)
+#define EXPOSICAO               1.1f  // multiplica a cena HDR antes do tone mapping (ACES)
+// Névoa volumétrica, bloom e gradação de cor (efeitos.c; os presets de qualidade ligam e desligam)
+#define NEVOA_VOLUME_DENSIDADE  0.05f    // por metro; a poeira faz variar em volta disso
+#define NEVOA_VOLUME_AMBIENTE   0.004f   // a luz que a névoa espalha sozinha: o fundo do corredor clareia
+#define BLOOM_CORTE             1.0f     // só o que passa disso (em HDR) brilha em volta
+#define BLOOM_FORCA             0.18f
+#define GRADACAO_SOMBRA         {0.78f, 1.0f, 1.06f} // as sombras puxam para o azul-petróleo
+#define GRADACAO_LUZ            {0.96f, 1.05f, 1.0f} // as luzes, para o verde-claro
+#define GRADACAO_SATURACAO      0.72f
+#define GRADACAO_CONTRASTE      1.14f
+#define GRADACAO_VINHETA        0.85f
+#define GRADACAO_GRAO           0.03f
+#define GRADACAO_ABERRACAO      0.012f
 #define AGUA_NO_CHAO            1.0f  // 0 = piso seco; 1 = manchas de água e o rejunte cheio
 #define TEXTURA_ARQUIVO_MAX_PX  1024  // PNG maior que isso (ou fora de potência de 2) é redimensionado
 #define BARRADO_ALTURA          1.45f // azulejo do chão até aqui (acima: reboco pintado, descascando)
@@ -293,6 +304,11 @@
 // ---------------------------------------------------------------- luz e névoa
 #define LUZ_AMBIENTE       0.045f // era 0,06: o escuro pesa mais, mas a lanterna e os holofotes não mudaram
 #define NEVOA_DENSIDADE    0.095f // era 0,085: o fundo do corredor some um pouco antes
+#define LUMINARIAS_ACESAS  7     // quantas luminárias (as mais próximas) entram no shader de luz
+#define LUMINARIAS_FALHANDO 0.3f // fração das luminárias que falham (flicker)
+#define LUMINARIA_FORCA     1.6f  // a luz de cada luminária com a energia de volta
+#define LUMINARIA_EMISSAO   7.0f  // o brilho do painel (HDR: estoura no bloom e no reflexo do chão)
+#define LUMINARIA_LUZ_ABAIXO_M 0.12f // a luz fica logo abaixo do painel do teto
 #define LUZ_CORREDOR_GANHO 0.8f   // força das lâmpadas dos corredores (a luz fraca no jogador fica igual)
 // Sem energia (nas saídas, até o painel ser resolvido): só as luzes de emergência, fracas, e quase nada de
 // ambiente. Sem a lanterna, dá para ver o vulto do corredor, mas não o que tem nele.
@@ -320,7 +336,7 @@
 #define NEVOA_CELA_COR_R 0.045f // a cor da névoa sem luz: só um pouco acima do preto, para a silhueta
 #define NEVOA_CELA_COR_G 0.050f // escura dele aparecer contra ela
 #define NEVOA_CELA_COR_B 0.055f
-#define LUZES_SHADER 5
+#define LUZES_SHADER 12 // até 9 luminárias + a luz fraca no jogador + a lanterna (+1 de folga)
 
 // ---------------------------------------------------------------- lanterna (tecla F, sem bateria)
 #define LANTERNA_ABERTURA_GRAUS 22.0f // meia-abertura do cone
@@ -363,6 +379,7 @@
 #define COR_CONCRETO  (Color){0x2b, 0x3a, 0x33, 255}
 #define COR_OLIVA     (Color){0x4a, 0x4f, 0x3a, 255}
 #define COR_LAMPADA   (Color){0xd9, 0xa4, 0x41, 255}
+#define COR_LUMINARIA (Color){0xb4, 0xe2, 0xd2, 255} // a luz fria das luminárias com a energia de volta
 #define COR_FOSFORO   (Color){0x7d, 0xff, 0x9a, 255}
 #define COR_VIDRO     (Color){0x5a, 0xa0, 0xc8, 255}
 #define COR_ALARME    (Color){0xff, 0x5a, 0x4f, 255}

@@ -9,6 +9,7 @@
 #define TEXTO_DE(x) TEXTO(x)
 #define N_LUZES     TEXTO_DE(LUZES_SHADER)
 #define BRILHO_AGUA "90.0" // versão 100: expoente do brilho no chão molhado
+#define ALCANCE_SOMBRA "30.0" // metros: a distância guardada no mapa de sombra vai de 0 a 1 até aqui
 // Até LUZES_SHADER luzes pontuais, ambiente bem baixo e névoa exponencial quase preta. A normal sai das
 // derivadas da posição (sombreado chapado, bom para low-poly); na versão 100 só há atenuação por distância.
 // luzCone[i]: xyz = direção do holofote, w = cosseno da meia-abertura (w < -1: luz pontual comum); fora
@@ -41,6 +42,9 @@ static const char *LUZ_FS_330 =
     "uniform float ambiente; uniform float nevoa; uniform vec3 camera;\n"
     "uniform vec3 contraluz; uniform float molhado;\n"
     "uniform sampler2D mapaReflexo; uniform float reflexo; uniform float agua; uniform vec2 tela;\n"
+    "uniform float direto; uniform float exposicao;\n"
+    "uniform float modoSombra; uniform vec3 luzSombra;\n"
+    "uniform sampler2D mapaSombra; uniform mat4 matSombra; uniform float usaSombra;\n"
     "out vec4 finalColor;\n"
     "const float PI = 3.14159265;\n"
     // ruído de valor em coordenadas de mundo: a umidade do chão não repete junto com a textura
@@ -61,7 +65,7 @@ static const char *LUZ_FS_330 =
     "    return mix(0.15, 1.0, smoothstep(cone.w, cone.w + 0.06, dot(-paraLuz, cone.xyz)));\n"
     "}\n"
     "uniform vec3 celaMin; uniform vec3 celaMax; uniform float celaDensidade; uniform vec3 celaCor;\n"
-    "uniform float celaEspalha; uniform float celaEspalhaLanterna;\n"
+    "uniform float celaEspalha; uniform float celaEspalhaLanterna; uniform int indiceLanterna;\n"
     "vec3 luzNaNevoa(vec3 p) {\n"
     "    vec3 soma = vec3(0.0);\n"
     "    for (int i = 0; i < " N_LUZES "; i++) {\n"
@@ -70,8 +74,8 @@ static const char *LUZ_FS_330 =
     "        float atenua = 1.0 / (1.0 + luzQueda[i] * (0.09 * d + 0.07 * d * d));\n"
     "        bool dentro = all(greaterThanEqual(luzPos[i], celaMin)) &&\n"
     "                      all(lessThanEqual(luzPos[i], celaMax));\n"
-    // a névoa devolve as luzes de dentro da cela (holofotes e flash) e, bem menos, a lanterna (a última)
-    "        float peso = i == " N_LUZES " - 1 ? celaEspalhaLanterna : (dentro ? celaEspalha : 0.0);\n"
+    // a névoa devolve as luzes de dentro da cela (holofotes e flash) e, bem menos, a lanterna
+    "        float peso = i == indiceLanterna ? celaEspalhaLanterna : (dentro ? celaEspalha : 0.0);\n"
     "        soma += luzCor[i] * atenua * foco(luzCone[i], l / max(d, 0.001)) * peso;\n"
     "    }\n"
     "    return soma;\n"
@@ -104,6 +108,23 @@ static const char *LUZ_FS_330 =
     "    vec3 m = texture(mapaNormal, uv).xyz * 2.0 - 1.0;\n"
     "    return normalize(mat3(t * escala, b * escala, n) * m);\n"
     "}\n"
+    // a sombra da lanterna: o mapa guarda a distância até ela (÷ ALCANCE_SOMBRA); 8 amostras num disco de
+    // Poisson (PCF) deixam a borda suave
+    "float sombraLanterna(vec3 p, vec3 luz) {\n"
+    "    vec4 q = matSombra * vec4(p, 1.0);\n"
+    "    if (q.w <= 0.0) return 1.0;\n"
+    "    vec2 s = q.xy / q.w * 0.5 + 0.5;\n"
+    "    if (s.x < 0.0 || s.x > 1.0 || s.y < 0.0 || s.y > 1.0) return 1.0;\n"
+    "    float d = length(p - luz) / " ALCANCE_SOMBRA ";\n"
+    "    vec2 texel = 1.0 / vec2(textureSize(mapaSombra, 0));\n"
+    "    const vec2 disco[8] = vec2[](vec2(-0.613, 0.617), vec2(0.170, -0.040), vec2(-0.299, -0.791),\n"
+    "        vec2(0.645, 0.493), vec2(-0.651, -0.181), vec2(0.421, -0.698), vec2(0.077, 0.888),\n"
+    "        vec2(0.902, -0.142));\n"
+    "    float acesa = 0.0;\n"
+    "    for (int k = 0; k < 8; k++)\n"
+    "        acesa += texture(mapaSombra, s + disco[k] * texel * 2.5).r < d - 0.003 ? 0.0 : 1.0;\n"
+    "    return acesa / 8.0;\n"
+    "}\n"
     "float ggx(float nh, float a) {\n"
     "    float a2 = a * a, d = nh * nh * (a2 - 1.0) + 1.0;\n"
     "    return a2 / (PI * d * d);\n"
@@ -113,6 +134,11 @@ static const char *LUZ_FS_330 =
     "    return (nv / (nv * (1.0 - k) + k)) * (nl / (nl * (1.0 - k) + k));\n"
     "}\n"
     "void main() {\n"
+    // passe da sombra: só a distância até a lanterna (o mesmo shader, para os modelos entrarem sem troca)
+    "    if (modoSombra > 0.5) {\n"
+    "        finalColor = vec4(length(fragPosition - luzSombra) / " ALCANCE_SOMBRA ", 0.0, 0.0, 1.0);\n"
+    "        return;\n"
+    "    }\n"
     "    vec4 base = texture(texture0, fragTexCoord) * colDiffuse * fragColor;\n"
     "    vec3 albedo = pow(base.rgb, vec3(2.2));\n" // as texturas são sRGB: a luz é somada em linear
     "    vec3 n = normalize(cross(dFdx(fragPosition), dFdy(fragPosition)));\n"
@@ -145,7 +171,11 @@ static const char *LUZ_FS_330 =
     "        float d = length(l);\n"
     "        vec3 dir = l / max(d, 0.001);\n"
     "        float atenua = 1.0 / (1.0 + luzQueda[i] * (0.09 * d + 0.07 * d * d));\n"
+    // longe demais: nem entra na conta
+    "        if (atenua * max(luzCor[i].r, max(luzCor[i].g, luzCor[i].b)) < 0.004) continue;\n"
     "        vec3 radiancia = luzCor[i] * foco(luzCone[i], dir) * atenua;\n"
+    "        if (i == indiceLanterna && usaSombra > 0.5)\n"
+    "            radiancia *= sombraLanterna(fragPosition + nGeo * 0.02, luzPos[i]);\n"
     "        float nl = dot(n, dir);\n"
     "        vec3 h = normalize(dir + vista);\n"
     "        vec3 f = f0 + (1.0 - f0) * pow(1.0 - max(dot(h, vista), 0.0), 5.0);\n"
@@ -165,11 +195,18 @@ static const char *LUZ_FS_330 =
     "        uv += (n.xz - nGeo.xz) * 0.08;\n"
     "        vec3 espelho = textureLod(mapaReflexo, uv, rug * 7.0).rgb;\n"
     "        vec3 fr = f0 + (max(vec3(1.0 - rug), f0) - f0) * pow(1.0 - nv, 5.0);\n"
-    "        cor += espelho * fr * reflexo * ao;\n"
+    "        cor += espelho * fr * reflexo * ao * (1.0 - rug) * (1.0 - rug);\n" // fosco: quase não espelha
     "    }\n"
     "    cor = nevoaDaCela(cor, fragPosition);\n"
     "    float fator = clamp(1.0 - exp(-nevoa * length(paraCamera)), 0.0, 1.0);\n"
-    "    finalColor = vec4(mix(cor, vec3(0.0008, 0.0012, 0.001), fator), base.a);\n"
+    "    cor = mix(cor, vec3(0.0008, 0.0012, 0.001), fator);\n"
+    // saída direta (o rosto do susto, ou sem alvo HDR): o tone mapping e a volta para sRGB aqui mesmo
+    "    if (direto > 0.5) {\n"
+    "        vec3 x = cor * exposicao;\n"
+    "        x = clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0);\n"
+    "        cor = pow(x, vec3(1.0 / 2.2));\n"
+    "    }\n"
+    "    finalColor = vec4(cor, base.a);\n"
     "}\n";
 
 static const char *LUZ_VS_100 =
@@ -197,7 +234,7 @@ static const char *LUZ_FS_100 =
     "    return mix(0.15, 1.0, smoothstep(cone.w, cone.w + 0.06, dot(-paraLuz, cone.xyz)));\n"
     "}\n"
     "uniform vec3 celaMin; uniform vec3 celaMax; uniform float celaDensidade; uniform vec3 celaCor;\n"
-    "uniform float celaEspalha; uniform float celaEspalhaLanterna;\n"
+    "uniform float celaEspalha; uniform float celaEspalhaLanterna; uniform int indiceLanterna;\n"
     "vec3 luzNaNevoa(vec3 p) {\n"
     "    vec3 soma = vec3(0.0);\n"
     "    for (int i = 0; i < " N_LUZES "; i++) {\n"
@@ -206,8 +243,8 @@ static const char *LUZ_FS_100 =
     "        float atenua = 1.0 / (1.0 + luzQueda[i] * (0.09 * d + 0.07 * d * d));\n"
     "        bool dentro = all(greaterThanEqual(luzPos[i], celaMin)) &&\n"
     "                      all(lessThanEqual(luzPos[i], celaMax));\n"
-    // a névoa devolve as luzes de dentro da cela (holofotes e flash) e, bem menos, a lanterna (a última)
-    "        float peso = i == " N_LUZES " - 1 ? celaEspalhaLanterna : (dentro ? celaEspalha : 0.0);\n"
+    // a névoa devolve as luzes de dentro da cela (holofotes e flash) e, bem menos, a lanterna
+    "        float peso = i == indiceLanterna ? celaEspalhaLanterna : (dentro ? celaEspalha : 0.0);\n"
     "        soma += luzCor[i] * atenua * foco(luzCone[i], l / max(d, 0.001)) * peso;\n"
     "    }\n"
     "    return soma;\n"
@@ -265,6 +302,22 @@ static const char *TOM_FS_330 =
     "    vec3 hdr = texture(texture0, fragTexCoord).rgb * exposicao;\n"
     "    finalColor = vec4(pow(aces(hdr), vec3(1.0 / 2.2)), 1.0);\n"
     "}\n";
+
+// Emissivo: a cor do vértice (sRGB) em linear × intensidade. Os painéis das luminárias passam de 1 na cena
+// HDR: estouram no bloom e aparecem fortes no reflexo do chão.
+static const char *EMISSIVO_FS_330 =
+    "#version 330\n"
+    "in vec2 fragTexCoord; in vec4 fragColor;\n"
+    "uniform sampler2D texture0; uniform vec4 colDiffuse; uniform float intensidade;\n"
+    "out vec4 finalColor;\n"
+    "void main() {\n"
+    "    vec4 c = texture(texture0, fragTexCoord) * colDiffuse * fragColor;\n"
+    "    finalColor = vec4(pow(c.rgb, vec3(2.2)) * intensidade, c.a);\n"
+    "}\n";
+
+const char *sombreador_emissivo_fs(void) {
+    return EMISSIVO_FS_330;
+}
 
 const char *sombreador_luz_vs(bool v100) {
     return v100 ? LUZ_VS_100 : LUZ_VS_330;
