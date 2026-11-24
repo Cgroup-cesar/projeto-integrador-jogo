@@ -99,7 +99,7 @@ stateDiagram-v2
 | `lanterna.c` | a lanterna: F liga e desliga, a 5ª luz do shader (cone saindo dos olhos) e o modelo na mão |
 | `criatura.c` | o Precursor: IA, A*, captura e o desenho do corpo |
 | `esqueleto.c` | o rig do Precursor (puro): o modelo escolhido (`esqueleto_usa`), cinemática direta, matrizes de skinning e IK de dois ossos |
-| `modelos_criatura.c` | os modelos do Precursor (puro, só dados): para cada .glb, os 22 ossos medidos no arquivo, a caixa, o queixo, os olhos, o rosto do susto, a fenda, a altura do peito, o avanço na cela e a postura extra; `--criatura papelao` troca o padrão (`precursor`) pelo alien do papelão |
+| `modelos_criatura.c` | os modelos do Precursor (puro, só dados): para cada .glb, os 22 ossos medidos no arquivo, a caixa, o queixo, os olhos, o rosto do susto, os olhos pintados no rosto liso, a altura do peito, o avanço na cela e a postura extra; `--criatura papelao` troca o padrão (`precursor`) pelo alien do papelão |
 | `regras_animacao.c`, `regras_animacao_cenas.c` | a animação dele (pura): camadas com crossfade, passada com os pés plantados, cabeça, tiques, saída do bueiro, distorção e convulsão |
 | `animacao.c` | liga o jogo à animação: lê a fase, a IA, a cela, a lanterna e o armário e pede a pose; roda todo quadro, mesmo com a IA parada |
 | `rig.c` | os pesos dos ossos em cada vértice do `.glb` (calculados ao carregar) e o skinning no shader de luz |

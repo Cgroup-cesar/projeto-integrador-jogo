@@ -260,9 +260,10 @@ Registro das escolhas feitas onde a especificação deixava espaço ou onde o am
     - os pesos separados por peça. O polegar ficava a 3 cm da coxa e ia para o osso da perna: no jogo, a pele do braço esticava até a coxa quando a postura dobrava o braço. Abaixo de y 0,40, a malha é três peças (o corpo com as pernas e os dois braços), e o rig (`bracos_soltos_y`) não deixa ponto de braço pegar osso do corpo, nem o contrário. A busca é pela superfície, no carregamento;
     - o joelho 3 cm à frente da linha quadril-tornozelo, porque o modelo é reto e o IK precisa saber para onde dobrar. Há também uma salvaguarda no IK para membro reto no repouso.
 
-    Como o arquivo é reto, a animação soma a curvatura que o precursor já tem no arquivo: coluna, pescoço e cabeça à frente, braços dobrados e o quadril 10 cm mais baixo, para os joelhos dobrarem (menos na tubulação, onde o roteiro decide a altura). A passada é 20% menor, porque a perna é mais curta. O modelo não tem olhos nem boca:
-    - no menu, dois pontos de luz acendem a fenda;
-    - no jogo e no susto, a fenda é um traço escuro preso ao osso da cabeça e desenhado sem o fio de contraluz, já que na malha ela é um sulco de 2 mm que some na tela;
+    Como o arquivo é reto, a animação soma a curvatura que o precursor já tem no arquivo: coluna, pescoço e cabeça à frente, braços dobrados e o quadril 10 cm mais baixo, para os joelhos dobrarem (menos na tubulação, onde o roteiro decide a altura). A passada é 20% menor, porque a perna é mais curta. O modelo não tem olhos nem boca, e o rosto fica como no papelão do estande:
+    - a frente da cara é lisa, sem a fenda vertical do desenho original. A IA tinha esculpido um sulco raso no meio, e as facetas da malha simplificada faziam uma sombra escura descer pelo centro. Um script ajusta uma superfície suave aos ~300 vértices da cara e puxa a cara para ela: no meio com força total, sumindo na borda. A pintura das cavidades não escurece o rosto;
+    - os olhos são dois meios-discos escuros, com a reta em cima e a curva embaixo (olhos fechados). São rentes à pele e presos ao osso da cabeça, e o jogo e o susto os desenham sem o fio de contraluz. O meio-disco é uma função pura (`esqueleto_marca_pontos`), com teste;
+    - no menu, os pontos de luz acendem nos dois olhos;
     - a mandíbula não move nenhum vértice, então o susto fica de boca parada.
 
     O que ficou para trás:
