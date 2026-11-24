@@ -248,8 +248,16 @@ Registro das escolhas feitas onde a especificação deixava espaço ou onde o am
 
     O modelo de sempre continua o padrão, sem mudar nenhum número. Tudo o que era medido no `precursor.glb` passou para uma tabela por modelo (`ModeloCriatura`, em `modelos_criatura.c`, puro): os 22 ossos, a altura da caixa, o queixo, os olhos do menu, o rosto do susto, a altura do peito (para onde a lanterna e os holofotes miram), o avanço na cela (só sem a mão no vidro: com ela, o rosto do modelo reto atravessaria o vidro), o corte das emendas fundidas e uma postura extra. `esqueleto_usa` escolhe o modelo antes de carregar, e o rig, a animação, o susto, a cela, a lanterna e os holofotes leem dali.
 
+    O Hunyuan3D devolveu as mãos como luvas: os dedos colados, separados só nas pontas. O desenho tem quatro dedos longos e finos. Um segundo script tira a malha abaixo do punho e gera mãos novas em código:
+    - uma palma curta;
+    - quatro dedos longos e finos, abertos em leque meio de lado e meio para a frente (assim aparecem separados de frente), curvando para a palma;
+    - as juntas marcadas e uma garra escura na ponta.
+
+    As mãos seguem os ossos da mão e dos dedos da tabela.
+
     O esqueleto do modelo novo foi medido por fatias horizontais da malha. Para calibrar, o mesmo método foi aplicado ao `precursor.glb`: errou cerca de 2 cm em relação à tabela que já existia. Ajustes no modelo novo:
-    - as espessuras da mão, dos dedos e da coxa, para o polegar (a 3 cm da coxa) não ir para o osso da perna;
+    - as espessuras da mão, dos dedos e da coxa;
+    - os pesos separados por peça. O polegar ficava a 3 cm da coxa e ia para o osso da perna: no jogo, a pele do braço esticava até a coxa quando a postura dobrava o braço. Abaixo de y 0,40, a malha é três peças (o corpo com as pernas e os dois braços), e o rig (`bracos_soltos_y`) não deixa ponto de braço pegar osso do corpo, nem o contrário. A busca é pela superfície, no carregamento;
     - o joelho 3 cm à frente da linha quadril-tornozelo, porque o modelo é reto e o IK precisa saber para onde dobrar. Há também uma salvaguarda no IK para membro reto no repouso.
 
     Como o arquivo é reto, a animação soma a curvatura que o precursor já tem no arquivo: coluna, pescoço e cabeça à frente, braços dobrados e o quadril 10 cm mais baixo, para os joelhos dobrarem (menos na tubulação, onde o roteiro decide a altura). A passada é 20% menor, porque a perna é mais curta. O modelo não tem olhos nem boca:
