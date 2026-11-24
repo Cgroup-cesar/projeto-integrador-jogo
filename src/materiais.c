@@ -52,7 +52,7 @@ float materiais_fbm(float u, float v, int freq_x, int freq_y, int oitavas, unsig
 // ================================================================== materiais
 // Uma linha fina e torta (rachadura): o ruído com o domínio entortado, onde ele passa perto de 0,5.
 // `fx`, `fy`: quantas vezes a rede de rachaduras repete na textura (a forma dela).
-static float rachadura(float u, float v, int fx, int fy, unsigned s) {
+float materiais_rachadura(float u, float v, int fx, int fy, unsigned s) {
     // dois entortamentos: um largo (o caminho) e um fino (o serrilhado da borda quebrada)
     float wu = u + 0.03f * (materiais_fbm(u, v, fx * 2, fy * 2, 2, s + 1u) - 0.5f) +
                0.006f * (materiais_fbm(u, v, fx * 24, fy * 24, 2, s + 3u) - 0.5f);
@@ -65,7 +65,7 @@ static float rachadura(float u, float v, int fx, int fy, unsigned s) {
 
 // Escorridos de sujeira descendo do teto: colunas finas de largura e comprimento sorteados, mais fortes em
 // cima e falhando no caminho (como nas paredes de concreto abandonadas).
-static float escorridos(float u, float v, int colunas, unsigned s) {
+float materiais_escorridos(float u, float v, int colunas, unsigned s) {
     // a coluna balança um pouco ao descer (a água não escorre em linha reta)
     float bu = u + (0.6f / (float)colunas) * (materiais_fbm(u, v, 8, 6, 3, s + 3u) - 0.5f);
     float coluna = materiais_fbm(bu, 0.0f, colunas, 1, 2, s);
@@ -74,74 +74,6 @@ static float escorridos(float u, float v, int colunas, unsigned s) {
     float quebra = passo(0.25f, 0.75f, materiais_fbm(bu, v, colunas / 2, 12, 3, s + 2u));
     float desce = 1.0f - passo(comprimento * 0.5f, comprimento, v); // some aos poucos, não de uma vez
     return passo(0.55f, 0.75f, coluna) * desce * quebra;
-}
-
-// Concreto de forma (6 m × 3 m): tons claros e escuros grandes (cura desigual), grão e poros, juntas a cada
-// 0,6 m, furos de tirante, rachaduras em algumas regiões, escorridos que descem do teto e a umidade que
-// sobe do chão com a linha da maré. A mistura leva à cor da umidade.
-static PixelMaterial concreto(float u, float v, float sujeira, unsigned s) {
-    float brilho = 0.55f + 0.9f * materiais_fbm(u, v, 6, 3, 6, s);
-    brilho *= 0.8f + 0.4f * materiais_fbm(u, v, 48, 24, 3, s + 1u); // aspereza: o concreto não é liso
-    brilho *= 0.92f + 0.16f * materiais_hash((int)(u * 2048.0f), (int)(v * 1024.0f), s + 6u);
-    if (materiais_hash((int)(u * 1400.0f), (int)(v * 700.0f), s + 2u) > 0.993f) brilho *= 0.6f; // poro
-    float faixa = v * 5.0f;
-    brilho *= 1.0f - 0.25f * (1.0f - passo(0.0f, 0.02f, fabsf(faixa - floorf(faixa + 0.5f))));
-    float du = fracao(u * 10.0f) - 0.5f, dv = fracao(faixa) - 0.5f;
-    brilho *= 1.0f - 0.45f * (1.0f - passo(0.018f, 0.03f, sqrtf(du * du + dv * dv)));
-    float regiao = passo(0.5f, 0.6f, materiais_fbm(u, v, 4, 2, 3, s + 3u));
-    brilho *= 1.0f - 0.7f * sujeira * rachadura(u, v, 6, 3, s + 4u) * regiao;
-    float escorre = escorridos(u, v, 96, s + 7u);
-    float nivel = v + 0.2f * (materiais_fbm(u, v, 10, 4, 3, s + 5u) - 0.5f);
-    float umido = passo(0.72f, 0.95f, nivel);
-    float mare = fmaxf(0.0f, passo(0.68f, 0.71f, nivel) - passo(0.71f, 0.74f, nivel));
-    brilho *= (1.0f - sujeira * (0.55f * escorre + 0.4f * umido)) * (1.0f - 0.25f * sujeira * mare);
-    float rach = sujeira * rachadura(u, v, 6, 3, s + 4u) * regiao;
-    float furo = 1.0f - passo(0.018f, 0.03f, sqrtf(du * du + dv * dv));
-    float junta = 1.0f - passo(0.0f, 0.02f, fabsf(faixa - floorf(faixa + 0.5f)));
-    float altura = 0.7f + 0.3f * materiais_fbm(u, v, 48, 24, 3, s + 1u);
-    altura -= 0.6f * rach + 0.5f * furo + 0.2f * junta;
-    float rug = 0.88f - 0.25f * sujeira * escorre - 0.2f * umido; // onde a água corre, mais liso
-    float mistura = sujeira * fmaxf(0.85f * escorre, 0.85f * umido);
-    return (PixelMaterial){brilho, mistura, 0.0f, Clamp(altura, 0.0f, 1.0f), rug, 0.0f};
-}
-
-// Tijolo (12 fiadas na textura, meia-vez desencontradas): 1 no tijolo, 0 na argamassa.
-static float tijolo(float u, float v, unsigned s) {
-    float fiada = v * 24.0f;
-    float deslocado = u * 12.0f + (((int)floorf(fiada) & 1) ? 0.5f : 0.0f);
-    float bu = fracao(deslocado), bv = fracao(fiada);
-    float borda = fminf(fminf(bu, 1.0f - bu) * 2.0f, fminf(bv, 1.0f - bv));
-    float gasta = 0.05f * (materiais_fbm(u, v, 48, 48, 2, s) - 0.5f); // a argamassa esfarelou
-    return passo(0.03f, 0.08f, borda + gasta);
-}
-
-// Tinta oliva com pinceladas, descascando em placas de contorno torto: a borda da tinta levanta (mais clara)
-// e faz sombra no reboco logo ao lado; nas placas mais fundas aparece o tijolo. Escorridos passam por
-// cima da tinta e o pé da parede fica encardido. A mistura (tinta que caiu) mostra o reboco por baixo.
-static PixelMaterial oliva(float u, float v, float sujeira, unsigned s) {
-    float brilho = 0.82f + 0.3f * materiais_fbm(u, v, 8, 8, 5, s + 11u);
-    brilho *= 0.97f + 0.06f * materiais_ruido(u * 140.0f, v * 18.0f, 140, 18, s + 13u); // pinceladas
-    brilho *= 0.9f + 0.2f * materiais_fbm(u, v, 64, 64, 2, s + 14u);
-    float wu = u + 0.05f * (materiais_fbm(u, v, 12, 12, 2, s + 15u) - 0.5f);
-    float p = materiais_fbm(wu, v, 6, 6, 5, s + 17u), limiar = 0.68f - 0.07f * sujeira;
-    float descascado = passo(limiar, limiar + 0.008f, p);
-    float lasca = fmaxf(0.0f, passo(limiar - 0.02f, limiar, p) - descascado);
-    float sombra = descascado * (1.0f - passo(limiar, limiar + 0.045f, p));
-    float fundo = passo(limiar + 0.07f, limiar + 0.1f, p) *
-                  passo(0.4f, 0.6f, materiais_fbm(u, v, 16, 16, 2, s + 25u));
-    float tb = tijolo(u, v, s + 27u), tij = 0.85f * fundo * tb;
-    float reboco = 0.75f + 0.5f * materiais_fbm(u, v, 40, 40, 3, s + 29u); // reboco áspero e manchado
-    brilho *= 1.0f + (reboco - 1.0f) * descascado;
-    brilho *= (1.0f + 0.08f * lasca) * (1.0f - 0.25f * sombra) * (1.0f - 0.55f * fundo * (1.0f - tb));
-    brilho *= 1.0f - 0.35f * tij * materiais_fbm(u, v, 24, 24, 3, s + 31u); // tijolo sujo, cada um de um tom
-    brilho *= 1.0f - 0.55f * sujeira * escorridos(u, v, 64, s + 19u);
-    float pe = passo(0.8f, 1.0f, v + 0.08f * (materiais_fbm(u, v, 16, 4, 3, s + 21u) - 0.5f));
-    brilho *= 1.0f - 0.45f * sujeira * pe;
-    brilho *= 1.0f - 0.6f * sujeira * rachadura(u, v, 4, 4, s + 23u) * passo(0.55f, 0.65f, p);
-    float altura = 1.0f - 0.35f * descascado - 0.15f * fundo - 0.25f * fundo * (1.0f - tb) + 0.05f * lasca;
-    float rug = Lerp(0.5f, 0.92f, descascado) + 0.1f * sujeira * pe; // tinta acetinada; reboco fosco
-    return (PixelMaterial){brilho, Clamp(descascado + 0.6f * sujeira * pe, 0.0f, 1.0f), tij,
-                           Clamp(altura, 0.0f, 1.0f), Clamp(rug, 0.0f, 1.0f), 0.0f};
 }
 
 // Distância (0..0,5) do ponto à borda da placa numa grade de `n` × `n` placas.
@@ -160,30 +92,18 @@ static PixelMaterial piso(float u, float v, float sujeira, unsigned s) {
     float grao = materiais_hash((int)(u * 520.0f), (int)(v * 520.0f), s + 5u);
     brilho *= grao > 0.93f ? 1.3f : grao < 0.05f ? 0.72f : 1.0f;
     bool trincada = materiais_hash(px, pz, s + 6u) < 0.35f;
-    brilho *= 1.0f - (trincada ? 0.75f * rachadura(u, v, 4, 4, s + 7u) : 0.0f);
+    brilho *= 1.0f - (trincada ? 0.75f * materiais_rachadura(u, v, 4, 4, s + 7u) : 0.0f);
     float gx = fracao(u * 4.0f), gz = fracao(v * 4.0f); // a quina lascada de algumas placas
     float qx = fminf(gx, 1.0f - gx), qz = fminf(gz, 1.0f - gz), quina = sqrtf(qx * qx + qz * qz);
     float lascada = materiais_hash(px, pz, s + 8u) < 0.3f ? 1.0f - passo(0.05f, 0.07f, quina) : 0.0f;
     float poeira = passo(0.5f, 0.8f, materiais_fbm(u, v, 3, 3, 5, s + 9u)) * sujeira;
     brilho *= (1.0f - 0.3f * poeira) * (1.0f - 0.6f * rejunte) * (1.0f - 0.5f * lascada);
-    float trinca = trincada ? rachadura(u, v, 4, 4, s + 7u) : 0.0f;
+    float trinca = trincada ? materiais_rachadura(u, v, 4, 4, s + 7u) : 0.0f;
     float altura = 1.0f - 0.7f * rejunte - 0.5f * trinca - 0.4f * lascada;
     float rug = 0.42f + 0.4f * poeira + 0.35f * rejunte; // granilite polido; o rejunte e a poeira são foscos
     float mistura = Clamp(poeira + 0.7f * lascada, 0.0f, 1.0f);
     return (PixelMaterial){brilho, mistura, 0.0f, Clamp(altura, 0.0f, 1.0f), Clamp(rug, 0.0f, 1.0f), 0.0f};
 }
-// Forro (2 m, 3 × 3 placas): juntas, tom por placa e manchas de infiltração com anel mais escuro.
-static PixelMaterial teto(float u, float v, float sujeira, unsigned s) {
-    float junta = 1.0f - passo(0.01f, 0.025f, borda_da_placa(u, v, 3));
-    float brilho = 0.9f + 0.15f * materiais_hash((int)(u * 3.0f), (int)(v * 3.0f), s + 19u);
-    float f = materiais_fbm(u, v, 3, 3, 4, s + 21u), limiar = 0.64f - 0.06f * sujeira;
-    float mancha = passo(limiar, limiar + 0.05f, f);
-    float anel = fmaxf(0.0f, passo(limiar - 0.015f, limiar, f) - passo(limiar, limiar + 0.015f, f));
-    brilho *= (1.0f - 0.55f * junta) * (1.0f - 0.3f * anel * sujeira);
-    return (PixelMaterial){brilho, sujeira * fminf(1.0f, 0.6f * mancha + anel), 0.0f, 1.0f - 0.8f * junta,
-                           0.9f, 0.0f};
-}
-
 // Metal pintado (1 m), cinza neutro (a cor vem do objeto): escovado vertical, riscos claros e ferrugem.
 static PixelMaterial metal(float u, float v, float sujeira, unsigned s) {
     float brilho = 0.82f + 0.12f * materiais_ruido(u * 8.0f, v * 96.0f, 8, 96, s + 31u) +
@@ -219,13 +139,13 @@ PixelMaterial materiais_pixel(TipoMaterial m, float u, float v, float sujeira, u
     sujeira = Clamp(sujeira, 0.0f, 1.0f);
     switch (m) {
     case MATERIAL_CONCRETO:
-        return concreto(u, v, sujeira, semente);
-    case MATERIAL_OLIVA:
-        return oliva(u, v, sujeira, semente);
+        return materiais_tinta(u, v, sujeira, semente);
+    case MATERIAL_AZULEJO:
+        return materiais_azulejo(u, v, sujeira, semente);
     case MATERIAL_PISO:
         return piso(u, v, sujeira, semente);
     case MATERIAL_TETO:
-        return teto(u, v, sujeira, semente);
+        return materiais_laje(u, v, sujeira, semente);
     case MATERIAL_METAL:
         return metal(u, v, sujeira, semente);
     case MATERIAL_PORTA:

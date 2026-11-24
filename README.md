@@ -182,6 +182,7 @@ src/goteira.c/.h         o cano pingando na sala do gerador: gota, ondas na poç
 src/entulho.c/.h         sujeira do chão sorteada por célula: poeira no pé da parede, cacos, papéis, lascas
 src/bancada.c/.h         bancada de capturas e desempenho: --olhar, --lanterna, --energia, --tamanho, --medir
 src/mapas.c/.h           mapas PBR dos materiais gerados em C: cor, normal (da altura) e ORM
+src/materiais_parede.c   paredes e teto (puros): azulejo esmaltado, tinta descascando, laje manchada
 src/sombreadores.c/.h    os textos GLSL: luz PBR (330) e o fallback 100, tone mapping
 src/menu_inicial.c/.h    menu inicial com visual VHS/CRT (em desenvolvimento; teste visual: make test-menu)
 tests/checagem.h         a macro CHECK
@@ -309,7 +310,7 @@ Cada laço leva o comentário `// padrão MAP`, `// padrão FILTER` ou `// padr�
 | RNF2 Modularização | [src/estado.h#L312-L376](src/estado.h#L312-L376) | `[REQ:RNF2]` | Uma struct por objeto, uma função por responsabilidade, um módulo por sistema; o maior arquivo tem menos de 500 linhas. |
 | RNF3 Separação update/render | [src/main.c#L419-L432](src/main.c#L419-L432) | `[REQ:RNF3]` | Todo módulo tem `xxx_atualiza(Estado *e, float dt)` e `xxx_desenha(const Estado *e)`; o `const` garante que desenhar não muda nada; nenhum `Draw*` em `*_atualiza` (auditado com grep). |
 | RNF4 Robustez | [src/colecoes.c#L9-L14](src/colecoes.c#L9-L14)<br>[src/main.c#L522-L531](src/main.c#L522-L531)<br>[src/nivel.c#L44-L48](src/nivel.c#L44-L48)<br>[src/ui.c#L33-L60](src/ui.c#L33-L60)<br>[src/criatura.c#L26-L42](src/criatura.c#L26-L42) | `[REQ:RNF4]` | Vetor cheio descarta com `TraceLog`, sem travar; listas vazias (sem ruídos, sem eventos) testadas; `dt` limitado; fora do mapa conta como parede; sem fonte, som ou modelo, entra o placeholder. |
-| RNF5 Documentação | [README.md#L230-L230](README.md#L230-L230) | `[REQ:RNF5]` | Este README, `docs/ARQUITETURA.md`, `docs/DECISOES.md` (as escolhas e por quê), `docs/PROGRESSO.md` e `CLAUDE.md`. |
+| RNF5 Documentação | [README.md#L231-L231](README.md#L231-L231) | `[REQ:RNF5]` | Este README, `docs/ARQUITETURA.md`, `docs/DECISOES.md` (as escolhas e por quê), `docs/PROGRESSO.md` e `CLAUDE.md`. |
 | RNF6 Versionamento + Makefile | [Makefile#L1-L2](Makefile#L1-L2) | `[REQ:RNF6]` | `Makefile` como build principal (com `test`, `smoke`, `readme-check`); um commit por marco na v0 (M0 a M9) e, daqui em diante, branch por card e PR (ver Metodologia). |
 
 ### Critérios de avaliação

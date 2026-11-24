@@ -9,10 +9,10 @@
 #include "raymath.h"
 
 typedef enum {
-    MATERIAL_CONCRETO, // paredes, mureta, verga
-    MATERIAL_OLIVA,    // barrado de tinta oliva das paredes (descascando)
+    MATERIAL_CONCRETO, // parede de cima, mureta, verga: reboco pintado descascando (materiais_parede.c)
+    MATERIAL_AZULEJO,  // a metade de baixo das paredes: azulejo esmaltado (materiais_parede.c)
     MATERIAL_PISO,     // placas de granilite
-    MATERIAL_TETO,     // placas de forro manchadas
+    MATERIAL_TETO,     // a laje pintada, descascando e manchada (materiais_parede.c)
     MATERIAL_METAL,    // metal pintado (móveis, painéis, armários): cinza neutro, tingido no desenho
     MATERIAL_PORTA,    // porta de metal com almofadas
     MATERIAL_TOTAL
@@ -56,8 +56,20 @@ float materiais_ruido(float x, float y, int periodo_x, int periodo_y, unsigned s
 // textura inteira, com `freq_x` × `freq_y` células na primeira oitava: o resultado repete em u e v.
 float materiais_fbm(float u, float v, int freq_x, int freq_y, int oitavas, unsigned semente);
 
+// Auxiliares das paredes (materiais.c e materiais_parede.c): smoothstep; rachadura fina e ramificada (1 na
+// linha); escorridos verticais que descem do topo (v = 0); Voronoi periódico (f1, f2 em células; id 0..1).
+float materiais_passo(float a, float b, float x);
+float materiais_rachadura(float u, float v, int fx, int fy, unsigned semente);
+float materiais_escorridos(float u, float v, int colunas, unsigned semente);
+void materiais_voronoi(float u, float v, int nx, int ny, unsigned semente, float *f1, float *f2, float *id);
+
+// As paredes e o teto (materiais_parede.c): azulejo esmaltado, tinta descascando sobre reboco e a laje.
+PixelMaterial materiais_azulejo(float u, float v, float sujeira, unsigned semente);
+PixelMaterial materiais_tinta(float u, float v, float sujeira, unsigned semente);
+PixelMaterial materiais_laje(float u, float v, float sujeira, unsigned semente);
+
 // O pixel (u, v) ∈ [0, 1)² de cada material; `sujeira` (0..1) dosa manchas, escorridos e desgaste.
-// No concreto e na oliva, v = 0 é o teto e v = 1 é o chão.
+// Nas paredes (concreto e azulejo), v = 0 é o teto e v = 1 é o chão.
 PixelMaterial materiais_pixel(TipoMaterial m, float u, float v, float sujeira, unsigned semente);
 
 // Alfa (0..1) das manchas que viram decalque (DECALQUE_UMIDADE, DECALQUE_ARRASTO); some nas bordas.

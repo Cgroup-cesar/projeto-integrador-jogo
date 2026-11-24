@@ -423,7 +423,7 @@ static void testa_materiais(void) {
     PixelMaterial a = materiais_pixel(MATERIAL_CONCRETO, 0.3f, 0.6f, 0.8f, 1985u);
     PixelMaterial b = materiais_pixel(MATERIAL_CONCRETO, 0.3f, 0.6f, 0.8f, 1985u);
     CHECK(a.brilho == b.brilho && a.mistura == b.mistura);
-    PixelMaterial limpo = materiais_pixel(MATERIAL_OLIVA, 0.3f, 0.6f, 0.0f, 1985u); // sujeira 0: sem mistura
+    PixelMaterial limpo = materiais_pixel(MATERIAL_AZULEJO, 0.3f, 0.6f, 0.0f, 1985u); // sujeira 0
     CHECK(limpo.mistura >= 0.0f && limpo.mistura <= 1.0f);
 }
 

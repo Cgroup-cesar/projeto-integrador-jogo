@@ -12,7 +12,7 @@
 #include <stdio.h>
 
 // ------------------------------------------------------------------ cores e nomes
-static const char *const NOMES[MATERIAL_TOTAL] = {"concreto", "oliva", "piso", "teto", "metal", "porta"};
+static const char *const NOMES[MATERIAL_TOTAL] = {"concreto", "azulejo", "piso", "teto", "metal", "porta"};
 
 static unsigned char canal(float valor) {
     return (unsigned char)Clamp(valor, 0.0f, 255.0f);
@@ -192,7 +192,7 @@ ModoUV texturas_modo(TipoMaterial m, int variacao) {
     switch (m) {
     case MATERIAL_CONCRETO:
         return (ModoUV){{TEXTURA_METROS_CONCRETO, PE_DIREITO}, {desloca.x, 0.0f}, false}; // v preso ao teto
-    case MATERIAL_OLIVA:
+    case MATERIAL_AZULEJO:
         return (ModoUV){{PE_DIREITO, PE_DIREITO}, {desloca.x, 0.0f}, false};
     case MATERIAL_PISO:
         return (ModoUV){{TEXTURA_METROS_PISO, TEXTURA_METROS_PISO}, {0.0f, 0.0f}, false};

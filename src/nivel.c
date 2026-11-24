@@ -443,7 +443,7 @@ static void desenha_portas_e_duto(const Estado *e) {
 // aparente em cima, barrado de tinta oliva até BARRADO_ALTURA, friso e rodapé de metal escuro.
 static void desenha_paredes(const Estado *e) {
     const ColParedes *ps = &e->paredes;
-    Texture2D concreto = e->rec.material[MATERIAL_CONCRETO], oliva = e->rec.material[MATERIAL_OLIVA];
+    Texture2D concreto = e->rec.material[MATERIAL_CONCRETO], azulejo = e->rec.material[MATERIAL_AZULEJO];
     // cada passada liga o seu material uma vez (normal e ORM) e desenha todas as peças dele
     float barrado = BARRADO_ALTURA - 0.16f;
     posfx_material(e, MATERIAL_CONCRETO);
@@ -452,13 +452,18 @@ static void desenha_paredes(const Estado *e) {
         if (ps->itens[i].tipo == PAREDE_MURO)
             texturas_caixa(concreto, centro_de(&ps->itens[i]), tamanho_de(&ps->itens[i]),
                            texturas_modo(MATERIAL_CONCRETO, i), WHITE);
-    posfx_material(e, MATERIAL_OLIVA);
-    // laço de desenho: o barrado oliva de cada muro
+    posfx_material(e, MATERIAL_AZULEJO);
+    // laço de desenho: o azulejo de cada muro, o arremate no topo dele e o rodapé (peças mais escuras)
     for (int i = 0; i < ps->n; i++) {
         if (ps->itens[i].tipo != PAREDE_MURO) continue;
         Vector3 c = centro_de(&ps->itens[i]), t = tamanho_de(&ps->itens[i]);
-        texturas_caixa(oliva, (Vector3){c.x, 0.16f + barrado * 0.5f, c.z},
-                       (Vector3){t.x + 0.02f, barrado, t.z + 0.02f}, texturas_modo(MATERIAL_OLIVA, i), WHITE);
+        ModoUV uv = texturas_modo(MATERIAL_AZULEJO, i);
+        texturas_caixa(azulejo, (Vector3){c.x, 0.16f + barrado * 0.5f, c.z},
+                       (Vector3){t.x + 0.02f, barrado, t.z + 0.02f}, uv, WHITE);
+        texturas_caixa(azulejo, (Vector3){c.x, BARRADO_ALTURA - 0.025f, c.z},
+                       (Vector3){t.x + 0.035f, 0.05f, t.z + 0.035f}, uv, (Color){0xd0, 0xd8, 0xd2, 255});
+        texturas_caixa(azulejo, (Vector3){c.x, 0.08f, c.z}, (Vector3){t.x + 0.03f, 0.16f, t.z + 0.03f}, uv,
+                       (Color){0x70, 0x78, 0x74, 255});
     }
     posfx_material(e, MATERIAL_PORTA);
     // laço de desenho: a porta trancada da sala

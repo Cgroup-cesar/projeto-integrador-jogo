@@ -14,14 +14,14 @@ static const Color COR_TIJOLO = {0x4a, 0x30, 0x26, 255}; // onde a parede descas
 
 static CoresMaterial cores(TipoMaterial m) {
     switch (m) {
-    case MATERIAL_CONCRETO:
-        return (CoresMaterial){COR_CONCRETO, {0x1c, 0x22, 0x1b, 255}}; // umidade
-    case MATERIAL_OLIVA:
-        return (CoresMaterial){COR_OLIVA, {0x48, 0x4b, 0x44, 255}}; // reboco por baixo da tinta
+    case MATERIAL_CONCRETO: // tinta clara, verde-acinzentada; por baixo, o reboco úmido e escuro
+        return (CoresMaterial){{0x8c, 0x9c, 0x92, 255}, {0x24, 0x28, 0x24, 255}};
+    case MATERIAL_AZULEJO: // esmalte verde-água; sujeira e rejunte escuros
+        return (CoresMaterial){{0x5c, 0x7e, 0x76, 255}, {0x1c, 0x22, 0x20, 255}};
     case MATERIAL_PISO:
         return (CoresMaterial){{0x24, 0x2b, 0x26, 255}, {0x17, 0x16, 0x12, 255}};
-    case MATERIAL_TETO:
-        return (CoresMaterial){{0x18, 0x1c, 0x19, 255}, {0x2a, 0x24, 0x16, 255}}; // infiltração
+    case MATERIAL_TETO: // a laje pintada; a mancha de infiltração, escura
+        return (CoresMaterial){{0x5e, 0x68, 0x62, 255}, {0x1e, 0x22, 0x1e, 255}};
     case MATERIAL_METAL:
         return (CoresMaterial){{0xf0, 0xf0, 0xf0, 255}, {0xa0, 0x5a, 0x34, 255}}; // neutro; ferrugem
     default:
@@ -45,7 +45,7 @@ float mapas_metros(TipoMaterial m) {
     switch (m) {
     case MATERIAL_CONCRETO:
         return TEXTURA_METROS_CONCRETO;
-    case MATERIAL_OLIVA:
+    case MATERIAL_AZULEJO:
         return PE_DIREITO;
     case MATERIAL_PISO:
         return TEXTURA_METROS_PISO;
@@ -61,9 +61,9 @@ float mapas_metros(TipoMaterial m) {
 static float profundidade(TipoMaterial m) {
     switch (m) {
     case MATERIAL_CONCRETO:
-        return 0.006f;
-    case MATERIAL_OLIVA:
-        return 0.008f;
+        return 0.007f;
+    case MATERIAL_AZULEJO:
+        return 0.004f;
     case MATERIAL_PISO:
         return 0.004f;
     case MATERIAL_TETO:

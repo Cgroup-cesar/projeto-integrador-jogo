@@ -283,7 +283,7 @@
 #define TEXTURA_METROS_METAL    1.0f
 #define EXPOSICAO               1.6f  // multiplica a cena HDR antes do tone mapping (ACES)
 #define TEXTURA_ARQUIVO_MAX_PX  1024  // PNG maior que isso (ou fora de potência de 2) é redimensionado
-#define BARRADO_ALTURA          1.2f  // tinta oliva do chão até aqui (acima: concreto aparente)
+#define BARRADO_ALTURA          1.45f // azulejo do chão até aqui (acima: reboco pintado, descascando)
 #define DECALQUE_PX             256   // manchas: 256 × 256; placas: 512 × 128
 #define HALO_LAMPADA_M          1.3f  // tamanho do brilho em volta das lâmpadas
 #define HALO_LAMPADA_ALFA       0.35f // força do brilho (some com a névoa)
