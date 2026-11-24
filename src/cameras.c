@@ -60,8 +60,10 @@ static bool ve_jogador(const Estado *e, int i, Vector3 olho, Vector3 alvo) {
     return col_paredes_distancia_raio(&e->paredes, olho, para, dist) >= dist - 0.3f;
 }
 
-// Leva `atual` até `alvo` com o passo máximo do motor; devolve o quanto andou.
-static float aproxima(float *atual, float alvo, float passo) {
+// Leva `atual` até `alvo` como um motor: proporcional à distância (desacelera perto do alvo, sem travar de
+// uma vez), limitado à velocidade máxima. Devolve o quanto andou.
+static float aproxima(float *atual, float alvo, float dt) {
+    float passo = fminf(CAMERA_VELOCIDADE * dt, fabsf(alvo - *atual) * CAMERA_FIRMEZA * dt);
     float d = Clamp(alvo - *atual, -passo, passo);
     *atual += d;
     return fabsf(d);
@@ -80,25 +82,36 @@ void cameras_atualiza(Estado *e, float dt) {
         float *giro = &e->camera_giro[i], *inclina = &e->camera_inclina[i];
         Vector3 eixo = eixo_de(&CAMERAS[i]);
         bool ve = jogando && ve_jogador(e, i, eixo, alvo);
-        bool em_repouso = fabsf(*giro) < 0.01f && fabsf(*inclina) < 0.01f;
-        if (!ve && em_repouso) { // parada e sem ninguém: nada a fazer (é a maioria, quase sempre)
-            e->camera_som_t[i] = 0.0f;
+        bool em_repouso = fabsf(*giro) < 0.05f && fabsf(*inclina) < 0.05f;
+        if (!ve && em_repouso && e->camera_perdeu_t[i] > CAMERA_ESPERA_S) { // parada e sem ninguém: nada a
+            e->camera_som_t[i] = 0.0f;                                         // fazer (quase sempre)
+            e->camera_ve_t[i] = 0.0f;
             continue;
         }
-        float alvo_giro = *giro, alvo_inclina = *inclina;
+        float *mira_giro = &e->camera_mira_giro[i], *mira_inclina = &e->camera_mira_inclina[i];
+        if (ve && e->camera_ve_t[i] <= 0.0f) { // acabou de avistar: a mira parte de onde ela está
+            *mira_giro = *giro;
+            *mira_inclina = *inclina;
+        }
+        e->camera_ve_t[i] = ve ? e->camera_ve_t[i] + dt : 0.0f;
         e->camera_perdeu_t[i] = ve ? 0.0f : e->camera_perdeu_t[i] + dt;
-        if (ve) {
+        float quer_giro = *mira_giro, quer_inclina = *mira_inclina; // sem novidade, a mira fica onde está
+        if (ve && e->camera_ve_t[i] > CAMERA_REACAO_S) { // reagiu: quer olhar para o jogador
             Vector3 d = Vector3Subtract(alvo, eixo);
             float para = atan2f(d.x, d.z) * RAD2DEG, plano = sqrtf(d.x * d.x + d.z * d.z);
             float max = CAMERA_GIRO_MAX_GRAUS;
-            alvo_giro = Clamp(limita_angulo(para - CAMERAS[i].olha), -max, max);
-            alvo_inclina = Clamp(atan2f(-d.y, plano) * RAD2DEG - CAMERA_INCLINA_GRAUS, -20.0f, 45.0f);
-        } else if (e->camera_perdeu_t[i] > CAMERA_ESPERA_S) { // perdeu faz tempo: volta para o lugar
-            alvo_giro = alvo_inclina = 0.0f;
+            quer_giro = Clamp(limita_angulo(para - CAMERAS[i].olha), -max, max);
+            quer_inclina = Clamp(atan2f(-d.y, plano) * RAD2DEG - CAMERA_INCLINA_GRAUS, -20.0f, 45.0f);
+        } else if (!ve && e->camera_perdeu_t[i] > CAMERA_ESPERA_S) { // perdeu faz tempo: volta para o lugar
+            quer_giro = quer_inclina = 0.0f;
         }
+        // a mira persegue o que ela quer com atraso (onde o jogador esteve há pouco), e o motor, a mira
+        float k = 1.0f - expf(-dt / CAMERA_ATRASO_S);
+        *mira_giro += (quer_giro - *mira_giro) * k;
+        *mira_inclina += (quer_inclina - *mira_inclina) * k;
         float passo = CAMERA_VELOCIDADE * dt;
-        float andou = aproxima(giro, alvo_giro, passo) + aproxima(inclina, alvo_inclina, passo);
-        bool mexendo = andou > passo * 0.15f;
+        float andou = aproxima(giro, *mira_giro, dt) + aproxima(inclina, *mira_inclina, dt);
+        bool mexendo = andou > passo * 0.08f;
         e->camera_som_t[i] = mexendo ? e->camera_som_t[i] - dt : 0.0f;
         if (mexendo && e->camera_som_t[i] <= 0.0f) { // o zumbido do motor, refeito enquanto ela gira
             e->camera_som_t[i] = CAMERA_SOM_INTERVALO;
