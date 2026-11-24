@@ -338,6 +338,12 @@
 #define VOL_CORACAO        0.85f
 #define VOL_PASSO_ANDAR    0.55f
 #define VOL_PASSO_CORRER   0.8f
+#define SOM_PERTO_M              4.0f  // som no espaço: daqui para perto, volume cheio
+#define SOM_QUEDA_DB             28.0f // quanto cai em dB do perto até o alcance
+#define SOM_CURVA                1.6f  // > 1: a queda começa suave e acelera longe (perto continua alto)
+#define SOM_ATRAS_DB             3.0f  // bem atrás soa um pouco mais baixo: ajuda a saber se é na frente
+#define SOM_PAREDE_DB            8.0f  // com parede no meio, abafado
+#define SOM_PAN_MAX              0.85f // o mais para um lado que vai (nunca 100% num ouvido)
 
 // ---------------------------------------------------------------- paleta (só use onde a raylib já foi
 // incluída)

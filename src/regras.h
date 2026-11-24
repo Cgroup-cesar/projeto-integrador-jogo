@@ -184,6 +184,18 @@ float regras_surto_piscada(float t);
 // Número "sorteado" em [0, 1) a partir do ciclo e da semente: sem rand(), então é puro e repetível.
 float regras_sorteio(int ciclo, unsigned semente);
 
+// ------------------------------------------------------------------ som no espaço (regras_som.c)
+typedef struct {
+    float volume; // 0..1
+    float pan;    // −1 esquerda, 0 centro, 1 direita (como SetSoundPan)
+} SomEspacial;
+
+// Volume e lado de um som em `fonte` para quem está em `ouvinte` olhando para `yaw`: cheio até
+// SOM_PERTO_M, cai SOM_QUEDA_DB (em dB, curva SOM_CURVA) até `alcance` e some; −SOM_ATRAS_DB bem atrás e
+// −SOM_PAREDE_DB com parede no meio. O pan vai até ±SOM_PAN_MAX.
+SomEspacial regras_som_espacial(Vector3 ouvinte, float yaw, Vector3 fonte, float alcance,
+                                bool atras_da_parede);
+
 // ------------------------------------------------------------------ circuitos dos painéis
 typedef enum { PORTA_E, PORTA_OU, PORTA_XOU, PORTA_NE, PORTA_NAO, PORTA_TOTAL } TipoPorta;
 
