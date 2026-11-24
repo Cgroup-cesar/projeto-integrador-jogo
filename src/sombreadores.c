@@ -2,6 +2,7 @@
 // 330 são o caminho principal (OpenGL 3.3 core); as 100 são o fallback de OpenGL ES 2 (navegador), sem PBR.
 #include "sombreadores.h"
 #include "config.h"
+#include "esqueleto.h" // OSSOS_TOTAL_GLSL: o tamanho do uniform ossos[]
 
 // ------------------------------------------------------------------ shaders de luz e névoa
 // O número de luzes entra no texto do shader a partir de LUZES_SHADER (config.h): um lugar só para mudar.
@@ -16,14 +17,25 @@
 // do cone sobram 15%. luzQueda[i]: quanto a luz enfraquece com a distância (1 = lâmpada comum; menor
 // = vai mais longe, como a lanterna). contraluz: cor somada nas bordas (só o Precursor liga; o resto recebe
 // zero).
+// Skinning (só o Precursor liga usaOssos): cada vértice segue até 4 ossos (ossoIds e ossoPesos, de rig.c)
+// com as matrizes ossos[] da pose do quadro. A normal sai das derivadas da posição no fragment shader:
+// basta deformar a posição. Nos outros modelos usaOssos = 0 e os dois atributos não são usados.
+#define N_OSSOS TEXTO_DE(OSSOS_TOTAL_GLSL)
+#define SKIN_GLSL                                                                                            \
+    "    vec4 p = vec4(vertexPosition, 1.0);\n"                                                              \
+    "    if (usaOssos > 0.5) {\n"                                                                            \
+    "        p = ossos[int(ossoIds.x)] * p * ossoPesos.x + ossos[int(ossoIds.y)] * p * ossoPesos.y +\n"      \
+    "            ossos[int(ossoIds.z)] * p * ossoPesos.z + ossos[int(ossoIds.w)] * p * ossoPesos.w;\n"       \
+    "    }\n"
 static const char *LUZ_VS_330 = "#version 330\n"
                                 "in vec3 vertexPosition; in vec2 vertexTexCoord; in vec4 vertexColor;\n"
+                                "in vec4 ossoIds; in vec4 ossoPesos;\n"
                                 "uniform mat4 mvp; uniform mat4 matModel;\n"
+                                "uniform mat4 ossos[" N_OSSOS "]; uniform float usaOssos;\n"
                                 "out vec3 fragPosition; out vec4 fragColor; out vec2 fragTexCoord;\n"
-                                "void main() {\n"
-                                "    fragPosition = vec3(matModel * vec4(vertexPosition, 1.0));\n"
+                                "void main() {\n" SKIN_GLSL "    fragPosition = vec3(matModel * p);\n"
                                 "    fragColor = vertexColor; fragTexCoord = vertexTexCoord;\n"
-                                "    gl_Position = mvp * vec4(vertexPosition, 1.0);\n"
+                                "    gl_Position = mvp * p;\n"
                                 "}\n";
 
 // PBR metálico/rugoso (GGX, Smith-Schlick, Fresnel de Schlick) em espaço linear, saída HDR (o tone mapping
@@ -223,12 +235,13 @@ static const char *LUZ_FS_330 =
 static const char *LUZ_VS_100 =
     "#version 100\n"
     "attribute vec3 vertexPosition; attribute vec2 vertexTexCoord; attribute vec4 vertexColor;\n"
+    "attribute vec4 ossoIds; attribute vec4 ossoPesos;\n"
     "uniform mat4 mvp; uniform mat4 matModel;\n"
+    "uniform mat4 ossos[" N_OSSOS "]; uniform float usaOssos;\n"
     "varying vec3 fragPosition; varying vec4 fragColor; varying vec2 fragTexCoord;\n"
-    "void main() {\n"
-    "    fragPosition = vec3(matModel * vec4(vertexPosition, 1.0));\n"
+    "void main() {\n" SKIN_GLSL "    fragPosition = vec3(matModel * p);\n"
     "    fragColor = vertexColor; fragTexCoord = vertexTexCoord;\n"
-    "    gl_Position = mvp * vec4(vertexPosition, 1.0);\n"
+    "    gl_Position = mvp * p;\n"
     "}\n";
 
 static const char *LUZ_FS_100 =

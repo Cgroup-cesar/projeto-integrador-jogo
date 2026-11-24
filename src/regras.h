@@ -90,17 +90,6 @@ float regras_ruido_percebido(Ruido ruido, Vector3 ouvinte);
 EstadoCriatura regras_proximo_estado_criatura(EstadoCriatura atual, PercepcaoCriatura p);
 const char *regras_nome_estado_criatura(EstadoCriatura estado);
 
-// Postura do corpo a cada quadro: substitui a animação que o modelo .glb não tem.
-// `velocidade` em m/s (já suavizada), `passada` = metros andados (dá o ritmo dos passos), `t` em s.
-typedef struct {
-    float inclina_graus; // para a frente (corcunda); cresce com a velocidade
-    float balanco_graus; // de um lado para o outro a cada passo; zero parado
-    float sobe;          // metros: sobe e desce duas vezes por passada; zero parado
-    float respira;       // escala horizontal do corpo (~1); só parado
-} PosturaCriatura;
-
-PosturaCriatura regras_postura_criatura(float velocidade, float passada, float t);
-
 // Susto: `t` = segundos desde que o rosto apareceu. O rosto pula de JUMPSCARE_LONGE_M até JUMPSCARE_PERTO_M
 // em JUMPSCARE_PULO_S e treme (posição nova JUMPSCARE_TREMOR_HZ vezes por segundo). Determinístico.
 typedef struct {

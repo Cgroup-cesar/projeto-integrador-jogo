@@ -3,9 +3,11 @@
 #include "raylib.h"
 #include "checagem.h"
 #include "regras.h"
+#include "regras_animacao.h"
 #include "colecoes.h"
 #include "materiais.h"
 #include <math.h>
+#include <stdlib.h>
 #include <string.h>
 
 static bool perto(float a, float b) {
@@ -66,21 +68,177 @@ static void testa_estados_criatura(void) {
     CHECK(regras_proximo_estado_criatura(CRIATURA_PERSEGUE, armario) == CRIATURA_PERSEGUE); // vai até a porta
 }
 
-// [REQ:PURA-regras_postura_criatura] testa a postura parado, andando e perseguindo
-static void testa_postura_criatura(void) {
-    PosturaCriatura parado = regras_postura_criatura(0.0f, 0.4f, 1.0f);
-    CHECK(perto(parado.balanco_graus, 0.0f) && perto(parado.sobe, 0.0f)); // parado não balança
-    CHECK(perto(parado.inclina_graus, CRIATURA_INCLINA_PARADO));
-    CHECK(fabsf(parado.respira - 1.0f) <= CRIATURA_RESPIRA + 0.0001f); // respira só um pouco
-    float quarto = CRIATURA_PASSADA_M / 4.0f;                          // pico do balanço
-    PosturaCriatura anda = regras_postura_criatura(CRIATURA_VEL_PATRULHA, quarto, 1.0f);
-    CHECK(perto(anda.balanco_graus, CRIATURA_BALANCO_GRAUS) && perto(anda.sobe, CRIATURA_SOBE_M));
-    PosturaCriatura persegue = regras_postura_criatura(CRIATURA_VEL_PERSEGUE, quarto, 1.0f);
-    CHECK(persegue.inclina_graus > anda.inclina_graus); // mais rápido, mais curvado
-    CHECK(perto(persegue.inclina_graus, CRIATURA_INCLINA_CORRENDO));
-    CHECK(perto(persegue.respira, 1.0f)); // andando não respira
-    PosturaCriatura rapido = regras_postura_criatura(99.0f, quarto, 1.0f);
-    CHECK(perto(rapido.inclina_graus, CRIATURA_INCLINA_CORRENDO)); // não passa do limite
+// [REQ:PURA-esqueleto] testa o rig: repouso sem deformar, IK que alcança e joelho que nunca dobra ao
+// contrário
+static void testa_esqueleto(void) {
+    Pose p = esqueleto_pose_repouso();
+    PoseGlobal g;
+    Matrix m[OSSOS_TOTAL];
+    esqueleto_fk(&p, &g);
+    esqueleto_matrizes(&g, m);
+    for (int i = 0; i < OSSOS_TOTAL; i++) { // padrão MAP: em repouso, cada junta no lugar e matriz identidade
+        CHECK(Vector3Distance(g.junta[i], esqueleto_osso(i)->cabeca) < 1e-5f);
+        CHECK(fabsf(m[i].m0 - 1.0f) < 1e-5f && fabsf(m[i].m12) < 1e-5f && fabsf(m[i].m13) < 1e-5f);
+        CHECK(esqueleto_osso(i)->pai < i); // os pais vêm antes (a cinemática direta é uma passada só)
+    }
+    Vector3 tornozelo = esqueleto_osso(OSSO_PE_E)->cabeca;
+    Vector3 alvo = Vector3Add(tornozelo, (Vector3){0.03f, 0.08f, -0.15f});
+    float falta = esqueleto_ik(&p, &g, OSSO_COXA_E, alvo, (Vector3){0, 0, 1});
+    esqueleto_fk(&p, &g);
+    CHECK(falta < 1e-3f && Vector3Distance(g.junta[OSSO_PE_E], alvo) < 2e-3f); // alcançou
+    Vector3 quadril = g.junta[OSSO_COXA_E], joelho = g.junta[OSSO_CANELA_E];
+    Vector3 meio = Vector3Lerp(quadril, alvo, 0.5f);
+    CHECK(joelho.z > meio.z); // o joelho dobra para a frente
+    Vector3 longe = Vector3Add(quadril, (Vector3){0.0f, -3.0f, 0.0f});
+    CHECK(esqueleto_ik(&p, &g, OSSO_COXA_E, longe, (Vector3){0, 0, 1}) > 0.5f); // não alcança...
+    esqueleto_fk(&p, &g);
+    Vector3 coxa = Vector3Normalize(Vector3Subtract(g.junta[OSSO_CANELA_E], g.junta[OSSO_COXA_E]));
+    Vector3 canela = Vector3Normalize(Vector3Subtract(g.junta[OSSO_PE_E], g.junta[OSSO_CANELA_E]));
+    CHECK(Vector3DotProduct(coxa, canela) < 0.9999f); // ...e nem assim trava a perna esticada
+}
+
+static EntradaAnim entrada_anim(Vector3 pos) {
+    EntradaAnim in = {0};
+    in.pos = pos;
+    in.escala = CRIATURA_ALTURA_M / 1.993f;
+    in.base_y = -0.997f;
+    in.bueiro_t = -1.0f;
+    return in;
+}
+
+// O tornozelo desenhado, no mundo (o corpo olha para +z: yaw 0).
+static Vector3 tornozelo_no_mundo(const AnimCriatura *a, const EntradaAnim *in, int lado) {
+    Vector3 j = a->global.junta[OSSO_COXA(lado) + 2];
+    return (Vector3){in->pos.x + j.x * in->escala, (j.y - in->base_y) * in->escala,
+                     in->pos.z + j.z * in->escala};
+}
+
+static float distancia_xz(Vector3 a, Vector3 b) {
+    return sqrtf((a.x - b.x) * (a.x - b.x) + (a.z - b.z) * (a.z - b.z));
+}
+
+// [REQ:PURA-regras_anim_passo] testa a passada: os pés alternam, o pé plantado não desliza, o comprimento
+// de cada passo varia, o pé desenhado fica sobre a âncora e, ao parar, ele se acomoda e fica quieto
+static void testa_anim_passos(void) {
+    static AnimCriatura a;
+    memset(&a, 0, sizeof(a));
+    float dt = 1.0f / 60.0f, z = 0.0f, menor = 99.0f, maior = 0.0f;
+    int levantou[2] = {0, 0}, ambos_no_ar = 0, deslizou = 0, longe = 0;
+    Vector3 pousou[2] = {{0}};
+    for (int q = 0; q < 12 * 60; q++) { // 12 s andando na velocidade da patrulha
+        EntradaAnim in = entrada_anim((Vector3){0, 0, z});
+        PeAnim antes[2] = {a.pe[0], a.pe[1]};
+        regras_anim_passo(&a, &in, dt);
+        z += CRIATURA_VEL_PATRULHA * dt;
+        ambos_no_ar += a.pe[0].no_ar && a.pe[1].no_ar;
+        for (int l = 0; l < 2; l++) { // padrão MAP: confere cada pé neste quadro
+            bool plantado = !antes[l].no_ar && !a.pe[l].no_ar;
+            deslizou += q > 0 && plantado && Vector3Distance(antes[l].ancora, a.pe[l].ancora) > 1e-5f;
+            levantou[l] += !antes[l].no_ar && a.pe[l].no_ar;
+            if (antes[l].no_ar && !a.pe[l].no_ar) {
+                float passo = Vector3Distance(pousou[l], a.pe[l].ancora);
+                if (q > 120) menor = fminf(menor, passo), maior = fmaxf(maior, passo);
+                pousou[l] = a.pe[l].ancora;
+            }
+            longe += q > 60 && distancia_xz(tornozelo_no_mundo(&a, &in, l), a.pe[l].agora) > 0.04f;
+        }
+    }
+    CHECK(ambos_no_ar == 0 && deslizou == 0);
+    CHECK(levantou[0] >= 6 && levantou[1] >= 6 && abs(levantou[0] - levantou[1]) <= 1); // alternam
+    CHECK(maior - menor > 0.03f);      // nunca dois passos iguais
+    CHECK(longe == 0);                 // o pé desenhado fica sobre o ponto plantado (IK)
+    for (int q = 0; q < 5 * 60; q++) { // para: 5 s no mesmo lugar
+        EntradaAnim in = entrada_anim((Vector3){0, 0, z});
+        regras_anim_passo(&a, &in, dt);
+    }
+    EntradaAnim in = entrada_anim((Vector3){0, 0, z});
+    for (int l = 0; l < 2; l++) { // padrão MAP: os dois pés no chão, perto do lugar de descanso
+        Vector3 n = regras_anim_neutro(&a, &in, l);
+        CHECK(!a.pe[l].no_ar && Vector3Distance(a.pe[l].ancora, n) < 0.15f);
+    }
+}
+
+// Maior rotação de um osso entre dois quadros (graus): uma pose que salta aparece aqui.
+static float maior_salto(const Pose *antes, const Pose *depois) {
+    float maior = 0.0f;
+    for (int i = 0; i < OSSOS_TOTAL; i++) { // padrão FOLD: o maior ângulo entre as duas rotações
+        Quaternion p = antes->local[i], q = depois->local[i];
+        float d = fabsf(p.x * q.x + p.y * q.y + p.z * q.z + p.w * q.w);
+        maior = fmaxf(maior, 2.0f * acosf(fminf(1.0f, d)) * RAD2DEG);
+    }
+    return maior;
+}
+
+// Testa parado (os pés não saem do lugar, a pose nunca congela, tiques raros: um por vez) e as
+// transições entre estados (nenhum osso salta mais que alguns graus de um quadro para o outro).
+static void testa_anim_parado_e_transicoes(void) {
+    static AnimCriatura a;
+    memset(&a, 0, sizeof(a));
+    float dt = 1.0f / 60.0f, salto = 0.0f, mexeu = 0.0f;
+    EntradaAnim in = entrada_anim((Vector3){3, 0, 3});
+    regras_anim_passo(&a, &in, dt);
+    Vector3 pe0 = a.pe[0].ancora;
+    for (int q = 0; q < 90 * 60; q++) { // 90 s parado
+        Pose antes = a.pose;
+        regras_anim_passo(&a, &in, dt);
+        mexeu = fmaxf(mexeu, maior_salto(&antes, &a.pose));
+        CHECK(!a.pe[0].no_ar && !a.pe[1].no_ar);
+    }
+    CHECK(Vector3Distance(pe0, a.pe[0].ancora) < 1e-5f);
+    CHECK(mexeu > 0.0f);                      // respira, muda o peso, mexe a cabeça
+    CHECK(a.tique_n >= 4 && a.tique_n <= 15); // raros: entre 6 e 15 s um do outro
+    float z = 3.0f;
+    for (int q = 0; q < 14 * 60; q++) { // anda, persegue, para, lanterna, fala, distorção
+        float s = q * dt;
+        in.persegue = (s > 4.0f && s < 8.0f) ? 1.0f : 0.0f;
+        float v =
+            s < 2.0f ? 0.0f : (s < 4.0f ? CRIATURA_VEL_PATRULHA : (s < 8.0f ? CRIATURA_VEL_PERSEGUE : 0.0f));
+        z += v * dt;
+        in.pos = (Vector3){3, 0, z};
+        in.lanterna = (s > 9.0f && s < 10.0f) ? 1.0f : 0.0f;
+        in.fala = s > 10.0f && s < 11.5f;
+        in.distorcao = Clamp((s - 12.0f) / 1.5f, 0.0f, 1.0f);
+        Pose antes = a.pose;
+        regras_anim_passo(&a, &in, dt);
+        salto = fmaxf(salto, maior_salto(&antes, &a.pose));
+    }
+    CHECK(salto < 12.0f); // a 60 quadros por segundo, nenhum osso pula de pose
+}
+
+// Testa a saída do bueiro: primeiro só as mãos aparecem (na borda, com a cabeça ainda embaixo do chão),
+// depois a cabeça sobe, e no fim ele está de pé no lugar, com os pés plantados.
+static void testa_anim_bueiro(void) {
+    static AnimCriatura a;
+    memset(&a, 0, sizeof(a));
+    float total = ANIM_BUEIRO_PRE_S + ANIM_BUEIRO_SAI_S, escala = total / 6.5f, dt = 1.0f / 60.0f;
+    EntradaAnim in = entrada_anim((Vector3){0, 0, 0});
+    for (float t = 0.0f; t < 1.25f * escala; t += dt) { // as mãos agarram a borda
+        in.bueiro_t = t;
+        regras_anim_passo(&a, &in, dt);
+    }
+    float mao = (a.global.junta[OSSO_MAO_E].y - in.base_y) * in.escala;
+    float cabeca = (esqueleto_osso(OSSO_CABECA)->cauda.y - in.base_y + a.pose.raiz.y) * in.escala;
+    CHECK(fabsf(mao - 0.05f) < 0.05f); // o punho na borda (5 cm acima do chão)
+    CHECK(cabeca < 0.0f);              // a cabeça ainda escondida
+    for (float t = 1.25f * escala; t < 3.6f * escala; t += dt) {
+        in.bueiro_t = t;
+        regras_anim_passo(&a, &in, dt);
+    }
+    float olhos = (a.global.junta[OSSO_CABECA].y - in.base_y) * in.escala;
+    CHECK(olhos > -0.3f && olhos < 0.4f); // a cabeça rente ao chão, olhando em volta
+    for (float t = 3.6f * escala; t < total; t += dt) {
+        in.bueiro_t = t;
+        regras_anim_passo(&a, &in, dt);
+    }
+    CHECK(fabsf(a.pose.raiz.y) < 0.02f && !a.pe[0].no_ar && !a.pe[1].no_ar); // de pé
+    in.bueiro_t = -1.0f;
+    float salto = 0.0f;
+    for (int q = 0; q < 90; q++) { // sai da cena para o jogo sem pular de pose
+        Pose antes = a.pose;
+        regras_anim_passo(&a, &in, dt);
+        salto = fmaxf(salto, maior_salto(&antes, &a.pose));
+    }
+    CHECK(salto < 12.0f);
 }
 
 // [REQ:PURA-regras_falha_lanterna] testa a falha: fica entre 0,05 e 1, cai e volta, e é repetível
@@ -742,7 +900,10 @@ int main(void) {
     testa_visao();
     testa_ruido_percebido();
     testa_estados_criatura();
-    testa_postura_criatura();
+    testa_esqueleto();
+    testa_anim_passos();
+    testa_anim_parado_e_transicoes();
+    testa_anim_bueiro();
     testa_piscada_cela();
     testa_no_cone();
     testa_falha_lanterna();

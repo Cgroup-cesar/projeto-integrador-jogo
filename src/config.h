@@ -212,13 +212,45 @@
 #define CRIATURA_OLHO_PX            1.0f  // no menu: raio, em pixels da cena, dos dois pontinhos dos olhos
 #define CRIATURA_DIST_ARMARIO  2.0f  // entrar no armário a menos disso enquanto ele vê = pego
 #define CRIATURA_ALTURA_M      2.6f  // o precursor.glb é escalado para essa altura, com os pés no chão
-// Postura procedural (o modelo .glb não tem animação): ver regras_postura_criatura
-#define CRIATURA_PASSADA_M        1.6f   // metros por passada completa (pernas longas)
-#define CRIATURA_INCLINA_PARADO   3.0f   // graus para a frente, parado
-#define CRIATURA_INCLINA_CORRENDO 18.0f  // graus para a frente, perseguindo
-#define CRIATURA_BALANCO_GRAUS    5.0f   // de um lado para o outro a cada passo
-#define CRIATURA_SOBE_M           0.05f  // sobe e desce a cada passo
-#define CRIATURA_RESPIRA          0.015f // o tronco se expande 1,5% parado
+// ---------------------------------------------------------------- animação do Precursor (rig: esqueleto.c)
+// Ele é RETRAÍDO: doente, desconfiado, contido. Na dúvida, menos é mais. Ângulos em graus, distâncias em m.
+// Postura (sempre)
+#define ANIM_CURVA_GRAUS   7.0f  // a coluna se curva para a frente (soma-se à curvatura do modelo)
+#define ANIM_OMBROS_GRAUS  9.0f  // os ombros se fecham para dentro
+#define ANIM_CABECA_FRENTE 10.0f // o pescoço projeta a cabeça à frente (a cabeça compensa e olha adiante)
+// Passada (o ritmo segue a distância andada: o pé plantado não desliza)
+#define ANIM_PASSADA_M       1.45f  // passada completa (dois passos) andando devagar
+#define ANIM_PASSADA_CORRE_M 2.2f   // passada completa na perseguição
+#define ANIM_PASSO_VARIA     0.12f  // cada passo sai até 12% mais curto ou mais longo (nunca dois iguais)
+#define ANIM_PE_ALTURA_M     0.10f  // quanto o pé sobe no meio do passo
+#define ANIM_PE_ARRASTA      0.55f  // o pé direito sobe só isso da altura (arrasta um pouco: algo errado)
+#define ANIM_PASSO_LENTO_S   0.8f   // um passo nunca demora mais que isso (termina mesmo se ele parar)
+#define ANIM_SOBE_M          0.035f // o quadril sobe e desce a cada passo
+#define ANIM_BALANCO_M       0.035f // o quadril vai para o lado do pé de apoio
+#define ANIM_QUADRIL_GRAUS   7.0f   // o quadril gira com a perna que avança; o tronco gira ao contrário
+#define ANIM_BRACO_GRAUS     6.0f   // o balanço dos braços (pesados: pouco)
+#define ANIM_BRACO_MOLA      6.5f   // rad/s: quanto menor, mais os braços atrasam em relação ao tronco
+#define ANIM_INCLINA_CORRE   12.0f  // a mais de inclinação na perseguição
+// Parado (idle) e cabeça
+#define ANIM_RESPIRA_S     4.6f   // um ciclo de respiração (varia ±15%)
+#define ANIM_RESPIRA_GRAUS 1.6f   // o peito e os ombros sobem e descem
+#define ANIM_PESO_M        0.035f // o peso passa de uma perna para a outra
+#define ANIM_PESO_S        7.0f   // ...devagar e sem ritmo fixo
+#define ANIM_OLHAR_GRAUS_S 55.0f  // a cabeça vira no máximo isso por segundo (devagar)
+#define ANIM_ESTABILIZA    0.7f   // 0..1: quanto a cabeça segura o olhar enquanto o corpo balança
+#define ANIM_ESPIADA_MIN_S 5.0f   // de tempos em tempos ele vira a cabeça devagar para um lado
+#define ANIM_ESPIADA_MAX_S 12.0f
+#define ANIM_ESPIADA_GRAUS 35.0f
+// Tiques: raros e pequenos (um dedo, a cabeça inclinando, um ombro se ajustando)
+#define ANIM_TIQUE_MIN_S 6.0f // intervalo entre tiques: sorteado entre MIN e MAX
+#define ANIM_TIQUE_MAX_S 15.0f
+#define ANIM_TIQUE_GRAUS 8.0f // amplitude típica (o dedo vai ao dobro)
+// Transições (crossfade): quanto maior, mais rápido um estado entra no lugar do outro (1/s)
+#define ANIM_TRANSICAO 3.0f
+// Saída do bueiro: começa ANIM_BUEIRO_PRE_S antes de ele ficar ativo (sem mudar o tempo do jogo) e termina
+// junto com os 1,5 s de `surgindo`.
+#define ANIM_BUEIRO_PRE_S 5.0f
+#define ANIM_BUEIRO_SAI_S 1.5f // o mesmo tempo de atualiza_surgimento (criatura.c)
 // Susto (jumpscare): o rosto do modelo pula até a câmera e fica tremendo (ver regras_quadro_susto).
 // Com assets/audio/jumpscare.mp3, o rosto fica até o fim do trecho alto do som (depois só sobra o eco).
 #define JUMPSCARE_S            1.2f  // duração com o som sintetizado (sem assets/audio/jumpscare.*)
