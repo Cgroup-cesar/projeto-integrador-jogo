@@ -1,7 +1,6 @@
-// teclas.c — a barra de teclas do rodapé. Só desenha, a partir do estado: escolhe as teclas pelo contexto
-// (terminal, painel, andando, armário, bilhete) e não muda nada. Andando, ela fica o tempo todo no primeiro
-// nível (R1) e na primeira saída (S1), onde quem joga está aprendendo; nas fases seguintes, só no começo
-// (TECLAS_ANDAR_S), porque aí a pessoa já sabe e a dica do que está na mira mostra o E.
+// teclas.c — as teclas que valem agora, escolhidas pelo contexto (terminal, painel, andando, armário,
+// bilhete). Na partida, a tela fica limpa: só um "B Comandos" pequeno no canto inferior esquerdo, e o B abre
+// e fecha a lista das teclas logo acima dele. No menu e nas telas depois do final, a barra do rodapé.
 #include "teclas.h"
 #include "rodadas.h"
 #include "susto.h"
@@ -52,8 +51,6 @@ static int itens_do_painel(const Estado *e, TeclaAcao *t) {
 }
 
 static int itens_andando(const Estado *e, TeclaAcao *t) {
-    bool aprendendo = e->fase == FASE_R1 || e->fase == FASE_S1;
-    if (!aprendendo && e->tempo_fase > TECLAS_ANDAR_S) return 0; // já conhece os controles
     int n = 0;
     t[n++] = (TeclaAcao){"WASD", TXT_TECLA_ANDAR};
     t[n++] = (TeclaAcao){"MOUSE", TXT_TECLA_OLHAR};
@@ -128,7 +125,7 @@ static void seta(Vector2 c, float r, int direcao, Color cor) { // 0 cima, 1 baix
 }
 
 // Desenha a tecla como uma tecla de verdade (caixinha com borda) e devolve a largura usada.
-static float tecla(const Estado *e, const char *rotulo, Vector2 pos, float altura) {
+static float tecla(const Estado *e, const char *rotulo, Vector2 pos, float altura, Color cor) {
     float s = ui_escala(), tamanho = altura * 0.55f;
     int setas = strcmp(rotulo, "SETAS_V") == 0   ? 2
                 : strcmp(rotulo, "SETAS_H") == 0 ? 2
@@ -140,21 +137,21 @@ static float tecla(const Estado *e, const char *rotulo, Vector2 pos, float altur
     DrawRectangleRounded((Rectangle){r.x, r.y + 3 * s, r.width, r.height}, 0.25f, 4,
                          (Color){0, 0, 0, 200}); // sombra
     DrawRectangleRounded(r, 0.25f, 4, (Color){22, 34, 26, 255});
-    DrawRectangleRoundedLinesEx(r, 0.25f, 4, 1.5f * s, COR_FOSFORO);
+    DrawRectangleRoundedLinesEx(r, 0.25f, 4, 1.5f * s, cor);
     Vector2 c = {r.x + r.width * 0.5f, r.y + r.height * 0.5f};
     float sr = altura * 0.17f;
     if (strcmp(rotulo, "SETAS_V") == 0) {
-        seta((Vector2){c.x - sr * 1.6f, c.y}, sr, 0, COR_FOSFORO);
-        seta((Vector2){c.x + sr * 1.6f, c.y}, sr, 1, COR_FOSFORO);
+        seta((Vector2){c.x - sr * 1.6f, c.y}, sr, 0, cor);
+        seta((Vector2){c.x + sr * 1.6f, c.y}, sr, 1, cor);
     } else if (strcmp(rotulo, "SETAS_H") == 0) {
-        seta((Vector2){c.x - sr * 1.6f, c.y}, sr, 2, COR_FOSFORO);
-        seta((Vector2){c.x + sr * 1.6f, c.y}, sr, 3, COR_FOSFORO);
+        seta((Vector2){c.x - sr * 1.6f, c.y}, sr, 2, cor);
+        seta((Vector2){c.x + sr * 1.6f, c.y}, sr, 3, cor);
     } else if (setas == 4) {
         for (int d = 0; d < 4; d++) // padrão MAP: uma seta por direção
-            seta((Vector2){c.x + (d - 1.5f) * sr * 2.6f, c.y}, sr * 0.9f, d, COR_FOSFORO);
+            seta((Vector2){c.x + (d - 1.5f) * sr * 2.6f, c.y}, sr * 0.9f, d, cor);
     } else {
         Vector2 m = ui_mede(e, rotulo, tamanho);
-        ui_texto(e, rotulo, (Vector2){c.x - m.x * 0.5f, c.y - m.y * 0.5f}, tamanho, COR_FOSFORO);
+        ui_texto(e, rotulo, (Vector2){c.x - m.x * 0.5f, c.y - m.y * 0.5f}, tamanho, cor);
     }
     return largura;
 }
@@ -166,16 +163,16 @@ static TeclaClique tecla_clicavel(const char *rotulo) {
     static const struct {
         const char *rotulo;
         TeclaClique tecla;
-    } TABELA[] = {{"ESC", TECLA_ESC}, {"ENTER", TECLA_ENTER}, {"H", TECLA_H},
-                  {"1", TECLA_1},     {"2", TECLA_2},         {"E", TECLA_E},
-                  {"F", TECLA_F},     {"ESPAÇO", TECLA_ESPACO}};
+    } TABELA[] = {{"ESC", TECLA_ESC}, {"ENTER", TECLA_ENTER},   {"H", TECLA_H},
+                  {"1", TECLA_1},     {"2", TECLA_2},           {"E", TECLA_E},
+                  {"F", TECLA_F},     {"ESPAÇO", TECLA_ESPACO}, {"B", TECLA_B}};
     for (size_t i = 0; i < sizeof(TABELA) / sizeof(TABELA[0]); i++) // padrão FOLD: procura o rótulo
         if (strcmp(TABELA[i].rotulo, rotulo) == 0) return TABELA[i].tecla;
     return TECLA_NENHUMA;
 }
 
-// Na partida, a barra fica numa faixa escura e um pouco menor (TECLAS_ESCALA_JOGO). No menu, as teclas
-// flutuam direto sobre a cena, sem a faixa, e o texto ganha uma sombra para ler por cima do chuvisco.
+// Nas telas depois do final, a barra fica numa faixa escura. No menu, as teclas flutuam direto sobre a
+// cena, sem a faixa, e o texto ganha uma sombra para ler por cima do chuvisco.
 static void desenha_barra(const Estado *e, bool faixa, float k) {
     TeclaAcao itens[MAX_ITENS];
     int n = itens_do_contexto(e, itens);
@@ -186,7 +183,7 @@ static void desenha_barra(const Estado *e, bool faixa, float k) {
     float x = 90 * s; // na margem do texto do menu e do HUD
     for (int i = 0; i < n; i++) { // padrão MAP: cada tecla com o que ela faz agora
         float x0 = x;
-        x += tecla(e, itens[i].tecla, (Vector2){x, y}, altura) + 8 * s;
+        x += tecla(e, itens[i].tecla, (Vector2){x, y}, altura, COR_FOSFORO) + 8 * s;
         const char *acao = dialogo_texto(itens[i].acao);
         if (!faixa) ui_texto(e, acao, (Vector2){x + 1.5f * s, y + altura * 0.22f + 1.5f * s}, 17 * s, BLACK);
         ui_texto(e, acao, (Vector2){x, y + altura * 0.22f}, 17 * s, RAYWHITE);
@@ -197,10 +194,80 @@ static void desenha_barra(const Estado *e, bool faixa, float k) {
     }
 }
 
+// ================================================================== na partida: B Comandos
+static bool jogando(const Estado *e) {
+    return e->fase != FASE_MENU && e->fase != FASE_INTRO && e->fase != FASE_FIM_BOM &&
+           e->fase != FASE_FIM_RUIM;
+}
+
+void teclas_atualiza(Estado *e, float dt) {
+    (void)dt;
+    if (!jogando(e))
+        e->comandos_abertos = false;
+    else if (e->in.comandos)
+        e->comandos_abertos = !e->comandos_abertos;
+}
+
+// O brilho em volta de uma tecla (a dica da lanterna): camadas arredondadas cada vez maiores e mais fracas.
+static void brilho(const Estado *e, const char *rotulo, Vector2 pos, float altura, float forca) {
+    if (forca <= 0.0f) return;
+    float s = ui_escala(), largura = fmaxf(altura, ui_mede(e, rotulo, altura * 0.55f).x + 16 * s);
+    for (int i = 4; i >= 1; i--) { // padrão MAP: uma camada por anel, de fora para dentro
+        float d = i * 2.2f * s;
+        Rectangle r = {pos.x - d, pos.y - d, largura + 2 * d, altura + 2 * d};
+        DrawRectangleRounded(r, 0.45f, 6,
+                             Fade(DICA_LANTERNA_COR, forca * DICA_LANTERNA_GLOW * (5 - i) / 4.0f));
+    }
+}
+
+// Uma linha: a tecla e o que ela faz, com sombra (fica por cima da cena). Devolve a largura usada.
+// `destaque` (0..1) acende o brilho em volta e puxa a tecla e o texto para o amarelo (a dica da lanterna).
+static float linha_comando(const Estado *e, const char *rotulo, const char *acao, Vector2 pos, float k,
+                           float destaque) {
+    float s = ui_escala() * k, altura = 30 * s, x = pos.x;
+    brilho(e, rotulo, pos, altura, destaque);
+    x += tecla(e, rotulo, pos, altura, ColorLerp(COR_FOSFORO, DICA_LANTERNA_COR, destaque)) + 8 * s;
+    Vector2 t = {x, pos.y + altura * 0.22f};
+    ui_texto(e, acao, (Vector2){t.x + 1.5f * s, t.y + 1.5f * s}, 17 * s, BLACK);
+    ui_texto(e, acao, t, 17 * s, ColorLerp(Fade(RAYWHITE, 0.85f), DICA_LANTERNA_COR, destaque));
+    x += ui_mede(e, acao, 17 * s).x;
+    TeclaClique c = tecla_clicavel(rotulo);
+    if (c != TECLA_NENHUMA) clique_area(CLIQUE_TECLA, c, (Rectangle){pos.x, pos.y, x - pos.x, altura});
+    return x - pos.x;
+}
+
+// Aberta, a lista sobe do B, numa caixa escura translúcida, uma tecla por linha.
+static void desenha_lista(const Estado *e, float y_base, float k) {
+    TeclaAcao itens[MAX_ITENS];
+    int n = itens_do_contexto(e, itens);
+    if (n == 0) return; // nada vale agora (ele está indo embora do armário): só o B
+    float s = ui_escala() * k, passo = 38 * s, margem = 10 * s, x = 24 * ui_escala();
+    float topo = y_base - n * passo - margem, largura = 0.0f;
+    for (int i = 0; i < n; i++) { // padrão FOLD: a linha mais larga dá a largura da caixa
+        const char *acao = dialogo_texto(itens[i].acao);
+        float l =
+            ui_mede(e, acao, 17 * s).x + fmaxf(30 * s, ui_mede(e, itens[i].tecla, 16.5f * s).x + 16 * s);
+        largura = fmaxf(largura, l + 8 * s + 22 * s); // a seta desenhada é mais larga que o rótulo
+    }
+    DrawRectangleRounded((Rectangle){x - margem, topo - margem, largura + 2 * margem, n * passo + margem},
+                         0.08f, 4, (Color){4, 7, 5, 190});
+    for (int i = 0; i < n; i++) // padrão MAP: cada tecla com o que ela faz agora
+        linha_comando(e, itens[i].tecla, dialogo_texto(itens[i].acao), (Vector2){x, topo + i * passo}, k,
+                      0.0f);
+}
+
 void teclas_desenha(const Estado *e) {
-    bool jogando =
-        e->fase != FASE_MENU && e->fase != FASE_INTRO && e->fase != FASE_FIM_BOM && e->fase != FASE_FIM_RUIM;
-    if (jogando && !e->pausado && !susto_ativo(e)) desenha_barra(e, true, TECLAS_ESCALA_JOGO);
+    if (!jogando(e) || e->pausado || susto_ativo(e)) return;
+    float k = TECLAS_ESCALA_JOGO, s = ui_escala() * k, y = GetScreenHeight() - 30 * s - 18 * ui_escala();
+    TextoId rotulo = e->comandos_abertos ? TXT_TECLA_FECHAR : TXT_TECLA_COMANDOS;
+    float x = 24 * ui_escala();
+    x += linha_comando(e, "B", dialogo_texto(rotulo), (Vector2){x, y}, k, 0.0f) + 20 * s;
+    // A lanterna sempre à vista: é a tecla que mais se esquece. Até a 1ª vez que acende, pulsa em amarelo.
+    float pulso = 0.5f - 0.5f * cosf(e->tempo_total * 2.0f * PI * DICA_LANTERNA_HZ);
+    float destaque = e->lanterna.ja_acesa ? 0.0f : pulso;
+    if (e->jog.modo == MODO_ANDANDO)
+        linha_comando(e, "F", dialogo_texto(TXT_TECLA_LANTERNA), (Vector2){x, y}, k, destaque);
+    if (e->comandos_abertos) desenha_lista(e, y - 8 * s, k);
 }
 
 // O menu e as telas depois do final cobrem a tela inteira: elas chamam a barra por cima de si. No menu, sem

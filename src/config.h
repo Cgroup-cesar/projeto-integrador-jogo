@@ -65,8 +65,13 @@
 #define QUADRO_PAREDE_Z  13.995f // a parede sul da sala (linha 7 do mapa: z = 14)
 #define QUADRO_BASE_Y    0.95f  // onde fica a borda de baixo
 #define FITA_HORA_INICIO   (21 * 3600 + 47 * 60 + 52) // a câmera às 21:47:52, durante o canto
-#define TECLAS_ANDAR_S     10.0f // da R2 em diante, andando, a barra de teclas some depois disso em cada fase
-#define TECLAS_ESCALA_JOGO 0.88f // tamanho da barra de teclas durante a partida (1 = original)
+#define TECLAS_ESCALA_JOGO 0.62f // tamanho do B — Comandos e da lista na partida (1 = a barra do menu)
+#define MIRA_RAIO_PX       1.6f  // a mira: um ponto branco pequeno (px na tela de 1280x720)
+#define HUD_TEXTO_PX       16.0f // VIDRO e PLACAR, no canto superior direito
+#define HUD_OBJETIVO_PX    15.0f // a missão, no canto superior esquerdo
+#define DICA_LANTERNA_HZ   1.8f  // até a 1ª vez que acende, o F do canto pulsa em amarelo nesse ritmo
+#define DICA_LANTERNA_COR  (Color){0xff, 0xd8, 0x4a, 255}
+#define DICA_LANTERNA_GLOW 0.16f // força do brilho em volta do F no pico do pulso (camadas somadas)
 
 // ---------------------------------------------------------------- janela e tempo
 #define LARGURA_JANELA 1280

@@ -27,6 +27,7 @@ typedef struct {
     bool lanterna; // F: liga e desliga a lanterna
     bool ajuda;    // H: abre e fecha a ajuda dos conectivos no terminal
     bool respirar; // ESPAÇO: segura a respiração no armário
+    bool comandos; // B: abre e fecha a lista de comandos no canto da tela
     bool f1, f2, f3, f5, f7, f9, f12;
     bool alguma;                   // qualquer tecla ou movimento (modo feira)
     int letras[MAX_LETRAS_QUADRO]; // letras digitadas neste quadro (Unicode), para o campo do nome
@@ -164,6 +165,7 @@ typedef struct {
 // A lanterna: o jogador começa com ela; sem bateria (infinita).
 typedef struct {
     bool ligada;
+    bool ja_acesa; // acendeu alguma vez nesta partida (até lá, o F do canto pisca em amarelo)
 } Lanterna;
 
 // ------------------------------------------------------------------ o Precursor
@@ -380,6 +382,7 @@ typedef struct Estado {
     ColParedes paredes;
 
     bool conectivo_decifrado[4]; // NÃO, E, OU, SE…ENTÃO
+    bool comandos_abertos;       // a lista de comandos (tecla B), no canto inferior esquerdo
     bool diario_lido;
     bool ajuda_aberta; // a cola dos conectivos (tecla H), no terminal das rodadas
     int vidas;         // cache do fold das rachaduras

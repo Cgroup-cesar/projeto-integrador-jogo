@@ -257,6 +257,7 @@ static const char *const TEXTOS[TXT_TOTAL] = {
     [TXT_TECLA_LANTERNA] = "Lanterna",
     [TXT_TECLA_PAUSA] = "Pausa",
     [TXT_TECLA_SAIR_ARMARIO] = "Sair do armário",
+    [TXT_TECLA_COMANDOS] = "Comandos",
     // A cola do analisador (R1 e R2): cada conectivo em palavras do dia a dia, usando as luzes
     [TXT_COLA_TITULO] = "MANUAL DO ANALISADOR — os conectivos",
     [TXT_COLA_NAO] = "Inverte: luz acesa vira FALSO.",

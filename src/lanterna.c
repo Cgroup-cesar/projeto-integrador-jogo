@@ -37,6 +37,7 @@ void lanterna_descarrega_modelo(Recursos *rec) {
 // ================================================================== estado
 void lanterna_reinicia(Estado *e) {
     e->lanterna.ligada = false;
+    e->lanterna.ja_acesa = false;
 }
 
 // Só ilumina quando há jogo na tela (no menu e nos finais ela não aparece).
@@ -51,6 +52,7 @@ void lanterna_atualiza(Estado *e, float dt) {
     if (e->jog.modo == MODO_ARMARIO) l->ligada = false; // escondido não se acende luz
     if (e->in.lanterna && e->jog.modo == MODO_ANDANDO) {
         l->ligada = !l->ligada;
+        l->ja_acesa = l->ja_acesa || l->ligada;
         audio_toca(e, SOM_INTERRUPTOR, 0.45f, l->ligada ? 1.7f : 1.5f);
     }
 }

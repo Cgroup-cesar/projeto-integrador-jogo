@@ -1,11 +1,11 @@
-// teclas.h — a barra de teclas: uma faixa no rodapé, sempre no mesmo lugar, que mostra só as teclas que
-// funcionam agora (desenhadas como teclas) e um minimapa do teclado com elas acesas. Pensada para a feira: a
-// cabine é escura, e a pessoa precisa achar a tecla sem enxergar o teclado.
+// teclas.h — as teclas que funcionam agora, desenhadas como teclas. Na partida, um "B Comandos" pequeno no
+// canto inferior esquerdo abre e fecha a lista; no menu e nas telas depois do final, uma barra no rodapé.
 #ifndef TECLAS_H
 #define TECLAS_H
 
 #include "estado.h"
 
+void teclas_atualiza(Estado *e, float dt); // B abre e fecha a lista de comandos
 void teclas_desenha(const Estado *e);
 void teclas_desenha_tela_cheia(const Estado *e); // por cima do menu e das telas depois do final
 
