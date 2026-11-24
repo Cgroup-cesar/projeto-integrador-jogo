@@ -22,6 +22,7 @@
 #include "sanidade.h"
 #include "clique.h"
 #include "goteira.h"
+#include "cameras.h"
 #include "efeitos.h"
 #include <string.h>
 
@@ -373,6 +374,7 @@ void jogo_atualiza(Estado *e, float dt) {
     animacao_atualiza(e, dt); // a animação segue mesmo com a IA parada (ele escuta na porta)
     sanidade_atualiza(e, dt); // depois da criatura e do jogador: usa a distância deste quadro
     goteira_atualiza(e, dt);
+    cameras_atualiza(e, dt);
     glifos_atualiza(e, dt);
     col_ruidos_atualiza(&e->ruidos, dt);
     col_particulas_atualiza(

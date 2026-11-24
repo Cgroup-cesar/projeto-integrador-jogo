@@ -61,6 +61,14 @@
 #define CAMERA_COMPRIMENTO_M  0.65f // da placa do suporte até a frente da carcaça
 #define CAMERA_ALTURA_M       2.5f  // onde a placa encosta na parede
 #define CAMERA_INCLINA_GRAUS  22.0f // a lente aponta um pouco para baixo
+#define MAX_CAMERAS           8     // vagas para o estado de cada câmera (cameras.c tem 7)
+#define CAMERA_BRACO_M        0.16f // a câmera gira na ponta de um braço curto, fora da parede
+#define CAMERA_VISAO_M        16.0f // até onde uma câmera enxerga o jogador
+#define CAMERA_GIRO_MAX_GRAUS 70.0f // o quanto ela vira para cada lado, a partir de para onde aponta
+#define CAMERA_VELOCIDADE     55.0f // graus por segundo: o motor é lento, dá para ouvir ele virando
+#define CAMERA_ESPERA_S       2.5f  // depois de perder o jogador, fica parada olhando antes de voltar
+#define CAMERA_SOM_ALCANCE_M  12.0f // até onde se ouve o motor
+#define CAMERA_SOM_INTERVALO  0.26f // o zumbido do motor é refeito enquanto ela gira (o som dura 0,32 s)
 // O quadro de investigação na parede sul da sala de observação (quadro.c), atrás de quem está no console.
 #define QUADRO_LARGURA_M 1.95f
 #define QUADRO_X         8.6f   // centro, no meio da parede sul

@@ -17,7 +17,7 @@ static const char *const NOMES[SOM_TOTAL] = {
     "passo_criatura",  "vidro_estalo",     "estrondo",       "alarme",
     "respiracao",      "ambiente_sala",    "ambiente_saida", "papel",
     "energia",         "distorcao",        "jumpscare",      "respiracao_ofegante",
-    "gota",
+    "gota",            "camera_motor",
 };
 
 // ================================================================== ferramentas de síntese
@@ -138,6 +138,21 @@ static void gota(Buffer *b) {
     }
 }
 
+// O motor de passo de uma câmera de segurança: um zumbido fino que oscila um pouco e o "trrr" das
+// engrenagens (ruído picotado pelos dentes); entra e sai suave, para emendar quando o som é refeito.
+static void motor(Buffer *b) {
+    float fase = 0.0f, lp = 0.0f, d = (float)b->n / TAXA;
+    for (int i = 0; i < b->n; i++) {
+        float t = (float)i / TAXA;
+        fase += DOIS_PI * (430.0f + 25.0f * sinf(DOIS_PI * 7.0f * t)) / TAXA;
+        float zumbido = 0.5f * sinf(fase) + 0.25f * sinf(2.0f * fase) + 0.12f * sinf(3.0f * fase);
+        float dentes = 0.5f + 0.5f * sinf(DOIS_PI * 62.0f * t);
+        float raspa = filtra(&lp, ruido(), 0.35f) * dentes;
+        float forma = fminf(1.0f, t / 0.05f) * fminf(1.0f, (d - t) / 0.08f);
+        b->amostras[i] = forma * (0.35f * zumbido + 0.45f * raspa);
+    }
+}
+
 static void estalo(Buffer *b) { // estalo de vidro: ruído seco e parciais agudos que soam um pouco
     for (int i = 0; i < b->n; i++) {
         float t = (float)i / TAXA;
@@ -221,7 +236,7 @@ static void distorcao(Buffer *b) {
 static float duracao(IdSom som) {
     static const float d[SOM_TOTAL] = {1.0f, 1.6f, 0.6f, 0.5f, 0.25f, 0.05f, 0.06f, 0.14f, 0.3f, 0.45f,
                                        1.2f, 1.0f, 2.0f, 4.0f, 4.0f,  0.3f,  1.2f,  1.0f,  1.2f,
-                                       0.0f, 0.3f}; // a respiração ofegante só existe como arquivo
+                                       0.0f, 0.3f, 0.32f}; // a respiração ofegante só existe como arquivo
     return d[som];
 }
 
@@ -257,6 +272,9 @@ static void sintetiza(IdSom som, Buffer *b) {
         break;
     case SOM_GOTA:
         gota(b);
+        break;
+    case SOM_CAMERA_MOTOR:
+        motor(b);
         break;
     case SOM_VIDRO_ESTALO:
         estalo(b);
