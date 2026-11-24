@@ -40,6 +40,10 @@
 #define CONSOLE_TERMINAL_LARGURA_M 0.75f  // de lado a lado
 #define CONSOLE_TAMPO_Y            1.05f  // altura do tampo da mesa (a base do terminal)
 #define CONSOLE_TERMINAL_Z         -0.62f // em relação ao ponto do console (negativo: para o lado do vidro)
+// Chegar ao console e sair dele sem teleporte (jogador.c): o corpo anda sozinho, com colisão.
+#define CONSOLE_CHEGA_S  0.45f // E no console: o passo até a frente da mesa, virando para o vidro
+#define CONSOLE_SAI_S    0.5f  // ao sair (Esc ou fim da rodada): o passo para trás, sem virar
+#define CONSOLE_AFASTA_M 0.7f  // o quanto ele se afasta da frente da mesa ao sair
 // As pilhas de caixotes das salas (caixas.c): a colisão usa estas medidas, com ou sem o modelo.
 #define CAIXAS_COMPRIMENTO_M  2.5f
 #define CAIXAS_ALTURA_M       1.21f

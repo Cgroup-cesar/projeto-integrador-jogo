@@ -12,7 +12,9 @@
 #include "porta_sala.h"
 #include <math.h>
 
-#define PITCH_MAXIMO 1.35f
+#define PITCH_MAXIMO    1.35f
+#define CONSOLE_PITCH   -0.06f // no console, o olhar desce um pouco (para a tela e o vidro)
+#define CONSOLE_PERTO_M 0.5f   // a até isto da frente da mesa, ele está no console (e sair dá o passo)
 
 void jogador_teleporta(Estado *e, Vector3 pos, float yaw) {
     e->jog.pos = pos;
@@ -21,12 +23,50 @@ void jogador_teleporta(Estado *e, Vector3 pos, float yaw) {
     e->jog.mira = -1;
     e->jog.correndo = false;
     e->jog.armario_anima = false; // teleporte (fase nova, recomeço): sem animação de armário pela metade
+    e->jog.console_anda = false;
+}
+
+// Onde se fica para usar o console: na frente da mesa (o vidro fica ao norte, além dela).
+static Vector3 lugar_do_console(const Estado *e) {
+    Vector3 con = e->nivel.console;
+    return (Vector3){con.x, 0.0f, con.z + 0.4f};
+}
+
+static void comeca_passo(Estado *e, Vector3 para, bool vira) {
+    Jogador *j = &e->jog;
+    j->console_anda = true;
+    j->console_vira = vira;
+    j->console_t = 0.0f;
+    j->console_de = j->pos;
+    j->console_para = para;
+    j->console_yaw_de = j->yaw;
+    j->console_pitch_de = j->pitch;
 }
 
 void jogador_vai_ao_console(Estado *e) {
-    Vector3 con = e->nivel.console;
-    jogador_teleporta(e, (Vector3){con.x, 0.0f, con.z + 0.4f}, PI); // yaw π = olhando para o norte (o vidro)
-    e->jog.pitch = -0.06f;
+    comeca_passo(e, lugar_do_console(e), true);
+}
+
+void jogador_poe_no_console(Estado *e) {
+    jogador_teleporta(e, lugar_do_console(e), PI); // yaw π = olhando para o norte (o vidro)
+    e->jog.pitch = CONSOLE_PITCH;
+}
+
+// Sair do console é só se afastar dele: um passo para trás (para o sul, longe da mesa), olhando para onde
+// já olhava. Longe da mesa, nada acontece.
+void jogador_sai_do_console(Estado *e) {
+    Jogador *j = &e->jog;
+    j->console_anda = false; // saindo no meio da chegada: a chegada para ali
+    Vector3 lugar = lugar_do_console(e);
+    if (Vector3Distance(j->pos, lugar) > CONSOLE_PERTO_M) return;
+    comeca_passo(e, (Vector3){j->pos.x, j->pos.y, fmaxf(j->pos.z, lugar.z + CONSOLE_AFASTA_M)}, false);
+}
+
+bool jogador_na_sala(const Estado *e) {
+    int c, l;
+    if (!nivel_celula_de(e->jog.pos, &c, &l)) return false;
+    char ch = nivel_celula(&e->nivel, c, l);
+    return ch == 'O' || ch == 'S' || ch == 'T';
 }
 
 Vector3 jogador_olho(const Estado *e) {
@@ -256,6 +296,33 @@ static void camera_do_armario(const Jogador *j, Vector3 *olho, Vector3 *dir) {
     *dir = (Vector3){sinf(yaw) * cosf(pitch), sinf(pitch), cosf(yaw) * cosf(pitch)};
 }
 
+// ------------------------------------------------------------------ o passo do console
+// O giro de `de` até `para` pelo lado mais curto, em (−π, π].
+static float menor_volta(float de, float para) {
+    float volta = para - de;
+    while (volta > PI)
+        volta -= 2.0f * PI;
+    while (volta <= -PI)
+        volta += 2.0f * PI;
+    return volta;
+}
+
+// Chegando, os pés vão até a frente da mesa e o olhar vira para o vidro, juntos; saindo, só os pés andam.
+// Com colisão, como andar: o passo nunca atravessa a mesa nem uma parede.
+static void passo_do_console(Estado *e, float dt) {
+    Jogador *j = &e->jog;
+    if (!j->console_anda) return;
+    float dur = j->console_vira ? CONSOLE_CHEGA_S : CONSOLE_SAI_S;
+    j->console_t += dt;
+    float t = suave(j->console_t / dur);
+    move_com_colisao(e, Vector3Lerp(j->console_de, j->console_para, t));
+    if (j->console_vira) {
+        j->yaw = j->console_yaw_de + menor_volta(j->console_yaw_de, PI) * t;
+        j->pitch = Lerp(j->console_pitch_de, CONSOLE_PITCH, t);
+    }
+    if (j->console_t >= dur) j->console_anda = false;
+}
+
 // As folhas da porta abrem nos primeiros ARMARIO_ABRE_S e fecham nos ARMARIO_FECHA_S antes de fim_da_porta.
 float jogador_porta_aberta(const Estado *e) {
     const Jogador *j = &e->jog;
@@ -279,8 +346,12 @@ void jogador_atualiza(Estado *e, float dt) {
     olha(e, dt);
     Jogador *j = &e->jog;
     anima_armario(e, dt);
+    passo_do_console(e, dt);
     if (j->modo == MODO_ANDANDO) {
-        anda(e, dt);
+        if (j->console_anda)
+            atualiza_folego(e, false, dt); // o passo para trás anda sozinho: as teclas esperam por ele
+        else
+            anda(e, dt);
         j->mira = col_interativos_na_mira(&e->interativos, jogador_olho(e), jogador_direcao(e),
                                           DISTANCIA_INTERACAO);
     } else {

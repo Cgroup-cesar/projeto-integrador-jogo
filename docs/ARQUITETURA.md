@@ -94,7 +94,7 @@ stateDiagram-v2
 | `materiais.c` | puro: ruído contínuo nas bordas, o desenho de cada material (`materiais_pixel`), manchas, desgaste do estêncil e `materiais_uv` (UV em metros) |
 | `texturas.c` | gera ou carrega as texturas uma vez, libera ao sair; `texturas_caixa` (6 faces, UV de mundo ou local) e `texturas_quadro` (decalque) |
 | `cenario.c` | ambientação sem colisão: placas em estêncil, umidade, arrasto do duto, eletrodutos, grelhas, fios e halo das lâmpadas |
-| `jogador.c` | câmera, movimento com colisão, fôlego, passos, armário, mira |
+| `jogador.c` | câmera, movimento com colisão, fôlego, passos, armário, mira; o passo até o console (E) e o passo para trás ao sair dele, sem teleporte |
 | `respiracao.c` | o armário: esconde; se o Precursor vinha atrás de quem entrou (`regras_armario_perseguido`), ele vai até lá e, a 3 m (`regras_armario_chegou`), para na porta e a pessoa segura a respiração (ESPAÇO sobre a faixa branca; 3 chances). Sem tutorial: a tecla ESPAÇO aparece embaixo da barra |
 | `lanterna.c` | a lanterna: F liga e desliga, a 5ª luz do shader (cone saindo dos olhos) e o modelo na mão |
 | `criatura.c` | o Precursor: IA, A*, captura e o desenho do corpo |

@@ -87,17 +87,29 @@ static void entra_rodada(Estado *e, Fase fase, bool reinicio) {
     rodadas_inicia(e, regras_numero_rodada(fase));
     criatura_contem(e);
     if (fase != FASE_R1) e->cri.avanco_vidro = 1.0f; // depois da R1 ele ficou mais perto do vidro
-    // Vindo da saída, a volta à sala (retorno.c) ainda está com o jogador: ele fica onde está, sem corte.
-    if (!retorno_ativo(e)) jogador_teleporta(e, e->nivel.inicio, PI);
+    // Ninguém é levado ao início: vindo da saída, a volta à sala (retorno.c) ainda está com o jogador; vindo
+    // da intro ou de um recomeço, ele já está na sala e fica onde está (no console, dá um passo para trás).
+    // Só quem está fora da sala (atalhos de debug) vai para o início.
+    if (!retorno_ativo(e)) {
+        if (jogador_na_sala(e))
+            jogador_sai_do_console(e);
+        else
+            jogador_teleporta(e, e->nivel.inicio, PI);
+    }
     if (reinicio) ui_fala(e, FALAS_RODADA_RECOMECA);
 }
 
 static void entra_saida(Estado *e, Fase fase, bool reinicio) {
     circuito_inicia(e, fase == FASE_S1 ? 1 : 2);
     criatura_inicia_saida(e);
-    // Na S1, olhando para a porta da sala, a leste (+x). Na S2, de frente para o console, como estava quando
-    // a luz caiu: o chaveiro com a chave do Arquivo fica atrás, ao lado do quadro (o aviso diz isso).
-    jogador_teleporta(e, e->nivel.inicio, fase == FASE_S2 ? PI : PI * 0.5f);
+    // Sem teleporte nem virada: quem estava no console só dá um passo para trás, olhando para onde olhava
+    // (na S2, o chaveiro com a chave do Arquivo fica atrás, ao lado do quadro: o aviso diz isso). Só no
+    // recomeço (pego) ou vindo de fora da sala (debug) ele volta ao início: na S1, olhando para a porta da
+    // sala, a leste (+x); na S2, de frente para o console.
+    if (!reinicio && jogador_na_sala(e))
+        jogador_sai_do_console(e);
+    else
+        jogador_teleporta(e, e->nivel.inicio, fase == FASE_S2 ? PI : PI * 0.5f);
     ui_fala(e, reinicio ? FALAS_PEGO : fase == FASE_S1 ? FALAS_INICIO_S1 : FALAS_INICIO_S2);
     // A trava da porta da sala solta (quem abre é o jogador, com E: porta_sala.c); as luzes ficam
     // vermelhas e fracas até a energia voltar.
@@ -119,7 +131,10 @@ static void entra_resposta_final(Estado *e) {
     e->rod.luz_a = e->rod.luz_b = true; // as duas luzes da cela acesas: ele está ali, encostado no vidro
     e->cri.avanco_vidro = 1.0f;
     e->cri.mao_no_vidro = true;
-    jogador_vai_ao_console(e);
+    if (jogador_na_sala(e)) // vindo do terminal da R3, já está ali; de fora da sala (F9), vai na hora
+        jogador_vai_ao_console(e);
+    else
+        jogador_poe_no_console(e);
     e->jog.modo = MODO_TERMINAL;
 }
 

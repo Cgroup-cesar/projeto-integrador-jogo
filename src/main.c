@@ -424,7 +424,7 @@ static void piloto_age(Estado *e, Entrada *in) {
         if (e->jog.modo == MODO_TERMINAL) {
             rodadas_piloto(e, in, piloto_erros_desejados(e));
         } else if (e->jog.modo == MODO_ANDANDO) {
-            jogador_vai_ao_console(e);
+            jogador_poe_no_console(e); // na hora, para o E já mirar no console neste quadro
             in->interagir = true;
         }
         break;
