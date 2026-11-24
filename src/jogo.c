@@ -19,6 +19,8 @@
 #include "ui.h"
 #include "cenario.h"
 #include "chave.h"
+#include "porta_sala.h"
+#include "retorno.h"
 #include "respiracao.h"
 #include "sanidade.h"
 #include "clique.h"
@@ -71,13 +73,12 @@ static void prepara_mundo(Estado *e, Fase fase) {
     e->ruidos.n = 0;
     e->particulas.n = 0;
     nivel_constroi_paredes(&e->nivel, &e->paredes);
-    if (!regras_fase_eh_saida(fase)) nivel_tranca_porta(&e->nivel, &e->paredes);
     nivel_constroi_interativos(&e->nivel, &e->interativos);
     col_interativos_filtra_fase(&e->interativos, fase);
     e->jog.modo = MODO_ANDANDO;
     e->jog.folego = JOGADOR_FOLEGO_MAX;
     e->jog.exausto = false;
-    e->jumpscare_t = e->silencio_t = e->apagao_t = e->falha_luz_t = e->alarme_t = e->retorno_t = 0.0f;
+    e->jumpscare_t = e->silencio_t = e->apagao_t = e->falha_luz_t = e->alarme_t = 0.0f;
     e->legendas.n = 0;
 }
 
@@ -86,7 +87,8 @@ static void entra_rodada(Estado *e, Fase fase, bool reinicio) {
     rodadas_inicia(e, regras_numero_rodada(fase));
     criatura_contem(e);
     if (fase != FASE_R1) e->cri.avanco_vidro = 1.0f; // depois da R1 ele ficou mais perto do vidro
-    jogador_teleporta(e, e->nivel.inicio, PI);
+    // Vindo da saída, a volta à sala (retorno.c) ainda está com o jogador: ele fica onde está, sem corte.
+    if (!retorno_ativo(e)) jogador_teleporta(e, e->nivel.inicio, PI);
     if (reinicio) ui_fala(e, FALAS_RODADA_RECOMECA);
 }
 
@@ -97,8 +99,8 @@ static void entra_saida(Estado *e, Fase fase, bool reinicio) {
     // a luz caiu: o chaveiro com a chave do Arquivo fica atrás, ao lado do quadro (o aviso diz isso).
     jogador_teleporta(e, e->nivel.inicio, fase == FASE_S2 ? PI : PI * 0.5f);
     ui_fala(e, reinicio ? FALAS_PEGO : fase == FASE_S1 ? FALAS_INICIO_S1 : FALAS_INICIO_S2);
-    // A porta da sala abre (e faz barulho); as luzes ficam vermelhas e fracas até a energia voltar.
-    col_ruidos_adiciona(&e->ruidos, (Ruido){e->nivel.porta_sala, RUIDO_RAIO_PORTA, 1.0f, RUIDO_PORTA});
+    // A trava da porta da sala solta (quem abre é o jogador, com E: porta_sala.c); as luzes ficam
+    // vermelhas e fracas até a energia voltar.
     audio_toca(e, SOM_INTERRUPTOR, 1.0f, 0.5f);
 }
 
@@ -142,7 +144,9 @@ static void entra_fase(Estado *e, Fase fase, bool reinicio) {
     }
     e->sanidade_longe_t = 0.0f;
     prepara_mundo(e, fase);
-    chave_entra_fase(e, fase, reinicio); // a porta do Arquivo trancada e a chave (só na S2)
+    porta_sala_entra_fase(e);              // a porta da sala começa fechada em toda fase
+    chave_entra_fase(e, fase, reinicio);   // a porta do Arquivo trancada e a chave (só na S2)
+    retorno_entra_fase(e, fase, reinicio); // a volta à sala continua na rodada seguinte
     switch (fase) {
     case FASE_MENU:
         entra_menu(e);
@@ -368,11 +372,13 @@ void jogo_atualiza(Estado *e, float dt) {
     atualiza_temporizadores(e, dt);
     susto_atualiza(e, dt);
     if (anda_livre && !susto_ativo(e)) {
-        jogador_atualiza(e, dt);
+        if (!retorno_ativo(e)) jogador_atualiza(e, dt); // na volta à sala, quem anda é a cena
         lanterna_atualiza(e, dt);
         respiracao_atualiza(e, dt);
     }
+    retorno_atualiza(e, dt); // começa ao entrar na sala com a energia de volta; troca a fase no meio
     nivel_atualiza(e, dt);
+    porta_sala_atualiza(e, dt);
     chave_atualiza(e, dt);
     atualiza_fase(e, dt);
     if (!respiracao_segura_criatura(e)) criatura_atualiza(e, dt); // na porta do armário, ele só espera
@@ -475,6 +481,7 @@ void jogo_desenha_interface(const Estado *e) {
     identidade_desenha(e);
     chave_desenha_aviso(e); // a porta do Arquivo trancada: onde está a chave
     respiracao_desenha(e);  // a barrinha do armário (e o tutorial por cima de tudo)
-    teclas_desenha(e);     // o B — Comandos do canto (e a lista), por baixo das legendas e da pausa
+    teclas_desenha(e);      // o B — Comandos do canto (e a lista), por baixo das legendas e da pausa
+    retorno_desenha(e);     // as faixas de cinema da volta à sala (as legendas ficam por cima)
     ui_desenha(e);
 }

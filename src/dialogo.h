@@ -66,6 +66,8 @@ typedef enum {
     TXT_MIRA_PORTA,
     TXT_MIRA_CHAVEIRO,
     TXT_MIRA_PORTA_ARQUIVO,
+    TXT_MIRA_PORTA_ABRIR, // a porta da sala nas saídas (porta_sala.c)
+    TXT_MIRA_PORTA_FECHAR,
     TXT_ARMARIO_SAIR,
     TXT_OBJETIVO_SALA,
     TXT_OBJETIVO_S1,

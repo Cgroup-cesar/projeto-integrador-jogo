@@ -335,7 +335,7 @@ bool regras_interativo_ativo(TipoInterativo tipo, int fase) {
     case INTER_CONSOLE:
         return rodada;
     case INTER_PORTA:
-        return rodada; // a porta da sala fica trancada nas fases de sala
+        return rodada || saida; // trancada nas fases de sala; nas saídas, E abre e fecha
     case INTER_PAINEL1:
         return fase == FASE_S1;
     case INTER_PAINEL2:

@@ -119,9 +119,7 @@ void circuito_atualiza(Estado *e, float dt) {
     if (p->resolvido) {
         p->resolvido_t += dt;
         if (p->resolvido_t > 1.8f && e->jog.modo == MODO_PAINEL) e->jog.modo = MODO_ANDANDO;
-        if (p->resolvido_t > 1.0f && nivel_na_sala_de_observacao(&e->nivel, e->jog.pos))
-            e->evento = EV_SAIDA_CONCLUIDA;
-        return;
+        return; // a volta à sala (retorno.c) fecha a porta e conclui a saída
     }
     if (e->jog.modo != MODO_PAINEL) return;
     if (e->in.voltar) {

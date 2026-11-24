@@ -57,7 +57,12 @@
 #define MESA_COR_LUZ       (Color){0xff, 0x9a, 0x3c, 255} // âmbar quente: a única luz assim no Arquivo
 // A porta de bunker da sala de observação (porta_bunker.c) e as câmeras de segurança (cameras.c).
 #define PORTA_ALTURA_M        2.2f  // o batente cabe embaixo da verga das portas
-#define PORTA_ABRE_S          1.8f  // quanto a folha leva para abrir quando a saída começa
+#define PORTA_ABRE_S          1.8f  // quanto a folha leva para abrir (E na porta, nas saídas)
+#define PORTA_FECHA_S         1.2f  // e para fechar (o som bate junto com a folha no batente)
+#define PORTA_SOLIDA_ATE      0.35f // abaixo desta abertura a folha já fecha o vão (colisão)
+#define PORTA_SOM_ALCANCE_M   16.0f // até onde se ouve a porta abrindo e fechando
+#define PORTA_CRIATURA_ABRE_M 2.2f  // a criatura chegando a esta distância da porta fechada, ela abre...
+#define PORTA_CRIATURA_ABRE_S 0.45f // ...com um tranco: a folha abre nesse tempo
 #define CAMERA_COMPRIMENTO_M  0.65f // da placa do suporte até a frente da carcaça
 #define CAMERA_ALTURA_M       2.5f  // onde a placa encosta na parede
 #define CAMERA_INCLINA_GRAUS  22.0f // a lente aponta um pouco para baixo
@@ -72,6 +77,16 @@
 #define CAMERA_ESPERA_S       2.5f  // depois de perder o jogador, fica parada olhando antes de voltar
 #define CAMERA_SOM_ALCANCE_M  6.0f  // até onde se ouve o motor: só chegando perto da câmera
 #define CAMERA_SOM_VOLUME     0.3f  // o motor é discreto: mesmo colado nela, 30% do volume
+// A volta à sala depois de religar a energia (retorno.c): uma cena sem corte, de 4,6 s.
+#define RETORNO_VIRA_S         0.9f   // vira para a porta, de dentro da sala...
+#define RETORNO_FECHA_S        1.5f   // ...fecha (a rodada seguinte começa quando a folha bate)...
+#define RETORNO_ENTRA_S        2.2f   // ...e entra na sala, virando para a cela
+#define RETORNO_ESPERA_S       1.0f   // a cena só começa este tempo depois de o painel resolver
+#define RETORNO_DIANTE_PORTA_M 1.35f  // de onde ele fecha a porta (o plano da folha fica no meio da célula D)
+#define RETORNO_ENTRA_M        2.4f   // quanto ele anda sala adentro depois de fechar
+#define RETORNO_PUXA_PITCH     0.1f   // o olhar desce um pouco enquanto ele puxa a folha
+#define RETORNO_FAIXA_S        0.45f  // as faixas pretas de cinema entram e saem nesse tempo
+#define RETORNO_FAIXA_ALTURA   0.085f // cada faixa, em fração da altura da tela
 // O quadro de investigação na parede sul da sala de observação (quadro.c), atrás de quem está no console.
 #define QUADRO_LARGURA_M 1.95f
 #define QUADRO_X         8.6f   // centro, no meio da parede sul

@@ -164,6 +164,29 @@ ResultadoPortaArquivo regras_tenta_porta_arquivo(int fase, bool tem_chave);
 // A chave só aparece no chaveiro na S2, até o jogador pegá-la.
 bool regras_chave_visivel(int fase, bool chave_pega);
 
+// ------------------------------------------------------------------ porta da sala e volta (regras_porta.c)
+// A folha anda de `abertura` (0 = fechada, 1 = aberta) para onde `aberta` manda, em `duracao` segundos.
+float regras_porta_passo(float abertura, bool aberta, float dt, float duracao);
+// Abaixo de PORTA_SOLIDA_ATE, a folha já fecha o vão: ela entra nas paredes de colisão.
+bool regras_porta_solida(float abertura);
+// O ângulo de `de` até `para` pelo lado mais curto (u = 0..1), para virar sem dar a volta inteira.
+float regras_angulo_mistura(float de, float para, float u);
+
+// A volta à sala depois de religar a energia: vira para a porta, fecha a porta, entra na sala.
+typedef enum { RETORNO_VIRA, RETORNO_FECHA, RETORNO_ENTRA, RETORNO_FIM } EtapaRetorno;
+typedef struct {
+    Vector3 pos; // pés
+    float yaw, pitch;
+} PoseJogador;
+EtapaRetorno regras_retorno_etapa(float t);
+// Onde o jogador está e para onde olha no instante t: de `de` (onde a cena o pegou) até `porta` (de frente
+// para a porta, de dentro da sala), parado enquanto fecha, e de `porta` até `sala` (sala adentro).
+PoseJogador regras_retorno_pose(float t, PoseJogador de, PoseJogador porta, PoseJogador sala);
+// As faixas pretas de cinema: 0 = fora da tela, 1 = inteiras. Entram no começo e saem no fim da cena.
+float regras_retorno_faixa(float t);
+// A luz da sala na rodada que começa no meio da cena: 0 = ainda a da saída, 1 = a da rodada.
+float regras_retorno_luz(float t);
+
 // ------------------------------------------------------------------ sanidade (regras_sanidade.c)
 // Um quadro de sanidade (0..SANIDADE_MAX). Nos corredores (`fase_saida`), cai com a criatura a menos de
 // SANIDADE_RAIO (de QUEDA_MIN × ACELERA_LONGE na borda a QUEDA_MAX × ACELERA_PERTO em SANIDADE_PERTO,
