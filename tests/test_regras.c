@@ -109,11 +109,41 @@ static void testa_esqueleto(void) {
     CHECK(Vector3DotProduct(coxa, canela) < 0.9999f); // ...e nem assim trava a perna esticada
 }
 
+// [REQ:PURA-modelos_criatura] testa as tabelas de cada modelo: pais antes dos filhos, ossos com
+// comprimento, o lado esquerdo em +x, joelho e cotovelo com plano de dobra (o IK precisa) e a escolha pelo
+// nome; e o IK do modelo reto (papelão) alcança e dobra o joelho para a frente
+static void testa_modelos_criatura(void) {
+    for (int id = 0; id < CRIATURAS_TOTAL; id++) { // padrão MAP: cada modelo
+        esqueleto_usa(id);
+        CHECK(esqueleto_modelo_por_nome(esqueleto_modelo()->nome) == id);
+        CHECK(esqueleto_modelo()->altura_nominal > 1.0f && esqueleto_modelo()->postura.passo > 0.0f);
+        for (int i = 0; i < OSSOS_TOTAL; i++) // padrão MAP: cada osso
+            CHECK(esqueleto_osso(i)->pai < i && (i == OSSO_MANDIBULA || esqueleto_comprimento(i) > 0.02f));
+        for (int l = 0; l < 2; l++) { // padrão MAP: os dois lados
+            CHECK(LADO_SINAL(l) * esqueleto_osso(OSSO_OMBRO(l) + 1)->cabeca.x > 0.0f);
+            int membros[2] = {OSSO_COXA(l), OSSO_OMBRO(l) + 1};
+            for (int k = 0; k < 2; k++) { // padrão MAP: perna e braço
+                const OssoRepouso *a = esqueleto_osso(membros[k]), *b = esqueleto_osso(membros[k] + 1);
+                Vector3 d1 = Vector3Normalize(Vector3Subtract(a->cauda, a->cabeca));
+                Vector3 d2 = Vector3Normalize(Vector3Subtract(b->cauda, b->cabeca));
+                CHECK(Vector3Length(Vector3CrossProduct(d1, d2)) > sinf(3.0f * DEG2RAD)); // dobra > 3°
+            }
+        }
+        testa_esqueleto();
+    }
+    CHECK(esqueleto_modelo_por_nome("nenhum") == -1);
+    esqueleto_usa(CRIATURA_PAPELAO);
+    CHECK(esqueleto_peso_mandibula(esqueleto_osso(OSSO_MANDIBULA)->cauda) == 0.0f); // sem boca
+    esqueleto_usa(-1); // fora do intervalo: fica o atual
+    CHECK(esqueleto_modelo() == &MODELOS_CRIATURA[CRIATURA_PAPELAO]);
+    esqueleto_usa(CRIATURA_PRECURSOR);
+}
+
 static EntradaAnim entrada_anim(Vector3 pos) {
     EntradaAnim in = {0};
     in.pos = pos;
-    in.escala = CRIATURA_ALTURA_M / 1.993f;
-    in.base_y = -0.997f;
+    in.escala = CRIATURA_ALTURA_M / esqueleto_modelo()->altura_nominal;
+    in.base_y = esqueleto_modelo()->base_nominal;
     in.bueiro_t = -1.0f;
     return in;
 }
@@ -1055,6 +1085,7 @@ int main(void) {
     testa_ruido_percebido();
     testa_estados_criatura();
     testa_esqueleto();
+    testa_modelos_criatura();
     testa_anim_passos();
     testa_anim_parado_e_transicoes();
     testa_anim_bueiro();

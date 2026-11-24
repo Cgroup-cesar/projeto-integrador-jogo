@@ -6,7 +6,10 @@
 static Vector3 centro_da_cela(const Estado *e) {
     const Criatura *c = &e->cri;
     Vector3 base = e->nivel.cela_precursor;
-    return (Vector3){base.x, 0.0f, base.z + 1.3f * c->avanco_vidro + (c->mao_no_vidro ? 0.15f : 0.0f)};
+    // o avanço do modelo só sem a mão no vidro: com ela, o rosto de um modelo reto atravessaria o vidro
+    float extra = c->mao_no_vidro ? 0.15f : esqueleto_modelo()->cela_avanco_m;
+    float avanco = 1.3f * c->avanco_vidro + extra;
+    return (Vector3){base.x, 0.0f, base.z + avanco};
 }
 
 void cela_atualiza(Estado *e, float dt) {

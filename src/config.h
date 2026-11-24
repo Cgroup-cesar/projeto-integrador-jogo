@@ -387,10 +387,7 @@
 #define JUMPSCARE_BOCA_HZ      4.5f  // quantas vezes por segundo a boca abre e fecha
 #define JUMPSCARE_BOCA_FECHA   8.0f  // graus que a mandíbula sobe para a boca fechar
 #define JUMPSCARE_BOCA_ABRE    28.0f // e escancarada
-// Onde fica o rosto no precursor.glb, em fração da caixa do modelo (0 = mínimo, 1 = máximo).
-#define JUMPSCARE_ROSTO_X 0.48f
-#define JUMPSCARE_ROSTO_Y 0.90f
-#define JUMPSCARE_ROSTO_Z 0.72f
+// Onde fica o rosto de cada modelo (fração da caixa) está em modelos_criatura.c (ModeloCriatura.rosto).
 
 // ---------------------------------------------------------------- sala, vidro e placar
 #define VIDAS_VIDRO               3

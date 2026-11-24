@@ -55,6 +55,45 @@ typedef struct {
     float raio;     // espessura da carne em volta (pesos do skinning e o corpo procedural)
 } OssoRepouso;
 
+// Os modelos que o jogo sabe carregar (modelos_criatura.c): cada um com o seu esqueleto e as medidas
+// tiradas do arquivo. esqueleto_usa escolhe um antes de carregar (--criatura); o padrão é o precursor.
+typedef enum { CRIATURA_PRECURSOR, CRIATURA_PAPELAO, CRIATURAS_TOTAL } ModeloId;
+
+typedef struct {
+    float y_min, y_max, z_min, x_centro,
+        meia_largura; // meia_largura 0 = sem boca (nada vai para a mandíbula)
+} QueixoModelo;
+
+// A postura que a animação soma a este modelo (graus em x = para a frente/baixo): um modelo reto ganha
+// aqui a curvatura que o precursor já tem no arquivo.
+typedef struct {
+    float lombar, peito, pescoco, cabeca;
+    float braco, braco_abre, antebraco, mao, dedos;
+    float desce_m; // a raiz desce (m): com os pés no chão, o IK dobra os joelhos
+    float passo;   // escala da passada (perna mais curta, passo mais curto)
+} PosturaModelo;
+
+typedef struct {
+    const char *nome;    // o valor de --criatura
+    const char *arquivo; // em assets/
+    OssoRepouso ossos[OSSOS_TOTAL];
+    float altura_nominal, base_nominal; // a caixa do arquivo em y (sem o .glb e nos testes)
+    QueixoModelo queixo;
+    Vector3 olhos[2]; // os pontinhos de luz do menu, presos à cabeça
+    Vector3 rosto;    // o centro do rosto no susto, em fração da caixa do modelo
+    Vector3 fenda[2]; // a fenda do rosto (de cima a baixo), desenhada como um traço escuro; raio 0 = sem
+    float fenda_raio;
+    float peito_m;       // altura do peito no mundo (a lanterna e os holofotes miram ali)
+    float cela_avanco_m; // na cela, a mais na direção do vidro
+    bool corta_emendas;  // rig.c: esvazia os triângulos que ligam partes fundidas (dedos na canela)
+    PosturaModelo postura;
+} ModeloCriatura;
+
+extern const ModeloCriatura MODELOS_CRIATURA[CRIATURAS_TOTAL];
+void esqueleto_usa(int id);                      // fora do intervalo, fica o atual
+int esqueleto_modelo_por_nome(const char *nome); // −1 = nenhum com esse nome
+const ModeloCriatura *esqueleto_modelo(void);
+
 const OssoRepouso *esqueleto_osso(int i);
 float esqueleto_comprimento(int osso);
 

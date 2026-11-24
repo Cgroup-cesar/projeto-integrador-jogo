@@ -58,7 +58,7 @@ static void reinicia(AnimCriatura *a, const EntradaAnim *in) {
     a->iniciado = true;
     a->pos_ant = in->pos;
     a->yaw_ant = in->yaw;
-    a->passada_m = ANIM_PASSADA_M;
+    a->passada_m = ANIM_PASSADA_M * esqueleto_modelo()->postura.passo;
     a->tique_prox = ANIM_TIQUE_MIN_S * 0.5f;
     a->espiada_prox = ANIM_ESPIADA_MIN_S;
     a->w_bueiro = in->bueiro_t >= 0.0f ? 1.0f : 0.0f;
@@ -194,6 +194,23 @@ static void camada_tiques(const AnimCriatura *a, Vector3 *ang) {
 }
 
 // ================================================================== camadas
+// O que o modelo pede a mais (esqueleto_modelo()->postura): um modelo reto ganha a curvatura que o
+// precursor já tem no arquivo, e o quadril desce para os joelhos dobrarem.
+static void postura_do_modelo(Vector3 *ang, Vector3 *raiz, float fora_do_cano) {
+    const PosturaModelo *m = &esqueleto_modelo()->postura;
+    soma(ang, OSSO_LOMBAR, m->lombar, 0, 0);
+    soma(ang, OSSO_PEITO, m->peito, 0, 0);
+    soma(ang, OSSO_PESCOCO, m->pescoco, 0, 0);
+    soma(ang, OSSO_CABECA, m->cabeca, 0, 0);
+    for (int l = 0; l < 2; l++) { // padrão MAP: os dois braços
+        soma(ang, OSSO_OMBRO(l) + 1, m->braco, 0, LADO_SINAL(l) * m->braco_abre);
+        soma(ang, OSSO_OMBRO(l) + 2, m->antebraco, 0, 0);
+        soma(ang, OSSO_OMBRO(l) + 3, m->mao, 0, 0);
+        soma(ang, OSSO_OMBRO(l) + 4, m->dedos, 0, 0);
+    }
+    raiz->y -= m->desce_m * fora_do_cano; // no cano (bueiro e descida), o roteiro decide a altura
+}
+
 // Sempre: coluna curvada, ombros fechados, cabeça baixa e projetada à frente (o pescoço leva, ela compensa).
 static void camada_postura(Vector3 *ang) {
     soma(ang, OSSO_LOMBAR, ANIM_CURVA_GRAUS * 0.5f, 0, 0);
@@ -283,6 +300,7 @@ static void camadas(const AnimCriatura *a, const EntradaAnim *in, const CenaAnim
                     Vector3 *raiz) {
     float livre = (1.0f - a->w_bueiro) * (1.0f - a->w_convulsao); // fora das cenas
     camada_postura(ang);
+    postura_do_modelo(ang, raiz, 1.0f - a->w_bueiro);
     camada_parado(a, ang, raiz, (1.0f - a->w_anda) * livre);
     camada_anda(a, in, ang, raiz, a->w_anda * livre);
     camada_estados(a, ang, livre);

@@ -1,11 +1,13 @@
-// rig.c — os pesos do skinning, calculados uma vez ao carregar o precursor.glb (o arquivo não tem ossos):
+// rig.c — os pesos do skinning, calculados uma vez ao carregar o modelo do Precursor (o .glb não tem ossos;
+// o esqueleto é o do modelo escolhido, em modelos_criatura.c):
 //   1. solda os vértices repetidos nas costuras de UV (mesma posição = mesmo ponto da pele);
 //   2. cada ponto pega o osso mais perto (distância ao segmento menos a espessura da carne) e mistura com o
 //      pai e os filhos dele, perto das articulações;
 //   3. os pesos são suavizados pela SUPERFÍCIE (vizinhos na malha), só entre ossos vizinhos na hierarquia;
 //   4. o queixo passa para a mandíbula; ficam os 4 ossos mais fortes de cada vértice, que vão para a GPU;
-//   5. no modelo, a ponta dos dedos esquerdos está fundida à canela: os triângulos que ligam partes longe
-//      uma da outra no esqueleto viram triângulos vazios (senão esticariam como uma teia quando a mão sobe).
+//   5. no precursor.glb, a ponta dos dedos esquerdos está fundida à canela: os triângulos que ligam partes
+//      longe uma da outra no esqueleto viram triângulos vazios (senão esticariam como uma teia quando a mão
+//      sobe). Só nos modelos com corta_emendas.
 // Alocações só aqui (no carregamento) e liberadas no fim; nada por quadro.
 #include "rig.h"
 #include "rlgl.h"
@@ -17,8 +19,6 @@
 #define INFLUENCIAS      4
 #define PASSADAS_SUAVIZA 6
 #define PESO_ESPALHA     0.025f // unidades do modelo: quanto a mistura entre dois ossos se espalha
-#define ALTURA_NOMINAL   1.993f // o precursor.glb vai de y = −0,997 a 0,996
-#define BASE_NOMINAL     -0.997f
 
 typedef struct {
     int *inicio; // CSR: os vizinhos do ponto i ficam em viz[inicio[i] .. inicio[i + 1])
@@ -244,7 +244,8 @@ static void envia(Recursos *rec, Mesh *m, int loc_ids, int loc_pesos, const floa
     rec->rig_vbo[1] = rlLoadVertexBuffer(pesos, tamanho, false);
     rlSetVertexAttribute((unsigned int)loc_pesos, INFLUENCIAS, RL_FLOAT, false, 0, 0);
     rlEnableVertexAttribute((unsigned int)loc_pesos);
-    int cortados = corta_emendas(m, ids); // com o VAO dele ligado: os índices continuam dele
+    // com o VAO dele ligado: os índices continuam dele (só nos modelos com partes fundidas)
+    int cortados = esqueleto_modelo()->corta_emendas ? corta_emendas(m, ids) : 0;
     if (cortados > 0)
         rlUpdateVertexBufferElements(m->vboId[RL_DEFAULT_SHADER_ATTRIB_LOCATION_INDICES], m->indices,
                                      m->triangleCount * 3 * (int)sizeof(unsigned short), 0);
@@ -264,8 +265,8 @@ static bool acha_uniformes(Recursos *rec) {
 
 void rig_carrega(Recursos *rec) {
     rec->rig_ok = false;
-    rec->rig_escala = CRIATURA_ALTURA_M / ALTURA_NOMINAL;
-    rec->rig_base_y = BASE_NOMINAL;
+    rec->rig_escala = CRIATURA_ALTURA_M / esqueleto_modelo()->altura_nominal;
+    rec->rig_base_y = esqueleto_modelo()->base_nominal;
     if (!rec->tem_modelo) return;
     BoundingBox caixa = GetModelBoundingBox(rec->modelo_precursor);
     rec->rig_escala = CRIATURA_ALTURA_M / fmaxf(0.01f, caixa.max.y - caixa.min.y);
