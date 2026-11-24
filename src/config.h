@@ -20,7 +20,7 @@
 #define TELAS_ESTATICA_ALFA   0.03f // chuvisco da pausa e das perguntas da intro: bem mínimo
 #define TELAS_ESTATICA_PICO   0.02f
 // Os ícones dos botões do controle na barra de teclas (botoes.c): um por botão citado nela.
-#define BOTOES_TOTAL 12
+#define BOTOES_TOTAL 13
 // A fita do avistamento na intro (fita.c): três fotos de assets/fita/ por trás do texto datilografado.
 #define FITA_FOTOS         3
 #define FITA_LINHA_QUEDA   2     // na 3ª linha da intro o sinal cai: falha, chuvisco e tela preta

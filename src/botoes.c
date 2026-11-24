@@ -16,6 +16,7 @@ static const IconeBotao ICONES[BOTOES_TOTAL] = {
     {"Y", "y", 1.0f},         {"LB", "lb", 1.0f},         {"L", "l", 1.4f},
     {"R", "r", 1.4f},         {"VIEW", "view", 1.0f},     {"START", "menu", 1.0f},
     {"SETAS", "dpad", 1.0f},  {"SETAS_V", "dpad_v", 1.0f}, {"SETAS_H", "dpad_h", 1.0f},
+    {"RB", "rb", 1.0f},
 };
 
 void botoes_carrega(Recursos *rec) {
