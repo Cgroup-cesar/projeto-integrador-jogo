@@ -143,6 +143,9 @@ void texturas_carrega(Recursos *rec) {
     for (int m = 0; m < MATERIAL_TOTAL; m++) { // carregamento: uma vez por material (não é map/filter/fold)
         carrega_material(rec, (TipoMaterial)m);
         procedurais += !rec->material_de_arquivo[m];
+        // Gerar os mapas leva segundos com a janela já aberta: sem atender a janela entre um material e
+        // outro, o sistema acha que o jogo travou ("não está respondendo") e oferece fechar.
+        PollInputEvents();
     }
     static const TextoId PLACAS[DECALQUES_ESTENCIL] = {TXT_PLACA_POSTO, TXT_PLACA_RESTRITA, TXT_PLACA_ARQUIVO,
                                                        TXT_PLACA_CAIXA_1, TXT_PLACA_CAIXA_2};
