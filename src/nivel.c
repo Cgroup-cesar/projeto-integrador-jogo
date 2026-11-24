@@ -107,6 +107,7 @@ static void registra_celula(Nivel *n, char ch, int c, int l) {
     case 'V':
         if (nivel_celula(n, c, l - 1) == 'C' || l <= 2) {
             n->cela_precursor = centro;
+            n->cano_cela = Vector3Add(centro, (Vector3){CANO_CELA_DX, 0.0f, CANO_CELA_DZ});
             cresce_cela(n, c, l);
         } else {
             n->duto = centro;
@@ -525,6 +526,15 @@ static void desenha_luminarias(const Estado *e) {
     posfx_superficie(e, POSFX_RUGOSIDADE_PADRAO, 0.0f);
 }
 
+// A boca de um duto no chão: o oco escuro e a grade de cinco barras. O do corredor sul (por onde ele sai) e o
+// da cela (por onde ele entra quando as luzes caem) são iguais.
+static void desenha_bueiro(Vector3 d) {
+    DrawCubeV((Vector3){d.x, 0.01f, d.z}, (Vector3){1.2f, 0.02f, 1.2f}, (Color){0x08, 0x09, 0x08, 255});
+    for (int i = 0; i < 5; i++) // padrão MAP: as barras da grade
+        DrawCubeV((Vector3){d.x - 0.5f + i * 0.25f, 0.03f, d.z}, (Vector3){0.05f, 0.03f, 1.2f},
+                  (Color){0x30, 0x34, 0x30, 255});
+}
+
 static void desenha_portas_e_duto(const Estado *e) {
     const Nivel *n = &e->nivel;
     for (int l = 0; l < MAPA_ALTURA; l++) {
@@ -537,11 +547,8 @@ static void desenha_portas_e_duto(const Estado *e) {
         }
     }
     chave_desenha_porta(e); // a porta do Arquivo (trancada até a S2 e a chave)
-    Vector3 d = n->duto;
-    DrawCubeV((Vector3){d.x, 0.01f, d.z}, (Vector3){1.2f, 0.02f, 1.2f}, (Color){0x08, 0x09, 0x08, 255});
-    for (int i = 0; i < 5; i++)
-        DrawCubeV((Vector3){d.x - 0.5f + i * 0.25f, 0.03f, d.z}, (Vector3){0.05f, 0.03f, 1.2f},
-                  (Color){0x30, 0x34, 0x30, 255});
+    desenha_bueiro(n->duto);
+    desenha_bueiro(n->cano_cela);
 }
 
 // Paredes em passadas por material (uma troca de material por passada, não uma por parede): azulejo até

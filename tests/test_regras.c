@@ -253,6 +253,29 @@ static void testa_anim_bueiro(void) {
     CHECK(salto < 12.0f);
 }
 
+// A descida pela tubulação da cela (a saída do bueiro ao contrário): começa de pé, sem pular de pose, e
+// termina com o corpo inteiro abaixo do chão (só a boca preta fica à vista).
+static void testa_anim_descida(void) {
+    static AnimCriatura a;
+    memset(&a, 0, sizeof(a));
+    float total = ANIM_BUEIRO_PRE_S + ANIM_BUEIRO_SAI_S, dt = 1.0f / 60.0f, salto = 0.0f;
+    EntradaAnim in = entrada_anim((Vector3){0, 0, 0});
+    for (int q = 0; q < 90; q++) // parado, de pé
+        regras_anim_passo(&a, &in, dt);
+    in.desce = true;
+    for (float t = 0.0f; t < ANIM_CANO_DESCE_S; t += dt) {
+        in.bueiro_t = total * (1.0f - t / ANIM_CANO_DESCE_S);
+        Pose antes = a.pose;
+        regras_anim_passo(&a, &in, dt);
+        salto = fmaxf(salto, maior_salto(&antes, &a.pose));
+    }
+    CHECK(salto < 12.0f);
+    float cabeca = (esqueleto_osso(OSSO_CABECA)->cauda.y - in.base_y + a.pose.raiz.y) * in.escala;
+    float mao = (fmaxf(a.global.junta[OSSO_MAO_E].y, a.global.junta[OSSO_MAO_D].y) - in.base_y) * in.escala;
+    CHECK(cabeca < 0.0f); // a cabeça abaixo do chão (como no começo da saída do bueiro)
+    CHECK(mao < 0.0f);    // e as mãos já soltaram a borda
+}
+
 // [REQ:PURA-regras_falha_lanterna] testa a falha: fica entre 0,05 e 1, cai e volta, e é repetível
 static void testa_falha_lanterna(void) {
     int quedas = 0, acesas = 0;
@@ -987,6 +1010,7 @@ int main(void) {
     testa_anim_passos();
     testa_anim_parado_e_transicoes();
     testa_anim_bueiro();
+    testa_anim_descida();
     testa_piscada_cela();
     testa_no_cone();
     testa_falha_lanterna();

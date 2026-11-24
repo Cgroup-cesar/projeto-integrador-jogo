@@ -28,6 +28,7 @@ typedef struct {
     bool tem_olhar;    // a cabeça procura `olhar` (mundo)
     Vector3 olhar;
     float bueiro_t;  // < 0 = fora; senão, segundos desde o começo da saída do bueiro
+    bool desce;      // a mesma cena ao contrário (entrando na tubulação): o peso entra com crossfade
     Vector3 bueiro;  // o centro da boca do duto (mundo)
     float distorcao; // 0..1
     bool convulsao;  // final bom: convulsiona...

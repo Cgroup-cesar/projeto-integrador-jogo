@@ -87,8 +87,10 @@ static void atualiza_pesos(AnimCriatura *a, const EntradaAnim *in, float dt) {
     a->w_luz = aproxima(a->w_luz, in->lanterna, in->lanterna > a->w_luz ? 7.0f : 2.0f, dt);
     a->w_vidro = aproxima(a->w_vidro, in->mao_no_vidro ? 1.0f : 0.0f, ANIM_TRANSICAO * 0.6f, dt);
     a->w_fala = aproxima(a->w_fala, in->fala ? 1.0f : 0.0f, 6.0f, dt);
-    // a saída do bueiro começa debaixo do chão (invisível): entra de uma vez e sai com crossfade
-    a->w_bueiro = in->bueiro_t >= 0.0f ? 1.0f : aproxima(a->w_bueiro, 0.0f, 2.5f, dt);
+    // a saída do bueiro começa debaixo do chão (invisível): entra de uma vez e sai com crossfade; a descida
+    // pela tubulação começa de pé, à vista: entra com crossfade
+    float bueiro = in->desce ? aproxima(a->w_bueiro, 1.0f, 4.0f, dt) : 1.0f;
+    a->w_bueiro = in->bueiro_t >= 0.0f ? bueiro : aproxima(a->w_bueiro, 0.0f, 2.5f, dt);
     a->w_distorcao = in->distorcao;
     a->w_convulsao = aproxima(a->w_convulsao, in->convulsao ? 1.0f : 0.0f, 6.0f, dt);
     a->respira += dt / (ANIM_RESPIRA_S * (1.0f + 0.15f * regras_anim_ruido(a->t * 0.11f)) *

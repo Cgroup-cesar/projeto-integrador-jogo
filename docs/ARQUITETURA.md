@@ -117,6 +117,7 @@ stateDiagram-v2
 | `dialogo.c` | todos os textos; `dialogo_personaliza` troca `{NOME}`, `{PROF}` e `{x\|y}` (regra em `regras_monta_texto`) |
 | `audio_sintese.c` | os sons curtos gerados em código (ou lidos de `assets/audio/`) |
 | `trilhas.c` | os sons longos gravados: trilha do menu, vozes, coração e passos (o volume vem de `regras_volumes_trilhas`) |
+| `tubulacao_som.c` | os sons da tubulação: a tampa ao entrar na da cela e ao sair pelo duto do corredor (dois trechos cortados de um arquivo ao carregar) e os passos dele por dentro dos canos, numa fonte que anda em linha reta de uma boca à outra |
 | `posfx.c` | render target, luz e névoa |
 | `vhs.c` | filtro VHS: shader, presets (`VHS_PRESETS`), troca com F1 e o efeito de sanidade (cansaço + fita) |
 | `sanidade.c` | sanidade: queda pela distância da criatura, recuperação, bônus e a barra no topo (regras em `regras_sanidade.c`) |

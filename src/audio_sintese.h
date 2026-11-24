@@ -43,6 +43,9 @@ void audio_toca_em(const Estado *e, IdSom som, Vector3 fonte, float alcance, flo
 // O mesmo, para um som que dura enquanto algo acontece: começa se parado; tocando, só acompanha o volume e
 // o lado (pare com audio_para quando acabar). `ganho` multiplica o volume (1 = cheio).
 void audio_mantem_em(const Estado *e, IdSom som, Vector3 fonte, float alcance, float tom, float ganho);
+// O volume e o lado de um som em `fonte` agora (para quem toca o próprio Sound ou Music: tubulacao_som.c).
+SomEspacial audio_espacial(const Estado *e, Vector3 fonte, float alcance);
+float audio_pan(float pan); // −1 esquerda .. 1 direita, no formato da raylib em uso
 void audio_para(const Estado *e, IdSom som);
 void audio_silencia(const Estado *e); // para tudo (os 0,2 s de silêncio antes do jumpscare)
 

@@ -428,11 +428,15 @@ static void toca(const Estado *e, IdSom som, float volume, float tom, float pan)
     Sound s = e->rec.sons[som];
     SetSoundVolume(s, fmaxf(0.0f, fminf(1.0f, volume)));
     SetSoundPitch(s, tom);
+    SetSoundPan(s, audio_pan(pan));
+    PlaySound(s);
+}
+
+float audio_pan(float pan) {
 #if RAYLIB_VERSION_MAJOR < 6
     pan = 0.5f - 0.5f * pan; // até a 5.5 o pan ia de 0 a 1, com 0,5 no centro e 1 na esquerda
 #endif
-    SetSoundPan(s, pan);
-    PlaySound(s);
+    return pan;
 }
 
 void audio_toca(const Estado *e, IdSom som, float volume, float tom) {
@@ -440,7 +444,7 @@ void audio_toca(const Estado *e, IdSom som, float volume, float tom) {
 }
 
 // O ouvido é o olho do jogador (no armário, dentro dele); a parede no meio vem do mesmo raycast da visão.
-static SomEspacial espacial(const Estado *e, Vector3 fonte, float alcance) {
+SomEspacial audio_espacial(const Estado *e, Vector3 fonte, float alcance) {
     Vector3 ouvido = jogador_olho(e);
     Vector3 para = {fonte.x - ouvido.x, 0.0f, fonte.z - ouvido.z};
     float dist = Vector3Length(para);
@@ -449,7 +453,7 @@ static SomEspacial espacial(const Estado *e, Vector3 fonte, float alcance) {
 }
 
 void audio_toca_em(const Estado *e, IdSom som, Vector3 fonte, float alcance, float tom) {
-    SomEspacial s = espacial(e, fonte, alcance);
+    SomEspacial s = audio_espacial(e, fonte, alcance);
     if (s.volume > 0.0f) toca(e, som, s.volume, tom, s.pan);
 }
 
@@ -457,7 +461,7 @@ void audio_toca_em(const Estado *e, IdSom som, Vector3 fonte, float alcance, flo
 // acompanha o volume e o lado (sem recomeçar: um arquivo longo toca inteiro e emenda no fim).
 void audio_mantem_em(const Estado *e, IdSom som, Vector3 fonte, float alcance, float tom, float ganho) {
     if (!e->rec.audio_ok || som < 0 || som >= SOM_TOTAL) return;
-    SomEspacial s = espacial(e, fonte, alcance);
+    SomEspacial s = audio_espacial(e, fonte, alcance);
     s.volume *= ganho;
     Sound snd = e->rec.sons[som];
     if (!IsSoundPlaying(snd)) {
