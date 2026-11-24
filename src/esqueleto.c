@@ -134,6 +134,21 @@ float esqueleto_ik(Pose *p, const PoseGlobal *g, int osso1, Vector3 alvo, Vector
     return Vector3Distance(fim, alvo);
 }
 
+// ------------------------------------------------------------------ as marcas do rosto
+// [REQ:PURA-esqueleto_marca_pontos] o meio-disco de um olho: a reta em cima, a curva embaixo
+void esqueleto_marca_pontos(const MarcaRosto *m, Vector3 *saida) {
+    Vector3 n = Vector3Normalize(m->normal);
+    Vector3 u = Vector3Normalize(Vector3Subtract(m->eixo, Vector3Scale(n, Vector3DotProduct(m->eixo, n))));
+    Vector3 cima = Vector3CrossProduct(n, u);
+    if (cima.y < 0.0f) cima = Vector3Negate(cima); // a reta fica em cima nos dois olhos
+    saida[0] = m->centro;
+    for (int k = 1; k < MARCA_PONTOS; k++) { // padrão MAP: de uma ponta da reta à outra, pelo arco de baixo
+        float a = PI * (float)(k - 1) / (float)(MARCA_PONTOS - 2);
+        Vector3 borda = Vector3Subtract(Vector3Scale(u, cosf(a)), Vector3Scale(cima, sinf(a)));
+        saida[k] = Vector3Add(m->centro, Vector3Scale(borda, m->raio));
+    }
+}
+
 // ------------------------------------------------------------------ a mandíbula
 // Medidas do arquivo (atual->queixo): o queixo fica abaixo da boca e à frente do pescoço.
 

@@ -458,7 +458,7 @@ static void desenha_caminho(const Estado *e) {
 
 // No menu: dois pontinhos brancos nos olhos da silhueta, e mais nada. Ficam fora do shader de luz (sem luz
 // nem névoa). Os pontos foram medidos em cada modelo (modelos_criatura.c), nas unidades do arquivo (y de −1
-// a 1, rosto em +z), e seguem o osso da cabeça; no modelo sem olhos, eles acendem a fenda.
+// a 1, rosto em +z), e seguem o osso da cabeça; no modelo de rosto liso, eles acendem as marcas dos olhos.
 static void desenha_olhos_no_menu(const Estado *e, Matrix corpo) {
     if (e->fase != FASE_MENU || !e->cri.contido || !e->rec.tem_modelo) return;
     const Vector3 *OLHOS = esqueleto_modelo()->olhos;
@@ -473,18 +473,22 @@ static void desenha_olhos_no_menu(const Estado *e, Matrix corpo) {
     posfx_retoma_luz(e);
 }
 
-// A fenda do rosto (modelos sem olhos): um traço escuro, mais grosso no meio e fino nas pontas, metade
-// enterrado na cara, preso ao osso da cabeça. No menu, o corpo já é silhueta (a fenda acende no lugar).
-static void desenha_fenda(const Estado *e, Matrix corpo) {
+// Os olhos pintados no rosto liso (modelos_criatura.c): meios-discos escuros presos ao osso da cabeça,
+// desenhados dos dois lados (a pele curva pode deixar a face de trás à mostra). No menu, o corpo já é
+// silhueta (os olhos acendem).
+static void desenha_marcas(const Estado *e, Matrix corpo) {
     const ModeloCriatura *m = esqueleto_modelo();
-    if (m->fenda_raio <= 0.0f || !e->rec.tem_modelo || e->fase == FASE_MENU) return;
-    Vector3 de = Vector3Transform(rig_ponto_no_corpo(e, OSSO_CABECA, m->fenda[0]), corpo);
-    Vector3 ate = Vector3Transform(rig_ponto_no_corpo(e, OSSO_CABECA, m->fenda[1]), corpo);
-    Vector3 meio = Vector3Lerp(de, ate, 0.5f);
-    float r = m->fenda_raio * e->rec.rig_escala;
-    Color cor = {0x06, 0x06, 0x07, 255};
-    DrawCylinderEx(de, meio, 0.0f, r, 6, cor);
-    DrawCylinderEx(meio, ate, r, 0.0f, 6, cor);
+    if (!e->rec.tem_modelo || e->fase == FASE_MENU) return;
+    Vector3 p[MARCA_PONTOS];
+    for (int i = 0; i < m->n_marcas; i++) { // padrão MAP: cada olho, preso à cabeça → no mundo
+        esqueleto_marca_pontos(&m->marcas[i], p);
+        for (int k = 0; k < MARCA_PONTOS; k++) // padrão MAP: cada ponto do meio-disco
+            p[k] = Vector3Transform(rig_ponto_no_corpo(e, OSSO_CABECA, p[k]), corpo);
+        for (int k = 1; k + 1 < MARCA_PONTOS; k++) { // laço de desenho: o leque, nos dois sentidos
+            DrawTriangle3D(p[0], p[k], p[k + 1], COR_MARCA_ROSTO);
+            DrawTriangle3D(p[0], p[k + 1], p[k], COR_MARCA_ROSTO);
+        }
+    }
 }
 
 // Onde e para onde o corpo é desenhado. Puxado pela contenção, ele se estica (o rig faz o resto).
@@ -520,7 +524,7 @@ void criatura_desenha(const Estado *e) {
     rlPopMatrix();
     if (e->rec.tem_modelo) rig_desliga(e);
     posfx_contraluz(e, COR_CONTRALUZ, 0.0f); // envia o corpo procedural (lote) ainda com a contraluz
-    desenha_fenda(e, corpo);                 // depois: sem o fio de contraluz nas bordas
+    desenha_marcas(e, corpo);                // depois: sem o fio de contraluz nas bordas
     if (menu) posfx_nevoa_cela(e, NEVOA_CELA_DENSIDADE);
     desenha_olhos_no_menu(e, corpo);
 }

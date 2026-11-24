@@ -132,6 +132,19 @@ static void testa_modelos_criatura(void) {
         testa_esqueleto();
     }
     CHECK(esqueleto_modelo_por_nome("nenhum") == -1);
+    // [REQ:PURA-esqueleto_marca_pontos] os olhos do papelão: meios-discos com a reta em cima
+    esqueleto_usa(CRIATURA_PAPELAO);
+    for (int i = 0; i < esqueleto_modelo()->n_marcas; i++) { // padrão MAP: cada olho
+        const MarcaRosto *m = &esqueleto_modelo()->marcas[i];
+        Vector3 p[MARCA_PONTOS];
+        esqueleto_marca_pontos(m, p);
+        CHECK(Vector3Distance(p[0], m->centro) < 1e-6f);
+        for (int k = 1; k < MARCA_PONTOS; k++) {                              // padrão MAP: a borda
+            CHECK(fabsf(Vector3Distance(p[k], m->centro) - m->raio) < 1e-5f); // no círculo...
+            CHECK(p[k].y <= m->centro.y + 0.3f * m->raio);                    // ...na metade de baixo
+        }
+        CHECK(p[MARCA_PONTOS / 2 + 1].y < m->centro.y - 0.9f * m->raio); // o fundo do arco, embaixo
+    }
     esqueleto_usa(CRIATURA_PAPELAO);
     CHECK(esqueleto_peso_mandibula(esqueleto_osso(OSSO_MANDIBULA)->cauda) == 0.0f); // sem boca
     esqueleto_usa(-1); // fora do intervalo: fica o atual

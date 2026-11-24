@@ -182,18 +182,20 @@ static void desenha_modelo_no_rosto(const Estado *e) {
                 COR_PELE);
 }
 
-// A fenda do rosto liso (modelos sem boca): um traço escuro, sem o fio de contraluz do crânio.
-static void desenha_fenda_no_rosto(const Estado *e) {
+// Os olhos do rosto liso (meios-discos, modelos_criatura.c), sem o fio de contraluz do crânio.
+static void desenha_marcas_no_rosto(const Estado *e) {
     const ModeloCriatura *mc = esqueleto_modelo();
-    if (mc->fenda_raio <= 0.0f) return;
     float escala;
-    Vector3 rosto = rosto_do_modelo(&e->rec.modelo_precursor, &escala);
-    Vector3 de = Vector3Scale(Vector3Subtract(mc->fenda[0], rosto), escala);
-    Vector3 ate = Vector3Scale(Vector3Subtract(mc->fenda[1], rosto), escala);
-    Vector3 meio = Vector3Lerp(de, ate, 0.5f);
-    float r = mc->fenda_raio * escala;
-    DrawCylinderEx(de, meio, 0.0f, r, 8, (Color){0x05, 0x05, 0x06, 255});
-    DrawCylinderEx(meio, ate, r, 0.0f, 8, (Color){0x05, 0x05, 0x06, 255});
+    Vector3 rosto = rosto_do_modelo(&e->rec.modelo_precursor, &escala), p[MARCA_PONTOS];
+    for (int i = 0; i < mc->n_marcas; i++) { // padrão MAP: cada olho, na pose de repouso
+        esqueleto_marca_pontos(&mc->marcas[i], p);
+        for (int k = 0; k < MARCA_PONTOS; k++) // padrão MAP: cada ponto do meio-disco
+            p[k] = Vector3Scale(Vector3Subtract(p[k], rosto), escala);
+        for (int k = 1; k + 1 < MARCA_PONTOS; k++) { // laço de desenho: o leque, nos dois sentidos
+            DrawTriangle3D(p[0], p[k], p[k + 1], COR_MARCA_ROSTO);
+            DrawTriangle3D(p[0], p[k + 1], p[k], COR_MARCA_ROSTO);
+        }
+    }
 }
 
 // O rosto num render target só dele, transparente e com a profundidade própria: depois ele é colado por
@@ -209,7 +211,7 @@ void susto_prepara(const Estado *e) {
     posfx_contraluz(e, WHITE, 0.2f); // recorta o crânio com um fio de luz branca
     desenha_modelo_no_rosto(e);
     posfx_contraluz(e, WHITE, 0.0f);
-    desenha_fenda_no_rosto(e);
+    desenha_marcas_no_rosto(e);
     posfx_termina_luz(e);
     EndMode3D();
     EndTextureMode();

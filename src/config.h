@@ -388,6 +388,7 @@
 #define JUMPSCARE_BOCA_FECHA   8.0f  // graus que a mandíbula sobe para a boca fechar
 #define JUMPSCARE_BOCA_ABRE    28.0f // e escancarada
 // Onde fica o rosto de cada modelo (fração da caixa) está em modelos_criatura.c (ModeloCriatura.rosto).
+#define COR_MARCA_ROSTO (Color){0x0a, 0x0a, 0x0c, 255} // os olhos pintados no rosto liso (meios-discos)
 
 // ---------------------------------------------------------------- sala, vidro e placar
 #define VIDAS_VIDRO               3

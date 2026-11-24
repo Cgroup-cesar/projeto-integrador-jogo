@@ -70,7 +70,8 @@ const ModeloCriatura MODELOS_CRIATURA[CRIATURAS_TOTAL] = {
             .postura = {.passo = 1.0f}, // o arquivo já é curvado: a animação só soma a postura de sempre
         },
     // O alien do papelão do estande, gerado por IA (Hunyuan3D 2.1, sobre a arte conceitual do Meshy feita a
-    // partir do desenho): de pé, reto, simétrico e de braços abaixados, sem olhos (rosto liso com a fenda),
+    // partir do desenho): de pé, reto, simétrico e de braços abaixados, de rosto liso (só as marcas dos
+    // olhos),
     // sem textura. A tabela foi medida por fatias horizontais (o mesmo método dá ~2 cm de erro na tabela do
     // precursor) e simetrizada; o joelho vai 3 cm à frente da linha quadril-tornozelo para o IK saber para
     // onde dobrar. A curvatura ameaçadora sai da postura (a animação soma), não do arquivo.
@@ -146,12 +147,15 @@ const ModeloCriatura MODELOS_CRIATURA[CRIATURAS_TOTAL] = {
             .altura_nominal = 1.987f, // o arquivo vai de y = −0,998 a 0,989
             .base_nominal = -0.998f,
             .queixo = {0}, // sem boca: a mandíbula não leva nenhum vértice
-            // sem olhos: no menu, dois pontos de luz na fenda, um sobre o outro
-            .olhos = {{-0.003f, 0.856f, 0.034f}, {-0.003f, 0.826f, 0.037f}},
-            .rosto = {0.50f, 0.925f, 0.60f}, // o centro da fenda (o z da caixa vem dos pés)
-            // na malha, a fenda é um sulco de 2 mm (some na tela): um traço escuro, metade enterrado na cara
-            .fenda = {{-0.003f, 0.870f, 0.030f}, {-0.003f, 0.802f, 0.0385f}},
-            .fenda_raio = 0.0045f,
+            // rosto liso (a frente da cara foi alisada no arquivo), só com os dois olhos: meios-discos
+            // escuros,
+            // a reta em cima e a curva embaixo, rentes à pele (a cara está em z ≈ 0,027 na altura dos olhos);
+            // no menu, os olhos acendem
+            .olhos = {{0.028f, 0.856f, 0.029f}, {-0.036f, 0.856f, 0.029f}},
+            .rosto = {0.50f, 0.925f, 0.60f}, // o centro do rosto, entre os olhos (o z da caixa vem dos pés)
+            .marcas = {{{0.028f, 0.861f, 0.0283f}, {1.0f, -0.12f, -0.18f}, {0.18f, 0.27f, 1.0f}, 0.012f},
+                       {{-0.036f, 0.861f, 0.0283f}, {-1.0f, -0.12f, -0.18f}, {-0.18f, 0.27f, 1.0f}, 0.012f}},
+            .n_marcas = 2,
             .peito_m = 1.9f,        // reto, o peito fica mais alto
             .cela_avanco_m = 0.18f, // reto, ele ficaria longe do vidro: chega um pouco mais perto
             .corta_emendas = false, // nada fundido: mãos e dedos soltos do corpo

@@ -73,16 +73,28 @@ typedef struct {
     float passo;   // escala da passada (perna mais curta, passo mais curto)
 } PosturaModelo;
 
+// Uma marca pintada na cara (os olhos do rosto liso): um meio-disco escuro, com a reta em cima e a curva
+// embaixo, encostado na pele e preso ao osso da cabeça (unidades do arquivo).
+typedef struct {
+    Vector3 centro; // o meio da reta de cima, rente à pele
+    Vector3 eixo;   // a direção da reta (de dentro para fora do rosto)
+    Vector3 normal; // para onde a pele olha ali
+    float raio;
+} MarcaRosto;
+
+#define MARCAS_ROSTO_MAX 2
+#define MARCA_PONTOS     13 // o centro da reta e 12 pontos na borda (a reta e o arco)
+
 typedef struct {
     const char *nome;    // o valor de --criatura
     const char *arquivo; // em assets/
     OssoRepouso ossos[OSSOS_TOTAL];
     float altura_nominal, base_nominal; // a caixa do arquivo em y (sem o .glb e nos testes)
     QueixoModelo queixo;
-    Vector3 olhos[2]; // os pontinhos de luz do menu, presos à cabeça
-    Vector3 rosto;    // o centro do rosto no susto, em fração da caixa do modelo
-    Vector3 fenda[2]; // a fenda do rosto (de cima a baixo), desenhada como um traço escuro; raio 0 = sem
-    float fenda_raio;
+    Vector3 olhos[2];                    // os pontinhos de luz do menu, presos à cabeça
+    Vector3 rosto;                       // o centro do rosto no susto, em fração da caixa do modelo
+    MarcaRosto marcas[MARCAS_ROSTO_MAX]; // modelos de rosto liso: as marcas pintadas (os olhos)
+    int n_marcas;
     float peito_m;       // altura do peito no mundo (a lanterna e os holofotes miram ali)
     float cela_avanco_m; // na cela, a mais na direção do vidro
     bool corta_emendas;  // rig.c: esvazia os triângulos que ligam partes fundidas (dedos na canela)
@@ -124,6 +136,10 @@ void esqueleto_matrizes(const PoseGlobal *g, Matrix *saida);
 // (joelho para a frente, cotovelo para trás): nunca dobra ao contrário, e a perna nunca estica por inteiro.
 // Devolve quanto faltou para alcançar (0 = alcançou).
 float esqueleto_ik(Pose *p, const PoseGlobal *g, int osso1, Vector3 alvo, Vector3 polo);
+
+// Os pontos de uma marca do rosto (unidades do arquivo): [0] é o centro da reta; de 1 a MARCA_PONTOS − 1, a
+// borda, de uma ponta da reta à outra passando pelo arco de baixo (um leque a partir de [0]).
+void esqueleto_marca_pontos(const MarcaRosto *m, Vector3 *saida);
 
 // 0..1: quanto um vértice do repouso acompanha a mandíbula (o queixo, abaixo da boca e à frente do pescoço).
 float esqueleto_peso_mandibula(Vector3 v);
