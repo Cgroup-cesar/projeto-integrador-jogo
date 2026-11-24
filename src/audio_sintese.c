@@ -17,7 +17,7 @@ static const char *const NOMES[SOM_TOTAL] = {
     "passo_criatura",  "vidro_estalo",     "estrondo",       "alarme",
     "respiracao",      "ambiente_sala",    "ambiente_saida", "papel",
     "energia",         "distorcao",        "jumpscare",      "respiracao_ofegante",
-    "gota",            "camera_motor",
+    "gota",            "camera_motor",     "porta_abre",     "porta_fecha",
 };
 
 // ================================================================== ferramentas de síntese
@@ -154,6 +154,40 @@ static void motor(Buffer *b) {
     }
 }
 
+// A porta de aço da sala. O rangido da dobradiça são pulsos de atrito (num ritmo que varia) fazendo dois
+// ressonadores soarem, com o peso da folha (ruído grave) por baixo. Abrindo, começa na trava soltando e
+// termina num baque surdo; fechando, termina na batida no batente (aos PORTA_FECHA_S, junto com a folha) e
+// no clique da trava. No fim, normaliza para o pico de 0,9.
+static void porta(Buffer *b, bool fecha) {
+    float ini = fecha ? 0.0f : 0.1f, fim = fecha ? PORTA_FECHA_S : PORTA_ABRE_S;
+    float pulso = 0.0f, lp = 0.0f, r1[2] = {0}, r2[2] = {0}, pico = 0.001f;
+    for (int i = 0; i < b->n; i++) {
+        float t = (float)i / TAXA, u = (t - ini) / (fim - ini), x = 0.0f;
+        bool rangendo = u > 0.0f && u < 1.0f;
+        pulso += (16.0f + 30.0f * sinf(PI * u) + 9.0f * sinf(DOIS_PI * 2.7f * t)) / TAXA;
+        if (rangendo && pulso >= 1.0f) x = 0.6f + 0.4f * ruido();
+        if (pulso >= 1.0f) pulso -= 1.0f;
+        float w1 = DOIS_PI * (430.0f + 160.0f * u) / TAXA, w2 = DOIS_PI * 1180.0f / TAXA;
+        float y1 = 2.0f * 0.996f * cosf(w1) * r1[0] - 0.996f * 0.996f * r1[1] + x;
+        float y2 = 2.0f * 0.993f * cosf(w2) * r2[0] - 0.993f * 0.993f * r2[1] + x;
+        r1[1] = r1[0], r1[0] = y1, r2[1] = r2[0], r2[0] = y2;
+        float corpo = rangendo ? powf(sinf(PI * u), 0.5f) : 0.0f;
+        float s = corpo * (0.09f * y1 + 0.1f * y2 + 0.9f * filtra(&lp, ruido(), 0.03f));
+        float bate = fecha ? t - fim : t, trava = fecha ? t - fim - 0.24f : t - 0.07f;
+        if (bate >= 0.0f) // a batida (fechando) ou a trava (abrindo): grave, metal e um estalo seco
+            s += expf(-bate * (fecha ? 8.0f : 30.0f)) * (fecha ? 1.4f : 0.5f) * sinf(DOIS_PI * 62.0f * bate) +
+                 expf(-bate * 13.0f) * (fecha ? 0.5f : 0.15f) *
+                     (sinf(DOIS_PI * 410.0f * bate) + 0.6f * sinf(DOIS_PI * 1030.0f * bate + 1.0f)) +
+                 expf(-bate * 110.0f) * 0.8f * ruido();
+        if (trava >= 0.0f) s += expf(-trava * 140.0f) * 0.45f * ruido();
+        if (!fecha && t > fim) s += expf(-(t - fim) * 12.0f) * 0.4f * sinf(DOIS_PI * 70.0f * (t - fim));
+        b->amostras[i] = s;
+        pico = fmaxf(pico, fabsf(s));
+    }
+    for (int i = 0; i < b->n; i++) // padrão MAP: mesmo volume que os outros sons
+        b->amostras[i] *= 0.9f / pico;
+}
+
 static void estalo(Buffer *b) { // estalo de vidro: ruído seco e parciais agudos que soam um pouco
     for (int i = 0; i < b->n; i++) {
         float t = (float)i / TAXA;
@@ -237,7 +271,8 @@ static void distorcao(Buffer *b) {
 static float duracao(IdSom som) {
     static const float d[SOM_TOTAL] = {1.0f, 1.6f, 0.6f, 0.5f, 0.25f, 0.05f, 0.06f, 0.14f, 0.3f, 0.45f,
                                        1.2f, 1.0f, 2.0f, 4.0f, 4.0f,  0.3f,  1.2f,  1.0f,  1.2f,
-                                       0.0f, 0.3f, 1.2f}; // a respiração ofegante só existe como arquivo
+                                       0.0f, 0.3f, 1.2f,  2.0f,  1.65f}; // respiração ofegante: só arquivo // a respiração ofegante: só
+                                                                               // arquivo
     return d[som];
 }
 
@@ -276,6 +311,10 @@ static void sintetiza(IdSom som, Buffer *b) {
         break;
     case SOM_CAMERA_MOTOR:
         motor(b);
+        break;
+    case SOM_PORTA_ABRE:
+    case SOM_PORTA_FECHA:
+        porta(b, som == SOM_PORTA_FECHA);
         break;
     case SOM_VIDRO_ESTALO:
         estalo(b);

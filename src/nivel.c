@@ -5,7 +5,7 @@
 #include "caixas.h"
 #include "mesa_bilhete.h"
 #include "armario_modelo.h"
-#include "porta_bunker.h"
+#include "porta_sala.h"
 #include "cameras.h"
 #include "quadro.h"
 #include "lampada_sala.h"
@@ -351,7 +351,14 @@ static int luzes_sala(const Estado *e, Vector3 *pos, Vector3 *cor, Vector4 *cone
     cone[2] = holofote(pos[2], peito);
     pos[3] = (Vector3){e->nivel.console.x, 1.4f, e->nivel.console.z - 0.4f};
     cor[3] = cor_luz(COR_FOSFORO, e->jog.modo == MODO_TERMINAL ? 0.35f : 0.18f);
-    return 4;
+    // Vindo da saída (retorno.c), a luz da saída (luminária fria e a luz fraca no jogador) passa para a da
+    // rodada enquanto ele entra na sala: a troca de fase não muda a luz de uma vez.
+    float saida = e->retorno.ativo ? 1.0f - regras_retorno_luz(e->retorno.t) : 0.0f;
+    if (saida <= 0.0f) return 4;
+    cor[0] = Vector3Lerp(cor[0], cor_luz(COR_LUMINARIA, LUMINARIA_FORCA * LUZ_CORREDOR_GANHO), saida);
+    pos[4] = (Vector3){e->jog.pos.x, ALTURA_OLHOS + 0.3f, e->jog.pos.z};
+    cor[4] = cor_luz(COR_LUMINARIA, 0.32f * saida);
+    return 5;
 }
 
 // Nas saídas: as LUMINARIAS_ACESAS luminárias mais próximas do jogador (frias, cada uma com a sua falha) e
@@ -503,20 +510,6 @@ static void desenha_moveis(const Estado *e, bool completo) {
     }
 }
 
-// A porta da sala de observação: a de bunker (porta_bunker.c), com dois pilares de concreto fechando o vão
-// de 2 m em volta do batente; sem o modelo, a porta de correr de antes, que some na parede nas saídas.
-static void desenha_porta_da_sala(const Estado *e) {
-    Vector3 p = e->nivel.porta_sala;
-    for (int lado = -1; lado <= 1; lado += 2) // padrão MAP: um pilar de cada lado do batente
-        texturas_caixa_mat(e, MATERIAL_CONCRETO, (Vector3){p.x, 1.1f, p.z + lado * 0.83f},
-                       (Vector3){0.3f, 2.2f, 0.34f}, texturas_modo(MATERIAL_CONCRETO, 7 + lado), WHITE);
-    if (porta_bunker_desenha(e)) return;
-    if (!regras_fase_eh_saida(e->fase)) return;
-    float abre = fminf(1.0f, e->tempo_fase / 1.2f);
-    texturas_caixa_mat(e, MATERIAL_PORTA, (Vector3){p.x, 1.1f, p.z + 1.4f * abre},
-                   (Vector3){0.16f, 2.2f, 1.32f}, texturas_modo(MATERIAL_PORTA, 0), WHITE);
-}
-
 // A carcaça de cada luminária: uma caixa de metal rasa presa no teto, no sentido do corredor (o painel aceso,
 // por baixo dela, sai em nivel_desenha_emissivos).
 static void desenha_luminarias(const Estado *e) {
@@ -582,12 +575,6 @@ static void desenha_paredes(const Estado *e) {
         if (ps->itens[i].tipo == PAREDE_MURO)
             texturas_caixa(concreto, centro_de(&ps->itens[i]), tamanho_de(&ps->itens[i]),
                            texturas_modo(MATERIAL_CONCRETO, i), WHITE);
-    posfx_material(e, MATERIAL_PORTA);
-    // laço de desenho: a porta trancada da sala
-    for (int i = 0; i < ps->n; i++)
-        if (ps->itens[i].tipo == PAREDE_PORTA)
-            texturas_caixa(e->rec.material[MATERIAL_PORTA], centro_de(&ps->itens[i]),
-                           tamanho_de(&ps->itens[i]), texturas_modo(MATERIAL_PORTA, 0), WHITE);
     posfx_superficie(e, POSFX_RUGOSIDADE_PADRAO, 0.0f);
 }
 
@@ -613,7 +600,7 @@ static void desenha(const Estado *e, bool com_chao) {
     desenha_moveis(e, com_chao);
     desenha_luminarias(e);
     desenha_portas_e_duto(e);
-    desenha_porta_da_sala(e);
+    porta_sala_desenha(e); // a folha fechada é a mesma parede de colisão PAREDE_PORTA
 }
 
 void nivel_desenha(const Estado *e) {

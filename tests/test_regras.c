@@ -429,6 +429,53 @@ static void testa_chave_visivel(void) {
     CHECK(!regras_interativo_ativo(INTER_PORTA_ARQUIVO, FASE_R1));
 }
 
+// [REQ:PURA-regras_porta_passo] testa a folha da porta da sala abrindo e fechando, sem passar dos limites
+static void testa_porta_sala(void) {
+    CHECK(perto(regras_porta_passo(0.0f, true, 0.9f, 1.8f), 0.5f)); // metade do tempo, metade do caminho
+    CHECK(perto(regras_porta_passo(0.9f, true, 1.0f, 1.8f), 1.0f)); // não passa de aberta
+    CHECK(perto(regras_porta_passo(1.0f, false, 0.6f, 1.2f), 0.5f));
+    CHECK(perto(regras_porta_passo(0.1f, false, 1.0f, 1.2f), 0.0f)); // nem de fechada
+    CHECK(perto(regras_porta_passo(0.4f, true, 0.0f, 1.8f), 0.4f));  // sem tempo, não anda
+    CHECK(regras_porta_solida(0.0f));                                // fechada segura o jogador
+    CHECK(regras_porta_solida(PORTA_SOLIDA_ATE - 0.01f));
+    CHECK(!regras_porta_solida(PORTA_SOLIDA_ATE));
+    CHECK(!regras_porta_solida(1.0f));
+    CHECK(regras_interativo_ativo(INTER_PORTA, FASE_R1)); // trancada, mas responde
+    CHECK(regras_interativo_ativo(INTER_PORTA, FASE_S1)); // nas saídas, abre e fecha
+    CHECK(regras_interativo_ativo(INTER_PORTA, FASE_S2));
+    CHECK(!regras_interativo_ativo(INTER_PORTA, FASE_MENU));
+}
+
+// [REQ:PURA-regras_retorno_pose] testa a volta à sala: começa onde o jogador estava, para de frente para a
+// porta, fica parado enquanto fecha, termina sala adentro e vira pelo lado mais curto
+static void testa_retorno(void) {
+    PoseJogador de = {{13.9f, 0.0f, 11.3f}, -PI * 0.5f, 0.2f};
+    PoseJogador porta = {{13.65f, 0.0f, 11.0f}, PI * 0.5f, -0.05f};
+    PoseJogador sala = {{11.25f, 0.0f, 11.0f}, 3.5f, 0.0f};
+    float fecha = RETORNO_VIRA_S, entra = fecha + RETORNO_FECHA_S, fim = entra + RETORNO_ENTRA_S;
+    PoseJogador p = regras_retorno_pose(0.0f, de, porta, sala);
+    CHECK(perto(p.pos.x, de.pos.x) && perto(p.pos.z, de.pos.z) && perto(p.yaw, de.yaw));
+    p = regras_retorno_pose(fecha, de, porta, sala);
+    CHECK(perto(p.pos.x, porta.pos.x) && perto(p.pos.z, porta.pos.z) && perto(cosf(p.yaw), cosf(porta.yaw)));
+    p = regras_retorno_pose(fecha + PORTA_FECHA_S * 0.5f, de, porta, sala); // puxando a folha
+    CHECK(perto(p.pos.x, porta.pos.x) && p.pitch < porta.pitch);
+    p = regras_retorno_pose(fim + 1.0f, de, porta, sala);
+    CHECK(perto(p.pos.x, sala.pos.x) && perto(sinf(p.yaw), sinf(sala.yaw)) &&
+          perto(cosf(p.yaw), cosf(sala.yaw)));
+    CHECK(regras_retorno_etapa(0.0f) == RETORNO_VIRA);
+    CHECK(regras_retorno_etapa(fecha) == RETORNO_FECHA);
+    CHECK(regras_retorno_etapa(entra) == RETORNO_ENTRA);
+    CHECK(regras_retorno_etapa(fim) == RETORNO_FIM);
+    CHECK(perto(regras_angulo_mistura(0.1f, 2.0f * PI - 0.1f, 1.0f), -0.1f)); // 0,2 rad, não 6,08
+    CHECK(perto(regras_angulo_mistura(PI * 0.5f, 3.5f, 0.5f), (PI * 0.5f + 3.5f) * 0.5f));
+    CHECK(perto(regras_retorno_faixa(0.0f), 0.0f));  // as faixas entram...
+    CHECK(perto(regras_retorno_faixa(entra), 1.0f)); // ...ficam no meio da cena...
+    CHECK(perto(regras_retorno_faixa(fim), 0.0f));   // ...e saem no fim
+    CHECK(perto(regras_retorno_luz(entra), 0.0f));   // a rodada começa com a luz da saída...
+    CHECK(perto(regras_retorno_luz(fim), 1.0f));     // ...e termina com a dela
+    CHECK(regras_retorno_luz(entra + RETORNO_ENTRA_S * 0.5f) > 0.3f);
+}
+
 // [REQ:PURA-regras_integridade_vidro] testa as vidas depois de 0, 1, 2 e 3 erros
 static void testa_vidro(void) {
     CHECK(regras_integridade_vidro(NULL, 0, VIDAS_VIDRO) == 3); // sem rachaduras
@@ -957,6 +1004,8 @@ int main(void) {
     testa_evento_do_erro();
     testa_porta_arquivo();
     testa_chave_visivel();
+    testa_porta_sala();
+    testa_retorno();
     testa_monta_texto();
     testa_nome_edita();
     testa_falha_texto();

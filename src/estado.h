@@ -255,6 +255,23 @@ typedef struct {
     float aviso_dur;   // quanto o aviso dura (para o fade)
 } ChaveArquivo;
 
+// ------------------------------------------------------------------ a porta da sala (porta_sala.c)
+typedef struct {
+    bool aberta;    // para onde a folha vai (E troca, nas saídas)
+    float abertura; // 0 = fechada, 1 = aberta (regras_porta_passo)
+    float duracao;  // quanto a folha leva neste movimento (a criatura abre com um tranco)
+    bool solida;    // a folha fecha o vão: a PAREDE_PORTA está nas paredes de colisão
+} PortaSala;
+
+// ------------------------------------------------------------------ a volta à sala (retorno.c)
+typedef struct {
+    bool ativo;                  // a cena está com o jogador (o controle volta quando acaba)
+    float t;                     // s desde que começou
+    Fase saida;                  // de que saída ele voltou: a cena continua na rodada seguinte
+    PoseJogador de, porta, sala; // as três poses da coreografia (regras_retorno_pose)
+    bool fechou, trocou;         // já mandou a porta fechar; já mandou a fase trocar
+} Retorno;
+
 // ------------------------------------------------------------------ resposta final
 typedef struct {
     Ficha fichas[MAX_FICHAS_FRASE];
@@ -392,6 +409,8 @@ typedef struct Estado {
     Rodada rod;
     Painel painel;
     ChaveArquivo chave;
+    PortaSala porta;
+    Retorno retorno;
     Compositor comp;
     Intro intro;
     Identidade ident;
@@ -424,7 +443,6 @@ typedef struct Estado {
     float alarme_t;
     float jumpscare_t;           // > 0 durante o jumpscare
     float silencio_t;            // os 0,2 s de silêncio antes do estrondo
-    float retorno_t;             // saída: tempo desde que o painel foi resolvido
     EventoFase evento_pos_susto; // o que acontece quando o jumpscare termina
 } Estado;
 

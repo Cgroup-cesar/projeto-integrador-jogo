@@ -10,6 +10,7 @@
 #include "susto.h"
 #include "lanterna.h"
 #include "nivel.h"
+#include "retorno.h"
 #include <math.h>
 #include "posfx.h"
 #include "vhs.h"
@@ -24,6 +25,7 @@
 #include "mesa_bilhete.h"
 #include "armario_modelo.h"
 #include "porta_bunker.h"
+#include "porta_sala.h"
 #include "cameras.h"
 #include "quadro.h"
 #include "lampada_sala.h"
@@ -120,6 +122,8 @@ typedef struct {
     float placar_t;          // quanto tempo o placar final ficou na tela (precisa aparecer de verdade)
     bool porta_tentada;      // S2: já tentou a porta do Arquivo sem a chave
     bool porta_conferida;    // S2: a porta segurou sem a chave e abriu com ela
+    bool sala_tentada;       // saídas: já apertou E na porta da sala, que começou fechada
+    bool sala_conferida;     // saídas: a porta da sala segurou fechada e abriu com E
     int codigo_saida;        // −1 = ainda jogando; 0 = ok; 1 = falhou
 } Piloto;
 
@@ -155,6 +159,20 @@ static void piloto_confere_nome(Fase para) {
 }
 
 // Confere a troca de fase contra o roteiro. Recomeços (vidro rompido, pego) mantêm a fase e são aceitos.
+// Saída → rodada: a volta à sala tem de ter fechado a porta (sólida de novo) e continuar com o jogador onde
+// ele estava, perto da porta (sem o teleporte para o início de antes).
+static void piloto_confere_volta(const Estado *e, Fase de, Fase para) {
+    if (!regras_fase_eh_saida(de) || !regras_fase_eh_rodada(para)) return;
+    Vector3 p = e->nivel.porta_sala;
+    bool parede = col_paredes_colide(&e->paredes, (Vector3){p.x, 0.0f, p.z}, 0.3f, 1.8f);
+    bool no_inicio = Vector3Distance(e->jog.pos, e->nivel.inicio) < 1.0f;
+    if (!retorno_ativo(e) || e->porta.aberta || !parede || no_inicio)
+        piloto_falha("a volta à sala não fechou a porta ou teleportou o jogador");
+    else
+        printf("SMOKE  volta ok: a cena fechou a porta e a %s começou com o jogador ali, sem corte\n",
+               regras_nome_fase(para));
+}
+
 static void piloto_confere_troca(Fase de, Fase para) {
     if (piloto.roteiro_i >= piloto.roteiro_n) {
         piloto_falha("fase além do roteiro");
@@ -339,11 +357,35 @@ static bool piloto_chave(Estado *e, Entrada *in) {
     return true;
 }
 
+// Toda saída começa com a porta da sala fechada: ela tem de segurar o jogador; com E, abre e deixa passar.
+static bool piloto_porta_sala(Estado *e, Entrada *in) {
+    if (piloto.sala_conferida || e->jog.modo != MODO_ANDANDO) return false;
+    Vector3 p = e->nivel.porta_sala;
+    bool parede = col_paredes_colide(&e->paredes, (Vector3){p.x, 0.0f, p.z}, 0.3f, 1.8f);
+    if (!piloto.sala_tentada) {
+        if (e->porta.aberta || !parede) piloto_falha("a saída começou com a porta da sala aberta");
+        jogador_teleporta(e, (Vector3){p.x - 1.3f, 0.0f, p.z}, PI * 0.5f); // de frente para a porta (leste)
+        in->interagir = true;
+        piloto.sala_tentada = true;
+        return true;
+    }
+    if (porta_sala_abertura(e) < 1.0f) return true; // a folha ainda está abrindo
+    piloto.sala_conferida = true;
+    if (parede)
+        piloto_falha("a porta da sala abriu mas continuou segurando o jogador");
+    else
+        printf("SMOKE  porta da sala ok: começou fechada e sólida; com E, abriu\n");
+    return false;
+}
+
 static void piloto_saida(Estado *e, Entrada *in) {
     bool painel1 = e->fase == FASE_S1;
-    if (piloto_testa_armario(e, in) || piloto_chave(e, in) || piloto_le_diario(e, in)) return;
-    if (e->painel.resolvido) {
-        jogador_teleporta(e, e->nivel.inicio, PI); // volta para a sala de observação
+    if (piloto_porta_sala(e, in) || piloto_testa_armario(e, in) || piloto_chave(e, in) ||
+        piloto_le_diario(e, in))
+        return;
+    if (e->painel.resolvido) { // entra na sala pela porta; dali, a volta à sala (retorno.c) assume
+        Vector3 p = e->nivel.porta_sala;
+        if (!retorno_ativo(e)) jogador_teleporta(e, (Vector3){p.x - 1.15f, 0.0f, p.z}, -PI * 0.5f);
         return;
     }
     if (e->jog.modo == MODO_PAINEL) {
@@ -377,6 +419,7 @@ static void piloto_age(Estado *e, Entrada *in) {
     case FASE_R1:
     case FASE_R2:
     case FASE_R3:
+        if (retorno_ativo(e)) break; // a volta à sala ainda está com o jogador
         if (e->jog.modo == MODO_TERMINAL) {
             rodadas_piloto(e, in, piloto_erros_desejados(e));
         } else if (e->jog.modo == MODO_ANDANDO) {
@@ -419,15 +462,19 @@ static void piloto_entrada(Estado *e, Entrada *in, float dt) {
     if (e->fase != piloto.fase_vista) {
         piloto.placar_t = 0.0f;
         piloto_confere_troca(piloto.fase_vista, e->fase);
+        piloto_confere_volta(e, piloto.fase_vista, e->fase);
         piloto.fase_vista = e->fase;
         piloto.tempo_na_fase = 0.0f;
         piloto.porta_tentada = piloto.porta_conferida = false;
+        piloto.sala_tentada = piloto.sala_conferida = false;
         piloto.tempo_fase_anterior = 0.0f;
     }
     if (e->tempo_fase + 0.001f < piloto.tempo_fase_anterior)
         printf("SMOKE  partida %d: %s recomeçou (%d erro(s) na fase)\n", piloto.partida + 1,
                regras_nome_fase(e->fase), e->erros_na_fase);
     piloto.tempo_fase_anterior = e->tempo_fase;
+    if (retorno_ativo(e) && col_paredes_colide(&e->paredes, e->jog.pos, JOGADOR_RAIO, 1.8f))
+        piloto_falha("a volta à sala atravessou uma parede ou um móvel");
     if (e->fase == FASE_S1 && piloto_confere_colisao(e, in, dt)) return;
     if (piloto_espera_ser_pego(e, in)) return; // a cada quadro: precisa segurar a corrida
     piloto.tempo_na_fase += dt;

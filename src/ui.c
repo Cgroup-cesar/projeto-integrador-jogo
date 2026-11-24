@@ -457,12 +457,16 @@ static void desenha_mira(const Estado *e) {
         static const TextoId por_tipo[] = {TXT_MIRA_CONSOLE,  TXT_MIRA_PAINEL,       TXT_MIRA_PAINEL,
                                            TXT_MIRA_DIARIO,   TXT_MIRA_ARMARIO,      TXT_MIRA_PORTA,
                                            TXT_MIRA_CHAVEIRO, TXT_MIRA_PORTA_ARQUIVO};
-        dica = por_tipo[e->interativos.itens[e->jog.mira].tipo];
+        TipoInterativo tipo = e->interativos.itens[e->jog.mira].tipo;
+        dica = por_tipo[tipo];
+        if (tipo == INTER_PORTA && regras_fase_eh_saida(e->fase)) // nas saídas, a porta abre e fecha
+            dica = e->porta.aberta ? TXT_MIRA_PORTA_FECHAR : TXT_MIRA_PORTA_ABRIR;
     }
     if (dica != TXT_TOTAL) ui_texto_centro(e, dialogo_texto(dica), cy + 40 * s, 22 * s, COR_FOSFORO);
 }
 
 static void desenha_hud(const Estado *e) {
+    if (e->retorno.ativo) return; // na volta à sala (uma cena), a tela fica limpa
     float s = ui_escala();
     if (e->jog.modo == MODO_ANDANDO || e->jog.modo == MODO_ARMARIO)
         ui_texto(e, dialogo_texto(objetivo(e)), (Vector2){24 * s, 62 * s}, HUD_OBJETIVO_PX * s,

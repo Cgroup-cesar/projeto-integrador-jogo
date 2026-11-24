@@ -10,7 +10,7 @@ void nivel_carrega(Nivel *n);
 
 // Paredes do mapa (corridas de '#' viram uma caixa só), vidro e móveis.
 void nivel_constroi_paredes(const Nivel *n, ColParedes *paredes);
-void nivel_tranca_porta(const Nivel *n, ColParedes *paredes); // fases de sala: a porta da sala fica trancada
+void nivel_tranca_porta(const Nivel *n, ColParedes *paredes); // a folha da porta da sala fechando o vão
 void nivel_constroi_interativos(const Nivel *n, ColInterativos *interativos);
 
 // Coordenadas: célula (coluna, linha) ↔ mundo (1 célula = 2 m).

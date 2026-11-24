@@ -10,6 +10,7 @@ Vector3 jogador_olho(const Estado *e);
 Vector3 jogador_direcao(const Estado *e);
 
 void jogador_atualiza(Estado *e, float dt);
+void jogador_passos(Estado *e, bool andando, float dt); // balanço da câmera, som e barulho dos passos
 void jogador_atualiza_camera(Estado *e);
 void jogador_desenha(const Estado *e); // por cima da cena: as frestas do armário
 

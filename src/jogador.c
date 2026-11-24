@@ -9,6 +9,7 @@
 #include "trilhas.h"
 #include "criatura.h"
 #include "chave.h"
+#include "porta_sala.h"
 #include <math.h>
 
 #define PITCH_MAXIMO 1.35f
@@ -87,8 +88,8 @@ static void atualiza_folego(Estado *e, bool quer_correr, float dt) {
     if (j->exausto && j->folego >= JOGADOR_FOLEGO_MAX * FOLEGO_RETOMA_FRACAO) j->exausto = false;
 }
 
-// Passos fazem barulho: andar, raio de 3 m; correr, raio de 10 m.
-static void passos(Estado *e, bool andando, float dt) {
+// Passos fazem barulho: andar, raio de 3 m; correr, raio de 10 m. A volta à sala (retorno.c) usa também.
+void jogador_passos(Estado *e, bool andando, float dt) {
     Jogador *j = &e->jog;
     if (!andando) {
         j->tempo_passo = 0.0f;
@@ -114,7 +115,7 @@ static void anda(Estado *e, float dt) {
     atualiza_folego(e, e->in.correr && andando, dt);
     float velocidade = j->correndo ? JOGADOR_VEL_CORRER : JOGADOR_VEL_ANDAR;
     if (andando) move_com_colisao(e, regras_nova_posicao(j->pos, j->yaw, e->in.mover, velocidade, dt));
-    passos(e, andando, dt);
+    jogador_passos(e, andando, dt);
 }
 
 // ------------------------------------------------------------------ armário
@@ -170,7 +171,7 @@ static void interage(Estado *e, const Interativo *it) {
         entra_no_armario(e, it);
         break;
     case INTER_PORTA:
-        ui_fala(e, FALAS_PORTA_TRANCADA);
+        porta_sala_interage(e); // trancada nas rodadas; nas saídas, abre e fecha
         break;
     case INTER_CHAVEIRO:
         chave_pega(e);

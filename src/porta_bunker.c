@@ -3,6 +3,7 @@
 // o volante e as travas: ver da_folha), e as duas viram malhas próprias. A folha gira em torno da dobradiça.
 // O modelo olha para +Z (o lado para onde a folha abre); girado 90° em Y, ele abre para o corredor (+X).
 #include "porta_bunker.h"
+#include "porta_sala.h"
 #include "ui.h"
 #include <math.h>
 #include <stdlib.h>
@@ -90,13 +91,6 @@ void porta_bunker_descarrega(Recursos *rec) {
     UnloadModel(rec->modelo_porta);
 }
 
-// Abre nos primeiros PORTA_ABRE_S da saída, devagar no começo e no fim; nas rodadas fica fechada.
-float porta_bunker_abertura(const Estado *e) {
-    if (!regras_fase_eh_saida(e->fase)) return 0.0f;
-    float x = fminf(1.0f, e->tempo_fase / PORTA_ABRE_S);
-    return x * x * (3.0f - 2.0f * x);
-}
-
 bool porta_bunker_desenha(const Estado *e) {
     if (!e->rec.tem_porta) return false;
     const Model *m = &e->rec.modelo_porta;
@@ -107,7 +101,7 @@ bool porta_bunker_desenha(const Estado *e) {
         MatrixMultiply(MatrixTranslate(0.0f, -BATENTE_BASE_Y, -BATENTE_MEIO_Z), MatrixScale(s, s, s)),
         MatrixMultiply(MatrixRotateY(90.0f * DEG2RAD), MatrixTranslate(p.x, 0.0f, p.z)));
     DrawMesh(e->rec.porta_batente, mat, lugar);
-    float giro = FOLHA_FECHADA + (FOLHA_ABERTA - FOLHA_FECHADA) * porta_bunker_abertura(e);
+    float giro = FOLHA_FECHADA + (FOLHA_ABERTA - FOLHA_FECHADA) * porta_sala_abertura(e);
     Matrix dobradica = MatrixMultiply(
         MatrixMultiply(MatrixTranslate(-DOBRADICA_X, 0.0f, -DOBRADICA_Z), MatrixRotateY(giro * DEG2RAD)),
         MatrixTranslate(DOBRADICA_X, 0.0f, DOBRADICA_Z));
