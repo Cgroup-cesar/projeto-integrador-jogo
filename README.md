@@ -180,7 +180,7 @@ src/caixas.c/.h          pilhas de caixotes do Exército nas salas, com colisão
 src/mesa_bilhete.c/.h    a mesa do bilhete no Arquivo: escrivaninha, folhas, a lâmpada âmbar que pisca e o brilho do bilhete
 src/armario_modelo.c/.h  a aparência dos armários de esconderijo (assets/modelos/armario.glb, opcional)
 src/porta_bunker.c/.h    a porta de bunker da sala de observação: fechada nas rodadas, abre para o corredor na saída
-src/cameras.c/.h         câmeras de segurança nas salas e corredores, com o LED de REC piscando
+src/cameras.c/.h         câmeras de segurança nas salas e corredores (LED de REC piscando); as que veem o jogador viram para ele, com o som do motor
 src/quadro.c/.h          o quadro de investigação da sala de observação (jornal Rede Bola, relatório do SNI, fichas)
 src/lampada_sala.c/.h    a lâmpada pendurada da sala de observação, com o bulbo aceso (assets/modelos/lampada.glb, opcional)
 src/tela_fim.c/.h        depois do final: desempenho, avaliação do jogo em estrelas e o ranking
@@ -254,9 +254,9 @@ Cada trecho que cumpre um requisito tem, logo acima, um comentário-âncora `// 
 | :---- | :---- | :---- | :---- |
 | RF1 Janela e game loop a 60 FPS com `GetFrameTime()` | [src/main.c#L619-L620](src/main.c#L619-L620)<br>[src/main.c#L533-L542](src/main.c#L533-L542)<br>[src/criatura.c#L277-L278](src/criatura.c#L277-L278) | `[REQ:RF1]` | `SetTargetFPS(60)`; `dt = GetFrameTime()` limitado a 0,05 s e passado a todo `xxx_atualiza`, que multiplica movimento, temporizadores e animações (aqui, o passo da criatura). |
 | RF2 Controle do jogador por teclado/mouse (e controle de Xbox) | [src/main.c#L50-L94](src/main.c#L50-L94)<br>[src/jogador.c#L44-L60](src/jogador.c#L44-L60)<br>[src/jogador.c#L109-L117](src/jogador.c#L109-L117) | `[REQ:RF2]` | Câmera em 1ª pessoa pelo mouse; WASD, Shift (corrida com fôlego), E, 1/2/3, setas, ENTER e Esc, lidos uma vez por quadro numa `struct Entrada`; o controle soma por cima em `src/controle.c` (o analógico direito gira a câmera em rad/s, multiplicado por `dt`). |
-| RF3 Coleção (vetor) de múltiplos objetos | [src/estado.h#L385-L392](src/estado.h#L385-L392) | `[REQ:RF3]` | Seis coleções de capacidade fixa com contador (ruídos, partículas, rachaduras, eventos, interativos, paredes), sem `malloc` por quadro; ver a tabela de map, filter e fold. |
+| RF3 Coleção (vetor) de múltiplos objetos | [src/estado.h#L392-L398](src/estado.h#L392-L398) | `[REQ:RF3]` | Seis coleções de capacidade fixa com contador (ruídos, partículas, rachaduras, eventos, interativos, paredes), sem `malloc` por quadro; ver a tabela de map, filter e fold. |
 | RF4 Colisões com funções da Raylib | [src/jogador.c#L63-L70](src/jogador.c#L63-L70)<br>[src/colecoes.c#L186-L196](src/colecoes.c#L186-L196)<br>[src/colecoes.c#L145-L165](src/colecoes.c#L145-L165)<br>[src/criatura.c#L180-L181](src/criatura.c#L180-L181)<br>[src/criatura.c#L285-L292](src/criatura.c#L285-L292) | `[REQ:RF4]` | `CheckCollisionBoxes` (jogador × paredes, vidro, móveis e armários, eixo por eixo), `GetRayCollisionBox` (mira de interação e visão da criatura contra as paredes) e `CheckCollisionSpheres` (captura). |
-| RF5 Placar, vidas, telas de início e fim | [src/jogo.c#L60-L65](src/jogo.c#L60-L65)<br>[src/menu.c#L156-L187](src/menu.c#L156-L187)<br>[src/tela_fim.c#L88-L124](src/tela_fim.c#L88-L124) | `[REQ:RF5]` | Placar = fold dos eventos; vidas = integridade do vidro (fold das rachaduras), recalculados a cada quadro; tela de início com o título, o gancho, as opções INICIAR, RANKING e SAIR, o convite do 1º lugar ("você pode ser o próximo") e o aviso de nome provisório, intro e tela de fim só com o principal: resultado, placar e lugar no ranking, mais a avaliação do jogo em estrelas. |
+| RF5 Placar, vidas, telas de início e fim | [src/jogo.c#L61-L66](src/jogo.c#L61-L66)<br>[src/menu.c#L156-L187](src/menu.c#L156-L187)<br>[src/tela_fim.c#L88-L124](src/tela_fim.c#L88-L124) | `[REQ:RF5]` | Placar = fold dos eventos; vidas = integridade do vidro (fold das rachaduras), recalculados a cada quadro; tela de início com o título, o gancho, as opções INICIAR, RANKING e SAIR, o convite do 1º lugar ("você pode ser o próximo") e o aviso de nome provisório, intro e tela de fim só com o principal: resultado, placar e lugar no ranking, mais a avaliação do jogo em estrelas. |
 | RF6 Condição de vitória/derrota | [src/compositor.c#L62-L76](src/compositor.c#L62-L76)<br>[src/tela_fim.c#L88-L124](src/tela_fim.c#L88-L124) | `[REQ:RF6]` | A frase transmitida vai para `regras_avalia_transmissao`: contradição → final bom (VITÓRIA); satisfazível → final ruim (DERROTA); inválida → SINTAXE INVÁLIDA, sem penalidade. |
 
 ### Map, filter e fold nas coleções
@@ -323,7 +323,7 @@ Cada laço leva o comentário `// padrão MAP`, `// padrão FILTER` ou `// padr�
 | Requisito | Onde | Âncora | Como foi cumprido |
 | :---- | :---- | :---- | :---- |
 | RNF1 Legibilidade | [.clang-format#L1-L12](.clang-format#L1-L12) | `[REQ:RNF1]` | Nomes em português, claros e consistentes (`atualiza_…`, `desenha_…`, `colidiu_…`); funções de até ~40 linhas (a única exceção, em `audio_sintese.c`, está comentada); o código segue o `.clang-format` (`clang-format --dry-run` sem avisos). |
-| RNF2 Modularização | [src/estado.h#L344-L409](src/estado.h#L344-L409) | `[REQ:RNF2]` | Uma struct por objeto, uma função por responsabilidade, um módulo por sistema; o maior arquivo tem menos de 500 linhas. |
+| RNF2 Modularização | [src/estado.h#L344-L416](src/estado.h#L344-L416) | `[REQ:RNF2]` | Uma struct por objeto, uma função por responsabilidade, um módulo por sistema; o maior arquivo tem menos de 500 linhas. |
 | RNF3 Separação update/render | [src/main.c#L429-L442](src/main.c#L429-L442) | `[REQ:RNF3]` | Todo módulo tem `xxx_atualiza(Estado *e, float dt)` e `xxx_desenha(const Estado *e)`; o `const` garante que desenhar não muda nada; nenhum `Draw*` em `*_atualiza` (auditado com grep). |
 | RNF4 Robustez | [src/colecoes.c#L9-L14](src/colecoes.c#L9-L14)<br>[src/main.c#L533-L542](src/main.c#L533-L542)<br>[src/nivel.c#L48-L52](src/nivel.c#L48-L52)<br>[src/ui.c#L33-L60](src/ui.c#L33-L60)<br>[src/criatura.c#L29-L48](src/criatura.c#L29-L48) | `[REQ:RNF4]` | Vetor cheio descarta com `TraceLog`, sem travar; listas vazias (sem ruídos, sem eventos) testadas; `dt` limitado; fora do mapa conta como parede; sem fonte, som ou modelo, entra o placeholder. |
 | RNF5 Documentação | [README.md#L245-L245](README.md#L245-L245) | `[REQ:RNF5]` | Este README, `docs/ARQUITETURA.md`, `docs/DECISOES.md` (as escolhas e por quê), `docs/PROGRESSO.md` e `CLAUDE.md`. |
@@ -376,7 +376,7 @@ static void tenta_capturar(Estado *e) {
 **O placar (RF5):** dois folds recalculados a cada quadro.
 
 ```c
-// src/jogo.c#L60-L65
+// src/jogo.c#L61-L66
 // [REQ:RF5] placar = fold dos eventos; vidas = integridade do vidro (fold das rachaduras).
 // Recalculados a cada quadro, para o HUD e o terminal mostrarem o erro na hora.
 static void atualiza_folds(Estado *e) {

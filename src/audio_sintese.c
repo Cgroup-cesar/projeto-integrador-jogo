@@ -17,7 +17,7 @@ static const char *const NOMES[SOM_TOTAL] = {
     "passo_criatura",  "vidro_estalo",     "estrondo",       "alarme",
     "respiracao",      "ambiente_sala",    "ambiente_saida", "papel",
     "energia",         "distorcao",        "jumpscare",      "respiracao_ofegante",
-    "gota",
+    "gota",            "camera_motor",
 };
 
 // ================================================================== ferramentas de síntese
@@ -138,6 +138,22 @@ static void gota(Buffer *b) {
     }
 }
 
+// O motor de uma câmera digital (como o do zoom e do foco): um zumbido agudo e liso de engrenagem pequena,
+// que oscila devagar, com o tique fino dos dentes e um sopro leve. Entra e sai em 30 ms, para emendar nele
+// mesmo enquanto a câmera gira (assets/audio/camera_motor.* substitui, como os outros sons).
+static void motor(Buffer *b) {
+    float fase = 0.0f, lp = 0.0f, d = (float)b->n / TAXA;
+    for (int i = 0; i < b->n; i++) {
+        float t = (float)i / TAXA;
+        fase += DOIS_PI * (1150.0f + 60.0f * sinf(DOIS_PI * 2.5f * t)) / TAXA;
+        float zumbido = 0.55f * sinf(fase) + 0.2f * sinf(2.0f * fase + 0.5f);
+        float dentes = 0.65f + 0.35f * sinf(DOIS_PI * 180.0f * t);
+        float sopro = filtra(&lp, ruido(), 0.6f);
+        float forma = fminf(1.0f, t / 0.03f) * fminf(1.0f, (d - t) / 0.03f);
+        b->amostras[i] = forma * (0.3f * zumbido * dentes + 0.08f * sopro);
+    }
+}
+
 static void estalo(Buffer *b) { // estalo de vidro: ruído seco e parciais agudos que soam um pouco
     for (int i = 0; i < b->n; i++) {
         float t = (float)i / TAXA;
@@ -221,7 +237,7 @@ static void distorcao(Buffer *b) {
 static float duracao(IdSom som) {
     static const float d[SOM_TOTAL] = {1.0f, 1.6f, 0.6f, 0.5f, 0.25f, 0.05f, 0.06f, 0.14f, 0.3f, 0.45f,
                                        1.2f, 1.0f, 2.0f, 4.0f, 4.0f,  0.3f,  1.2f,  1.0f,  1.2f,
-                                       0.0f, 0.3f}; // a respiração ofegante só existe como arquivo
+                                       0.0f, 0.3f, 1.2f}; // a respiração ofegante só existe como arquivo
     return d[som];
 }
 
@@ -257,6 +273,9 @@ static void sintetiza(IdSom som, Buffer *b) {
         break;
     case SOM_GOTA:
         gota(b);
+        break;
+    case SOM_CAMERA_MOTOR:
+        motor(b);
         break;
     case SOM_VIDRO_ESTALO:
         estalo(b);
@@ -382,13 +401,37 @@ void audio_toca(const Estado *e, IdSom som, float volume, float tom) {
 }
 
 // O ouvido é o olho do jogador (no armário, dentro dele); a parede no meio vem do mesmo raycast da visão.
-void audio_toca_em(const Estado *e, IdSom som, Vector3 fonte, float alcance, float tom) {
+static SomEspacial espacial(const Estado *e, Vector3 fonte, float alcance) {
     Vector3 ouvido = jogador_olho(e);
     Vector3 para = {fonte.x - ouvido.x, 0.0f, fonte.z - ouvido.z};
     float dist = Vector3Length(para);
     bool parede = dist > 0.5f && col_paredes_distancia_raio(&e->paredes, ouvido, para, dist) < dist - 0.3f;
-    SomEspacial s = regras_som_espacial(ouvido, e->jog.yaw, fonte, alcance, parede);
+    return regras_som_espacial(ouvido, e->jog.yaw, fonte, alcance, parede);
+}
+
+void audio_toca_em(const Estado *e, IdSom som, Vector3 fonte, float alcance, float tom) {
+    SomEspacial s = espacial(e, fonte, alcance);
     if (s.volume > 0.0f) toca(e, som, s.volume, tom, s.pan);
+}
+
+// Um som que dura enquanto algo acontece (o motor da câmera): começa se não está tocando e, se está, só
+// acompanha o volume e o lado (sem recomeçar: um arquivo longo toca inteiro e emenda no fim).
+void audio_mantem_em(const Estado *e, IdSom som, Vector3 fonte, float alcance, float tom, float ganho) {
+    if (!e->rec.audio_ok || som < 0 || som >= SOM_TOTAL) return;
+    SomEspacial s = espacial(e, fonte, alcance);
+    s.volume *= ganho;
+    Sound snd = e->rec.sons[som];
+    if (!IsSoundPlaying(snd)) {
+        if (s.volume > 0.0f) toca(e, som, s.volume, tom, s.pan);
+        return;
+    }
+    float pan = s.pan;
+#if RAYLIB_VERSION_MAJOR < 6
+    pan = 0.5f - 0.5f * pan; // até a 5.5 o pan ia de 0 a 1, com 0,5 no centro e 1 na esquerda
+#endif
+    SetSoundVolume(snd, fmaxf(0.0f, fminf(1.0f, s.volume)));
+    SetSoundPan(snd, pan);
+    SetSoundPitch(snd, tom);
 }
 
 void audio_para(const Estado *e, IdSom som) {
