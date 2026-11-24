@@ -13,5 +13,10 @@ void jogador_atualiza(Estado *e, float dt);
 void jogador_passos(Estado *e, bool andando, float dt); // balanço da câmera, som e barulho dos passos
 void jogador_atualiza_camera(Estado *e);
 void jogador_desenha(const Estado *e); // por cima da cena: as frestas do armário
+// O quanto a porta do armário cobre a tela agora (0 = nada, 1 = as frestas inteiras).
+float jogador_porta_armario(const Estado *e);
+// O quanto as folhas da porta do armário do jogador (jog.armario) estão abertas (0..1): abrem e fecham
+// quando ele entra e sai.
+float jogador_porta_aberta(const Estado *e);
 
 #endif
