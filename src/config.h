@@ -77,13 +77,11 @@
 #define CAMERA_BRACO_M        0.16f // a câmera gira na ponta de um braço curto, fora da parede
 #define CAMERA_VISAO_M        16.0f // até onde uma câmera enxerga o jogador
 #define CAMERA_GIRO_MAX_GRAUS 70.0f // o quanto ela vira para cada lado, a partir de para onde aponta
-#define CAMERA_VELOCIDADE     45.0f // graus por segundo no máximo: o motor é lento, dá para ouvir ele virando
+#define CAMERA_VELOCIDADE     45.0f // graus por segundo no máximo: o motor é lento, dá para ver ele virando
 #define CAMERA_FIRMEZA        3.0f  // o motor desacelera perto do alvo (passo = diferença × isto × dt)
 #define CAMERA_REACAO_S       0.35f // ao avistar o jogador, demora isto para começar a virar
 #define CAMERA_ATRASO_S       0.55f // a mira persegue onde o jogador esteve (constante de tempo, em s)
 #define CAMERA_ESPERA_S       2.5f  // depois de perder o jogador, fica parada olhando antes de voltar
-#define CAMERA_SOM_ALCANCE_M  6.0f  // até onde se ouve o motor: só chegando perto da câmera
-#define CAMERA_SOM_VOLUME     0.3f  // o motor é discreto: mesmo colado nela, 30% do volume
 // A volta à sala depois de religar a energia (retorno.c): uma cena sem corte, de 4,6 s.
 #define RETORNO_VIRA_S         0.9f   // vira para a porta, de dentro da sala...
 #define RETORNO_FECHA_S        1.5f   // ...fecha (a rodada seguinte começa quando a folha bate)...

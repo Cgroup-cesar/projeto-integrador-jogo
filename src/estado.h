@@ -411,7 +411,6 @@ typedef struct Estado {
     // fábrica), o quanto inclinou além do normal, há quanto tempo perdeu o jogador e quando refaz o motor
     float camera_giro[MAX_CAMERAS], camera_inclina[MAX_CAMERAS];
     float camera_perdeu_t[MAX_CAMERAS];
-    float camera_motor_parado_t; // há quanto tempo nenhuma câmera gira (o som do motor cala logo depois)
     float camera_ve_t[MAX_CAMERAS];                                 // há quanto tempo está vendo o jogador
     float camera_mira_giro[MAX_CAMERAS], camera_mira_inclina[MAX_CAMERAS]; // para onde quer virar (atrasado)
     bool modo_smoke, modo_feira;
