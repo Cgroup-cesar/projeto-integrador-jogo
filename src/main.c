@@ -29,6 +29,7 @@
 #include "ranking.h"
 #include "respiracao.h"
 #include "clique.h"
+#include "bancada.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -456,6 +457,7 @@ static void captura_numerada(void) {
 // ================================================================== início e fim
 static void le_argumentos(Estado *e, int argc, char **argv) {
     for (int i = 1; i < argc; i++) {
+        if (bancada_le_argumento(argc, argv, &i)) continue; // --olhar, --lanterna, --energia, --medir
         if (strcmp(argv[i], "--smoke") == 0) e->modo_smoke = true;
         if (strcmp(argv[i], "--feira") == 0) e->modo_feira = true;
         if (strcmp(argv[i], "--mudo") == 0) mudo = true;
@@ -608,6 +610,7 @@ int main(int argc, char **argv) {
     }
     jogo_inicia(&estado);
     if (!estado.modo_smoke) jogo_vai_para_fase(&estado, fase_inicial);
+    bancada_aplica(&estado);
     if (sanidade_inicial >= 0.0f) { // já com o grão no ponto (sem a subida suave), para a captura sair certa
         estado.sanidade = fminf(sanidade_inicial, SANIDADE_MAX);
         estado.sanidade_grao = regras_sanidade_intensidade(estado.sanidade);
@@ -616,6 +619,7 @@ int main(int argc, char **argv) {
     while (!WindowShouldClose() && !estado.sair) {
         quadro(&estado);
         if (estado.modo_smoke && piloto.codigo_saida >= 0) break;
+        if (bancada_quadro(GetFrameTime())) break; // --medir terminou
     }
     memset(estado.ident.nome, 0, sizeof(estado.ident.nome)); // o jogo encerrou: o nome some junto
     descarrega_recursos();
