@@ -86,6 +86,9 @@ typedef struct {
     float peito_m;       // altura do peito no mundo (a lanterna e os holofotes miram ali)
     float cela_avanco_m; // na cela, a mais na direção do vidro
     bool corta_emendas;  // rig.c: esvazia os triângulos que ligam partes fundidas (dedos na canela)
+    // abaixo deste y, cada braço é uma peça solta do corpo: rig.c não deixa ponto do braço pegar osso do
+    // corpo, nem o contrário (0 = não separa; no precursor, a mão está fundida ao joelho)
+    float bracos_soltos_y;
     PosturaModelo postura;
 } ModeloCriatura;
 

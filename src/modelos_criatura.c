@@ -155,6 +155,9 @@ const ModeloCriatura MODELOS_CRIATURA[CRIATURAS_TOTAL] = {
             .peito_m = 1.9f,        // reto, o peito fica mais alto
             .cela_avanco_m = 0.18f, // reto, ele ficaria longe do vidro: chega um pouco mais perto
             .corta_emendas = false, // nada fundido: mãos e dedos soltos do corpo
+            // abaixo de y 0,40 a malha é três peças (o corpo com as pernas e os dois braços): a ponta da mão
+            // fica a 3 cm da coxa e, sem separar, iria para o osso da perna (esticando a pele)
+            .bracos_soltos_y = 0.40f,
             .postura =
                 {
                     .lombar = 14.0f,
