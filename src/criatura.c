@@ -237,8 +237,8 @@ static void passos_da_criatura(Estado *e, float dt) {
     c->som_passo_t += dt;
     if (c->som_passo_t < 0.75f) return;
     c->som_passo_t = 0.0f;
-    float longe = Vector3Distance(c->pos, e->jog.pos);
-    if (longe < 16.0f) audio_toca(e, SOM_PASSO_CRIATURA, 1.0f - longe / 16.0f, 0.7f);
+    // [som no espaço] mais baixo quanto mais longe, do lado em que ele está e abafado atrás de parede
+    audio_toca_em(e, SOM_PASSO_CRIATURA, c->pos, PASSO_CRIATURA_ALCANCE_M, PASSO_CRIATURA_TOM);
 }
 
 // Ir direto ao jogador só se o passo não bater em nada (a visão sai a 2,4 m e passa por cima de móveis
@@ -320,7 +320,7 @@ void criatura_na_porta_do_armario(Estado *e) {
     c->pos = Vector3Add(armario, Vector3Scale(fora, d));
     c->pos.y = 0.0f;
     c->yaw = atan2f(-fora.x, -fora.z); // de frente para a porta
-    audio_toca(e, SOM_PASSO_CRIATURA, 1.0f, 0.6f);
+    audio_toca_em(e, SOM_PASSO_CRIATURA, c->pos, PASSO_CRIATURA_ALCANCE_M, 0.6f);
 }
 
 void criatura_chega_mais_perto(Estado *e) {

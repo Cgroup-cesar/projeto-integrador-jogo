@@ -3,6 +3,7 @@
 // tudo vira silêncio.
 #include "audio_sintese.h"
 #include "ui.h"
+#include "jogador.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -102,12 +103,25 @@ static void clique(Buffer *b, float tom, float corpo) { // máquina de escrever 
     }
 }
 
-static void passo(Buffer *b, float grave, float queda) { // baque abafado; o da criatura é mais grave e lento
+static void passo(Buffer *b, float grave, float queda) { // baque abafado do passo do jogador
     float lp = 0;
     for (int i = 0; i < b->n; i++) {
         float t = (float)i / TAXA;
         float e = expf(-t * queda);
         b->amostras[i] = e * (0.8f * filtra(&lp, ruido(), 0.08f) + 0.6f * sinf(DOIS_PI * grave * t));
+    }
+}
+
+// Passo da criatura: o corpo grave (que desce de tom) dá o peso; o estalo médio por cima é o que se ouve
+// num fone ou na caixa de um notebook, que quase não tocam o grave sozinho.
+static void passo_pesado(Buffer *b) {
+    float lp = 0, lp_medio = 0;
+    for (int i = 0; i < b->n; i++) {
+        float t = (float)i / TAXA;
+        float corpo = expf(-t * 11.0f) * sinf(DOIS_PI * (120.0f - 60.0f * t) * t);
+        float baque = expf(-t * 16.0f) * filtra(&lp, ruido(), 0.1f);
+        float estalo = expf(-t * 50.0f) * filtra(&lp_medio, ruido(), 0.35f);
+        b->amostras[i] = tanhf(2.2f * (0.6f * corpo + 0.9f * baque + 0.5f * estalo)); // satura: mais cheio
     }
 }
 
@@ -225,7 +239,7 @@ static void sintetiza(IdSom som, Buffer *b) {
         passo(b, 85.0f, 30.0f);
         break;
     case SOM_PASSO_CRIATURA:
-        passo(b, 48.0f, 12.0f);
+        passo_pesado(b);
         break;
     case SOM_VIDRO_ESTALO:
         estalo(b);
@@ -334,12 +348,30 @@ void audio_finaliza(Recursos *rec) {
 }
 
 // ================================================================== tocar
-void audio_toca(const Estado *e, IdSom som, float volume, float tom) {
+static void toca(const Estado *e, IdSom som, float volume, float tom, float pan) {
     if (!e->rec.audio_ok || som < 0 || som >= SOM_TOTAL) return;
     Sound s = e->rec.sons[som];
     SetSoundVolume(s, fmaxf(0.0f, fminf(1.0f, volume)));
     SetSoundPitch(s, tom);
+#if RAYLIB_VERSION_MAJOR < 6
+    pan = 0.5f - 0.5f * pan; // até a 5.5 o pan ia de 0 a 1, com 0,5 no centro e 1 na esquerda
+#endif
+    SetSoundPan(s, pan);
     PlaySound(s);
+}
+
+void audio_toca(const Estado *e, IdSom som, float volume, float tom) {
+    toca(e, som, volume, tom, 0.0f);
+}
+
+// O ouvido é o olho do jogador (no armário, dentro dele); a parede no meio vem do mesmo raycast da visão.
+void audio_toca_em(const Estado *e, IdSom som, Vector3 fonte, float alcance, float tom) {
+    Vector3 ouvido = jogador_olho(e);
+    Vector3 para = {fonte.x - ouvido.x, 0.0f, fonte.z - ouvido.z};
+    float dist = Vector3Length(para);
+    bool parede = dist > 0.5f && col_paredes_distancia_raio(&e->paredes, ouvido, para, dist) < dist - 0.3f;
+    SomEspacial s = regras_som_espacial(ouvido, e->jog.yaw, fonte, alcance, parede);
+    if (s.volume > 0.0f) toca(e, som, s.volume, tom, s.pan);
 }
 
 void audio_para(const Estado *e, IdSom som) {

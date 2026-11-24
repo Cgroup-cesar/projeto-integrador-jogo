@@ -34,6 +34,8 @@ void audio_finaliza(Recursos *rec);
 
 // Toca um som curto. volume 0..1; tom 1 = normal.
 void audio_toca(const Estado *e, IdSom som, float volume, float tom);
+// Som com lugar no mapa: volume pela distância e lado (esquerda/direita) por onde o jogador olha.
+void audio_toca_em(const Estado *e, IdSom som, Vector3 fonte, float alcance, float tom);
 void audio_para(const Estado *e, IdSom som);
 void audio_silencia(const Estado *e); // para tudo (os 0,2 s de silêncio antes do jumpscare)
 
