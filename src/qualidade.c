@@ -7,13 +7,13 @@
 static const Qualidade PRESETS[QUALIDADE_TOTAL] = {
     {QUALIDADE_BAIXA, 0.6f, 0.0f, 0, false, 0, 0.5f, false, false, true},
     {QUALIDADE_MEDIA, 0.75f, 0.35f, 512, true, 10, 0.35f, true, true, true},
-    {QUALIDADE_ALTA, 0.85f, 0.5f, 1024, true, 12, 0.5f, true, true, true},
+    {QUALIDADE_ALTA, 1.0f, 0.5f, 1024, true, 16, 0.5f, true, true, true},
     {QUALIDADE_ULTRA, 1.0f, 0.75f, 2048, true, 32, 0.5f, true, true, true},
 };
 
 static const char *const NOMES[QUALIDADE_TOTAL] = {"baixa", "media", "alta", "ultra"};
 
-static Qualidade atual = {QUALIDADE_ALTA, 0.85f, 0.5f, 1024, true, 12, 0.5f, true, true, true};
+static Qualidade atual = {QUALIDADE_ALTA, 1.0f, 0.5f, 1024, true, 16, 0.5f, true, true, true};
 
 // O que --sem desligou continua desligado em qualquer preset.
 static struct {

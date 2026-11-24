@@ -348,11 +348,23 @@ void posfx_nevoa_cela(const Estado *e, float densidade) {
     SetShaderValue(r->luz, r->loc_luz_cela_densidade, &densidade, SHADER_UNIFORM_FLOAT);
 }
 
+// Refaz os alvos quando a janela muda de tamanho ou o preset de qualidade muda (F7). O tamanho esperado sai
+// da mesma conta de cria_alvo: se as duas contas divergirem, os alvos seriam refeitos a cada quadro.
 void posfx_atualiza(Estado *e, float dt) {
     (void)dt;
-    int w = (int)(GetScreenWidth() * ESCALA_RENDER);
-    int h = (int)(GetScreenHeight() * ESCALA_RENDER);
-    if (w != e->rec.alvo_largura || h != e->rec.alvo_altura) {
+    static NivelQualidade nivel = QUALIDADE_TOTAL;
+#if TECLAS_DEBUG
+    if (e->in.f7 && !e->modo_feira) // F7: o próximo preset de qualidade
+        qualidade_escolhe((NivelQualidade)((qualidade()->nivel + 1) % QUALIDADE_TOTAL));
+#endif
+    float escala = usa_glsl_100() ? ESCALA_RENDER : qualidade()->escala;
+    int w = (int)(GetScreenWidth() * escala), h = (int)(GetScreenHeight() * escala);
+    w = w < 64 ? 64 : w;
+    h = h < 36 ? 36 : h;
+    bool mudou = nivel != QUALIDADE_TOTAL && nivel != qualidade()->nivel;
+    nivel = qualidade()->nivel;
+    if (mudou) TraceLog(LOG_INFO, "PRECURSOR: qualidade %s", qualidade_nome(nivel));
+    if (mudou || w != e->rec.alvo_largura || h != e->rec.alvo_altura) {
         libera_alvo(&e->rec);
         cria_alvo(&e->rec, GetScreenWidth(), GetScreenHeight());
         efeitos_redimensiona(&e->rec);

@@ -73,6 +73,7 @@ static void le_entrada(Entrada *in) {
     in->f2 = IsKeyPressed(KEY_F2);
     in->f3 = IsKeyPressed(KEY_F3);
     in->f5 = IsKeyPressed(KEY_F5);
+    in->f7 = IsKeyPressed(KEY_F7);
     in->f9 = IsKeyPressed(KEY_F9);
     in->f12 = IsKeyPressed(KEY_F12);
 #endif

@@ -26,7 +26,7 @@ typedef struct {
     bool lanterna; // F: liga e desliga a lanterna
     bool ajuda;    // H: abre e fecha a ajuda dos conectivos no terminal
     bool respirar; // ESPAÇO: segura a respiração no armário
-    bool f1, f2, f3, f5, f9, f12;
+    bool f1, f2, f3, f5, f7, f9, f12;
     bool alguma;                   // qualquer tecla ou movimento (modo feira)
     int letras[MAX_LETRAS_QUADRO]; // letras digitadas neste quadro (Unicode), para o campo do nome
     int n_letras;
