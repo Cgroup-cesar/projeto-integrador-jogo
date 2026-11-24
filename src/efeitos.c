@@ -267,6 +267,7 @@ static void envia_composicao(const Estado *e) {
     float aberracao = q->pos ? GRADACAO_ABERRACAO : 0.0f, tempo = fmodf(e->tempo_total, 100.0f);
     Vector3 sombra = q->pos ? (Vector3)GRADACAO_SOMBRA : (Vector3){1, 1, 1};
     Vector3 luz = q->pos ? (Vector3)GRADACAO_LUZ : (Vector3){1, 1, 1};
+    Vector3 elevacao = q->pos ? (Vector3)GRADACAO_ELEVACAO : (Vector3){0, 0, 0};
     Vector2 tela = {(float)e->rec.alvo_largura, (float)e->rec.alvo_altura};
     SetShaderValue(s, loc(fx.compoe, "exposicao"), &exposicao, SHADER_UNIFORM_FLOAT);
     SetShaderValue(s, loc(fx.compoe, "usaAo"), &usa_ao, SHADER_UNIFORM_FLOAT);
@@ -281,6 +282,7 @@ static void envia_composicao(const Estado *e) {
     SetShaderValue(s, loc(fx.compoe, "sombraCor"), &sombra, SHADER_UNIFORM_VEC3);
     SetShaderValue(s, loc(fx.compoe, "luzCor"), &luz, SHADER_UNIFORM_VEC3);
     SetShaderValue(s, loc(fx.compoe, "tela"), &tela, SHADER_UNIFORM_VEC2);
+    SetShaderValue(s, loc(fx.compoe, "elevacao"), &elevacao, SHADER_UNIFORM_VEC3);
 }
 
 bool efeitos_compoe(const Estado *e) {

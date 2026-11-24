@@ -103,16 +103,16 @@ static void desenha_celula(const Estado *e, int coluna, int linha, bool so_poeir
         if (nivel_celula(&e->nivel, coluna + dx, linha + dz) != '#') continue;
         float f = sorteio(coluna, linha, (unsigned)lado);
         if (so_poeira && f < 0.7f) poeira(e, centro, dx, dz, f / 0.7f);
-        if (!so_poeira && sorteio(coluna, linha, 10u + (unsigned)lado) < 0.22f)
+        if (!so_poeira && sorteio(coluna, linha, 10u + (unsigned)lado) < 0.45f)
             montinho(centro, dx, dz, coluna, linha, lado);
     }
     if (so_poeira) return;
     float x = (sorteio(coluna, linha, 50u) - 0.5f) * TAMANHO_CELULA * 0.7f;
     float z = (sorteio(coluna, linha, 51u) - 0.5f) * TAMANHO_CELULA * 0.7f;
     Vector3 solto = {centro.x + x, 0.0f, centro.z + z};
-    if (sorteio(coluna, linha, 52u) < 0.1f)
+    if (sorteio(coluna, linha, 52u) < 0.2f)
         papel(solto, 360.0f * sorteio(coluna, linha, 53u), sorteio(coluna, linha, 54u));
-    else if (sorteio(coluna, linha, 55u) < 0.12f)
+    else if (sorteio(coluna, linha, 55u) < 0.25f)
         lasca(solto, 360.0f * sorteio(coluna, linha, 56u));
 }
 

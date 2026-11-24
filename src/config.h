@@ -281,16 +281,17 @@
 #define TEXTURA_METROS_PISO     2.0f  // 4 × 4 placas de 0,5 m
 #define TEXTURA_METROS_TETO     2.0f  // 3 × 3 placas de forro
 #define TEXTURA_METROS_METAL    1.0f
-#define EXPOSICAO               1.1f  // multiplica a cena HDR antes do tone mapping (ACES)
+#define EXPOSICAO               1.25f // multiplica a cena HDR antes do tone mapping (ACES)
 // Névoa volumétrica, bloom e gradação de cor (efeitos.c; os presets de qualidade ligam e desligam)
 #define NEVOA_VOLUME_DENSIDADE  0.05f    // por metro; a poeira faz variar em volta disso
 #define NEVOA_VOLUME_AMBIENTE   0.004f   // a luz que a névoa espalha sozinha: o fundo do corredor clareia
 #define BLOOM_CORTE             1.0f     // só o que passa disso (em HDR) brilha em volta
 #define BLOOM_FORCA             0.18f
-#define GRADACAO_SOMBRA         {0.78f, 1.0f, 1.06f} // as sombras puxam para o azul-petróleo
-#define GRADACAO_LUZ            {0.96f, 1.05f, 1.0f} // as luzes, para o verde-claro
-#define GRADACAO_SATURACAO      0.72f
-#define GRADACAO_CONTRASTE      1.14f
+#define GRADACAO_SOMBRA         {0.78f, 1.02f, 1.0f}  // as sombras puxam para o azul-petróleo
+#define GRADACAO_LUZ            {0.92f, 1.06f, 0.95f} // as luzes, para o verde-claro
+#define GRADACAO_SATURACAO      0.78f
+#define GRADACAO_CONTRASTE      1.06f
+#define GRADACAO_ELEVACAO       {0.012f, 0.028f, 0.03f} // o preto vira azul-petróleo bem escuro
 #define GRADACAO_VINHETA        0.85f
 #define GRADACAO_GRAO           0.03f
 #define GRADACAO_ABERRACAO      0.012f
