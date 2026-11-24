@@ -45,13 +45,14 @@ Projeto Integrador da disciplina **Programação Imperativa e Funcional (PIF)**,
 | Sair do terminal, do painel ou do diário | Esc | B |
 | Pausar (andando) | Esc | Start |
 | Ajuda dos conectivos (terminal e painéis) | H | View |
+| Comandos: abre e fecha, no canto da tela, a lista das teclas que valem agora | B | RB |
 | Luzes A e B da cela (no console) | 1 e 2 | X e Y |
 | Chaves A, B e C (painel 1) | 1, 2 e 3 | direcional e A (X e Y também ligam A e B) |
 | Escolher no terminal, nos painéis e nas fichas | setas e ENTER | direcional (ou analógico esquerdo) e A |
 | Fora do andar (menu, pausa, perguntas da intro, terminal, painéis, fichas, avaliação): passar por cima escolhe, clicar confirma; as teclas da barra do rodapé também são clicáveis | mouse (botão esquerdo) | — |
 | Começo da intro: escolher professor ou professora; digitar o nome (até 16 letras, com acento), apagar, confirmar | setas · teclado · Backspace · ENTER | direcional · — · — · A (sem teclado, fica o nome padrão) |
 
-**Controle:** qualquer controle que a raylib reconheça (Xbox, com fio ou pelo adaptador/Bluetooth) funciona junto com o teclado, sem configurar nada (`src/controle.c`). As dicas da tela (a barra do rodapé, "A — usar o console", a tecla embaixo da barra da respiração) trocam para os botões do controle assim que ele é usado e voltam para as teclas quando alguém mexe no teclado ou no mouse. Sensibilidade, zona morta e curva do analógico ficam em `CONTROLE_*` (`src/config.h`). Ao conectar, o log mostra `CONTROLE: 0 conectado (nome)`.
+**Controle:** qualquer controle que a raylib reconheça (Xbox, com fio ou pelo adaptador/Bluetooth) funciona junto com o teclado, sem configurar nada (`src/controle.c`). As dicas da tela (o "Comandos" e a "Lanterna" no canto, a lista de comandos, a barra do rodapé no menu, "A — usar o console", a tecla embaixo da barra da respiração) trocam para os botões do controle assim que ele é usado e voltam para as teclas quando alguém mexe no teclado ou no mouse. Sensibilidade, zona morta e curva do analógico ficam em `CONTROLE_*` (`src/config.h`). Ao conectar, o log mostra `CONTROLE: 0 conectado (nome)`.
 
 **Teclas de debug:** F1 troca o filtro VHS (desligado, original, fita caseira, fita gasta, monitor CRT, câmera de vigilância; o nome aparece no canto) · F2 pula a fase · F3 mostra o estado e o caminho da criatura, a sanidade e a força do efeito · F5 reinicia a fase · F7 troca a qualidade gráfica (baixa, média, alta, ultra) · F9 vai à resposta final · F12 salva uma captura em `docs/img/`. Para desligá-las, mude `#define TECLAS_DEBUG 1` para `0` em `src/config.h`; no modo feira (`--feira`) elas ficam desligadas sozinhas.
 
