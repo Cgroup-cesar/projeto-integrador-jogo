@@ -10,6 +10,7 @@
 #include "regras.h"
 #include "colecoes.h"
 #include "materiais.h"
+#include "regras_animacao.h"
 
 // ------------------------------------------------------------------ entrada do quadro
 // main.c lê teclado e mouse e preenche isto; os módulos só leem daqui.
@@ -99,6 +100,14 @@ typedef struct {
     bool tem_cameras;
     Model modelo_quadro; // opcional: assets/modelos/quadro.glb (o quadro de investigação)
     bool tem_quadro;
+
+    // O rig do Precursor (rig.c): pesos dos ossos calculados ao carregar e o skinning no shader de luz.
+    bool rig_ok;                    // false = o modelo aparece sem se deformar (pose de repouso)
+    unsigned int rig_vbo[2];        // ossoIds e ossoPesos (4 por vértice)
+    int loc_luz_ossos[OSSOS_TOTAL]; // uniform ossos[i] do shader de luz
+    int loc_luz_usa_ossos;
+    float rig_escala, rig_base_y; // metros por unidade do modelo e o y dos pés (do .glb ou nominal)
+
     Music trilhas[TRILHA_TOTAL]; // opcionais: sons longos de assets/audio (trilhas.c)
     bool tem_trilha[TRILHA_TOTAL];
     // Texturas do mapa (texturas.c): criadas uma vez em carrega_recursos, liberadas em descarrega_recursos.
@@ -182,8 +191,10 @@ typedef struct {
     float surgindo;    // 0..1 enquanto sobe pelo duto
     float som_passo_t;
     float procura_t; // na PROCURA: troca de ponto a cada pouco
-    float vel_suave; // m/s realmente andados, suavizado: dá a postura (regras_postura_criatura)
-    float passada;   // metros andados desde que surgiu: dá o ritmo do balanço
+
+    AnimCriatura anim;    // o rig: pose, passos, tiques e pesos das camadas (animacao.c, regras_animacao.c)
+    Vector3 anim_desvio;  // o desenho alcança devagar um pulo curto de posição (armário, mão no vidro)
+    Vector3 anim_pos_ant; // a posição do quadro anterior (para achar esses pulos)
 } Criatura;
 
 // ------------------------------------------------------------------ rodadas (sala de observação)

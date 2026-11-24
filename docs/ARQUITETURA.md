@@ -97,7 +97,11 @@ stateDiagram-v2
 | `jogador.c` | câmera, movimento com colisão, fôlego, passos, armário, mira |
 | `respiracao.c` | o armário: esconde; se o Precursor vinha atrás de quem entrou (`regras_armario_perseguido`), ele vai até lá e, a 3 m (`regras_armario_chegou`), para na porta e a pessoa segura a respiração (ESPAÇO sobre a faixa branca; 3 chances). Sem tutorial: a tecla ESPAÇO aparece embaixo da barra |
 | `lanterna.c` | a lanterna: F liga e desliga, a 5ª luz do shader (cone saindo dos olhos) e o modelo na mão |
-| `criatura.c` | o Precursor: corpo procedural, IA, A*, captura |
+| `criatura.c` | o Precursor: IA, A*, captura e o desenho do corpo |
+| `esqueleto.c` | o rig do Precursor (puro): 22 ossos medidos no modelo, cinemática direta, matrizes de skinning e IK de dois ossos |
+| `regras_animacao.c`, `regras_animacao_cenas.c` | a animação dele (pura): camadas com crossfade, passada com os pés plantados, cabeça, tiques, saída do bueiro, distorção e convulsão |
+| `animacao.c` | liga o jogo à animação: lê a fase, a IA, a cela, a lanterna e o armário e pede a pose; roda todo quadro, mesmo com a IA parada |
+| `rig.c` | os pesos dos ossos em cada vértice do `.glb` (calculados ao carregar) e o skinning no shader de luz |
 | `cela.c` | o Precursor contido: no centro da cela, olhando o vidro (a lanterna não o move; ela falha ao mirá-lo, em `lanterna.c`) |
 | `susto.c` | o jumpscare: silêncio, grito e o rosto do modelo pulando até a câmera e tremendo (movimento em `regras_quadro_susto`); dura o trecho alto do `jumpscare.mp3` |
 | `rodadas.c` · `terminal.c` · `glifos.c` | as 3 rodadas (o ENTER decide), o analisador SNI-85 (setas, H e Esc), a língua dos glifos |

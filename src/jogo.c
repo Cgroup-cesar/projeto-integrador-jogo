@@ -3,6 +3,7 @@
 #include "nivel.h"
 #include "jogador.h"
 #include "criatura.h"
+#include "animacao.h"
 #include "susto.h"
 #include "lanterna.h"
 #include "rodadas.h"
@@ -368,6 +369,7 @@ void jogo_atualiza(Estado *e, float dt) {
     nivel_atualiza(e, dt);
     atualiza_fase(e, dt);
     if (!respiracao_segura_criatura(e)) criatura_atualiza(e, dt); // na porta do armário, ele só espera
+    animacao_atualiza(e, dt); // a animação segue mesmo com a IA parada (ele escuta na porta)
     sanidade_atualiza(e, dt); // depois da criatura e do jogador: usa a distância deste quadro
     goteira_atualiza(e, dt);
     glifos_atualiza(e, dt);

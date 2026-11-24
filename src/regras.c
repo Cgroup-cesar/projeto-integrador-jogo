@@ -192,19 +192,6 @@ const char *regras_nome_estado_criatura(EstadoCriatura estado) {
     return nomes[estado];
 }
 
-// [REQ:PURA-regras_postura_criatura] postura procedural: corcunda, balanço da passada e respiração
-PosturaCriatura regras_postura_criatura(float velocidade, float passada, float t) {
-    float ritmo = fminf(1.0f, fmaxf(0.0f, velocidade / CRIATURA_VEL_PERSEGUE)); // 0 parado, 1 perseguindo
-    float andando = fminf(1.0f, ritmo * 3.0f); // o balanço já entra inteiro na patrulha
-    float ciclo = passada * (2.0f * PI / CRIATURA_PASSADA_M);
-    PosturaCriatura p;
-    p.inclina_graus = CRIATURA_INCLINA_PARADO + (CRIATURA_INCLINA_CORRENDO - CRIATURA_INCLINA_PARADO) * ritmo;
-    p.balanco_graus = sinf(ciclo) * CRIATURA_BALANCO_GRAUS * andando;
-    p.sobe = fabsf(sinf(ciclo)) * CRIATURA_SOBE_M * andando;
-    p.respira = 1.0f + sinf(t * 1.1f) * CRIATURA_RESPIRA * (1.0f - andando);
-    return p;
-}
-
 // Número "sorteado" em [0, 1) a partir do ciclo: sem rand(), então o resultado é puro e repetível.
 float regras_sorteio(int ciclo, unsigned semente) {
     unsigned h = (unsigned)ciclo * 2654435761u ^ semente;

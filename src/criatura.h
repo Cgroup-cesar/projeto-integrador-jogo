@@ -1,4 +1,5 @@
-// criatura.h — o Precursor: IA nos corredores (A*), placeholder procedural e captura (o susto: susto.h).
+// criatura.h — o Precursor: IA nos corredores (A*), desenho do corpo e captura (o susto: susto.h; o rig e a
+// animação: rig.h, animacao.h).
 #ifndef CRIATURA_H
 #define CRIATURA_H
 
@@ -12,7 +13,7 @@ void criatura_contem(Estado *e);              // fases de sala: dentro da cela
 void criatura_inicia_saida(Estado *e);        // saídas: surge do duto depois de alguns segundos
 void criatura_puxa_para_contencao(Estado *e); // painel resolvido: some numa distorção
 void criatura_atualiza(Estado *e, float dt);
-void criatura_desenha(const Estado *e); // o corpo (geometria iluminada)
+void criatura_desenha(const Estado *e);       // o corpo (geometria iluminada)
 
 // Pego: conta para o placar ("saída sem ser pego"), vem o susto e a saída recomeça.
 void criatura_captura(Estado *e);
