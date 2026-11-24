@@ -374,8 +374,7 @@ static bool atualiza_surgimento(Estado *e, float dt) {
     if (c->tempo_para_surgir > 0.0f) return true;
     c->ativo = true;
     c->estado = CRIATURA_PATRULHA;
-    c->tempo_replanejar = 99.0f;
-    audio_toca(e, SOM_DISTORCAO, 0.8f, 0.55f); // sair do duto não é fala: um rugido grave
+    c->tempo_replanejar = 99.0f; // sair do duto só tem o som da tampa (tubulacao_som.c)
     return true;
 }
 
@@ -458,7 +457,7 @@ static void aplica_transformacao(const Estado *e) {
     const Criatura *c = &e->cri;
     Vector3 p = animacao_pos(e);
     rlTranslatef(p.x, p.y, p.z);
-    rlRotatef(c->yaw * RAD2DEG, 0.0f, 1.0f, 0.0f);
+    rlRotatef(animacao_yaw(e) * RAD2DEG, 0.0f, 1.0f, 0.0f);
     if (c->distorcao > 0.0f)
         rlScalef(1.0f - c->distorcao * 0.8f, 1.0f + c->distorcao * 1.5f, 1.0f - c->distorcao * 0.8f);
 }

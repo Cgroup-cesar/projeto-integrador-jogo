@@ -16,6 +16,7 @@
 #include "vhs.h"
 #include "audio_sintese.h"
 #include "trilhas.h"
+#include "tubulacao_som.h"
 #include "ui.h"
 #include "texturas.h"
 #include "fita.h"
@@ -500,6 +501,7 @@ static void atualiza(Estado *e, float dt) {
     jogo_atualiza(e, dt);
     audio_atualiza(e, dt);
     trilhas_atualiza(e, dt);
+    tubulacao_som_atualiza(e, dt);
 }
 
 // [REQ:RNF3] desenhar recebe const Estado *: não muda nada; o loop é entrada → atualiza → desenha
@@ -644,6 +646,7 @@ static void carrega_recursos(void) {
     botoes_carrega(&estado.rec);
     audio_inicia(&estado.rec);
     trilhas_carrega(&estado.rec);
+    tubulacao_som_carrega(&estado.rec);
     criatura_carrega_modelo(&estado.rec);
     susto_carrega_boca(&estado.rec);
     lanterna_carrega_modelo(&estado.rec);
@@ -670,6 +673,7 @@ static void descarrega_recursos(void) {
     lanterna_descarrega_modelo(&estado.rec);
     susto_descarrega_boca(&estado.rec);
     criatura_descarrega_modelo(&estado.rec);
+    tubulacao_som_descarrega(&estado.rec);
     trilhas_descarrega(&estado.rec);
     audio_finaliza(&estado.rec);
     botoes_descarrega(&estado.rec);

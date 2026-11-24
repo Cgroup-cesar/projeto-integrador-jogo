@@ -303,6 +303,32 @@
 // junto com os 1,5 s de `surgindo`.
 #define ANIM_BUEIRO_PRE_S 5.0f
 #define ANIM_BUEIRO_SAI_S 1.5f // o mesmo tempo de atualiza_surgimento (criatura.c)
+// Saída pela tubulação da cela, no fim da R1 e da R2 (só apresentação: não muda o tempo das fases). Começa
+// na falha de luz e continua nos primeiros segundos da saída seguinte, bem antes de ele surgir no duto.
+#define ANIM_CANO_INICIO_S 2.2f  // depois de concluir a rodada: o mesmo instante da falha de luz (rodadas.c)
+#define ANIM_CANO_VIRA_S   0.6f  // vira para a tubulação (e, lá, de volta para o vidro)
+#define ANIM_CANO_ANDA_S   2.8f  // anda até a boca
+#define ANIM_CANO_DESCE_S  5.0f  // desce: a saída do bueiro ao contrário, um pouco mais rápida...
+#define ANIM_CANO_VISTO    0.7f  // ...e passa esta fração do tempo no que se vê do vidro (até os ombros)
+#define CANO_CELA_DX       -2.2f // a boca, em relação ao lugar dele na cela (m): à esquerda de quem olha
+#define CANO_CELA_DZ       -2.3f // ...e no fundo (o console tapa a direita; perto do vidro, o parapeito)
+// A boca da cela é igual ao duto do corredor (nivel.c). Os marcos da cena, em segundos de cano_t:
+#define ANIM_CANO_DESCE_EM (2.0f * ANIM_CANO_VIRA_S + ANIM_CANO_ANDA_S) // chegou à boca e virou para o vidro
+#define ANIM_CANO_FIM      (ANIM_CANO_DESCE_EM + ANIM_CANO_DESCE_S)
+// Sons da tubulação (tubulacao_som.c). A tampa sai de assets/audio/som-tampa-tubulacao.mp3 (28 s com vários
+// golpes): dois trechos cortados ao carregar. Os passos (passos-tubulacao.wav) emendam sem corte.
+#define TAMPA_SAI_DE_S    7.10f // sair do duto: a tampa arrasta e cai (o baque em +0,85 s: as mãos na borda)
+#define TAMPA_SAI_ATE_S   9.25f
+#define TAMPA_ENTRA_DE_S  17.65f // entrar na tubulação: o baque forte (+0,3 s) e a tampa se acomodando
+#define TAMPA_ENTRA_ATE_S 19.75f
+#define TAMPA_ALCANCE_M   26.0f
+#define TAMPA_VOLUME      1.0f
+#define TAMPA_PISO        0.4f // volume mínimo (0..1): longe ou atrás da parede, ainda se ouve
+// Os passos por dentro dos canos: do fim da entrada na cela ao começo da saída no corredor.
+#define PASSOS_TUBO_ALCANCE_M 30.0f // a travessia vai da cela ao corredor sul (~30 m)
+#define PASSOS_TUBO_VOLUME    1.0f
+#define PASSOS_TUBO_PISO      0.5f // volume mínimo: por cima da voz do rádio, sempre audível
+#define PASSOS_TUBO_FUNDO_M   1.0f // os canos passam por baixo do chão
 // Susto (jumpscare): o rosto do modelo pula até a câmera e fica tremendo (ver regras_quadro_susto).
 // Com assets/audio/jumpscare.mp3, o rosto fica até o fim do trecho alto do som (depois só sobra o eco).
 #define JUMPSCARE_S            1.2f  // duração com o som sintetizado (sem assets/audio/jumpscare.*)

@@ -117,6 +117,11 @@ typedef struct {
     int loc_luz_usa_ossos;
     float rig_escala, rig_base_y; // metros por unidade do modelo e o y dos pés (do .glb ou nominal)
 
+    // Os sons da tubulação (tubulacao_som.c), opcionais: a tampa (dois trechos de um arquivo) e os passos.
+    Sound tampa_sai, tampa_entra;
+    Music passos_tubo;
+    bool tem_tampa, tem_passos_tubo;
+
     Music trilhas[TRILHA_TOTAL]; // opcionais: sons longos de assets/audio (trilhas.c)
     bool tem_trilha[TRILHA_TOTAL];
     // Texturas do mapa (texturas.c): criadas uma vez em carrega_recursos, liberadas em descarrega_recursos.
@@ -142,6 +147,7 @@ typedef struct {
     Vector3 inicio, console, cela_precursor, duto, painel1, painel2, diario, porta_sala;
     Vector3 porta_arquivo; // a porta do Arquivo (a 'D' mais perto do painel 2)
     int celula_trancada;   // célula de uma porta trancada (−1 = nenhuma): a criatura não passa por ela
+    Vector3 cano_cela;     // a boca da tubulação no chão da cela (por onde ele sai quando as luzes caem)
     Vector3 lampadas[MAX_LAMPADAS];
     bool lampada_em_x[MAX_LAMPADAS]; // a luminária corre ao longo de x (senão, de z)
     // bit i da célula (linha, coluna): a luminária i a alcança sem passar por parede; o bit LUZ_BIT_MESA é a
@@ -438,6 +444,9 @@ typedef struct Estado {
     int placar;        // cache do fold dos eventos
     int erros_na_fase, erros_totais;
     int pegos_na_fase;
+    bool cano;         // ele está saindo pela tubulação da cela (só apresentação: animacao.c)...
+    float cano_t;      // ...há quanto tempo (desde que as luzes começaram a cair)
+    float tubo_ant[2]; // cano_t e tempo_para_surgir do quadro anterior (a tampa: tubulacao_som.c)
     float apagao_t;    // > 0 durante um apagão
     float falha_luz_t; // luzes piscando depois de um erro
     float alarme_t;
