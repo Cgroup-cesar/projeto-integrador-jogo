@@ -10,7 +10,7 @@
 
 static const char *const ARQUIVOS[TRILHA_TOTAL] = {
     [TRILHA_MENU] = "audio/trilha_menu.wav",
-    [TRILHA_VOZ_PRECURSOR] = "audio/voz_precursor_fala.wav",
+    [TRILHA_VOZ_PRECURSOR] = "audio/voz_precursor_robo.wav", // decisão 146 (Freesound, CC0)
     [TRILHA_VOZ_RADIO] = "audio/voz_radio.wav",
     [TRILHA_CORACAO_NORMAL] = "audio/coracao_normal.wav",
     [TRILHA_CORACAO_RAPIDO] = "audio/coracao_rapido.wav",
