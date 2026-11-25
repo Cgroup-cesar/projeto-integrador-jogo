@@ -169,7 +169,7 @@ src/animacao.c/.h        liga o jogo à animação: lê o estado da criatura e m
 src/rig.c/.h             os pesos dos ossos em cada vértice do .glb (ao carregar) e o skinning na GPU
 src/cela.c/.h            o Precursor contido: no centro da cela, olhando o vidro
 src/sanidade.c/.h        a sanidade a cada quadro e a barra no topo da tela
-src/susto.c/.h           o jumpscare: o rosto do modelo pula até a câmera e treme; dura o trecho alto do som
+src/susto.c/.h           o jumpscare: o rosto do modelo pula até a câmera, treme e abre uma boca de dentes; dura o trecho alto do som
 src/dialogo.c/.h         todos os textos do jogo
 src/audio_sintese.c/.h   sons curtos gerados em código (e substituição por .ogg, .wav ou .mp3)
 src/tubulacao_som.c/.h   os sons da tubulação: a tampa ao entrar e ao sair e os passos que atravessam da cela ao corredor

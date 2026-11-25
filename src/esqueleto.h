@@ -74,6 +74,7 @@ typedef struct {
 } MarcaRosto;
 
 #define MARCAS_ROSTO_MAX 2
+#define MARCA_PONTOS     13 // o centro da reta e 12 pontos na borda (a reta e o arco)
 
 // A boca que se abre no susto (o rosto é liso: fora do susto ela não existe), em unidades do arquivo. É uma
 // elipse na pele, com a reta do eixo na horizontal; escancarada, ela tem esses raios.
@@ -83,7 +84,6 @@ typedef struct {
     Vector3 normal; // para onde a pele olha ali
     float raio_x, raio_y;
 } BocaRosto;
-#define MARCA_PONTOS 13 // o centro da reta e 12 pontos na borda (a reta e o arco)
 
 typedef struct {
     const char *arquivo; // em assets/
