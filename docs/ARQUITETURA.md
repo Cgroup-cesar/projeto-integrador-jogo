@@ -89,7 +89,7 @@ stateDiagram-v2
 | `main.c` | janela, game loop, leitura da entrada, capturas, `--smoke` (piloto automático) |
 | `jogo.c` | aplica `regras_proxima_fase`, prepara cada fase, pontua, pausa, debug, modo feira |
 | `config.h` · `estado.h` | constantes · todo o estado do jogo |
-| `logica.c` · `regras.c` · `regras_texto.c` · `regras_ranking.c` · `regras_porta.c` · `funcional.h` · `colecoes.c` | a camada pura (`regras_texto.c`: marcadores do roteiro, nome digitado e legenda com defeito do rádio falso; `regras_ranking.c`: o lugar da partida no ranking e a linha do arquivo; `regras_porta.c`: a folha da porta da sala e a coreografia da volta à sala) |
+| `logica.c` · `regras.c` · `regras_texto.c` · `regras_ranking.c` · `regras_porta.c` · `regras_cena.c` · `funcional.h` · `colecoes.c` | a camada pura (`regras_texto.c`: marcadores do roteiro, nome digitado e legenda com defeito do rádio falso; `regras_ranking.c`: o lugar da partida no ranking e a linha do arquivo; `regras_porta.c`: a folha da porta da sala e a coreografia da volta à sala; `regras_cena.c`: a coreografia da cena do final bom) |
 | `nivel.c` | mapa ASCII → paredes, móveis, interativos, luzes; desenho do bloco de contenção com as texturas |
 | `materiais.c` | puro: ruído contínuo nas bordas, o desenho de cada material (`materiais_pixel`), manchas, desgaste do estêncil e `materiais_uv` (UV em metros) |
 | `texturas.c` | gera ou carrega as texturas uma vez, libera ao sair; `texturas_caixa` (6 faces, UV de mundo ou local) e `texturas_quadro` (decalque) |
@@ -134,6 +134,7 @@ stateDiagram-v2
 | `cameras.c` | 7 câmeras de segurança presas retas no alto das paredes das salas e corredores, inclinadas para baixo, com o LED de REC |
 | `quadro.c` | o quadro de investigação na parede sul da sala de observação, atrás do console; desenhado sem descartar faces de trás (os papéis do modelo vêm com a face invertida) |
 | `corpo.c` | o corpo coberto do consultor americano no fim do rastro de arrasto, perto do gerador; interativo nas saídas (`INTER_CORPO`) |
+| `cena_final.c` | o final bom como cena (no esquema de `retorno.c`): levanta do console, a porta abre, as luminárias acendem uma a uma, a lanterna do Varela ofusca e a tela estoura em branco; lá fora, a fita do Exército na mão de alguém sai pela entrada da base (`base.glb`), olha em volta com a mata (`arvores.glb`, duas árvores e alguns tufos repetidos) e termina na nave subindo; a base é desenhada longe do mapa, com as próprias luzes, e o shader de luz recorta o alambrado, as folhas e o capim (`recorte`) |
 | `tela_fim.c` | depois do final: desempenho (resultado, placar, lugar no ranking), avaliação em estrelas e a tabela do ranking |
 | `ranking.c` | só arquivo: lê e grava `ranking.txt` (temporário + troca) e anexa `avaliacoes.csv`; nada no `--smoke` |
 

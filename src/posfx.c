@@ -139,6 +139,7 @@ static void carrega_luz(Recursos *rec) {
     rec->loc_luz_id = GetShaderLocation(rec->luz, "luzId");
     rec->loc_luz_triplanar = GetShaderLocation(rec->luz, "triplanar");
     rec->loc_luz_vidro = GetShaderLocation(rec->luz, "vidro");
+    rec->loc_luz_recorte = GetShaderLocation(rec->luz, "recorte");
     int cor = UNIDADE_COR;
     SetShaderValue(rec->luz, GetShaderLocation(rec->luz, "mapaCor"), &cor, SHADER_UNIFORM_INT);
     int alcance = UNIDADE_ALCANCE;

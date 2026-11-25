@@ -217,7 +217,34 @@
 #define AVALIACAO_MAX       5     // estrelas por pergunta
 #define FIM_PLACAR_FOLGA_S  0.4f  // o placar ignora o ENTER nesse começo (o do texto não pode fechá-lo)
 #define FIM_RUIM_TEXTO_S    8.2f  // final ruim: quando o texto e o "por quê" aparecem (depois do susto)
-#define FIM_BOM_TEXTO_S     13.0f // final bom: quando o texto e o "por quê" aparecem (depois das falas)
+// O final bom é uma cena (cena_final.c): depois do silêncio, o jogador levanta, sai da sala pelo corredor até
+// a lanterna do Varela, a tela estoura em branco e a fita do Exército dá a volta na base, lá fora, à noite.
+#define CENA_COMECA_S     5.0f  // depois do silêncio (as falas do Varela já começaram)
+#define CENA_VIRA_S       1.5f  // levanta do console e vira para a porta, por dentro
+#define CENA_PORTA_S      1.1f  // espera a folha abrir
+#define CENA_ANDA_S       6.4f  // da porta pelo corredor, até a lanterna ofuscar
+#define CENA_BRANCO_S     0.9f  // a lanterna estoura a tela em branco
+#define CENA_FORA_S       11.0f // a volta na base, lá fora
+#define CENA_PRETO_S      1.0f  // a fita acaba no preto
+#define CENA_FORA_INICIO_S (CENA_COMECA_S + CENA_VIRA_S + CENA_PORTA_S + CENA_ANDA_S + CENA_BRANCO_S)
+#define FIM_BOM_TEXTO_S    (CENA_FORA_INICIO_S + CENA_FORA_S + CENA_PRETO_S) // o texto e o "por quê"
+#define CENA_ANDA_ATE_X   29.0f // onde ele para no corredor norte (x, em m)
+#define CENA_VARELA_X     41.0f // a lanterna do Varela, no fim do corredor
+#define CENA_LANTERNA_S   2.6f  // a lanterna acende antes de ele parar
+#define CENA_ACENDE_M_S   5.5f  // as luminárias acendem à frente, a partir da porta, nesta velocidade
+#define CENA_FAIXA_S      0.5f  // as faixas de cinema entram e saem nesse tempo
+// A base lá fora (assets/modelos/base.glb, opcional): longe do mapa, para a névoa da cela não chegar nela.
+#define BASE_ORIGEM        (Vector3){500.0f, 0.0f, 500.0f}
+#define BASE_ESCALA        0.7f  // o modelo vem grande (caixotes de 2 m)
+#define CENA_SAI_S         3.0f  // lá fora: da porta da entrada até o meio do pátio...
+#define CENA_OLHA_CEU_S    1.6f  // ...uma volta inteira olhando em volta e, no fim, para o céu (a nave)
+#define MATA_ARVORES       50    // as árvores em volta da cerca (cópias das duas do arvores.glb)
+#define MATA_CAPIM         150   // tufos de capim, dentro e fora da cerca
+#define BASE_NEVOA         0.028f // bem menos que a do bloco: a base inteira aparece, o horizonte some
+#define BASE_AMBIENTE      0.02f
+#define NAVE_SOBE_S        7.0f   // a luz da nave começa a subir aos 7 s de fita (no fim da volta)
+#define NAVE_ALTURA_M      14.0f  // de onde ela parte (acima das árvores, à frente de quem sai)
+#define CENA_FITA_HORA     (22 * 3600 + 0 * 60 + 13) // a fita lá fora começa às 22:00:13 (a nave vai embora)
 #define FIM_LEITURA_MAX_S   50.0f // o texto espera a leitura: ENTER ou, no máximo, isso, e vai ao placar
 // O rádio falso (o Precursor imitando o Varela, a partir da S2)
 #define RADIO_FALSO_TOM    0.78f // tom da voz do rádio (1 = normal; menor = mais grave)

@@ -66,7 +66,7 @@ endfunction()
 enable_testing()
 precursor_teste(test_logica src/logica.c src/regras.c src/regras_texto.c)
 precursor_teste(test_regras src/regras.c src/regras_texto.c src/regras_ranking.c src/regras_sanidade.c src/regras_som.c src/logica.c src/colecoes.c src/materiais.c src/materiais_parede.c
-    src/esqueleto.c src/regras_animacao.c src/regras_animacao_cenas.c src/regras_porta.c)
+    src/esqueleto.c src/regras_animacao.c src/regras_animacao_cenas.c src/regras_porta.c src/regras_cena.c)
 precursor_teste(test_fluxo src/regras.c src/regras_texto.c src/logica.c)
 
 # Teste visual do menu VHS (abre janela): fica fora do ctest. Rode com ./build/test_menu (ou o .exe).

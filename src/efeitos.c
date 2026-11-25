@@ -4,6 +4,7 @@
 #include "posfx.h"
 #include "qualidade.h"
 #include "sombreadores.h"
+#include "cena_final.h"
 #include "rlgl.h"
 #include "raymath.h"
 #include <math.h>
@@ -215,6 +216,10 @@ static void passe_volume(const Estado *e) {
     float a = NEVOA_VOLUME_AMBIENTE; // com energia, a névoa clareia fria; sem ela, quase nada
     Vector3 ambiente = energia ? (Vector3){a * 0.6f, a, a * 0.9f}
                                : (Vector3){a * 0.08f, a * 0.12f, a * 0.12f};
+    if (cena_final_fora(e)) { // lá fora, à noite: o ar só aparece nos fachos dos holofotes e da nave
+        ambiente = (Vector3){a * 0.02f, a * 0.025f, a * 0.04f};
+        densidade *= 0.6f;
+    }
     int passos = qualidade()->volume_passos;
     SetShaderValueMatrix(s, loc(fx.volume, "vpInv"), vp_inv);
     SetShaderValue(s, loc(fx.volume, "camera"), &fx.camera, SHADER_UNIFORM_VEC3);

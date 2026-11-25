@@ -10,6 +10,7 @@
 #define V FALANTE_VARELA
 #define F FALANTE_VARELA_FALSO // o Precursor imitando o Varela
 #define J FALANTE_JOGADOR
+#define P FALANTE_VARELA_PRESENTE // o Varela em pessoa (o fim do corredor, no final bom)
 
 static const Legenda INTRO_INTERFONE[] = {
     // a carta de boas-vindas, pelo rádio
@@ -51,9 +52,12 @@ static const Legenda APOS_R3[] = {
     {"{NOME}, ele quer conversar. Transmita: se você falar, a porta abre.", 4.5f, F},
     {"Confie em mim.", 2.5f, F},
 };
+// Durante a saída pela porta (cena_final.c): o rádio, a resposta e, no fim do corredor, o Varela em pessoa,
+// atrás da lanterna.
 static const Legenda FIM_BOM_FALAS[] = {
-    {"...{PROF} {NOME}? É o Varela. O de verdade. O que você disse a ele?", 5.0f, V},
-    {"Nada que pudesse ser verdade.", 3.5f, J},
+    {"...{PROF} {NOME}? É o Varela. O de verdade. O que você disse a ele?", 4.5f, V},
+    {"Nada que pudesse ser verdade.", 3.0f, J},
+    {"Acabou, {PROF}. Pode subir.", 2.5f, P},
 };
 static const Legenda PORTA_TRANCADA[] = {
     {"A porta fica trancada enquanto você trabalha, {PROF} {NOME}. Volte ao console.", 4.5f, V},
@@ -181,6 +185,7 @@ static const char *const TEXTOS[TXT_TOTAL] = {
     [TXT_MIRA_PORTA_ABRIR] = "E — abrir a porta",
     [TXT_MIRA_PORTA_FECHAR] = "E — fechar a porta",
     [TXT_MIRA_CORPO] = "E — examinar",
+    [TXT_CENA_FITA_EXERCITO] = "EXÉRCITO BRASILEIRO — CHÃ DE ALEGRIA / PE",
     [TXT_ARMARIO_SAIR] = "E — sair do armário",
     [TXT_OBJETIVO_SALA] = "Vá ao console (E) e descubra o que ele diz.",
     [TXT_OBJETIVO_S1] = "Religue o gerador: painel 1, no fim do corredor (ao norte).",
@@ -230,6 +235,7 @@ static const char *const TEXTOS[TXT_TOTAL] = {
     [TXT_PAINEL_CHAVE] = "[%d] %s  %s",
     [TXT_FALANTE_VARELA] = "GEN. VARELA (rádio)",
     [TXT_FALANTE_JOGADOR] = "{PROF} {NOME}",
+    [TXT_FALANTE_VARELA_PRESENTE] = "GEN. VARELA",
     [TXT_PAINEL1_TITULO] = "PAINEL 1 — GERADOR AUXILIAR",
     [TXT_PAINEL2_TITULO] = "PAINEL 2 — CONTENÇÃO (ARQUIVO)",
     [TXT_PAINEL_RESOLVIDO] = "SAÍDA ACESA — ENERGIA RESTABELECIDA",

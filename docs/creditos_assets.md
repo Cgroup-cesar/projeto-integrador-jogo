@@ -32,3 +32,10 @@ num repositório público, confirme a licença com quem as trouxe, ou mantenha-a
 O jogo aceita `assets/texturas/<material>.png`, mais `_normal.png` e `_orm.png` (veja `docs/graficos.md`).
 Use apenas texturas de licença livre, como CC0 do [ambientCG](https://ambientcg.com) ou do
 [Poly Haven](https://polyhaven.com), e registre aqui o nome, a URL de origem e a licença de cada uma.
+
+## Modelos da cena do final bom (Sketchfab)
+
+| Asset | Autor e obra | Licença |
+|---|---|---|
+| `assets/modelos/base.glb` | *Small Military base*, por **Jungle Jim** (Sketchfab), sem alteração | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) |
+| `assets/modelos/arvores.glb` | *Low Poly Tree Scene Free*, por **Nicholas-3D** (Sketchfab), sem alteração (o jogo usa só duas árvores e alguns tufos de capim) | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) |
