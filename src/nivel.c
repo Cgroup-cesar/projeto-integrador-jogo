@@ -3,6 +3,7 @@
 #include "nivel.h"
 #include "console_modelo.h"
 #include "caixas.h"
+#include "escotilha.h"
 #include "mesa_bilhete.h"
 #include "armario_modelo.h"
 #include "porta_sala.h"
@@ -259,6 +260,7 @@ void nivel_constroi_paredes(const Nivel *n, ColParedes *paredes) {
                          caixa((Vector3){n->diario.x, MESA_ALTURA_M * 0.5f, n->diario.z},
                                (Vector3){MESA_FUNDO_M, MESA_ALTURA_M, MESA_COMPRIMENTO_M}, PAREDE_MOVEL));
     caixas_adiciona_paredes(paredes);
+    escotilha_adiciona_paredes(paredes); // a escada da escotilha: o jogador não sobe
     col_paredes_adiciona(paredes, caixa((Vector3){CORPO_X, 0.15f, CORPO_Z},
                                         (Vector3){CORPO_COMPRIMENTO_M, 0.3f, 0.75f}, PAREDE_MOVEL)); // o corpo
     for (int i = 0; i < n->n_armarios; i++) {
@@ -490,6 +492,7 @@ static void desenha_moveis(const Estado *e, bool completo) {
     metal(e, (Vector3){con.x, 1.02f, con.z - 0.75f}, (Vector3){1.5f, 0.06f, 0.5f}, cinza, 2);
     if (completo) {
         caixas_desenha(e);
+        escotilha_desenha(e); // a escada e a tampa da escotilha, ao lado dos caixotes
         cameras_desenha(e);
         quadro_desenha(e);
         console_modelo_desenha(e); // o computador de época na mesa (sem o modelo, a tela verde abaixo)
@@ -608,9 +611,7 @@ static void desenha(const Estado *e, bool com_chao) {
         texturas_caixa_mat(e, MATERIAL_PISO, (Vector3){largura * 0.5f, -0.05f, profundidade * 0.5f},
                            (Vector3){largura, 0.1f, profundidade}, texturas_modo(MATERIAL_PISO, 0), WHITE);
     posfx_chao(e, false);
-    texturas_caixa_mat(e, MATERIAL_TETO,
-                   (Vector3){largura * 0.5f, PE_DIREITO + 0.05f, profundidade * 0.5f},
-                   (Vector3){largura, 0.1f, profundidade}, texturas_modo(MATERIAL_TETO, 0), WHITE);
+    escotilha_desenha_teto(e); // a laje, com o vão da escotilha da sala de observação
     desenha_paredes(e);
     float meio_x = (n->vidro_x0 + n->vidro_x1) * 0.5f, vl = n->vidro_x1 - n->vidro_x0;
     texturas_caixa_mat(e, MATERIAL_CONCRETO, (Vector3){meio_x, 0.45f, n->vidro_z},

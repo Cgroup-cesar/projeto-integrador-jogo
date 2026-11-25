@@ -1,16 +1,16 @@
 // cena_final.c — o final bom como cena, no mesmo esquema da volta à sala (retorno.c): o jogo assume o
-// jogador e a coreografia vem das regras puras (regras_cena.c). Ele levanta do console, a porta abre, as
-// luminárias do corredor acendem uma a uma (ao contrário dos apagões), a lanterna do Varela ofusca no fim do
-// corredor e a tela estoura em branco. Lá fora, a fita do Exército, na mão de alguém: ele sai pela entrada
-// de tijolo da base (base.glb), anda até o pátio e olha em volta, à noite, com a mata em volta (arvores.glb),
-// os holofotes das torres varrendo o chão e, no fim, a luz da nave subindo por cima das árvores. Sem os
-// modelos, a fita fica só com o chão e as luzes, e o resto da cena não muda.
+// jogador e a coreografia vem das regras puras (regras_cena.c). Ele levanta do console, vai até a escada ao
+// lado dos caixotes, sobe e empurra a escotilha do teto (escotilha.c): ela emperra, cede e abre, o clarão lá
+// de cima desce pelo vão e a tela estoura em branco. Lá fora, a fita do Exército, na mão de alguém: ele sai
+// pela entrada de tijolo da base (base.glb), anda até o pátio e olha em volta, à noite, com a mata em volta
+// (arvores.glb), os holofotes das torres varrendo o chão e, no fim, a luz da nave subindo por cima das
+// árvores. Sem os modelos, a fita fica só com o chão e as luzes, e o resto da cena não muda.
 #include "cena_final.h"
 #include "efeitos.h"
 #include "jogador.h"
 #include "lampada_sala.h"
 #include "nivel.h"
-#include "porta_sala.h"
+#include "audio_sintese.h"
 #include "posfx.h"
 #include "rlgl.h"
 #include "ui.h"
@@ -47,13 +47,14 @@ static void separa_mata(Recursos *rec) {
     for (int i = 0; i + 1 < m->meshCount && rec->n_arvores < 2; i++) { // padrão FILTER: os pares altos
         bool par = m->meshMaterial[i] != m->meshMaterial[i + 1] && altura_de(m->meshes[i]) > 5.0f &&
                    altura_de(m->meshes[i + 1]) > 5.0f;
-        bool outro = rec->n_arvores == 0 ||
-                     m->meshes[rec->mata_casca[0]].triangleCount != m->meshes[i].triangleCount;
+        bool outro =
+            rec->n_arvores == 0 || m->meshes[rec->mata_casca[0]].triangleCount != m->meshes[i].triangleCount;
         if (!par || !outro) continue;
         BoundingBox b = GetMeshBoundingBox(m->meshes[i]);
         rec->mata_casca[rec->n_arvores] = i;
         rec->mata_folha[rec->n_arvores] = i + 1;
-        rec->mata_pe[rec->n_arvores++] = (Vector3){(b.min.x + b.max.x) * 0.5f, b.min.y, (b.min.z + b.max.z) * 0.5f};
+        rec->mata_pe[rec->n_arvores++] =
+            (Vector3){(b.min.x + b.max.x) * 0.5f, b.min.y, (b.min.z + b.max.z) * 0.5f};
         i++;
     }
     int contagem[32] = {0}, capim = 0;
@@ -79,7 +80,8 @@ static void carrega_mata(Recursos *rec) {
     if (!rec->tem_mata) return;
     com_luz(&rec->modelo_mata, rec);
     separa_mata(rec);
-    TraceLog(LOG_INFO, "PRECURSOR: mata do final: %d árvores e %d tufos de capim", rec->n_arvores, rec->n_capim);
+    TraceLog(LOG_INFO, "PRECURSOR: mata do final: %d árvores e %d tufos de capim", rec->n_arvores,
+             rec->n_capim);
 }
 
 void cena_final_carrega(Recursos *rec) {
@@ -126,28 +128,43 @@ bool cena_final_dentro(const Estado *e) {
 
 void cena_final_inicia(Estado *e) {
     Fim *f = &e->fim;
-    Vector3 porta = e->nivel.porta_sala;
     f->cena_de = (PoseJogador){e->jog.pos, e->jog.yaw, e->jog.pitch};
-    f->cena_porta = (PoseJogador){{porta.x - RETORNO_DIANTE_PORTA_M, 0.0f, porta.z}, PI * 0.5f, 0.0f};
-    f->cena_fim = (PoseJogador){{CENA_ANDA_ATE_X, 0.0f, porta.z}, PI * 0.5f, 0.03f};
+    f->cena_pe = (PoseJogador){{ESCOTILHA_X, 0.0f, CENA_PE_Z}, 0.0f, 0.0f}; // de frente para os degraus (sul)
 }
 
 static bool cruzou(float antes, float t, float marca) {
     return antes < marca && t >= marca;
 }
 
+// O meio do vão da escotilha, um pouco acima da laje: de onde a luz lá de fora desce.
+static Vector3 vao(void) {
+    return (Vector3){ESCOTILHA_X, PE_DIREITO + 0.4f, ESCOTILHA_Z};
+}
+
+// Um som a cada degrau pisado e, no empurrão, a trava cedendo e a tampa rangendo. O ENTER pula 3 s: no
+// máximo um som por pulo.
+static void sons_da_subida(Estado *e, float antes, float t) {
+    int degrau = regras_cena_degrau(t);
+    if (degrau >= 0 && degrau != regras_cena_degrau(antes)) {
+        Vector3 pe = {ESCOTILHA_X, (degrau + 1) * ESCADA_DEGRAU_M, ESCADA_PLANO_Z};
+        audio_toca_em(e, SOM_PASSO, pe, 6.0f, 0.75f);
+    }
+    if (cruzou(antes, t, CENA_ABRE_INICIO_S + 0.15f)) audio_toca_em(e, SOM_ARMARIO_ABRE, vao(), 8.0f, 0.8f);
+}
+
 void cena_final_atualiza(Estado *e, float antes, float t) {
     if (e->fase != FASE_FIM_BOM) return;
     Fim *f = &e->fim;
     if (cruzou(antes, t, CENA_COMECA_S)) e->jog.modo = MODO_ANDANDO; // sai do console
-    if (cruzou(antes, t, CENA_COMECA_S + CENA_VIRA_S)) porta_sala_abre(e);
+    sons_da_subida(e, antes, t);
     EtapaCena etapa = regras_cena_etapa(t);
     if (etapa == CENA_ANTES || etapa == CENA_FIM) return;
     PoseJogador saida = {na_base(PORTA_BASE), -PI * 0.5f, 0.0f}; // na porta do galpão, olhando para o oeste
-    PoseJogador p = etapa <= CENA_BRANCO ? regras_cena_pose(t, f->cena_de, f->cena_porta, f->cena_fim)
+    PoseJogador p = etapa <= CENA_BRANCO ? regras_cena_pose(t, f->cena_de, f->cena_pe)
                                          : regras_cena_fora(t - CENA_FORA_INICIO_S, saida, na_base(PATIO));
-    float dt = Clamp(t - antes, 0.0001f, 0.1f); // o ENTER pula 3 s: os passos não contam o pulo
-    bool andando = Vector3Distance(e->jog.pos, p.pos) > 0.3f * dt;
+    float dt = Clamp(t - antes, 0.0001f, 0.1f);           // o ENTER pula 3 s: os passos não contam o pulo
+    bool chao = etapa <= CENA_ANDA || etapa >= CENA_FORA; // na escada, sem passos nem balanço de andar
+    bool andando = chao && Vector3Distance(e->jog.pos, p.pos) > 0.3f * dt;
     e->jog.pos = p.pos;
     e->jog.yaw = p.yaw;
     e->jog.pitch = p.pitch;
@@ -161,64 +178,28 @@ static Vector3 cor_luz(Color c, float k) {
     return (Vector3){c.r / 255.0f * k, c.g / 255.0f * k, c.b / 255.0f * k};
 }
 
-static float lanterna_varela(float t) { // 0..1: acende antes de ele parar e fica até o branco
-    float acende = CENA_FORA_INICIO_S - CENA_BRANCO_S - CENA_LANTERNA_S;
-    return Clamp((t - acende) / 0.5f, 0.0f, 1.0f);
-}
-
-static Vector3 lente_varela(const Estado *e) {
-    return (Vector3){CENA_VARELA_X, 1.45f, e->nivel.porta_sala.z + 0.25f};
-}
-
 int cena_final_luzes(const Estado *e, Vector3 *pos, Vector3 *cor, Vector4 *cone, int *ids) {
-    const Nivel *n = &e->nivel;
-    float t = e->fim.tempo;
+    (void)ids; // nenhuma das três depende das paredes (já vêm −1)
     int k = 0;
     pos[k] = lampada_sala_bulbo(); // a lâmpada da sala fica acesa atrás dele
     cor[k++] = cor_luz(COR_LAMPADA, 1.2f);
-    bool usada[MAX_LAMPADAS] = {false};
-    for (int vez = 0; vez < LUMINARIAS_ACESAS - 1; vez++) { // seleção: as mais próximas do jogador
-        int melhor = -1;
-        for (int i = 0; i < n->n_lampadas; i++)
-            if (!usada[i] && !nivel_na_sala_de_observacao(n, n->lampadas[i]) &&
-                (melhor < 0 || Vector3Distance(n->lampadas[i], e->jog.pos) <
-                                   Vector3Distance(n->lampadas[melhor], e->jog.pos)))
-                melhor = i;
-        if (melhor < 0) break;
-        usada[melhor] = true;
-        float acende = regras_cena_acende(t, Vector3Distance(n->lampadas[melhor], n->porta_sala));
-        pos[k] = n->lampadas[melhor];
-        ids[k] = melhor; // as paredes seguram a luz (Nivel.alcance_luz)
-        cor[k++] = cor_luz(COR_LUMINARIA, LUMINARIA_FORCA * LUZ_CORREDOR_GANHO * acende);
-    }
-    float varela = lanterna_varela(t);
-    Vector3 lente = lente_varela(e), olho = jogador_olho(e);
-    Vector3 dir = Vector3Normalize(Vector3Subtract(olho, lente));
-    pos[k] = lente;
-    cone[k] = (Vector4){dir.x, dir.y, dir.z, cosf(16.0f * DEG2RAD)};
-    cor[k++] = cor_luz(COR_LANTERNA, 9.0f * varela);
-    pos[k] = (Vector3){e->jog.pos.x, ALTURA_OLHOS + 0.3f, e->jog.pos.z}; // a luz fraca no jogador
+    pos[k] = vao(); // o clarão: desce pelo vão em cone, conforme a tampa abre
+    cone[k] = (Vector4){0.0f, -1.0f, 0.0f, cosf(38.0f * DEG2RAD)};
+    cor[k++] = cor_luz(COR_LANTERNA, CENA_CLARAO_FORCA * regras_cena_escotilha(e->fim.tempo));
+    float alto = fminf(e->jog.pos.y + ALTURA_OLHOS + 0.3f, PE_DIREITO - 0.1f); // a luz fraca no jogador
+    pos[k] = (Vector3){e->jog.pos.x, alto, e->jog.pos.z};
     cor[k++] = cor_luz(COR_LUMINARIA, 0.32f);
     return k;
 }
 
 void cena_final_desenha_emissivos(const Estado *e) {
     if (!cena_final_dentro(e)) return;
-    const Nivel *n = &e->nivel;
-    float t = e->fim.tempo;
+    float abertura = regras_cena_escotilha(e->fim.tempo);
+    if (abertura <= 0.0f) return;
     posfx_comeca_emissivo(e);
-    for (int i = 0; i < n->n_lampadas; i++) { // laço de desenho: o painel de cada luminária, acendendo
-        if (nivel_na_sala_de_observacao(n, n->lampadas[i])) continue;
-        posfx_emissivo(e, LUMINARIA_EMISSAO * regras_cena_acende(t, Vector3Distance(n->lampadas[i], n->porta_sala)));
-        Vector3 p = {n->lampadas[i].x, PE_DIREITO - 0.074f, n->lampadas[i].z};
-        Vector3 painel = n->lampada_em_x[i] ? (Vector3){1.16f, 0.004f, 0.22f} : (Vector3){0.22f, 0.004f, 1.16f};
-        DrawCubeV(p, painel, COR_LUMINARIA);
-    }
-    float varela = lanterna_varela(t);
-    if (varela > 0.0f) { // a lente da lanterna: estoura no bloom
-        posfx_emissivo(e, 40.0f * varela);
-        DrawSphereEx(lente_varela(e), 0.05f, 10, 10, COR_LANTERNA);
-    }
+    posfx_emissivo(e, CENA_CLARAO_EMISSAO * abertura); // o fundo do poço estoura no bloom
+    DrawCubeV((Vector3){ESCOTILHA_X, PE_DIREITO + ESCOTILHA_POCO_M - 0.01f, ESCOTILHA_Z},
+              (Vector3){ESCOTILHA_LADO_M, 0.004f, ESCOTILHA_LADO_M}, COR_LANTERNA);
     posfx_emissivo(e, 1.0f);
     posfx_termina_emissivo(e);
 }
@@ -240,7 +221,7 @@ static int luzes_fora(const Estado *e, Vector3 *pos, Vector3 *cor, Vector4 *cone
         queda[i] = 1.0f;
     }
     pos[0] = (Vector3){c.x - 70.0f, 90.0f, c.z + 50.0f}; // a lua: longe e sem queda (quase direcional)
-    cor[0] = (Vector3){0.045f, 0.06f, 0.10f}; // o asfalto claro do pátio pedia uma lua fraca
+    cor[0] = (Vector3){0.045f, 0.06f, 0.10f};            // o asfalto claro do pátio pedia uma lua fraca
     queda[0] = 0.0f;
     Vector3 torres[2] = {na_base(TORRE_A), na_base(TORRE_B)}, patio = na_base(PATIO);
     for (int i = 0; i < 2; i++) { // os holofotes da torre e do galpão varrem o pátio, perto de quem filma
@@ -292,7 +273,8 @@ static void desenha_mata(const Estado *e) {
         int tipo = i % r->n_arvores;
         float a = (i + 0.6f * sorteio(i, 1)) / MATA_ARVORES * 2.0f * PI, raio = 58.0f + 30.0f * sorteio(i, 2);
         Vector3 onde = {c.x + sinf(a) * raio, 0.0f, c.z + cosf(a) * raio};
-        float giro = sorteio(i, 3) * 2.0f * PI, escala = 0.9f + 0.35f * sorteio(i, 4) + (raio - 58.0f) * 0.01f; // as do fundo, maiores
+        float giro = sorteio(i, 3) * 2.0f * PI,
+              escala = 0.9f + 0.35f * sorteio(i, 4) + (raio - 58.0f) * 0.01f; // as do fundo, maiores
         desenha_copia(m, r->mata_casca[tipo], r->mata_pe[tipo], onde, giro, escala);
         desenha_copia(m, r->mata_folha[tipo], r->mata_pe[tipo], onde, giro, escala);
     }
@@ -315,7 +297,8 @@ bool cena_final_desenha_fora(const Estado *e) {
     Vector4 cone[LUZES_SHADER];
     float queda[LUZES_SHADER];
     int ids[LUZES_SHADER];
-    for (int i = 0; i < LUZES_SHADER; i++) ids[i] = -1; // padrão MAP: fora do mapa, nada segura a luz
+    for (int i = 0; i < LUZES_SHADER; i++)
+        ids[i] = -1; // padrão MAP: fora do mapa, nada segura a luz
     int n = luzes_fora(e, pos, cor, cone, queda);
     efeitos_guarda_luzes(pos, cor, cone, queda, ids, n, -1);
     efeitos_sem_sombra(e);
@@ -325,14 +308,15 @@ bool cena_final_desenha_fora(const Estado *e) {
     float nevoa = BASE_NEVOA;
     if (r->luz_ok) SetShaderValue(r->luz, r->loc_luz_nevoa, &nevoa, SHADER_UNIFORM_FLOAT);
     Vector3 c = BASE_ORIGEM;
-    DrawPlane((Vector3){c.x, -0.02f, c.z}, (Vector2){400.0f, 400.0f}, (Color){38, 42, 28, 255}); // o chão de mato
+    DrawPlane((Vector3){c.x, -0.02f, c.z}, (Vector2){400.0f, 400.0f},
+              (Color){38, 42, 28, 255}); // o chão de mato
     float recorte = 0.5f; // o alambrado, as folhas e o capim: os furos da textura são transparentes
     rlDrawRenderBatchActive();
     if (r->luz_ok) SetShaderValue(r->luz, r->loc_luz_recorte, &recorte, SHADER_UNIFORM_FLOAT);
     rlDisableBackfaceCulling(); // a cerca, a rede das torres, as folhas e o capim são planos de uma face só
     if (r->tem_base)
-        DrawModelEx(r->modelo_base, c, (Vector3){0, 1, 0}, 0.0f, (Vector3){BASE_ESCALA, BASE_ESCALA, BASE_ESCALA},
-                    WHITE);
+        DrawModelEx(r->modelo_base, c, (Vector3){0, 1, 0}, 0.0f,
+                    (Vector3){BASE_ESCALA, BASE_ESCALA, BASE_ESCALA}, WHITE);
     desenha_mata(e);
     rlDrawRenderBatchActive();
     rlEnableBackfaceCulling();
@@ -360,7 +344,8 @@ bool cena_final_desenha_fora(const Estado *e) {
 static void osd(const Estado *e, float h) {
     float s = h / 720.0f, t = e->fim.tempo - CENA_FORA_INICIO_S, m = 36 * s, tam = 22 * s;
     Color cor = {232, 255, 240, 255};
-    if (fmodf(t, 1.0f) < 0.6f) DrawCircleV((Vector2){m + 8 * s, m + tam * 0.5f}, 8 * s, (Color){230, 40, 40, 255});
+    if (fmodf(t, 1.0f) < 0.6f)
+        DrawCircleV((Vector2){m + 8 * s, m + tam * 0.5f}, 8 * s, (Color){230, 40, 40, 255});
     ui_texto(e, "REC", (Vector2){m + 24 * s, m}, tam, cor);
     ui_texto(e, dialogo_texto(TXT_CENA_FITA_EXERCITO), (Vector2){m, h - m - 2 * tam - 8 * s}, tam, cor);
     int seg = CENA_FITA_HORA + (int)t;
@@ -370,10 +355,10 @@ static void osd(const Estado *e, float h) {
     ui_texto(e, linha, (Vector2){m, h - m - tam}, tam, cor);
 }
 
-// A lanterna do Varela apontada para a câmera: o halo e o risco horizontal da lente, por cima da cena.
+// O clarão do vão aberto, visto de baixo: o halo e o risco horizontal, por cima da cena.
 static void ofusca(const Estado *e, float w, float h) {
-    float k = lanterna_varela(e->fim.tempo);
-    Vector3 lente = lente_varela(e), frente = Vector3Subtract(e->camera.target, e->camera.position);
+    float k = regras_cena_escotilha(e->fim.tempo);
+    Vector3 lente = vao(), frente = Vector3Subtract(e->camera.target, e->camera.position);
     if (k <= 0.0f || Vector3DotProduct(frente, Vector3Subtract(lente, e->camera.position)) <= 0.0f) return;
     Vector2 p = GetWorldToScreenEx(lente, e->camera, (int)w, (int)h);
     float perto = Clamp(1.0f - Vector3Distance(lente, e->camera.position) / 16.0f, 0.25f, 1.0f);
@@ -383,8 +368,8 @@ static void ofusca(const Estado *e, float w, float h) {
     DrawCircleGradient(p, raio, Fade(luz, 0.55f * k), Fade(luz, 0.0f));
     DrawCircleGradient(p, raio * 0.18f, Fade(WHITE, 0.95f * k), Fade(luz, 0.0f));
     float risco = w * 0.5f * k * perto, alto = h * 0.006f;
-    DrawRectangleGradientH((int)(p.x - risco), (int)(p.y - alto), (int)risco, (int)(alto * 2), Fade(luz, 0.0f),
-                           Fade(luz, 0.5f * k));
+    DrawRectangleGradientH((int)(p.x - risco), (int)(p.y - alto), (int)risco, (int)(alto * 2),
+                           Fade(luz, 0.0f), Fade(luz, 0.5f * k));
     DrawRectangleGradientH((int)p.x, (int)(p.y - alto), (int)risco, (int)(alto * 2), Fade(luz, 0.5f * k),
                            Fade(luz, 0.0f));
     EndBlendMode();

@@ -50,6 +50,16 @@
 #define CAIXAS_PROFUNDIDADE_M 0.9f
 #define CAIXAS_PLACA_LARGURA_M 0.62f // a placa do Exército no caixote grande (cobre o "Fragile" do modelo)
 #define CAIXAS_PLACA_ALTURA_M  0.28f
+// A escotilha no teto da sala de observação e a escada até ela (escotilha.c), ao lado dos caixotes, atrás de
+// quem está no console. Só cenário: o jogador não sobe (a escada tem colisão); ela abre no final bom.
+#define ESCOTILHA_X          5.2f   // centro do vão (m): de x 4,8 a 5,6
+#define ESCOTILHA_Z          13.45f // de z 13,05 a 13,85; a dobradiça fica no lado sul
+#define ESCOTILHA_LADO_M     0.8f
+#define ESCOTILHA_POCO_M     0.5f   // o poço curto acima da laje (de y 3,0 a 3,5)
+#define ESCOTILHA_ABRE_GRAUS 105.0f // aberta, a tampa passa um pouco da vertical
+#define ESCADA_PLANO_Z       13.82f // o plano dos degraus (a parede sul fica em z 14)
+#define ESCADA_LARGURA_M     0.46f  // entre os trilhos
+#define ESCADA_DEGRAU_M      0.30f  // um degrau a cada 0,3 m
 // A mesa do bilhete, no fundo do Arquivo (mesa_bilhete.c).
 #define MESA_ALTURA_M      0.76f  // o modelo é escalado por esta altura
 #define MESA_FUNDO_M       0.84f  // de frente para trás (eixo X): encostada na parede oeste
@@ -217,22 +227,32 @@
 #define AVALIACAO_MAX       5     // estrelas por pergunta
 #define FIM_PLACAR_FOLGA_S  0.4f  // o placar ignora o ENTER nesse começo (o do texto não pode fechá-lo)
 #define FIM_RUIM_TEXTO_S    8.2f  // final ruim: quando o texto e o "por quê" aparecem (depois do susto)
-// O final bom é uma cena (cena_final.c): depois do silêncio, o jogador levanta, sai da sala pelo corredor até
-// a lanterna do Varela, a tela estoura em branco e a fita do Exército dá a volta na base, lá fora, à noite.
-#define CENA_COMECA_S     5.0f  // depois do silêncio (as falas do Varela já começaram)
-#define CENA_VIRA_S       1.5f  // levanta do console e vira para a porta, por dentro
-#define CENA_PORTA_S      1.1f  // espera a folha abrir
-#define CENA_ANDA_S       6.4f  // da porta pelo corredor, até a lanterna ofuscar
-#define CENA_BRANCO_S     0.9f  // a lanterna estoura a tela em branco
-#define CENA_FORA_S       11.0f // a volta na base, lá fora
-#define CENA_PRETO_S      1.0f  // a fita acaba no preto
-#define CENA_FORA_INICIO_S (CENA_COMECA_S + CENA_VIRA_S + CENA_PORTA_S + CENA_ANDA_S + CENA_BRANCO_S)
-#define FIM_BOM_TEXTO_S    (CENA_FORA_INICIO_S + CENA_FORA_S + CENA_PRETO_S) // o texto e o "por quê"
-#define CENA_ANDA_ATE_X   29.0f // onde ele para no corredor norte (x, em m)
-#define CENA_VARELA_X     41.0f // a lanterna do Varela, no fim do corredor
-#define CENA_LANTERNA_S   2.6f  // a lanterna acende antes de ele parar
-#define CENA_ACENDE_M_S   5.5f  // as luminárias acendem à frente, a partir da porta, nesta velocidade
-#define CENA_FAIXA_S      0.5f  // as faixas de cinema entram e saem nesse tempo
+// O final bom é uma cena (cena_final.c): depois do silêncio, o jogador levanta do console, vai até a escada
+// ao lado dos caixotes, sobe e empurra a escotilha do teto; ela abre, o clarão estoura a tela em branco e a
+// fita do Exército dá a volta na base, lá fora, à noite.
+#define CENA_COMECA_S        5.0f  // depois do silêncio (as falas do Varela já começaram)
+#define CENA_VIRA_S          1.2f  // levanta, recua do console e vira para a escada
+#define CENA_ANDA_S          3.8f  // do console até o pé da escada
+#define CENA_SOBE_S          2.6f  // sobe os degraus, um a um, olhando para cima
+#define CENA_ABRE_S          1.4f  // empurra a tampa: emperra, cede e abre ("Pode subir." cai aqui)
+#define CENA_BRANCO_S        0.9f  // o clarão lá de cima estoura a tela em branco
+#define CENA_FORA_S          11.0f // a volta na base, lá fora
+#define CENA_PRETO_S         1.0f  // a fita acaba no preto
+#define CENA_SOBE_INICIO_S   (CENA_COMECA_S + CENA_VIRA_S + CENA_ANDA_S)
+#define CENA_ABRE_INICIO_S   (CENA_SOBE_INICIO_S + CENA_SOBE_S)
+#define CENA_FORA_INICIO_S   (CENA_ABRE_INICIO_S + CENA_ABRE_S + CENA_BRANCO_S)
+#define FIM_BOM_TEXTO_S      (CENA_FORA_INICIO_S + CENA_FORA_S + CENA_PRETO_S) // o texto e o "por quê"
+#define CENA_RECUA_M         0.6f // o passo para trás saindo do console, na virada
+#define CENA_PE_Z            13.3f // onde ele para, debaixo da escotilha (x = ESCOTILHA_X), de frente para a escada
+#define CENA_SOBE_M          0.9f // três degraus: o olho vai a 2,5 m
+#define CENA_SOBE_DEGRAUS    3
+#define CENA_EMPURRA_M       0.10f // sobe mais um pouco ao empurrar a tampa
+#define CENA_CLARAO_SOBE_M   0.35f // no clarão, ainda sobe um pouco (o olho fica abaixo da laje)
+#define CENA_OLHA_CIMA_PITCH 1.2f  // olhando para a escotilha (abaixo do limite do olhar, 1,35)
+#define CENA_EMPERRA_S       0.3f  // o tranco: a tampa cede um pouco, volta e só então abre
+#define CENA_CLARAO_FORCA    9.0f  // a luz que desce pelo vão aberto
+#define CENA_CLARAO_EMISSAO  40.0f // o fundo do poço no bloom
+#define CENA_FAIXA_S         0.5f  // as faixas de cinema entram e saem nesse tempo
 // A base lá fora (assets/modelos/base.glb, opcional): longe do mapa, para a névoa da cela não chegar nela.
 #define BASE_ORIGEM        (Vector3){500.0f, 0.0f, 500.0f}
 #define BASE_ESCALA        1.0f  // o modelo já vem em metros (o muro tem 4,8 m)
