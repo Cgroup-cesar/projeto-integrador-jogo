@@ -312,7 +312,7 @@ typedef struct {
 
 // ------------------------------------------------------------------ intro, legendas e fim
 // FALANTE_VARELA_FALSO: o Precursor imitando o Varela no rádio (mesmo rótulo, voz grave e legenda falhando).
-// FALANTE_VARELA_PRESENTE: o Varela em pessoa, sem o rádio (o fim do corredor, na cena do final bom).
+// FALANTE_VARELA_PRESENTE: o Varela em pessoa, sem o rádio (lá em cima da escotilha, na cena do final bom).
 typedef enum { FALANTE_VARELA, FALANTE_VARELA_FALSO, FALANTE_JOGADOR, FALANTE_SISTEMA, FALANTE_VARELA_PRESENTE } Falante;
 
 typedef struct {
@@ -367,7 +367,7 @@ typedef struct {
     int posicao;      // no ranking (0 = 1º lugar; −1 = não coube)
     int notas[AVALIACAO_PERGUNTAS]; // estrelas que a pessoa deu ao jogo (0 = não respondeu)
     int nota_cursor;
-    PoseJogador cena_de, cena_porta, cena_fim; // a caminhada do final bom (regras_cena_pose)
+    PoseJogador cena_de, cena_pe; // a subida do final bom (regras_cena_pose): do console ao pé da escada
 } Fim;
 
 typedef struct {

@@ -10,7 +10,7 @@
 #define V FALANTE_VARELA
 #define F FALANTE_VARELA_FALSO // o Precursor imitando o Varela
 #define J FALANTE_JOGADOR
-#define P FALANTE_VARELA_PRESENTE // o Varela em pessoa (o fim do corredor, no final bom)
+#define P FALANTE_VARELA_PRESENTE // o Varela em pessoa (lá em cima da escotilha, no final bom)
 
 static const Legenda INTRO_INTERFONE[] = {
     // a carta de boas-vindas, pelo rádio
@@ -52,8 +52,8 @@ static const Legenda APOS_R3[] = {
     {"{NOME}, ele quer conversar. Transmita: se você falar, a porta abre.", 4.5f, F},
     {"Confie em mim.", 2.5f, F},
 };
-// Durante a saída pela porta (cena_final.c): o rádio, a resposta e, no fim do corredor, o Varela em pessoa,
-// atrás da lanterna.
+// Durante a subida pela escada (cena_final.c): o rádio, a resposta e, quando a escotilha abre, o Varela em
+// pessoa, lá em cima.
 static const Legenda FIM_BOM_FALAS[] = {
     {"...{PROF} {NOME}? É o Varela. O de verdade. O que você disse a ele?", 4.5f, V},
     {"Nada que pudesse ser verdade.", 3.0f, J},

@@ -466,7 +466,7 @@ static void desenha_mundo_3d(const Estado *e) {
     lanterna_desenha(e);
     posfx_termina_luz(e);
     nivel_desenha_emissivos(e);
-    cena_final_desenha_emissivos(e); // o final bom: as luminárias acendendo e a lanterna do Varela
+    cena_final_desenha_emissivos(e); // o final bom: o clarão que desce pela escotilha
     lanterna_desenha_brilho(e);
     circuito_desenha_3d(e);
     glifos_desenha(e);

@@ -1033,30 +1033,41 @@ static void testa_som_espacial(void) {
     CHECK(perto(regras_som_espacial(eu, 0.0f, eu, a, false).volume, 1.0f)); // em cima: cheio, sem divisão
 }
 
-// [REQ:PURA-regras_cena_pose] testa a cena do final bom: as etapas em ordem, a caminhada (parado enquanto a
-// porta abre, chega ao fim do corredor), a órbita olhando para a base, o branco, as luminárias e a nave
+// [REQ:PURA-regras_cena_pose] testa a cena do final bom: as etapas em ordem, a subida (recua do console,
+// chega ao pé da escada, sobe degrau a degrau sem nunca descer, com o olho sempre abaixo do teto), a
+// escotilha que emperra e abre, a órbita olhando para a base, o branco e a nave
 static void testa_cena_final(void) {
-    float vira = CENA_COMECA_S, porta = vira + CENA_VIRA_S, anda = porta + CENA_PORTA_S;
-    float branco = anda + CENA_ANDA_S, fora = CENA_FORA_INICIO_S, preto = fora + CENA_FORA_S;
-    CHECK(regras_cena_etapa(0.0f) == CENA_ANTES);
-    CHECK(regras_cena_etapa(vira) == CENA_VIRA);
-    CHECK(regras_cena_etapa(porta) == CENA_PORTA);
-    CHECK(regras_cena_etapa(anda) == CENA_ANDA);
-    CHECK(regras_cena_etapa(branco) == CENA_BRANCO);
-    CHECK(regras_cena_etapa(fora) == CENA_FORA);
-    CHECK(regras_cena_etapa(preto) == CENA_PRETO);
+    float vira = CENA_COMECA_S, anda = vira + CENA_VIRA_S, sobe = CENA_SOBE_INICIO_S,
+          abre = CENA_ABRE_INICIO_S;
+    float branco = abre + CENA_ABRE_S, fora = CENA_FORA_INICIO_S, preto = fora + CENA_FORA_S;
+    CHECK(regras_cena_etapa(0.0f) == CENA_ANTES && regras_cena_etapa(vira) == CENA_VIRA);
+    CHECK(regras_cena_etapa(anda) == CENA_ANDA && regras_cena_etapa(sobe) == CENA_SOBE);
+    CHECK(regras_cena_etapa(abre) == CENA_ABRE && regras_cena_etapa(branco) == CENA_BRANCO);
+    CHECK(regras_cena_etapa(fora) == CENA_FORA && regras_cena_etapa(preto) == CENA_PRETO);
     CHECK(regras_cena_etapa(FIM_BOM_TEXTO_S) == CENA_FIM);
-    PoseJogador de = {{9.0f, 0.0f, 9.6f}, PI, -0.3f};
-    PoseJogador diante = {{13.65f, 0.0f, 11.0f}, PI * 0.5f, 0.0f};
-    PoseJogador fim = {{CENA_ANDA_ATE_X, 0.0f, 11.0f}, PI * 0.5f, 0.02f};
-    PoseJogador p = regras_cena_pose(1.0f, de, diante, fim); // antes da cena: no console
+    PoseJogador de = {{9.0f, 0.0f, 9.4f}, PI, -0.06f}, pe = {{ESCOTILHA_X, 0.0f, CENA_PE_Z}, 0.0f, 0.0f};
+    PoseJogador p = regras_cena_pose(1.0f, de, pe); // antes da cena: no console
     CHECK(perto(p.pos.x, de.pos.x) && perto(p.yaw, de.yaw));
-    p = regras_cena_pose(porta + CENA_PORTA_S * 0.5f, de, diante, fim); // parado enquanto a folha abre
-    CHECK(perto(p.pos.x, diante.pos.x) && perto(cosf(p.yaw), cosf(diante.yaw)));
-    p = regras_cena_pose(anda + CENA_ANDA_S * 0.5f, de, diante, fim); // no meio do corredor
-    CHECK(p.pos.x > diante.pos.x + 1.0f && p.pos.x < fim.pos.x - 1.0f);
-    p = regras_cena_pose(branco + 5.0f, de, diante, fim);
-    CHECK(perto(p.pos.x, fim.pos.x));
+    p = regras_cena_pose(anda, de, pe); // recuou do console, já virado para o caminho
+    CHECK(fabsf(Vector3Distance(p.pos, de.pos) - CENA_RECUA_M) < 0.01f && perto(p.pos.y, 0.0f));
+    p = regras_cena_pose(sobe, de, pe); // no pé da escada, de frente para os degraus
+    CHECK(Vector3Distance(p.pos, pe.pos) < 0.01f && fabsf(cosf(p.yaw) - 1.0f) < 0.01f);
+    p = regras_cena_pose(abre, de, pe); // no alto dos degraus
+    CHECK(fabsf(p.pos.y - CENA_SOBE_M) < 0.01f && p.pitch > 0.4f);
+    bool so_sobe = true, abaixo_do_teto = true;
+    float antes = 0.0f;
+    for (float s = vira; s < fora; s += 0.01f) { // padrão FOLD: nunca desce, o olho nunca passa do teto
+        PoseJogador q = regras_cena_pose(s, de, pe);
+        if (s >= sobe && q.pos.y < antes - 1e-5f) so_sobe = false;
+        if (q.pos.y + ALTURA_OLHOS + 0.035f >= PE_DIREITO || q.pitch >= 1.35f) abaixo_do_teto = false;
+        antes = q.pos.y;
+    }
+    CHECK(so_sobe && abaixo_do_teto);
+    // [REQ:PURA-regras_cena_escotilha] a tampa: fechada na subida, o tranco quase não abre, aberta no clarão
+    CHECK(perto(regras_cena_escotilha(sobe), 0.0f) && regras_cena_escotilha(abre + 0.3f) < 0.1f);
+    CHECK(perto(regras_cena_escotilha(branco), 1.0f) && perto(regras_cena_escotilha(fora), 1.0f));
+    CHECK(regras_cena_degrau(anda) == -1 && regras_cena_degrau(sobe) == 0 && regras_cena_degrau(abre) == -1);
+    CHECK(regras_cena_degrau(abre - 0.01f) == CENA_SOBE_DEGRAUS - 1);
     PoseJogador porta_base = {{500.0f, 0.0f, 505.0f}, PI, 0.0f};
     Vector3 meio = {500.0f, 0.0f, 501.0f};
     PoseJogador o = regras_cena_fora(0.0f, porta_base, meio); // na porta, olhando para o pátio
@@ -1067,16 +1078,12 @@ static void testa_cena_final(void) {
     CHECK(o.yaw > PI + 1.0f); // girando
     o = regras_cena_fora(CENA_FORA_S, porta_base, meio); // a volta inteira, olhando para o céu
     CHECK(fabsf(o.yaw - (PI + 2.0f * PI)) < 0.05f && o.pitch > 0.3f);
-    CHECK(perto(regras_cena_branco(anda), 0.0f));
+    CHECK(perto(regras_cena_branco(sobe), 0.0f) && regras_cena_branco(branco - 0.001f) <= 0.5f);
     CHECK(perto(regras_cena_branco(fora - 0.001f), 1.0f) || regras_cena_branco(fora - 0.001f) > 0.99f);
     CHECK(perto(regras_cena_branco(fora + 1.0f), 0.0f));
     CHECK(perto(regras_cena_preto(fora + 1.0f), 0.0f) && perto(regras_cena_preto(FIM_BOM_TEXTO_S), 1.0f));
-    CHECK(perto(regras_cena_faixa(1.0f), 0.0f) && perto(regras_cena_faixa(anda), 1.0f));
+    CHECK(perto(regras_cena_faixa(1.0f), 0.0f) && perto(regras_cena_faixa(sobe), 1.0f));
     CHECK(perto(regras_cena_faixa(fora + 0.1f), 0.0f)); // a fita não tem faixas
-    CHECK(perto(regras_cena_acende(vira, 3.0f), 0.0f));        // a porta ainda nem abriu
-    CHECK(perto(regras_cena_acende(branco, 3.0f), 1.0f));      // perto da porta: acesa há tempo
-    CHECK(regras_cena_acende(porta, 30.0f) == 0.0f);           // longe: ainda apagada
-    CHECK(perto(regras_cena_acende(branco + 9.0f, 30.0f), 1.0f));
     CHECK(regras_cena_nave_altura(NAVE_SOBE_S + 4.0f) > regras_cena_nave_altura(NAVE_SOBE_S) + 30.0f);
     CHECK(perto(regras_cena_nave_brilho(0.0f), 1.0f) && perto(regras_cena_nave_brilho(CENA_FORA_S), 0.0f));
 }
