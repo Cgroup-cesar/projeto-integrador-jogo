@@ -18,7 +18,14 @@ static const char *MAPEAMENTOS =
     "030000005e040000120b000009050000,Xbox Series Controller,a:b0,b:b1,back:b6,dpdown:h0.4,dpleft:h0.8,"
     "dpright:h0.2,dpup:h0.1,guide:b8,leftshoulder:b4,leftstick:b9,lefttrigger:a2,leftx:a0,lefty:a1,"
     "rightshoulder:b5,rightstick:b10,righttrigger:a5,rightx:a3,righty:a4,start:b7,x:b2,y:b3,"
-    "platform:Linux,\n";
+    "platform:Linux,\n"
+    // Xbox Series S|X pelo Bluetooth no Mac (045e:0b13, firmware 5.09): a raylib só traz versões mais antigas
+    // e, sem esta linha, o controle aparece mas nenhum botão chega. Medido botão a botão no controle de
+    // verdade. Pelo cabo USB, o macOS não entrega os botões do controle de Xbox (não é HID): só Bluetooth.
+    "030000005e040000130b000009050000,Xbox Wireless Controller,a:b0,b:b1,x:b3,y:b4,back:b10,start:b11,"
+    "guide:b12,leftshoulder:b6,rightshoulder:b7,leftstick:b13,rightstick:b14,dpup:h0.1,dpright:h0.2,"
+    "dpdown:h0.4,dpleft:h0.8,leftx:a0,lefty:a1,rightx:a2,righty:a3,lefttrigger:a5,righttrigger:a4,"
+    "platform:Mac OS X,\n";
 
 static bool usando_controle = false; // o último a mexer foi o controle (as dicas da tela seguem isto)
 static bool seta_antes[4]; // o analógico esquerdo já estava empurrado: cima, baixo, esquerda, direita
