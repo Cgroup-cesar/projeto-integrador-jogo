@@ -1,8 +1,10 @@
 // susto.c — o jumpscare. Com o modelo, o rosto do Precursor pula de longe até colado na câmera e fica
-// tremendo; sem ele, o rosto procedural (a fenda) faz o mesmo em 2D. O movimento vem de regras_quadro_susto.
+// tremendo, com a boca de dentes se abrindo; sem ele, o rosto procedural (a fenda) faz o mesmo em 2D. O
+// movimento vem de regras_quadro_susto.
 #include "susto.h"
 #include "audio_sintese.h"
 #include "posfx.h"
+#include "rlgl.h"
 #include <math.h>
 
 // ================================================================== estado
@@ -121,6 +123,85 @@ static void desenha_marcas_no_rosto(const Estado *e) {
     }
 }
 
+// ================================================================== a boca
+// O rosto é liso: a boca só existe no susto. Ela é uma elipse na pele (modelos_criatura.c) que se abre, com
+// anéis de dentes finos um atrás do outro até a garganta, desenhados por cima da pele (sem teste de
+// profundidade, do fundo para a frente). Os anéis do fundo ficam menores e mais escuros: a boca parece um
+// túnel.
+typedef struct {
+    Vector3 c, u, v, n; // o centro e os eixos (direita, cima, frente), já na escala do jogo
+    float rx, ry;
+} QuadroBoca;
+
+static QuadroBoca quadro_da_boca(const Estado *e, float abre) {
+    const BocaRosto *b = &esqueleto_modelo()->boca;
+    float escala;
+    Vector3 rosto = rosto_do_modelo(&e->rec.modelo_precursor, &escala);
+    QuadroBoca q;
+    q.c = Vector3Scale(Vector3Subtract(b->centro, rosto), escala);
+    q.n = Vector3Normalize(b->normal);
+    q.u = Vector3Normalize(b->eixo);
+    q.v = Vector3CrossProduct(q.n, q.u); // para cima
+    q.rx = b->raio_x * escala * (0.6f + 0.4f * abre);
+    q.ry = b->raio_y * escala * abre;
+    return q;
+}
+
+// Um ponto da elipse: no ângulo a, na fração s do raio e p metros para dentro. A borda não é lisa: parece
+// pele rasgada (o raio varia com o ângulo, sempre do mesmo jeito).
+static Vector3 ponto_boca(const QuadroBoca *q, float a, float s, float p) {
+    s *= 1.0f + 0.06f * sinf(5.0f * a + 1.3f) + 0.04f * sinf(13.0f * a + 0.4f);
+    Vector3 r = Vector3Add(Vector3Scale(q->u, cosf(a) * q->rx * s), Vector3Scale(q->v, sinf(a) * q->ry * s));
+    return Vector3Add(q->c, Vector3Subtract(r, Vector3Scale(q->n, p)));
+}
+
+static void triangulo(Vector3 a, Vector3 b, Vector3 c, Color cor) { // nos dois sentidos: nada some de lado
+    DrawTriangle3D(a, b, c, cor);
+    DrawTriangle3D(a, c, b, cor);
+}
+
+// Uma faixa da elipse, da fração s0 (fundo p0) até s1 (fundo p1).
+static void faixa_boca(const QuadroBoca *q, float s0, float s1, float p0, float p1, Color cor) {
+    const int gomos = 48;
+    for (int i = 0; i < gomos; i++) { // padrão MAP: cada gomo da faixa
+        float a0 = 2.0f * PI * i / gomos, a1 = 2.0f * PI * (i + 1) / gomos;
+        Vector3 d0 = ponto_boca(q, a0, s0, p0), d1 = ponto_boca(q, a1, s0, p0);
+        Vector3 f0 = ponto_boca(q, a0, s1, p1), f1 = ponto_boca(q, a1, s1, p1);
+        triangulo(d0, f0, f1, cor);
+        triangulo(d0, f1, d1, cor);
+    }
+}
+
+// O anel k (0 = o do lábio): gengiva e BOCA_DENTES dentes finos apontando para o fundo, cada um de um
+// tamanho; os anéis vizinhos giram em sentidos contrários (a boca parece mastigar sozinha).
+static void anel_de_dentes(const QuadroBoca *q, int k, float t, float abre) {
+    float s = 1.0f - k * (0.8f / BOCA_ANEIS), p = k * BOCA_FUNDO_M, meia = PI / BOCA_DENTES * 0.28f;
+    float giro = (k % 2 ? 0.5f : -0.5f) * t + k * 0.37f;
+    faixa_boca(q, s * 0.88f, s, p, p, ColorBrightness(COR_GENGIVA, -0.1f * k));
+    for (int i = 0; i < BOCA_DENTES; i++) { // padrão MAP: cada dente do anel, de um tamanho e de uma cor
+        float a = giro + 2.0f * PI * i / BOCA_DENTES, sorte = regras_sorteio(i, 0x51u + (unsigned)k);
+        float comp = (0.22f + 0.5f * sorte) * abre;
+        Color dente = ColorBrightness(COR_DENTE, -0.11f * k - 0.3f * regras_sorteio(i, 0x9du + (unsigned)k));
+        Vector3 b0 = ponto_boca(q, a - meia, s * 0.95f, p), b1 = ponto_boca(q, a + meia, s * 0.95f, p);
+        Vector3 ponta =
+            ponto_boca(q, a + meia * 0.4f * sinf(i * 2.3f), s * (1.0f - comp), p + 1.5f * BOCA_FUNDO_M);
+        triangulo(b0, b1, ponta, dente);
+    }
+}
+
+static void desenha_boca_no_rosto(const Estado *e, float abre, float t) {
+    if (abre < 0.02f) return;
+    QuadroBoca q = quadro_da_boca(e, abre);
+    rlDrawRenderBatchActive();
+    rlDisableDepthTest(); // por cima da pele, do fundo para a frente
+    faixa_boca(&q, 0.0f, 1.0f, BOCA_ANEIS * BOCA_FUNDO_M, 0.0f, COR_GARGANTA);
+    for (int k = BOCA_ANEIS - 1; k >= 0; k--) // laço de desenho: do anel do fundo até o do lábio
+        anel_de_dentes(&q, k, t, abre);
+    faixa_boca(&q, 1.0f, 1.1f, 0.0f, 0.0f, ColorBrightness(COR_GENGIVA, 0.12f)); // o lábio rasgado, por cima
+    rlDrawRenderBatchActive();
+    rlEnableDepthTest();
+}
+
 // O rosto num render target só dele, transparente e com a profundidade própria: depois ele é colado por
 // cima do cenário sem atravessar as paredes. Chamado antes de posfx_inicia_cena.
 void susto_prepara(const Estado *e) {
@@ -135,6 +216,7 @@ void susto_prepara(const Estado *e) {
     desenha_modelo_no_rosto(e);
     posfx_contraluz(e, WHITE, 0.0f);
     desenha_marcas_no_rosto(e);
+    desenha_boca_no_rosto(e, regras_quadro_susto(t).boca, t);
     posfx_termina_luz(e);
     EndMode3D();
     EndTextureMode();

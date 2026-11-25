@@ -99,12 +99,12 @@ stateDiagram-v2
 | `lanterna.c` | a lanterna: F liga e desliga, a 5ª luz do shader (cone saindo dos olhos) e o modelo na mão |
 | `criatura.c` | o Precursor: IA, A*, captura e o desenho do corpo |
 | `esqueleto.c` | o rig do Precursor (puro): cinemática direta, matrizes de skinning e IK de dois ossos |
-| `modelos_criatura.c` | o modelo do Precursor (puro, só dados): os 22 ossos medidos no `precursor_papelao.glb`, a caixa, os olhos, o rosto do susto, os olhos pintados no rosto liso, a altura do peito, o avanço na cela e a postura extra |
+| `modelos_criatura.c` | o modelo do Precursor (puro, só dados): os 22 ossos medidos no `precursor_papelao.glb`, a caixa, os olhos, o rosto do susto, os olhos pintados no rosto liso, a boca do susto, a altura do peito, o avanço na cela e a postura extra |
 | `regras_animacao.c`, `regras_animacao_cenas.c` | a animação dele (pura): camadas com crossfade, passada com os pés plantados, cabeça, tiques, saída do bueiro, distorção e convulsão |
 | `animacao.c` | liga o jogo à animação: lê a fase, a IA, a cela, a lanterna e o armário e pede a pose; roda todo quadro, mesmo com a IA parada |
 | `rig.c` | os pesos dos ossos em cada vértice do `.glb` (calculados ao carregar) e o skinning no shader de luz |
 | `cela.c` | o Precursor contido: no centro da cela, olhando o vidro (a lanterna não o move; ela falha ao mirá-lo, em `lanterna.c`) |
-| `susto.c` | o jumpscare: silêncio, grito e o rosto do modelo pulando até a câmera e tremendo (movimento em `regras_quadro_susto`); dura o trecho alto do `jumpscare.mp3` |
+| `susto.c` | o jumpscare: silêncio, grito e o rosto do modelo pulando até a câmera e tremendo, com uma boca de dentes finos que escancara e fica mastigando (movimento e abertura em `regras_quadro_susto`; desenho em `desenha_boca_no_rosto`); dura o trecho alto do `jumpscare.mp3` |
 | `rodadas.c` · `terminal.c` · `glifos.c` | as 3 rodadas (o ENTER decide), o analisador SNI-85 (setas, H e Esc), a língua dos glifos |
 | `manual.c` | o manual dos conectivos que o terminal e os painéis compartilham: lâmpada, ✓/✗, mini-tabela e cartão |
 | `crt.c` | a cara de monitor de fósforo das telas de tarefa (analisador, painéis, manual): moldura com quinas, scanlines, varredura descendo, caixas com legenda e opções em faixa |

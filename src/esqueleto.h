@@ -76,6 +76,15 @@ typedef struct {
 #define MARCAS_ROSTO_MAX 2
 #define MARCA_PONTOS     13 // o centro da reta e 12 pontos na borda (a reta e o arco)
 
+// A boca que se abre no susto (o rosto é liso: fora do susto ela não existe), em unidades do arquivo. É uma
+// elipse na pele, com a reta do eixo na horizontal; escancarada, ela tem esses raios.
+typedef struct {
+    Vector3 centro; // no meio da boca, rente à pele
+    Vector3 eixo;   // para a direita do rosto (na horizontal)
+    Vector3 normal; // para onde a pele olha ali
+    float raio_x, raio_y;
+} BocaRosto;
+
 typedef struct {
     const char *arquivo; // em assets/
     OssoRepouso ossos[OSSOS_TOTAL];
@@ -84,6 +93,7 @@ typedef struct {
     Vector3 rosto;                       // o centro do rosto no susto, em fração da caixa do modelo
     MarcaRosto marcas[MARCAS_ROSTO_MAX]; // modelos de rosto liso: as marcas pintadas (os olhos)
     int n_marcas;
+    BocaRosto boca;      // a boca do susto
     float peito_m;       // altura do peito no mundo (a lanterna e os holofotes miram ali)
     float cela_avanco_m; // na cela, a mais na direção do vidro
     // abaixo deste y, cada braço é uma peça solta do corpo: rig.c não deixa ponto do braço pegar osso do
