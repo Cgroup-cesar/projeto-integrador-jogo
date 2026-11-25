@@ -272,3 +272,12 @@ Registro das escolhas feitas onde a especificação deixava espaço ou onde o am
     - a textura pintada do desenho não veio.
 
     Os testes conferem as duas tabelas e o IK do modelo reto. O `make smoke` continua no padrão; com `--criatura papelao`, o smoke também joga as duas partidas.
+
+## Segundo gerador mais fácil
+
+145. **O Painel 2 (o segundo gerador, no Arquivo) virou um painel de chaves, como o primeiro, com outra lógica.** Quem testou achava o Painel 2 difícil demais: escolher portas nos dois encaixes até a tabela inteira bater com o ALVO pedia OU-EXCLUSIVO e NÃO-E, que nenhuma rodada ensina. Agora ele funciona como o Painel 1: três chaves (A, B e C, nas teclas 1, 2 e 3), uma porta por LED, e resolve quando a lâmpada da SAÍDA acende. O circuito é `SAÍDA = (¬A ∨ B) ∧ C` (`regras_circuito_painel2`).
+    - Usa só NÃO, OU e E, que o jogador já viu na R1 e na R2. A dica que aponta o ponto que trava (`regras_circuito_bloqueio`, decisão 100) e os cartões da ajuda (H, agora com o NÃO e o OU) servem sem nenhuma frase nova.
+    - O prenúncio da R3 continua: o LED do OU do meio é a tabela de SE A, ENTÃO B (¬A ∨ B), sem que a porta SE…ENTÃO apareça.
+    - Acende em 3 das 8 combinações (001, 011 e 111). O painel abre com só a chave A ligada (a única linha que torna A → B falso), então uma troca não basta: o mínimo são 2, como no Painel 1, e o bônus por poucos movimentos continua igual.
+    - Saíram a tabela com o ALVO, os encaixes (← → e ↑ ↓), o piloto próprio do smoke e `regras_circuito_confere_tabela`. O piloto do smoke usa o mesmo do Painel 1, com o circuito do painel da vez.
+    - Esta decisão substitui a 28 (painel 2 sem chaves) e a 29 (começa com OU e E), e o que a 10, a 100, a 115 e a 116 dizem dos encaixes e da tabela do Painel 2. A especificação (linhas 72, 207 e 307) ainda descreve o painel antigo: ela só é editada pela equipe.
