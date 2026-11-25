@@ -4,6 +4,7 @@
 #define REGRAS_H
 
 #include <stdbool.h>
+#include <stddef.h>
 #include "config.h"
 #include "raymath.h"
 #include "logica.h"
@@ -30,14 +31,14 @@ typedef enum {
 typedef enum {
     EV_NENHUM,
     EV_INICIAR,                 // Enter no menu
-    EV_INTRO_TERMINOU,          // fim do texto datilografado e das falas do interfone
+    EV_INTRO_TERMINOU,          // fim das perguntas, do texto datilografado e da carta pelo rádio
     EV_RODADA_CONCLUIDA,        // decifrou e traduziu
     EV_VIDRO_ROMPEU,            // 3º erro: a rodada recomeça
     EV_SAIDA_CONCLUIDA,         // painel resolvido e de volta à sala
     EV_PEGO,                    // a criatura pegou o jogador: a saída recomeça
     EV_TRANSMITIU_CONTRADICAO,  // frase que nunca pode ser verdadeira → final bom
     EV_TRANSMITIU_SATISFAZIVEL, // qualquer outra frase válida → final ruim
-    EV_VOLTAR_MENU,             // Enter na tela de fim ou 20 s
+    EV_VOLTAR_MENU,             // Enter na tela de fim ou 20 s; pausa; inatividade (feira)
     EV_PULAR_FASE,              // debug F2
     EV_IR_RESPOSTA_FINAL,       // debug F9
     EV_TOTAL
@@ -56,6 +57,14 @@ bool regras_reinicia_fase(Fase fase, EventoFase evento);
 // A sequência de eventos de uma partida inteira; o test_fluxo e o --smoke usam a mesma.
 int regras_roteiro_partida(bool final_bom, EventoFase *saida, int maximo);
 
+// Modo feira: depois de FEIRA_INATIVIDADE_S sem nenhuma tecla numa fase de jogo (inclusive a intro),
+// volta ao menu (EV_VOLTAR_MENU). Fora do modo feira, no menu e no fim (que já volta sozinho): nada.
+EventoFase regras_evento_inatividade(bool modo_feira, Fase fase, float tempo_inativo);
+
+// O plot twist: a partir da S2 o Varela de verdade desceu até a cela, e quem fala no rádio é o Precursor
+// imitando a voz dele (S2, R3 e resposta final). ui_fala usa isto para trocar as falas pela versão falsa.
+bool regras_radio_falso(Fase fase);
+
 // ------------------------------------------------------------------ resposta final
 #define ATOMO_P 0 // [VOCÊ FALAR]
 #define ATOMO_Q 1 // [PORTA ABRIR]
@@ -70,30 +79,70 @@ typedef struct {
     bool ouviu_ruido;
     bool chegou_ao_destino;
     float tempo_no_estado;
+    bool sabe_esconderijo; // vinha atrás quando a pessoa entrou no armário: vai até a porta dele
 } PercepcaoCriatura;
 
 Vector3 regras_frente(float yaw);
 Vector3 regras_nova_posicao(Vector3 pos, float yaw, Vector2 mover, float velocidade, float dt);
+// Analógico do controle: zona morta radial (abaixo dela, zero), o resto reescalado para 0..1 e elevado a
+// `curva` (2 = ao quadrado: precisão perto do centro, velocidade total na ponta). Mantém a direção.
+Vector2 regras_analogico(Vector2 bruto, float zona_morta, float curva);
 bool regras_criatura_ve_jogador(Vector3 olho, Vector3 frente, Vector3 alvo, bool caminho_livre,
                                 bool escondido);
 float regras_ruido_percebido(Ruido ruido, Vector3 ouvinte);
 EstadoCriatura regras_proximo_estado_criatura(EstadoCriatura atual, PercepcaoCriatura p);
 const char *regras_nome_estado_criatura(EstadoCriatura estado);
 
-// Postura do corpo a cada quadro: substitui a animação que o modelo .glb não tem.
-// `velocidade` em m/s (já suavizada), `passada` = metros andados (dá o ritmo dos passos), `t` em s.
+// Susto: `t` = segundos desde que o rosto apareceu. O rosto pula de JUMPSCARE_LONGE_M até JUMPSCARE_PERTO_M
+// em JUMPSCARE_PULO_S e treme (posição nova JUMPSCARE_TREMOR_HZ vezes por segundo). Determinístico.
 typedef struct {
-    float inclina_graus; // para a frente (corcunda); cresce com a velocidade
-    float balanco_graus; // de um lado para o outro a cada passo; zero parado
-    float sobe;          // metros: sobe e desce duas vezes por passada; zero parado
-    float respira;       // escala horizontal do corpo (~1); só parado
-} PosturaCriatura;
+    float distancia;          // metros da câmera ao rosto
+    float tremor_x, tremor_y; // metros, de −JUMPSCARE_TREMOR_M a +JUMPSCARE_TREMOR_M
+    float giro_graus;         // em torno do eixo da câmera
+    float clarao;             // 1 quando ele chega, apagando em JUMPSCARE_CLARAO_S
+    float boca;               // 0 fechada, 1 escancarada: abre depois que ele chega e fica mastigando
+} QuadroSusto;
 
-PosturaCriatura regras_postura_criatura(float velocidade, float passada, float t);
+QuadroSusto regras_quadro_susto(float t);
 
 // Lâmpada com defeito: 0 apagada, até 1 no flash. Piscada dupla (acende, apaga, acende fraquejando) em
 // intervalos irregulares de ~3 s. Determinística: o mesmo `t` dá sempre o mesmo valor.
 float regras_piscada_cela(float t);
+
+// A lanterna apontada para o Precursor: 1 acesa, ou uma queda (0,05 a 0,35) sorteada a cada
+// 1/LANTERNA_FALHA_HZ s. Determinística: o mesmo `t` dá sempre o mesmo valor.
+float regras_falha_lanterna(float t);
+
+// O ponto está dentro do cone de luz (origem, direção unitária, cosseno da meia-abertura) e do alcance?
+bool regras_no_cone(Vector3 origem, Vector3 direcao, float cos_meia_abertura, float alcance, Vector3 ponto);
+
+// ------------------------------------------------------------------ mixagem das trilhas (sons longos)
+typedef enum {
+    TRILHA_MENU,
+    TRILHA_VOZ_PRECURSOR,
+    TRILHA_VOZ_RADIO,
+    TRILHA_CORACAO_NORMAL,
+    TRILHA_CORACAO_RAPIDO,
+    TRILHA_PASSO_ANDAR,
+    TRILHA_PASSO_CORRER,
+    TRILHA_TOTAL
+} IdTrilha;
+
+// O que está acontecendo no quadro, do ponto de vista do som (trilhas.c monta isto a partir do Estado).
+typedef struct {
+    bool tela_inicial;        // menu e texto datilografado da intro (antes de abrir no laboratório)
+    bool precursor_falando;   // ele "diz" uma frase (símbolos no vidro) ou recebe a transmissão final
+    bool radio_falando;       // a legenda da frente é do Varela
+    bool criatura_solta;      // nos corredores, fora da cela
+    float distancia_criatura; // metros até o jogador
+    bool andando, correndo;
+    bool silencio;    // os 0,2 s antes do susto, o próprio susto e o silêncio do final bom
+    bool radio_falso; // a fala do rádio é do Varela falso: o canto do Precursor entra baixo, por baixo dela
+} SituacaoSom;
+
+// Volume alvo (0..1) de cada trilha. Coração: nada além de CORACAO_LONGE_M, normal (mais alto quanto mais
+// perto) até CORACAO_PERTO_M, rápido abaixo disso. trilhas.c só faz o fade até estes valores.
+void regras_volumes_trilhas(SituacaoSom s, float volumes[TRILHA_TOTAL]);
 
 // ------------------------------------------------------------------ placar, vidas e interativos
 int regras_placar(const EventoPlacar *eventos, int n);
@@ -103,6 +152,110 @@ int regras_integridade_vidro(const Rachadura *rachaduras, int n, int vidas_max);
 // Depois de um erro: sem vidas, o vidro rompe (EV_VIDRO_ROMPEU); com vidas, nada muda de fase.
 EventoFase regras_evento_do_erro(int vidas_restantes);
 bool regras_interativo_ativo(TipoInterativo tipo, int fase);
+
+// A porta do Arquivo (a sala do segundo gerador) e a chave dela, no chaveiro da sala de observação.
+typedef enum {
+    PORTA_ARQUIVO_ABRE,
+    PORTA_ARQUIVO_ANTES_DA_HORA,
+    PORTA_ARQUIVO_SEM_CHAVE
+} ResultadoPortaArquivo;
+// O que acontece ao tentar abrir: só abre na S2 (a 2ª queda de energia) e com a chave.
+ResultadoPortaArquivo regras_tenta_porta_arquivo(int fase, bool tem_chave);
+// A chave só aparece no chaveiro na S2, até o jogador pegá-la.
+bool regras_chave_visivel(int fase, bool chave_pega);
+
+// ------------------------------------------------------------------ porta da sala e volta (regras_porta.c)
+// A folha anda de `abertura` (0 = fechada, 1 = aberta) para onde `aberta` manda, em `duracao` segundos.
+float regras_porta_passo(float abertura, bool aberta, float dt, float duracao);
+// Abaixo de PORTA_SOLIDA_ATE, a folha já fecha o vão: ela entra nas paredes de colisão.
+bool regras_porta_solida(float abertura);
+// O ângulo de `de` até `para` pelo lado mais curto (u = 0..1), para virar sem dar a volta inteira.
+float regras_angulo_mistura(float de, float para, float u);
+
+// A volta à sala depois de religar a energia: vira para a porta, fecha a porta, entra na sala.
+typedef enum { RETORNO_VIRA, RETORNO_FECHA, RETORNO_ENTRA, RETORNO_FIM } EtapaRetorno;
+typedef struct {
+    Vector3 pos; // pés
+    float yaw, pitch;
+} PoseJogador;
+EtapaRetorno regras_retorno_etapa(float t);
+// Onde o jogador está e para onde olha no instante t: de `de` (onde a cena o pegou) até `porta` (de frente
+// para a porta, de dentro da sala), parado enquanto fecha, e de `porta` até `sala` (sala adentro).
+PoseJogador regras_retorno_pose(float t, PoseJogador de, PoseJogador porta, PoseJogador sala);
+// As faixas pretas de cinema: 0 = fora da tela, 1 = inteiras. Entram no começo e saem no fim da cena.
+float regras_retorno_faixa(float t);
+// A luz da sala na rodada que começa no meio da cena: 0 = ainda a da saída, 1 = a da rodada.
+float regras_retorno_luz(float t);
+
+// ------------------------------------------------------------------ a cena do final bom (regras_cena.c)
+// t é o tempo do final (Fim.tempo); a cena começa em CENA_COMECA_S. Antes dela e depois, ANTES e FIM.
+typedef enum {
+    CENA_ANTES,
+    CENA_VIRA,
+    CENA_ANDA,
+    CENA_SOBE,
+    CENA_ABRE,
+    CENA_BRANCO,
+    CENA_FORA,
+    CENA_PRETO,
+    CENA_FIM
+} EtapaCena;
+EtapaCena regras_cena_etapa(float t);
+// Lá dentro: de `de` (o console) recua e vira para a escada, anda até `pe` (debaixo da escotilha, de frente
+// para os degraus), sobe degrau a degrau olhando para cima e, empurrando a tampa, sobe mais um pouco. A altura
+// dos pés vai em pos.y (o olho fica sempre abaixo do teto).
+PoseJogador regras_cena_pose(float t, PoseJogador de, PoseJogador pe);
+// A tampa da escotilha (0 fechada, 1 aberta): emperra num tranco, cede e abre até o clarão.
+float regras_cena_escotilha(float t);
+// O degrau da subida (0 a CENA_SOBE_DEGRAUS − 1); −1 fora da subida. Muda quando ele pisa no seguinte.
+int regras_cena_degrau(float t);
+// Lá fora, na altura dos olhos e com a câmera na mão: sai pela porta (`de`), anda até `meio` (o pátio), dá
+// uma volta inteira olhando em volta e termina olhando para o céu.
+PoseJogador regras_cena_fora(float t, PoseJogador de, Vector3 meio);
+// O branco do clarão por cima de tudo: sobe com a tampa abrindo, estoura e se desfaz no começo da fita (0..1).
+float regras_cena_branco(float t);
+// O preto no fim da fita (0..1).
+float regras_cena_preto(float t);
+// As faixas de cinema da cena lá dentro (0..1).
+float regras_cena_faixa(float t);
+// A luz da nave sobre a base: a altura (m, acima do chão) e o brilho (0..1), que some lá no alto.
+float regras_cena_nave_altura(float t);
+float regras_cena_nave_brilho(float t);
+
+// ------------------------------------------------------------------ sanidade (regras_sanidade.c)
+// Um quadro de sanidade (0..SANIDADE_MAX). Nos corredores (`fase_saida`), cai com a criatura a menos de
+// SANIDADE_RAIO (de QUEDA_MIN × ACELERA_LONGE na borda a QUEDA_MAX × ACELERA_PERTO em SANIDADE_PERTO,
+// × `surgindo`, metade se `escondido`) e
+// só volta a subir depois de SANIDADE_ESPERA_REGEN s longe dela (`tempo_longe`). Nas outras fases de jogo,
+// sobe sempre devagar.
+float regras_sanidade_passo(float s, float dist, float surgindo, bool escondido, float tempo_longe,
+                            bool fase_saida, float dt);
+// Efeito de um evento de fase: partida nova → cheia; tarefa concluída → bônus; recomeço → piso.
+float regras_sanidade_bonus(float s, EventoFase ev);
+// Bônus dos conectivos decifrados neste quadro (`agora` − `antes`, se cresceu).
+float regras_sanidade_conectivos(float s, int antes, int agora);
+// Força do efeito na tela (0..1), linear no que falta de sanidade: 1 − s/SANIDADE_MAX.
+float regras_sanidade_intensidade(float s);
+// Sanidade zerada (o surto): sobe rápido enquanto ela está em 0 e some devagar quando ela volta (0..1).
+float regras_surto_passo(float surto, float sanidade, float dt);
+// O brilho da visão no surto: 1, ou uma falha curta (SURTO_ESCURO_MIN..MAX) sorteada a cada
+// 1/SURTO_FALHA_HZ s, nunca duas seguidas (falha e volta, alternando). Determinística: o mesmo `t` dá
+// sempre o mesmo valor.
+float regras_surto_piscada(float t);
+// Número "sorteado" em [0, 1) a partir do ciclo e da semente: sem rand(), então é puro e repetível.
+float regras_sorteio(int ciclo, unsigned semente);
+
+// ------------------------------------------------------------------ som no espaço (regras_som.c)
+typedef struct {
+    float volume; // 0..1
+    float pan;    // −1 esquerda, 0 centro, 1 direita (como SetSoundPan)
+} SomEspacial;
+
+// Volume e lado de um som em `fonte` para quem está em `ouvinte` olhando para `yaw`: cheio até
+// SOM_PERTO_M, cai SOM_QUEDA_DB (em dB, curva SOM_CURVA) até `alcance` e some; −SOM_ATRAS_DB bem atrás e
+// −SOM_PAREDE_DB com parede no meio. O pan vai até ±SOM_PAN_MAX.
+SomEspacial regras_som_espacial(Vector3 ouvinte, float yaw, Vector3 fonte, float alcance,
+                                bool atras_da_parede);
 
 // ------------------------------------------------------------------ circuitos dos painéis
 typedef enum { PORTA_E, PORTA_OU, PORTA_XOU, PORTA_NE, PORTA_NAO, PORTA_TOTAL } TipoPorta;
@@ -122,9 +275,85 @@ typedef struct {
     int n_entradas; // a saída do circuito é a última porta
 } Circuito;
 
-void regras_circuito_painel1(Circuito *c);                             // (A ∧ ¬B) ∧ C
-void regras_circuito_painel2(Circuito *c, TipoPorta p1, TipoPorta p2); // (A [p1] B) [p2] (¬A)
+void regras_circuito_painel1(Circuito *c); // (A ∧ ¬B) ∧ C
+void regras_circuito_painel2(Circuito *c); // (¬A ∨ B) ∧ C
 bool regras_avaliar_circuito(const Circuito *c, const bool *entradas, bool *leds);
-bool regras_circuito_confere_tabela(const Circuito *c, const bool *alvo);
+// Onde a corrente trava: andando da SAÍDA para trás, a porta e a entrada (0 = a, 1 = b) que a pessoa precisa
+// olhar. porta = −1: a SAÍDA já acende.
+typedef struct {
+    int porta;
+    int entrada;
+} Bloqueio;
+Bloqueio regras_circuito_bloqueio(const Circuito *c, const bool *entradas);
+int regras_bonus_movimentos(int movimentos); // resolver o painel pensando, com poucos movimentos, vale bônus
+
+// ------------------------------------------------------------------ segurar a respiração (armário)
+float regras_respiracao_linha(float t, float periodo); // a linha vermelha vai e volta: 0 → 1 → 0, em [0, 1]
+float regras_respiracao_periodo(int erros);            // cada erro deixa a linha mais rápida
+bool regras_respiracao_acertou(float linha, float zona, float largura); // a linha está sobre a faixa?
+// Entrar no armário com ele atrás (vendo, perseguindo ou procurando) marca a caçada; sem ela, o armário só
+// esconde e ele nunca vem até a porta.
+bool regras_armario_perseguido(bool criatura_ativa, EstadoCriatura estado, bool ve_jogador);
+// A caçada segue enquanto ele não volta à patrulha; a respiração começa quando ele chega perto do armário.
+bool regras_armario_chegou(bool perseguido, EstadoCriatura estado, float distancia);
+
+// ------------------------------------------------------------------ a fita do avistamento (intro, fita.c)
+typedef struct {
+    int foto;       // qual foto de assets/fita/ (0, 1 ou 2); -1 = tela preta
+    float falha;    // de 0 a 1: quanto a imagem treme e escorrega (o corte, o sinal pegando ou caindo)
+    float estatica; // de 0 a 1: chuvisco puro por cima de tudo (o fim do sinal)
+} TomadaFita;
+// A foto e a falha a partir da linha datilografada, das letras já escritas e do tempo na linha. A troca de
+// foto segue as letras (o feixe entra com "desceu da nave", mesmo se o ENTER pular a digitação).
+TomadaFita regras_fita_tomada(int linha, float letras, float linha_t);
+// Quanto preto ainda cobre a sala no começo do rádio: 1 → 0 em INTRO_ABRE_S, suave nas pontas.
+float regras_intro_escuro(float abre_t);
+
+// ------------------------------------------------------------------ textos do roteiro (nome e gênero)
+// Um marcador do roteiro e o que entra no lugar dele: {"NOME", "Ana"} troca "{NOME}" por "Ana".
+// As palavras ficam em dialogo.c; aqui só a regra de troca (por isso a função não sabe português).
+typedef struct {
+    const char *chave;
+    const char *valor;
+} Marcador;
+
+// Copia `modelo` para `saida` trocando cada "{CHAVE}" pelo valor do marcador e cada "{x|y}" por x (masculino)
+// ou y (feminino). Marcador desconhecido ou "{" sem "}" ficam como estão. Nunca passa de `tamanho` bytes e
+// nunca corta uma letra acentuada pela metade (UTF-8).
+void regras_monta_texto(const char *modelo, const Marcador *marcadores, int n, bool feminino, char *saida,
+                        size_t tamanho);
+
+// Edita o nome digitado: `codigo` é a letra (Unicode) ou NOME_APAGAR (Backspace, tira a última letra).
+// Aceita letras (com acento), espaço entre palavras, hífen e apóstrofo, até `max_letras` letras.
+// Devolve true se o nome mudou.
+#define NOME_APAGAR 8
+bool regras_nome_edita(char *nome, size_t tamanho, int max_letras, int codigo);
+
+// Legenda com defeito (o nome do falante no rádio falso): em janelas curtas e irregulares, algumas letras
+// viram símbolos. Copia `texto` para `saida` e devolve true enquanto está falhando. Determinística (o mesmo
+// `t` dá sempre o mesmo resultado) e só troca letras ASCII: acentos (UTF-8) passam intactos.
+bool regras_falha_texto(const char *texto, float t, char *saida, size_t tamanho);
+
+// ------------------------------------------------------------------ ranking da feira (regras_ranking.c)
+typedef struct {
+    int placar;
+    int segundos; // tempo da partida: desempata (mais rápido na frente)
+    bool vitoria;
+    bool feminino; // para mostrar "Professora Inês" / "Professor Ari"
+    char nome[NOME_MAX_BYTES];
+} EntradaRanking;
+
+typedef struct {
+    EntradaRanking itens[RANKING_MAX];
+    int n;
+} Ranking;
+
+// Põe a partida no lugar dela (maior placar primeiro; empate: o mais rápido; empate total: quem chegou
+// antes). Devolve a posição (0 = 1º lugar) ou −1 se não coube (ranking cheio e placar menor que o último).
+int regras_ranking_insere(Ranking *r, const EntradaRanking *nova);
+// Uma linha do arquivo: "placar;segundos;vitoria;feminino;nome". Ler devolve false se a linha estiver
+// estragada (o arquivo pode ter sido editado à mão); escrever devolve o tamanho (ou −1 se não coube).
+bool regras_ranking_le_linha(const char *linha, EntradaRanking *saida);
+int regras_ranking_escreve_linha(const EntradaRanking *e, char *saida, size_t tamanho);
 
 #endif

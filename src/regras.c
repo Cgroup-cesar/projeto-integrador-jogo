@@ -60,6 +60,7 @@ static Fase fase_seguinte(Fase fase) {
 Fase regras_proxima_fase(Fase fase, EventoFase evento) {
     if (fase < 0 || fase >= FASE_TOTAL) return FASE_MENU;
     if (evento == EV_PULAR_FASE) return fase_seguinte(fase);
+    if (evento == EV_VOLTAR_MENU) return FASE_MENU; // de qualquer fase: fim, pausa, inatividade
     if (evento == EV_IR_RESPOSTA_FINAL && fase >= FASE_INTRO && fase <= FASE_R3) return FASE_RESPOSTA_FINAL;
     switch (fase) {
     case FASE_MENU:
@@ -80,11 +81,8 @@ Fase regras_proxima_fase(Fase fase, EventoFase evento) {
         if (evento == EV_TRANSMITIU_CONTRADICAO) return FASE_FIM_BOM;
         if (evento == EV_TRANSMITIU_SATISFAZIVEL) return FASE_FIM_RUIM;
         return fase;
-    case FASE_FIM_RUIM:
-    case FASE_FIM_BOM:
-        return evento == EV_VOLTAR_MENU ? FASE_MENU : fase;
-    default:
-        return FASE_MENU;
+    default: // FIM_RUIM e FIM_BOM só saem com EV_VOLTAR_MENU (tratado acima)
+        return fase;
     }
 }
 
@@ -106,6 +104,17 @@ int regras_roteiro_partida(bool final_bom, EventoFase *saida, int maximo) {
     for (int i = 0; i < n; i++)
         saida[i] = roteiro[i];
     return n;
+}
+
+EventoFase regras_evento_inatividade(bool modo_feira, Fase fase, float tempo_inativo) {
+    bool jogando = fase != FASE_MENU && fase != FASE_FIM_RUIM && fase != FASE_FIM_BOM;
+    return modo_feira && jogando && tempo_inativo > FEIRA_INATIVIDADE_S ? EV_VOLTAR_MENU : EV_NENHUM;
+}
+
+// [REQ:PURA-regras_radio_falso] o Varela desceu na S2: dali em diante, o rádio é o Precursor imitando a voz
+// dele
+bool regras_radio_falso(Fase fase) {
+    return fase == FASE_S2 || fase == FASE_R3 || fase == FASE_RESPOSTA_FINAL;
 }
 
 // ================================================================== resposta final
@@ -140,6 +149,15 @@ Vector3 regras_nova_posicao(Vector3 pos, float yaw, Vector2 mover, float velocid
     return Vector3Add(pos, Vector3Scale(direcao, velocidade * dt / tamanho));
 }
 
+// O analógico nunca volta exatamente a zero e é mais sensível do que precisa perto do centro: a zona morta
+// tira a deriva e a curva dá precisão para mirar devagar sem perder a volta rápida.
+Vector2 regras_analogico(Vector2 bruto, float zona_morta, float curva) {
+    float tamanho = Vector2Length(bruto);
+    if (tamanho <= zona_morta || zona_morta >= 1.0f) return (Vector2){0.0f, 0.0f};
+    float util = fminf((tamanho - zona_morta) / (1.0f - zona_morta), 1.0f);
+    return Vector2Scale(bruto, powf(util, curva) / tamanho);
+}
+
 // [REQ:PURA-regras_criatura_ve_jogador] cone de 70° e 14 m; o raycast contra as paredes chega pronto
 bool regras_criatura_ve_jogador(Vector3 olho, Vector3 frente, Vector3 alvo, bool caminho_livre,
                                 bool escondido) {
@@ -162,7 +180,7 @@ float regras_ruido_percebido(Ruido ruido, Vector3 ouvinte) {
 
 // [REQ:PURA-regras_proximo_estado_criatura] PATRULHA → INVESTIGA → PERSEGUE → PROCURA → PATRULHA
 EstadoCriatura regras_proximo_estado_criatura(EstadoCriatura atual, PercepcaoCriatura p) {
-    if (p.ve_jogador) return CRIATURA_PERSEGUE;
+    if (p.ve_jogador || p.sabe_esconderijo) return CRIATURA_PERSEGUE; // viu entrar no armário: não desiste
     switch (atual) {
     case CRIATURA_PERSEGUE:
         return CRIATURA_PROCURA; // perdeu de vista: procura onde viu por último
@@ -183,21 +201,8 @@ const char *regras_nome_estado_criatura(EstadoCriatura estado) {
     return nomes[estado];
 }
 
-// [REQ:PURA-regras_postura_criatura] postura procedural: corcunda, balanço da passada e respiração
-PosturaCriatura regras_postura_criatura(float velocidade, float passada, float t) {
-    float ritmo = fminf(1.0f, fmaxf(0.0f, velocidade / CRIATURA_VEL_PERSEGUE)); // 0 parado, 1 perseguindo
-    float andando = fminf(1.0f, ritmo * 3.0f); // o balanço já entra inteiro na patrulha
-    float ciclo = passada * (2.0f * PI / CRIATURA_PASSADA_M);
-    PosturaCriatura p;
-    p.inclina_graus = CRIATURA_INCLINA_PARADO + (CRIATURA_INCLINA_CORRENDO - CRIATURA_INCLINA_PARADO) * ritmo;
-    p.balanco_graus = sinf(ciclo) * CRIATURA_BALANCO_GRAUS * andando;
-    p.sobe = fabsf(sinf(ciclo)) * CRIATURA_SOBE_M * andando;
-    p.respira = 1.0f + sinf(t * 1.1f) * CRIATURA_RESPIRA * (1.0f - andando);
-    return p;
-}
-
 // Número "sorteado" em [0, 1) a partir do ciclo: sem rand(), então o resultado é puro e repetível.
-static float sorteio(int ciclo, unsigned semente) {
+float regras_sorteio(int ciclo, unsigned semente) {
     unsigned h = (unsigned)ciclo * 2654435761u ^ semente;
     h ^= h >> 13;
     h *= 0x5bd1e995u;
@@ -205,16 +210,79 @@ static float sorteio(int ciclo, unsigned semente) {
     return (float)(h & 0xffffu) / 65536.0f;
 }
 
+// [REQ:PURA-regras_falha_lanterna] a lanterna falhando: a cada sorteio a luz cai (quase apaga) ou volta
+float regras_falha_lanterna(float t) {
+    int ciclo = (int)(fmaxf(t, 0.0f) * LANTERNA_FALHA_HZ);
+    if (regras_sorteio(ciclo, 0x51edu) >= LANTERNA_FALHA_CHANCE) return 1.0f;
+    return 0.05f + 0.3f * regras_sorteio(ciclo, 0x2a9fu);
+}
+
+// [REQ:PURA-regras_no_cone] o ponto dentro do facho: perto o bastante e dentro da abertura do cone
+bool regras_no_cone(Vector3 origem, Vector3 direcao, float cos_meia_abertura, float alcance, Vector3 ponto) {
+    Vector3 para = Vector3Subtract(ponto, origem);
+    float d = Vector3Length(para);
+    if (d < 0.001f) return true;
+    if (d > alcance) return false;
+    return Vector3DotProduct(Vector3Scale(para, 1.0f / d), direcao) >= cos_meia_abertura;
+}
+
 // [REQ:PURA-regras_piscada_cela] lâmpada com defeito: piscada dupla em intervalos irregulares
 float regras_piscada_cela(float t) {
     if (t < 0.0f) return 0.0f;
     int ciclo = (int)(t / PISCADA_INTERVALO_S);
-    if (sorteio(ciclo, 0x9e37u) < PISCADA_PULA) return 0.0f; // às vezes ela não falha
-    float s = t - ciclo * PISCADA_INTERVALO_S - sorteio(ciclo, 0x85ebu) * PISCADA_VARIACAO_S;
+    if (regras_sorteio(ciclo, 0x9e37u) < PISCADA_PULA) return 0.0f; // às vezes ela não falha
+    float s = t - ciclo * PISCADA_INTERVALO_S - regras_sorteio(ciclo, 0x85ebu) * PISCADA_VARIACAO_S;
     if (s < 0.0f || s >= 0.30f) return 0.0f;
     if (s < 0.07f) return 1.0f;               // acende
     if (s < 0.13f) return 0.0f;               // apaga
     return 1.0f - (s - 0.13f) / 0.17f * 0.6f; // acende de novo, fraquejando (1,0 → 0,4)
+}
+
+// ================================================================== mixagem das trilhas
+// [REQ:PURA-regras_volumes_trilhas] o volume de cada som longo sai só da situação do quadro
+void regras_volumes_trilhas(SituacaoSom s, float v[TRILHA_TOTAL]) {
+    for (int i = 0; i < TRILHA_TOTAL; i++) // padrão MAP: começa tudo em silêncio
+        v[i] = 0.0f;
+    if (s.silencio) return;
+    v[TRILHA_MENU] = s.tela_inicial ? VOL_TRILHA_MENU : 0.0f;
+    v[TRILHA_VOZ_PRECURSOR] = s.precursor_falando ? VOL_VOZ_PRECURSOR : 0.0f;
+    v[TRILHA_VOZ_RADIO] = s.radio_falando ? VOL_VOZ_RADIO : 0.0f;
+    if (s.radio_falando && s.radio_falso) // o rádio falso: o canto dele, baixo, por baixo da fala
+        v[TRILHA_VOZ_PRECURSOR] = fmaxf(v[TRILHA_VOZ_PRECURSOR], VOL_VOZ_PRECURSOR * RADIO_FALSO_CANTO);
+    v[TRILHA_PASSO_ANDAR] = s.andando && !s.correndo ? VOL_PASSO_ANDAR : 0.0f;
+    v[TRILHA_PASSO_CORRER] = s.andando && s.correndo ? VOL_PASSO_CORRER : 0.0f;
+    if (!s.criatura_solta || s.distancia_criatura >= CORACAO_LONGE_M) return;
+    if (s.distancia_criatura < CORACAO_PERTO_M) {
+        v[TRILHA_CORACAO_RAPIDO] = VOL_CORACAO;
+        return;
+    }
+    float perto = (CORACAO_LONGE_M - s.distancia_criatura) / (CORACAO_LONGE_M - CORACAO_PERTO_M); // 0..1
+    v[TRILHA_CORACAO_NORMAL] = VOL_CORACAO * (0.35f + 0.65f * perto);
+}
+
+// Sorteio em [−1, 1): uma posição do tremor.
+static float tremida(int ciclo, unsigned semente) {
+    return regras_sorteio(ciclo, semente) * 2.0f - 1.0f;
+}
+
+// [REQ:PURA-regras_quadro_susto] o rosto pula até a câmera, freia colado nela, treme sem parar e abre a boca
+QuadroSusto regras_quadro_susto(float t) {
+    if (t < 0.0f) t = 0.0f;
+    float x = fminf(1.0f, t / JUMPSCARE_PULO_S);
+    float chegada = 1.0f - (1.0f - x) * (1.0f - x) * (1.0f - x); // sai rápido e freia colado na câmera
+    int ciclo = (int)(t * JUMPSCARE_TREMOR_HZ);
+    float forca = 0.35f + 0.65f * chegada; // no pulo já treme; colado, treme inteiro
+    float depois = t - JUMPSCARE_PULO_S;
+    QuadroSusto q;
+    q.distancia = JUMPSCARE_LONGE_M + (JUMPSCARE_PERTO_M - JUMPSCARE_LONGE_M) * chegada;
+    q.tremor_x = tremida(ciclo, 0x2f1du) * JUMPSCARE_TREMOR_M * forca;
+    q.tremor_y = tremida(ciclo, 0x6b43u) * JUMPSCARE_TREMOR_M * forca;
+    q.giro_graus = tremida(ciclo, 0xa7c5u) * JUMPSCARE_TREMOR_GRAUS * forca;
+    q.clarao = depois < 0.0f ? 0.0f : fmaxf(0.0f, 1.0f - depois / JUMPSCARE_CLARAO_S);
+    float abre = depois < 0.0f ? 0.0f : fminf(1.0f, depois / JUMPSCARE_BOCA_ABRE_S);
+    float mastiga = sinf(2.0f * PI * JUMPSCARE_BOCA_HZ * t) * sinf(2.0f * PI * 1.7f * t); // −1..1, irregular
+    q.boca = abre * abre * (3.0f - 2.0f * abre) * (0.88f + 0.12f * mastiga);
+    return q;
 }
 
 // ================================================================== placar, vidas e interativos
@@ -268,7 +336,7 @@ bool regras_interativo_ativo(TipoInterativo tipo, int fase) {
     case INTER_CONSOLE:
         return rodada;
     case INTER_PORTA:
-        return rodada; // a porta da sala fica trancada nas fases de sala
+        return rodada || saida; // trancada nas fases de sala; nas saídas, E abre e fecha
     case INTER_PAINEL1:
         return fase == FASE_S1;
     case INTER_PAINEL2:
@@ -277,8 +345,25 @@ bool regras_interativo_ativo(TipoInterativo tipo, int fase) {
         return saida;
     case INTER_ARMARIO:
         return saida;
+    case INTER_CHAVEIRO:
+        return fase == FASE_S2;
+    case INTER_PORTA_ARQUIVO:
+        return saida; // na S1 ela também fica trancada: o jogador fica sabendo que não é por ali
+    case INTER_CORPO:
+        return saida;
     }
     return false;
+}
+
+// [REQ:PURA-regras_tenta_porta_arquivo] a porta do Arquivo só abre na S2 e com a chave do chaveiro
+ResultadoPortaArquivo regras_tenta_porta_arquivo(int fase, bool tem_chave) {
+    if (fase != FASE_S2) return PORTA_ARQUIVO_ANTES_DA_HORA;
+    return tem_chave ? PORTA_ARQUIVO_ABRE : PORTA_ARQUIVO_SEM_CHAVE;
+}
+
+// [REQ:PURA-regras_chave_visivel] a chave fica no chaveiro só na S2 (a 2ª queda de energia), até ser pega
+bool regras_chave_visivel(int fase, bool chave_pega) {
+    return fase == FASE_S2 && !chave_pega;
 }
 
 // ================================================================== circuitos dos painéis
@@ -289,11 +374,12 @@ void regras_circuito_painel1(Circuito *c) {
     c->portas[2] = (Porta){PORTA_E, REF_PORTA(1), 2}; // (A ∧ ¬B) ∧ C
 }
 
-void regras_circuito_painel2(Circuito *c, TipoPorta p1, TipoPorta p2) {
-    *c = (Circuito){.n_entradas = 2, .n_portas = 3};
-    c->portas[0] = (Porta){p1, 0, 1};                       // A [?1] B
-    c->portas[1] = (Porta){PORTA_NAO, 0, 0};                // ¬A
-    c->portas[2] = (Porta){p2, REF_PORTA(0), REF_PORTA(1)}; // (...) [?2] (¬A)
+// O OU do meio é a tabela de SE A, ENTÃO B (¬A ∨ B), sem que a porta SE…ENTÃO apareça: prenúncio da R3.
+void regras_circuito_painel2(Circuito *c) {
+    *c = (Circuito){.n_entradas = 3, .n_portas = 3};
+    c->portas[0] = (Porta){PORTA_NAO, 0, 0};           // ¬A
+    c->portas[1] = (Porta){PORTA_OU, REF_PORTA(0), 1}; // ¬A ∨ B
+    c->portas[2] = (Porta){PORTA_E, REF_PORTA(1), 2};  // (¬A ∨ B) ∧ C
 }
 
 // As portas do painel usam a mesma semântica do motor de lógica (OU-EXCLUSIVO = ¬(A ↔ B), NÃO-E = ¬(A ∧ B)).
@@ -333,12 +419,85 @@ bool regras_avaliar_circuito(const Circuito *c, const bool *entradas, bool *leds
     return c->n_portas > 0 ? portas[c->n_portas - 1] : false;
 }
 
-bool regras_circuito_confere_tabela(const Circuito *c, const bool *alvo) {
-    bool entradas[LOGICA_MAX_ATOMOS] = {false};
-    int linhas = 1 << c->n_entradas;
-    for (int linha = 0; linha < linhas; linha++) {
-        logica_valores_da_linha(linha, c->n_entradas, entradas);
-        if (regras_avaliar_circuito(c, entradas, NULL) != alvo[linha]) return false;
+// [REQ:PURA-regras_circuito_bloqueio] da SAÍDA para trás, de porta apagada em porta apagada, até a entrada
+// que trava a corrente: é o raciocínio que o painel mostra à pessoa, um ponto por vez
+Bloqueio regras_circuito_bloqueio(const Circuito *c, const bool *entradas) {
+    bool leds[MAX_PORTAS] = {false};
+    if (c->n_portas <= 0 || regras_avaliar_circuito(c, entradas, leds)) return (Bloqueio){-1, -1};
+    int g = c->n_portas - 1;
+    for (int passo = 0; passo < c->n_portas; passo++) { // anda para trás: no máximo uma vez por porta
+        const Porta *p = &c->portas[g];
+        // NÃO apagado: a entrada dele está acesa (e precisa apagar). OU-EXCLUSIVO e NÃO-E: a entrada a.
+        if (p->tipo != PORTA_E && p->tipo != PORTA_OU) return (Bloqueio){g, 0};
+        // E ou OU apagado: alguma entrada está apagada; se ela vem de outra porta, a culpa é de lá
+        int refs[2] = {p->a, p->b};
+        int i = valor_da_referencia(refs[0], entradas, leds, g) ? 1 : 0;
+        if (refs[i] < REF_PORTA(0)) return (Bloqueio){g, i};
+        g = refs[i] - REF_PORTA(0);
     }
-    return true;
+    return (Bloqueio){c->n_portas - 1, 0};
+}
+
+// [REQ:PURA-regras_bonus_movimentos] poucos movimentos = bônus cheio; alguns a mais = metade; chutar = nada
+int regras_bonus_movimentos(int movimentos) {
+    if (movimentos < 0) return 0;
+    if (movimentos <= MOVIMENTOS_BONUS_CHEIO) return PONTOS_PAINEL_POUCOS_MOV;
+    if (movimentos <= MOVIMENTOS_BONUS_MEIO) return PONTOS_PAINEL_POUCOS_MOV / 2;
+    return 0;
+}
+
+// [REQ:PURA-regras_respiracao] a linha vermelha da respiração: vai e volta, cada erro a acelera, e acertar é
+// a linha estar dentro da faixa branca
+float regras_respiracao_linha(float t, float periodo) {
+    if (periodo <= 0.0f || t <= 0.0f) return 0.0f;
+    float f = fmodf(t / periodo, 2.0f);
+    return f < 1.0f ? f : 2.0f - f;
+}
+
+float regras_respiracao_periodo(int erros) {
+    float p = RESP_PERIODO_S;
+    for (int i = 0; i < erros; i++) // padrão FOLD: cada erro multiplica o período (mais rápido)
+        p *= RESP_ACELERA;
+    return p;
+}
+
+bool regras_respiracao_acertou(float linha, float zona, float largura) {
+    return fabsf(linha - zona) <= largura * 0.5f;
+}
+
+// [REQ:PURA-regras_armario] o armário esconde; ele só vem até a porta se vinha atrás de quem entrou
+bool regras_armario_perseguido(bool criatura_ativa, EstadoCriatura estado, bool ve_jogador) {
+    if (!criatura_ativa) return false; // ainda no duto, ou puxada pela contenção
+    return ve_jogador || estado == CRIATURA_PERSEGUE || estado == CRIATURA_PROCURA;
+}
+
+bool regras_armario_chegou(bool perseguido, EstadoCriatura estado, float distancia) {
+    return perseguido && estado != CRIATURA_PATRULHA && distancia <= RESP_CHEGA_M;
+}
+
+// [REQ:PURA-regras_fita_tomada] a fita do avistamento: qual foto aparece em cada linha da intro e quanto falha
+TomadaFita regras_fita_tomada(int linha, float letras, float linha_t) {
+    TomadaFita t = {-1, 0.0f, 0.0f};
+    float entrada = fmaxf(0.0f, 1.0f - linha_t / FITA_ENTRADA_S);
+    if (linha == 0) {
+        t.foto = 0; // o plano aberto: a cidade e a luz no céu
+        t.falha = entrada;
+    } else if (linha == 1) {
+        bool feixe = letras >= FITA_TROCA_LETRA; // o zoom tremido; depois, o feixe
+        float corte = feixe ? 1.0f - (letras - FITA_TROCA_LETRA) / FITA_CORTE_LETRAS : 0.0f;
+        t.foto = feixe ? 2 : 1;
+        t.falha = fmaxf(entrada, fmaxf(0.0f, corte));
+    } else if (linha == FITA_LINHA_QUEDA && linha_t < FITA_QUEDA_S) {
+        t.foto = 2; // o sinal vai caindo...
+        t.falha = linha_t / FITA_QUEDA_S;
+    } else if (linha == FITA_LINHA_QUEDA && linha_t < FITA_QUEDA_S + FITA_ESTATICA_S) {
+        t.estatica = 1.0f; // ...chuvisco, e a tela fica preta
+    }
+    return t;
+}
+
+// [REQ:PURA-regras_intro_escuro] a sala sai do preto devagar depois da intro (sem corte seco para o jogo)
+float regras_intro_escuro(float abre_t) {
+    float x = fminf(1.0f, fmaxf(0.0f, abre_t / INTRO_ABRE_S));
+    return 1.0f - x * x * (3.0f - 2.0f * x); // smoothstep: começa e termina devagar
 }

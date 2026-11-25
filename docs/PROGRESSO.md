@@ -57,11 +57,15 @@ Arquivo de retomada: se a sessão cair, leia este arquivo e o `git log` antes de
 
 **Ajustes de interface:** a legenda do interfone vai para a esquerda quando o terminal está aberto; painéis e folha do diário ficam acima da legenda; setas (← ↑ → ↓) transliteradas sem a fonte externa.
 
+**Substituído (decisão 145):** o Painel 2 virou um painel de 3 chaves como o Painel 1 (teclas 1/2/3, começa com a chave A ligada), com o circuito `SAÍDA = (¬A ∨ B) ∧ C` (`regras_circuito_painel2`). Saíram os encaixes, a tabela com o ALVO, `regras_circuito_confere_tabela` e o piloto próprio do smoke.
+
 ## M5 — Precursor
 
 **Pronto:** em `src/criatura.c`, a IA dos corredores. Ele sobe pelo duto `V` 15 s depois do início de cada saída; a cada quadro percebe (visão: raycast contra as paredes com `GetRayCollisionBox` + `regras_criatura_ve_jogador`, cone de 70° e 14 m, invisível no armário; audição: fold `col_ruidos_mais_forte` sobre a coleção de ruídos) e `regras_proximo_estado_criatura` decide PATRULHA (cantos do loop, gerador, Arquivo; 1,6 m/s) → INVESTIGA (vai ao ruído mais forte) → PERSEGUE (3,6 m/s; direto quando a linha de visão está livre) → PROCURA (6 s em volta da última posição vista). O caminho sai de um A* na grade do mapa, com vizinhança de 4 (andando de centro a centro de células vizinhas ele nunca corta a quina de uma parede). Movimento com pausas e trancos, passos graves. Captura com `CheckCollisionSpheres` (duas esferas de 0,5 m → distância < 1 m): susto (0,2 s de silêncio + rosto com a fenda, ≤ 1,2 s) e a saída recomeça do início (checkpoint), com a fala do Varela; entrar no armário a menos de 2 m enquanto ele vê também é captura. Com o painel resolvido ele some numa distorção. F3 mostra o estado e o caminho do A*. Modelo opcional `assets/modelos/precursor.glb` (escalado para 2,6 m, com o shader de luz); sem ele, o placeholder procedural, sem erro para o jogador. O rosto do susto ganhou sombreado e a fenda com borda viva.
 
 **Verificado:** `make` sem avisos; `make test` 100%; `make smoke` passa e agora, na 1ª partida, fica parado no corredor da S2 fazendo barulho: a criatura precisa passar por INVESTIGA e PERSEGUE e pegar o jogador (a saída recomeça); na 2ª partida entra e sai de um armário. O smoke usa semente fixa (`SetRandomSeed(1985)`) e é determinístico (rodado 3 vezes seguidas). Capturas conferidas: a criatura surgindo do duto e perseguindo no corredor vermelho.
+
+**Substituído (decisão 147):** o Precursor agora é só o alien do papelão (`assets/modelos/precursor_papelao.glb`); o `precursor.glb` saiu do repositório, junto com o seletor `--criatura`, a mandíbula do susto e o corte de emendas do rig.
 
 ## M6 — Final
 
@@ -104,3 +108,21 @@ Não aplicado: "commits pequenos" (a especificação manda um commit por marco n
 **Verificado:** `make readme-check`: 43 linhas de tabela, 9 trechos, 0 erro; `make` sem avisos; `make test` 100%; `make smoke` passa; CTest 3/3.
 
 **Falta (fora da v0, para a equipe):** compilar e jogar no Windows (w64devkit) e no Linux, que não foram testados aqui; rodar `tools/baixa_fonte` para ver os acentos (sem a fonte, o texto sai transliterado); preencher os nomes da equipe nos créditos; publicar a `develop` (`git push`), que ficou só local; trocar o nome provisório quando o título for decidido.
+
+## Nome de quem joga (feira)
+
+**Pronto:** fase `FASE_NOME` entre o menu e a intro (`src/tela_nome.c`), com campo de texto, cursor piscante, contador de 16 letras, Backspace por codepoint, ENTER e Esc. Nome em buffer fixo no `Estado`, só em memória, zerado no menu (fim, pausa, Esc, inatividade do `--feira`), na partida nova e ao sair; mantido nos recomeços. Usado no terminal, numa fala do Varela e na tela final. Regras puras `regras_nome_*` e `regras_evento_inatividade`. Ver decisões 63–68.
+
+**Verificado:** `make` sem avisos; `make test`: test_logica 37/37, test_regras 135/135, test_fluxo 90/90; `make smoke` passa (com as checagens novas do nome); `make readme-check` 0 erro. Capturas conferidas: tela de nome, fala do Varela com o nome e tela final.
+
+**Falta:** testar a digitação à mão (acentos com teclado ABNT2, com e sem a fonte VT323), no Linux e no Windows; atualizar o fluxo de fases na especificação (só humanos editam).
+
+**Substituído na junção com a história nova (`feat/historia`):** a `FASE_NOME` e o `tela_nome.c` saíram. Na história nova quem joga é o professor ou a professora, e as perguntas ("Professor ou professora?" e o nome) viraram etapas da intro, em `src/identidade.c`. A regra de privacidade continua (zerado no menu e na partida nova, mantido nos recomeços, conferido no `--smoke`). O nome aparece sempre com o título ("Professora Inês"), inclusive no terminal; só o rádio falso chama pelo nome sozinho. Ver as decisões 80 a 84.
+
+## Texturas e ambientação do mapa
+
+**Pronto:** seis materiais procedurais (`materiais.c`, puro) com override por `assets/texturas/<material>.png`; `texturas.c` gera/carrega uma vez e libera ao sair; `texturas_caixa` com UV em metros; paredes em concreto aparente com barrado oliva, piso de granilite, forro, móveis e armários em metal pintado, porta com almofadas; `cenario.c` com placas em estêncil, umidade, arrasto, eletrodutos, grelhas, fios e halo das lâmpadas. Ver decisões 69–76.
+
+**Verificado:** `make` sem avisos; `make test`: test_logica 37/37, test_regras 165/165 (+30: ruído, materiais, decalques, UV), test_fluxo 90/90; `make smoke` passa; `make readme-check` 0 erro. FPS sem limite (antes → depois): sala 731 → 690, corredor S1 745 → 658, com lanterna 741 → 637, corredor leste 801 → 704, Arquivo 804 → 714, duto 733 → 667. Geração das texturas: ~126 ms na abertura.
+
+**Falta:** testar numa GPU fraca (a da feira) e em OpenGL 2.1/ES; jogar no Windows; ver as placas com a fonte VT323 (sem ela, "ÁREA" sai "AREA").

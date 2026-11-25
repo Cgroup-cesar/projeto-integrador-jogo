@@ -2,7 +2,9 @@
 // Toda resposta do Precursor sai de logica_avalia sobre a frase observada, nunca de uma tabela fixa.
 #include "rodadas.h"
 #include "criatura.h"
+#include "susto.h"
 #include "audio_sintese.h"
+#include "trilhas.h"
 #include "dialogo.h"
 #include "ui.h"
 #include <math.h>
@@ -120,14 +122,16 @@ static void avisa(Rodada *r, TextoId texto) {
 // ================================================================== erros, rachaduras e vidas
 static void cria_rachaduras(Estado *e) {
     int quantas = GetRandomValue(1, 3);
-    Vector2 origem = {GetRandomValue(25, 75) / 100.0f, GetRandomValue(18, 62) / 100.0f};
+    float ox = e->nivel.console.x + GetRandomValue(-250, 250) / 100.0f; // metros, ao longo do vidro
+    ox = fminf(fmaxf(ox, e->nivel.vidro_x0 + 0.5f), e->nivel.vidro_x1 - 0.5f);
+    Vector2 origem = {ox, GetRandomValue(130, 270) / 100.0f}; // x e altura, em metros
     for (int i = 0; i < quantas; i++) {
         Rachadura r = {
             .origem = origem,
             .angulo = GetRandomValue(0, 628) / 100.0f,
             .comprimento = 0.0f,
-            .comprimento_alvo = GetRandomValue(16, 34) / 100.0f,
-            .dano = 1.0f / quantas, // a soma do dano de um erro é 1 vida
+            .comprimento_alvo = GetRandomValue(40, 100) / 100.0f, // metros
+            .dano = 1.0f / quantas,                               // a soma do dano de um erro é 1 vida
             .galhos = GetRandomValue(2, 4),
             .semente = (unsigned)GetRandomValue(1, 1 << 20),
         };
@@ -149,7 +153,7 @@ static void registra_erro(Estado *e) {
     if (depois == EV_NENHUM) return;
     // 3º erro: o vidro rompe, vem o jumpscare e a rodada recomeça com o vidro restaurado.
     e->rod.rompendo = true;
-    criatura_susto(e, depois);
+    susto_inicia(e, depois);
 }
 
 // ================================================================== decifrar
@@ -172,6 +176,7 @@ static void termina_resposta(Estado *e) {
     r->linha_vista[r->resposta_coluna][linha] = true;
     r->linha_valor[r->resposta_coluna][linha] = valor;
     r->resposta_valor = valor;
+    r->clarao_t = CLARAO_RESPOSTA_S; // a resposta também aparece grande na tela: na feira, o som se perde
     audio_toca(e, valor ? SOM_VERDADEIRO : SOM_FALSO, 0.9f, 1.0f);
     if (++r->resposta_coluna < d->n_colunas) {
         r->resposta_t = 0.7f;
@@ -219,7 +224,7 @@ static void atualiza_escolha_conectivo(Estado *e) {
     r->cursor = 0;
     if (++r->coluna < d->n_colunas) return;
     r->etapa = ETAPA_TRADUZIR;
-    audio_toca(e, SOM_VOZ_PRECURSOR, 1.0f, 1.0f);
+    if (!trilhas_tem(e, TRILHA_VOZ_PRECURSOR)) audio_toca(e, SOM_VOZ_PRECURSOR, 1.0f, 1.0f);
 }
 
 static void atualiza_traducao(Estado *e) {
@@ -264,6 +269,7 @@ static void atualiza_conclusao(Estado *e, float dt) {
 void rodadas_atualiza(Estado *e, float dt) {
     Rodada *r = &e->rod;
     r->aviso_t = fmaxf(0.0f, r->aviso_t - dt);
+    r->clarao_t = fmaxf(0.0f, r->clarao_t - dt);
     col_rachaduras_atualiza(&e->rachaduras, dt);
     if (r->rompendo || e->jumpscare_t > 0.0f || e->silencio_t > 0.0f) return;
     if (r->etapa == ETAPA_CONCLUIDA) {
@@ -309,31 +315,35 @@ static unsigned proximo(unsigned *semente) {
 }
 
 // Um galho é uma linha quebrada; os pontos saem de uma semente fixa, então ele não "pisca".
-static void desenha_galho(Vector2 inicio, float angulo, float comprimento, unsigned semente, float esp,
+static void desenha_galho(const Nivel *n, Vector2 inicio, float angulo, float comprimento, unsigned semente,
                           Color cor) {
+    float z = n->vidro_z + 0.04f; // na face do vidro voltada para o jogador
     Vector2 p = inicio;
     int passos = 6;
     for (int i = 0; i < passos; i++) {
         angulo += ((int)(proximo(&semente) % 100) - 50) / 160.0f;
         Vector2 q = {p.x + cosf(angulo) * comprimento / passos, p.y + sinf(angulo) * comprimento / passos};
-        DrawLineEx(p, q, esp, cor);
+        q.x = fminf(fmaxf(q.x, n->vidro_x0 + 0.05f), n->vidro_x1 - 0.05f); // nao sai do vidro
+        q.y = fminf(fmaxf(q.y, 0.95f), 2.95f);
+        Vector3 a = {p.x, p.y, z}, b = {q.x, q.y, z};
+        DrawLine3D(a, b, cor);
+        a.y += 0.004f; // segunda linha, para engrossar
+        b.y += 0.004f;
+        DrawLine3D(a, b, cor);
         p = q;
     }
 }
 
+// Chamada DENTRO do BeginMode3D/EndMode3D: as rachaduras ficam no plano do vidro.
 void rodadas_desenha(const Estado *e) {
-    float w = (float)e->rec.alvo_largura, h = (float)e->rec.alvo_altura;
-    Color cor = Fade((Color){0xd8, 0xee, 0xff, 255}, 0.75f);
-    // laço de desenho: só percorre a coleção para desenhar (não é map/filter/fold)
+    Color cor = Fade((Color){0xd8, 0xee, 0xff, 255}, 0.85f);
     for (int i = 0; i < e->rachaduras.n; i++) {
         const Rachadura *r = &e->rachaduras.itens[i];
-        Vector2 origem = {r->origem.x * w, r->origem.y * h};
-        float comprimento = r->comprimento * h;
         unsigned semente = r->semente;
-        desenha_galho(origem, r->angulo, comprimento, semente, 1.6f, cor);
+        desenha_galho(&e->nivel, r->origem, r->angulo, r->comprimento, semente, cor);
         for (int g = 0; g < r->galhos; g++) {
             float ang = r->angulo + ((int)(proximo(&semente) % 200) - 100) / 90.0f;
-            desenha_galho(origem, ang, comprimento * 0.55f, semente + g, 1.0f, Fade(cor, 0.6f));
+            desenha_galho(&e->nivel, r->origem, ang, r->comprimento * 0.55f, semente + g, Fade(cor, 0.6f));
         }
     }
 }

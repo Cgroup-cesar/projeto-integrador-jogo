@@ -6,9 +6,19 @@ build/
 *.d
 *.exe
 /precursor
+/graphify-out
+estrutura.txt
+*.bak
+# cópias que a sincronização do iCloud/Finder cria na pasta ("cena_final 2.h", "tela_fim 2.o"...)
+src/* 2.*
 
 # Sistema e editores
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
+
+# Dados da feira (ficam só no computador do estande)
+ranking.txt
+ranking.txt.tmp
+avaliacoes.csv

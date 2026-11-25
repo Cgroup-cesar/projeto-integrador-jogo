@@ -47,10 +47,12 @@ endif
 FONTES = $(wildcard src/*.c)
 OBJETOS = $(patsubst src/%.c,obj/%.o,$(FONTES))
 JOGO = bin/precursor$(EXE)
+# teste visual do menu (abre janela; fica fora do make test): make test-menu
+TEST_MENU = bin/test_menu$(EXE)
 
 TESTES = bin/test_logica$(EXE) bin/test_regras$(EXE) bin/test_fluxo$(EXE)
 
-.PHONY: all run test smoke readme-check clean
+.PHONY: all run test smoke readme-check clean test-menu
 
 all: $(JOGO)
 
@@ -64,15 +66,24 @@ obj/test_%.o: tests/test_%.c | obj
 	$(CC) $(CFLAGS) $(RAYLIB_CFLAGS) -Itests -c $< -o $@
 
 # test_logica e test_fluxo só usam os módulos puros: não precisam da raylib
-bin/test_logica$(EXE): obj/test_logica.o obj/logica.o obj/regras.o | bin
+bin/test_logica$(EXE): obj/test_logica.o obj/logica.o obj/regras.o obj/regras_texto.o | bin
 	$(CC) $^ -o $@ -lm
 
-bin/test_fluxo$(EXE): obj/test_fluxo.o obj/logica.o obj/regras.o | bin
+bin/test_fluxo$(EXE): obj/test_fluxo.o obj/logica.o obj/regras.o obj/regras_texto.o | bin
 	$(CC) $^ -o $@ -lm
 
 # test_regras também testa as coleções, que usam TraceLog e CheckCollisionBoxes (sem abrir janela)
-bin/test_regras$(EXE): obj/test_regras.o obj/regras.o obj/logica.o obj/colecoes.o | bin
+bin/test_regras$(EXE): obj/test_regras.o obj/regras.o obj/regras_texto.o obj/regras_ranking.o obj/regras_sanidade.o \
+                        obj/regras_som.o obj/logica.o obj/colecoes.o obj/materiais.o obj/materiais_parede.o \
+                        obj/esqueleto.o obj/regras_animacao.o obj/regras_animacao_cenas.o obj/regras_porta.o obj/regras_cena.o \
+                        obj/modelos_criatura.o | bin
 	$(CC) $^ -o $@ $(RAYLIB_LIBS)
+
+$(TEST_MENU): obj/test_menu.o obj/menu_inicial.o | bin
+	$(CC) $^ -o $@ $(RAYLIB_LIBS)
+
+test-menu: $(TEST_MENU)
+	./$(TEST_MENU)
 
 run: $(JOGO)
 	./$(JOGO)

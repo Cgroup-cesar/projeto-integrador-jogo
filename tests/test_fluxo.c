@@ -25,7 +25,7 @@ static void testa_partidas_completas(void) {
 // [REQ:PURA-regras_proxima_fase] testa a ordem das fases da partida
 static void testa_ordem_das_fases(void) {
     Fase f = regras_proxima_fase(FASE_MENU, EV_INICIAR);
-    CHECK(f == FASE_INTRO);
+    CHECK(f == FASE_INTRO); // as perguntas (professor ou professora, nome) são etapas da intro
     f = regras_proxima_fase(f, EV_INTRO_TERMINOU);
     CHECK(f == FASE_R1);
     f = regras_proxima_fase(f, EV_RODADA_CONCLUIDA);
@@ -126,6 +126,7 @@ static void testa_partida_com_recomecos(void) {
 // Eventos fora de hora são ignorados (nenhum softlock nem pulo indevido).
 static void testa_eventos_ignorados(void) {
     CHECK(regras_proxima_fase(FASE_MENU, EV_PEGO) == FASE_MENU);
+    CHECK(regras_proxima_fase(FASE_MENU, EV_INTRO_TERMINOU) == FASE_MENU);
     CHECK(regras_proxima_fase(FASE_R1, EV_SAIDA_CONCLUIDA) == FASE_R1);
     CHECK(regras_proxima_fase(FASE_S2, EV_RODADA_CONCLUIDA) == FASE_S2);
     CHECK(regras_proxima_fase(FASE_FIM_BOM, EV_INICIAR) == FASE_FIM_BOM);
@@ -137,6 +138,30 @@ static void testa_debug(void) {
     CHECK(regras_proxima_fase(FASE_FIM_RUIM, EV_PULAR_FASE) == FASE_MENU);
     CHECK(regras_proxima_fase(FASE_S1, EV_IR_RESPOSTA_FINAL) == FASE_RESPOSTA_FINAL);
     CHECK(regras_proxima_fase(FASE_MENU, EV_IR_RESPOSTA_FINAL) == FASE_MENU);
+    CHECK(regras_proxima_fase(FASE_MENU, EV_PULAR_FASE) == FASE_INTRO);
+}
+
+// Voltar ao menu vale de qualquer fase (pausa, inatividade da feira, fim): é por aí que o nome é apagado.
+static void testa_voltar_ao_menu_e_inatividade(void) {
+    CHECK(regras_proxima_fase(FASE_INTRO, EV_VOLTAR_MENU) == FASE_MENU); // nas perguntas do começo
+    CHECK(regras_proxima_fase(FASE_R1, EV_VOLTAR_MENU) == FASE_MENU);    // pausa → VOLTAR AO MENU
+    CHECK(regras_proxima_fase(FASE_S2, EV_VOLTAR_MENU) == FASE_MENU);
+    // Modo feira: a pessoa some no meio da partida ou nas perguntas da intro.
+    CHECK(regras_evento_inatividade(true, FASE_S2, FEIRA_INATIVIDADE_S - 1.0f) == EV_NENHUM);
+    CHECK(regras_evento_inatividade(true, FASE_S2, FEIRA_INATIVIDADE_S + 1.0f) == EV_VOLTAR_MENU);
+    CHECK(regras_evento_inatividade(true, FASE_INTRO, FEIRA_INATIVIDADE_S + 1.0f) == EV_VOLTAR_MENU);
+    CHECK(regras_evento_inatividade(false, FASE_S2, FEIRA_INATIVIDADE_S + 1.0f) == EV_NENHUM);
+    CHECK(regras_evento_inatividade(true, FASE_MENU, FEIRA_INATIVIDADE_S + 1.0f) == EV_NENHUM);
+    CHECK(regras_evento_inatividade(true, FASE_FIM_BOM, FEIRA_INATIVIDADE_S + 1.0f) == EV_NENHUM);
+}
+
+// [REQ:PURA-regras_radio_falso] testa quando o rádio é o Precursor imitando o Varela (o plot twist)
+static void testa_radio_falso(void) {
+    CHECK(!regras_radio_falso(FASE_INTRO) && !regras_radio_falso(FASE_R1) && !regras_radio_falso(FASE_S1));
+    CHECK(!regras_radio_falso(FASE_R2));
+    CHECK(regras_radio_falso(FASE_S2) && regras_radio_falso(FASE_R3)); // o Varela desceu até a cela
+    CHECK(regras_radio_falso(FASE_RESPOSTA_FINAL));
+    CHECK(!regras_radio_falso(FASE_FIM_BOM)); // no final bom, o Varela de verdade volta ao rádio
 }
 
 int main(void) {
@@ -147,5 +172,7 @@ int main(void) {
     testa_partida_com_recomecos();
     testa_eventos_ignorados();
     testa_debug();
+    testa_voltar_ao_menu_e_inatividade();
+    testa_radio_falso();
     return resultado_final("test_fluxo");
 }

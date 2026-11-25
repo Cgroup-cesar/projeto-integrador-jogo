@@ -1,7 +1,9 @@
 // audio_sintese.c — todos os sons gerados em código (22050 Hz, mono, 16 bits).
-// Se existir assets/audio/<nome>.ogg, ele substitui o som sintetizado. Sem placa de som, tudo vira silêncio.
+// Se existir assets/audio/<nome>.ogg (ou .wav, .mp3), ele substitui o som sintetizado. Sem placa de som,
+// tudo vira silêncio.
 #include "audio_sintese.h"
 #include "ui.h"
+#include "jogador.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,10 +12,14 @@
 #define DOIS_PI 6.28318530718f
 
 static const char *const NOMES[SOM_TOTAL] = {
-    "zumbido_lampada", "voz_precursor", "verdadeiro",     "falso",        "bip_interfone", "maquina_escrever",
-    "interruptor",     "passo",         "passo_criatura", "vidro_estalo", "estrondo",      "alarme",
-    "respiracao",      "ambiente_sala", "ambiente_saida", "papel",        "energia",       "distorcao",
+    "zumbido_lampada", "voz_precursor",    "verdadeiro",     "falso",
+    "bip_interfone",   "maquina_escrever", "interruptor",    "passo",
+    "passo_criatura",  "vidro_estalo",     "estrondo",       "alarme",
+    "respiracao",      "ambiente_sala",    "ambiente_saida", "papel",
+    "energia",         "distorcao",        "jumpscare",      "respiracao_ofegante",
+    "gota",            "armario_abre",     "armario_fecha",
 };
+typedef char cabem_os_sons[SOM_TOTAL <= SOM_MAXIMO ? 1 : -1]; // não compila se Recursos.sons não couber
 
 // ================================================================== ferramentas de síntese
 typedef struct {
@@ -99,12 +105,96 @@ static void clique(Buffer *b, float tom, float corpo) { // máquina de escrever 
     }
 }
 
-static void passo(Buffer *b, float grave, float queda) { // baque abafado; o da criatura é mais grave e lento
+static void passo(Buffer *b, float grave, float queda) { // baque abafado do passo do jogador
     float lp = 0;
     for (int i = 0; i < b->n; i++) {
         float t = (float)i / TAXA;
         float e = expf(-t * queda);
         b->amostras[i] = e * (0.8f * filtra(&lp, ruido(), 0.08f) + 0.6f * sinf(DOIS_PI * grave * t));
+    }
+}
+
+// Passo da criatura: o corpo grave (que desce de tom) dá o peso; o estalo médio por cima é o que se ouve
+// num fone ou na caixa de um notebook, que quase não tocam o grave sozinho.
+static void passo_pesado(Buffer *b) {
+    float lp = 0, lp_medio = 0;
+    for (int i = 0; i < b->n; i++) {
+        float t = (float)i / TAXA;
+        float corpo = expf(-t * 11.0f) * sinf(DOIS_PI * (120.0f - 60.0f * t) * t);
+        float baque = expf(-t * 16.0f) * filtra(&lp, ruido(), 0.1f);
+        float estalo = expf(-t * 50.0f) * filtra(&lp_medio, ruido(), 0.35f);
+        b->amostras[i] = tanhf(2.2f * (0.6f * corpo + 0.9f * baque + 0.5f * estalo)); // satura: mais cheio
+    }
+}
+
+// Pingo na poça: o "plim" de uma bolha (o tom sobe rápido e some) e um toque seco na água.
+static void gota(Buffer *b) {
+    float fase = 0.0f;
+    for (int i = 0; i < b->n; i++) {
+        float t = (float)i / TAXA;
+        fase += DOIS_PI * (700.0f + 1300.0f * (1.0f - expf(-t * 55.0f))) / TAXA;
+        float bolha = expf(-t * 32.0f) * sinf(fase);
+        float toque = expf(-t * 380.0f) * ruido();
+        b->amostras[i] = 0.6f * bolha + 0.3f * toque;
+    }
+}
+
+// Um ressoador de dois polos: faz o ruído ou um pulso "soar" numa frequência (a chapa, a dobradiça).
+typedef struct {
+    float y1, y2, a1, a2;
+} Ressoa;
+
+static Ressoa ressoador(float hz, float decai_s) {
+    float r = expf(-1.0f / (decai_s * TAXA));
+    return (Ressoa){0.0f, 0.0f, 2.0f * r * cosf(DOIS_PI * hz / TAXA), -r * r};
+}
+
+static float ressoa(Ressoa *r, float x) {
+    float y = x + r->a1 * r->y1 + r->a2 * r->y2;
+    r->y2 = r->y1;
+    r->y1 = y;
+    return y;
+}
+
+// O rangido da dobradiça: pulsos de atrito (uns 40 por segundo, com o ritmo variando) soando na chapa.
+static float rangido(Ressoa *chapa, float *fase, float t) {
+    *fase += (38.0f + 22.0f * sinf(DOIS_PI * 1.7f * t)) / TAXA;
+    float pulso = 0.0f;
+    if (*fase >= 1.0f) {
+        *fase -= 1.0f;
+        pulso = 1.0f;
+    }
+    return ressoa(chapa, pulso + 0.02f * ruido());
+}
+
+// Sem assets/audio/armario_abre.*: o clique da trava (aos 0,06 s) e o rangido da porta abrindo.
+static void armario_abre(Buffer *b) {
+    Ressoa trava = ressoador(2400.0f, 0.03f), chapa = ressoador(950.0f, 0.012f);
+    float fase = 0.0f, d = (float)b->n / TAXA;
+    for (int i = 0; i < b->n; i++) {
+        float t = (float)i / TAXA, dt = t - 0.06f;
+        float clique = dt >= 0.0f ? ressoa(&trava, dt < 0.002f ? ruido() : 0.0f) : 0.0f;
+        float range = t > 0.09f ? rangido(&chapa, &fase, t) * fminf(1.0f, (d - t) / 0.15f) : 0.0f;
+        b->amostras[i] = 0.04f * clique + 0.015f * range;
+    }
+}
+
+// Sem assets/audio/armario_fecha.*: o rangido curto, a batida da chapa (aos 0,15 s, ARMARIO_BATIDA_S) com o
+// baque grave e a vibração do metal, e o clique da trava logo depois.
+static void armario_fecha(Buffer *b) {
+    Ressoa chapa = ressoador(950.0f, 0.012f), trava = ressoador(2400.0f, 0.03f);
+    Ressoa metal1 = ressoador(420.0f, 0.25f), metal2 = ressoador(780.0f, 0.15f);
+    float fase = 0.0f, lp = 0.0f;
+    for (int i = 0; i < b->n; i++) {
+        float t = (float)i / TAXA, bt = t - 0.15f, tt = t - 0.19f;
+        float range = t < 0.15f ? rangido(&chapa, &fase, t) : 0.0f;
+        float golpe = bt >= 0.0f && bt < 0.004f ? ruido() : 0.0f;
+        float baque = 0.0f;
+        if (bt >= 0.0f) // o baque grave da chapa
+            baque = expf(-bt * 14.0f) * (sinf(DOIS_PI * 85.0f * bt) + filtra(&lp, ruido(), 0.08f));
+        float vibra = ressoa(&metal1, golpe) + 0.6f * ressoa(&metal2, golpe);
+        float clique = tt >= 0.0f ? ressoa(&trava, tt < 0.002f ? ruido() : 0.0f) : 0.0f;
+        b->amostras[i] = tanhf(0.015f * range + 0.7f * baque + 0.008f * vibra + 0.03f * clique);
     }
 }
 
@@ -189,8 +279,9 @@ static void distorcao(Buffer *b) {
 
 // ================================================================== montagem
 static float duracao(IdSom som) {
-    static const float d[SOM_TOTAL] = {1.0f,  1.6f, 0.6f, 0.5f, 0.25f, 0.05f, 0.06f, 0.14f, 0.3f,
-                                       0.45f, 1.2f, 1.0f, 2.0f, 4.0f,  4.0f,  0.3f,  1.2f,  1.0f};
+    static const float d[SOM_TOTAL] = {1.0f, 1.6f, 0.6f, 0.5f, 0.25f, 0.05f, 0.06f, 0.14f, 0.3f, 0.45f,
+                                       1.2f, 1.0f, 2.0f, 4.0f, 4.0f,  0.3f,  1.2f,  1.0f,  1.2f,
+                                       0.0f, 0.3f, 0.55f, 1.2f}; // respiração ofegante (0): arquivo
     return d[som];
 }
 
@@ -222,7 +313,16 @@ static void sintetiza(IdSom som, Buffer *b) {
         passo(b, 85.0f, 30.0f);
         break;
     case SOM_PASSO_CRIATURA:
-        passo(b, 48.0f, 12.0f);
+        passo_pesado(b);
+        break;
+    case SOM_GOTA:
+        gota(b);
+        break;
+    case SOM_ARMARIO_ABRE:
+        armario_abre(b);
+        break;
+    case SOM_ARMARIO_FECHA:
+        armario_fecha(b);
         break;
     case SOM_VIDRO_ESTALO:
         estalo(b);
@@ -251,6 +351,9 @@ static void sintetiza(IdSom som, Buffer *b) {
     case SOM_DISTORCAO:
         distorcao(b);
         break;
+    case SOM_JUMPSCARE: // sem o arquivo, o susto usa o mesmo estrondo do apagão
+        estrondo(b);
+        break;
     default:
         break;
     }
@@ -260,6 +363,7 @@ static void sintetiza(IdSom som, Buffer *b) {
 static Wave onda_sintetizada(IdSom som) {
     Buffer b = {0};
     b.n = (int)(duracao(som) * TAXA);
+    if (b.n <= 0) return (Wave){0}; // som que so existe como arquivo
     b.amostras = calloc((size_t)b.n, sizeof(float));
     short *pcm = RL_MALLOC((size_t)b.n * sizeof(short));
     if (b.amostras == NULL || pcm == NULL) {
@@ -292,6 +396,17 @@ void audio_exporta(const char *pasta) {
     }
 }
 
+// assets/audio/<nome>.ogg, .wav ou .mp3 (o primeiro que existir); sem nenhum, um Sound inválido.
+static Sound som_do_arquivo(const char *nome) {
+    static const char *const EXTENSOES[] = {"ogg", "wav", "mp3"};
+    for (int k = 0; k < 3; k++) { // padrão FILTER: fica a primeira extensão que existe
+        char relativo[64], caminho[512];
+        snprintf(relativo, sizeof(relativo), "audio/%s.%s", nome, EXTENSOES[k]);
+        if (ui_caminho_asset(relativo, caminho, sizeof(caminho))) return LoadSound(caminho);
+    }
+    return (Sound){0};
+}
+
 void audio_inicia(Recursos *rec) {
     InitAudioDevice();
     rec->audio_ok = IsAudioDeviceReady();
@@ -299,12 +414,12 @@ void audio_inicia(Recursos *rec) {
         TraceLog(LOG_WARNING, "PRECURSOR: sem dispositivo de áudio; o jogo segue em silêncio");
         return;
     }
-    for (int i = 0; i < SOM_TOTAL; i++) {
-        char relativo[64], caminho[512];
-        snprintf(relativo, sizeof(relativo), "audio/%s.ogg", NOMES[i]);
-        if (ui_caminho_asset(relativo, caminho, sizeof(caminho)))
-            rec->sons[i] = LoadSound(caminho); // o .ogg substitui
-        if (!IsSoundValid(rec->sons[i])) rec->sons[i] = som_sintetizado((IdSom)i);
+    for (int i = 0; i < SOM_TOTAL; i++) { // padrão MAP: cada nome → um som (do arquivo ou sintetizado)
+        rec->sons[i] = som_do_arquivo(NOMES[i]);
+        bool do_arquivo = IsSoundValid(rec->sons[i]);
+        if (!do_arquivo) rec->sons[i] = som_sintetizado((IdSom)i);
+        // O susto dura até o fim do trecho alto do som (medido no arquivo); o sintetizado é mais curto.
+        if (i == SOM_JUMPSCARE) rec->susto_s = do_arquivo ? JUMPSCARE_AUDIO_S : JUMPSCARE_S;
     }
 }
 
@@ -316,12 +431,38 @@ void audio_finaliza(Recursos *rec) {
 }
 
 // ================================================================== tocar
-void audio_toca(const Estado *e, IdSom som, float volume, float tom) {
+static void toca(const Estado *e, IdSom som, float volume, float tom, float pan) {
     if (!e->rec.audio_ok || som < 0 || som >= SOM_TOTAL) return;
     Sound s = e->rec.sons[som];
     SetSoundVolume(s, fmaxf(0.0f, fminf(1.0f, volume)));
     SetSoundPitch(s, tom);
+    SetSoundPan(s, audio_pan(pan));
     PlaySound(s);
+}
+
+float audio_pan(float pan) {
+#if RAYLIB_VERSION_MAJOR < 6
+    pan = 0.5f - 0.5f * pan; // até a 5.5 o pan ia de 0 a 1, com 0,5 no centro e 1 na esquerda
+#endif
+    return pan;
+}
+
+void audio_toca(const Estado *e, IdSom som, float volume, float tom) {
+    toca(e, som, volume, tom, 0.0f);
+}
+
+// O ouvido é o olho do jogador (no armário, dentro dele); a parede no meio vem do mesmo raycast da visão.
+SomEspacial audio_espacial(const Estado *e, Vector3 fonte, float alcance) {
+    Vector3 ouvido = jogador_olho(e);
+    Vector3 para = {fonte.x - ouvido.x, 0.0f, fonte.z - ouvido.z};
+    float dist = Vector3Length(para);
+    bool parede = dist > 0.5f && col_paredes_distancia_raio(&e->paredes, ouvido, para, dist) < dist - 0.3f;
+    return regras_som_espacial(ouvido, e->jog.yaw, fonte, alcance, parede);
+}
+
+void audio_toca_em(const Estado *e, IdSom som, Vector3 fonte, float alcance, float tom) {
+    SomEspacial s = audio_espacial(e, fonte, alcance);
+    if (s.volume > 0.0f) toca(e, som, s.volume, tom, s.pan);
 }
 
 void audio_para(const Estado *e, IdSom som) {
@@ -354,7 +495,9 @@ void audio_atualiza(Estado *e, float dt) {
     bool silencio =
         e->silencio_t > 0.0f || (e->fase == FASE_FIM_BOM && e->fim.tempo > 2.8f && e->fim.tempo < 4.8f);
     bool saida = regras_fase_eh_saida(e->fase);
-    bool sala = !saida && e->fase != FASE_FIM_RUIM && !(e->fase == FASE_INTRO && !e->intro.interfone);
+    // Na tela inicial (menu e texto datilografado) só toca a trilha (trilhas.c): sem chiado nem zumbido.
+    bool tela_inicial = e->fase == FASE_MENU || (e->fase == FASE_INTRO && e->intro.etapa != INTRO_RADIO);
+    bool sala = !saida && e->fase != FASE_FIM_RUIM && !tela_inicial;
     bool lampada_acesa = e->apagao_t <= 0.0f && (sala || (saida && e->painel.resolvido));
     mantem_laco(e, SOM_AMBIENTE_SALA, !silencio && sala, 0.35f);
     mantem_laco(e, SOM_AMBIENTE_SAIDA, !silencio && (saida || e->fase == FASE_FIM_RUIM), 0.5f);
