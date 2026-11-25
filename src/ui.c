@@ -451,7 +451,8 @@ static void desenha_mira(const Estado *e) {
         dica = e->resp.etapa == RESP_NADA ? TXT_ARMARIO_SAIR : TXT_TOTAL;
     else if (e->jog.mira >= 0) {
         static const TextoId por_tipo[] = {TXT_MIRA_CONSOLE, TXT_MIRA_PAINEL,  TXT_MIRA_PAINEL,
-                                           TXT_MIRA_DIARIO,  TXT_MIRA_ARMARIO, TXT_MIRA_PORTA};
+                                           TXT_MIRA_DIARIO,  TXT_MIRA_ARMARIO, TXT_MIRA_PORTA,
+                                           TXT_MIRA_CORPO};
         dica = por_tipo[e->interativos.itens[e->jog.mira].tipo];
     }
     if (dica != TXT_TOTAL) ui_texto_centro(e, dialogo_texto(dica), cy + 40 * s, 22 * s, COR_FOSFORO);

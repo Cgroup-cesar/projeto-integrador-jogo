@@ -21,6 +21,7 @@ typedef enum {
     FALAS_PORTA_TRANCADA_FALSO, // as três de cima depois que o Varela desceu (o Precursor no rádio)
     FALAS_RODADA_RECOMECA_FALSO,
     FALAS_PEGO_FALSO,
+    FALAS_CORPO, // examinar o corpo do americano (corpo.c)
     FALAS_TOTAL
 } BlocoFalas;
 
@@ -64,6 +65,7 @@ typedef enum {
     TXT_MIRA_DIARIO,
     TXT_MIRA_ARMARIO,
     TXT_MIRA_PORTA,
+    TXT_MIRA_CORPO,
     TXT_ARMARIO_SAIR,
     TXT_OBJETIVO_SALA,
     TXT_OBJETIVO_S1,

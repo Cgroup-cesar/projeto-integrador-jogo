@@ -64,6 +64,10 @@
 #define QUADRO_X         8.6f   // centro, no meio da parede sul
 #define QUADRO_PAREDE_Z  13.995f // a parede sul da sala (linha 7 do mapa: z = 14)
 #define QUADRO_BASE_Y    0.95f  // onde fica a borda de baixo
+// O corpo do americano (corpo.c): no fim das marcas de arrasto do corredor sul, rente à parede sul (z = 24).
+#define CORPO_X            22.7f
+#define CORPO_Z            23.45f
+#define CORPO_COMPRIMENTO_M 1.8f
 #define FITA_HORA_INICIO   (21 * 3600 + 47 * 60 + 52) // a câmera às 21:47:52, durante o canto
 #define TECLAS_ANDAR_S     10.0f // da R2 em diante, andando, a barra de teclas some depois disso em cada fase
 #define TECLAS_ESCALA_JOGO 0.88f // tamanho da barra de teclas durante a partida (1 = original)

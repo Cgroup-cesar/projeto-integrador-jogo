@@ -169,6 +169,9 @@ static void interage(Estado *e, const Interativo *it) {
     case INTER_PORTA:
         ui_fala(e, FALAS_PORTA_TRANCADA);
         break;
+    case INTER_CORPO:
+        ui_fala(e, FALAS_CORPO);
+        break;
     }
 }
 

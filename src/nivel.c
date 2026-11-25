@@ -8,6 +8,7 @@
 #include "porta_bunker.h"
 #include "cameras.h"
 #include "quadro.h"
+#include "corpo.h"
 #include "texturas.h"
 #include "cenario.h"
 #include <math.h>
@@ -194,6 +195,8 @@ void nivel_constroi_paredes(const Nivel *n, ColParedes *paredes) {
                          caixa((Vector3){n->diario.x, MESA_ALTURA_M * 0.5f, n->diario.z},
                                (Vector3){MESA_FUNDO_M, MESA_ALTURA_M, MESA_COMPRIMENTO_M}, PAREDE_MOVEL));
     caixas_adiciona_paredes(paredes);
+    col_paredes_adiciona(paredes, caixa((Vector3){CORPO_X, 0.15f, CORPO_Z},
+                                        (Vector3){CORPO_COMPRIMENTO_M, 0.3f, 0.75f}, PAREDE_MOVEL)); // o corpo
     for (int i = 0; i < n->n_armarios; i++) {
         Vector3 d = Vector3Subtract(n->armarios[i], n->armario_saida[i]);
         Vector3 tam = fabsf(d.x) > fabsf(d.z) ? (Vector3){0.75f, 2.1f, 1.3f} : (Vector3){1.3f, 2.1f, 0.75f};
@@ -229,6 +232,8 @@ void nivel_constroi_interativos(const Nivel *n, ColInterativos *c) {
         Vector3 pos = {n->armarios[i].x, 1.05f, n->armarios[i].z};
         col_interativos_adiciona(c, interativo(INTER_ARMARIO, pos, (Vector3){0.6f, 1.0f, 0.6f}, fora));
     }
+    col_interativos_adiciona(c, interativo(INTER_CORPO, (Vector3){CORPO_X, 0.3f, CORPO_Z},
+                                           (Vector3){0.9f, 0.3f, 0.4f}, (Vector3){0, 0, -1}));
     Vector3 porta = {n->porta_sala.x, 1.1f, n->porta_sala.z};
     col_interativos_adiciona(
         c, interativo(INTER_PORTA, porta, (Vector3){0.2f, 1.1f, 1.0f}, (Vector3){-1, 0, 0}));
@@ -382,6 +387,7 @@ static void desenha_moveis(const Estado *e) {
     caixas_desenha(e);
     cameras_desenha(e);
     quadro_desenha(e);
+    corpo_desenha(e);
     console_modelo_desenha(e); // o computador de época em cima da mesa (sem o modelo, a tela verde abaixo)
     metal(e, (Vector3){con.x + 0.62f, 1.18f, con.z - 0.88f}, (Vector3){0.22f, 0.3f, 0.1f}, cinza,
           3); // interfone

@@ -89,6 +89,8 @@ typedef struct {
     bool tem_cameras;
     Model modelo_quadro; // opcional: assets/modelos/quadro.glb (o quadro de investigação)
     bool tem_quadro;
+    Model modelo_corpo; // opcional: assets/modelos/corpo.glb (o corpo do americano)
+    bool tem_corpo;
     Music trilhas[TRILHA_TOTAL]; // opcionais: sons longos de assets/audio (trilhas.c)
     bool tem_trilha[TRILHA_TOTAL];
     // Texturas do mapa (texturas.c): criadas uma vez em carrega_recursos, liberadas em descarrega_recursos.

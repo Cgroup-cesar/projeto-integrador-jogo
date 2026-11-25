@@ -86,7 +86,8 @@ typedef enum {
     INTER_PAINEL2,
     INTER_DIARIO,
     INTER_ARMARIO,
-    INTER_PORTA
+    INTER_PORTA,
+    INTER_CORPO // o corpo do americano no corredor sul (corpo.c)
 } TipoInterativo;
 
 typedef struct {

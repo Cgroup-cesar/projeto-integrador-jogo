@@ -348,6 +348,8 @@ bool regras_interativo_ativo(TipoInterativo tipo, int fase) {
         return saida;
     case INTER_ARMARIO:
         return saida;
+    case INTER_CORPO:
+        return saida;
     }
     return false;
 }

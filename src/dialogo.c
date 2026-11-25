@@ -16,7 +16,11 @@ static const Legenda INTRO_INTERFONE[] = {
     {"Olá, {PROF} {NOME}. General Varela. Bem-vind{o|a} ao Programa Precursor.", 5.0f, V},
     {"Seu trabalho: entender o que ele diz. E nada de política, religião... muito menos futebol.", 5.5f, V},
     {"Ele aprende rápido. Rápido demais. Vai tentar te enganar.", 4.0f, V},
-    {"Uma regra só: nunca deixe as luzes se apagarem. Estou no rádio. Qualquer coisa, grite.", 5.5f, V},
+    {"Uma regra só: nunca deixe as luzes se apagarem.", 3.5f, V},
+    // as duas mortes da intro ("dois homens morreram") ganham nome: o corpo do americano está no bloco
+    {"Em junho, elas caíram. O Dimitri morreu diante da cela. O americano foi ver o gerador e nunca voltou.",
+     6.5f, V},
+    {"Estou no rádio, {PROF} {NOME}. Qualquer coisa, grite.", 4.0f, V},
 };
 static const Legenda APOS_R1[] = {
     {"'Nós não somos perigo.' ...É o que todos dizem, {PROF} {NOME}.", 4.0f, V},
@@ -66,6 +70,10 @@ static const Legenda PORTA_TRANCADA_FALSO[] = {
 static const Legenda RODADA_RECOMECA_FALSO[] = {
     {"Vidro substituído, {NOME}. Recomece. Com cuidado: eu preciso de você.", 4.5f, F},
 };
+// O corpo no fim do arrasto: o americano que "foi ver o gerador e nunca voltou" (a carta do Varela).
+static const Legenda CORPO_FALAS[] = {
+    {"Uma lona do Exército. Um crachá na manga: CONSULTOR — EUA. Dois meses, e ninguém veio buscá-lo.", 6.5f, J},
+};
 static const Legenda PEGO_FALSO[] = {
     {"...{NOME}. Você voltou ao começo do corredor. Tente de novo. Eu espero.", 4.5f, F},
 };
@@ -97,6 +105,7 @@ static const Bloco BLOCOS[FALAS_TOTAL] = {
     BLOCO(PORTA_TRANCADA_FALSO),
     BLOCO(RODADA_RECOMECA_FALSO),
     BLOCO(PEGO_FALSO),
+    BLOCO(CORPO_FALAS),
 };
 
 BlocoFalas dialogo_versao_falsa(BlocoFalas bloco) {
@@ -166,6 +175,7 @@ static const char *const TEXTOS[TXT_TOTAL] = {
     [TXT_MIRA_DIARIO] = "E — ler o bilhete",
     [TXT_MIRA_ARMARIO] = "E — esconder-se no armário",
     [TXT_MIRA_PORTA] = "E — porta da sala de observação",
+    [TXT_MIRA_CORPO] = "E — examinar",
     [TXT_ARMARIO_SAIR] = "E — sair do armário",
     [TXT_OBJETIVO_SALA] = "Vá ao console (E) e descubra o que ele diz.",
     [TXT_OBJETIVO_S1] = "Religue o gerador: painel 1, no fim do corredor (ao norte).",

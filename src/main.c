@@ -25,6 +25,7 @@
 #include "porta_bunker.h"
 #include "cameras.h"
 #include "quadro.h"
+#include "corpo.h"
 #include "dialogo.h"
 #include "ranking.h"
 #include "respiracao.h"
@@ -562,10 +563,12 @@ static void carrega_recursos(void) {
     porta_bunker_carrega(&estado.rec);
     cameras_carrega(&estado.rec);
     quadro_carrega(&estado.rec);
+    corpo_carrega(&estado.rec);
     if (mudo || estado.modo_smoke) SetMasterVolume(0.0f); // o smoke roda calado
 }
 
 static void descarrega_recursos(void) {
+    corpo_descarrega(&estado.rec);
     quadro_descarrega(&estado.rec);
     cameras_descarrega(&estado.rec);
     porta_bunker_descarrega(&estado.rec);
