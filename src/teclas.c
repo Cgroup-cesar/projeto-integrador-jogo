@@ -40,12 +40,7 @@ static int itens_do_terminal(const Estado *e, TeclaAcao *t) {
 
 static int itens_do_painel(const Estado *e, TeclaAcao *t) {
     int n = 0;
-    if (e->painel.numero == 1) {
-        t[n++] = (TeclaAcao){"1 2 3", TXT_TECLA_CHAVES}; // a tecla de cada chave também está na linha dela
-    } else {
-        t[n++] = (TeclaAcao){"SETAS_H", TXT_TECLA_ENCAIXE};
-        t[n++] = (TeclaAcao){"SETAS_V", TXT_TECLA_PORTA};
-    }
+    t[n++] = (TeclaAcao){"1 2 3", TXT_TECLA_CHAVES}; // a tecla de cada chave também está na linha dela
     t[n++] = (TeclaAcao){"H", e->ajuda_aberta ? TXT_TECLA_FECHAR_AJUDA : TXT_TECLA_AJUDA};
     t[n++] = (TeclaAcao){"ESC", TXT_TECLA_FECHAR};
     return n;

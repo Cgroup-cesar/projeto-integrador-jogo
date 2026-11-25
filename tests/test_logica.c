@@ -117,24 +117,38 @@ static void testa_parser_erros(void) {
     CHECK(analisa(&pool, f5, 4, &erro) < 0 && !erro.ok && erro.posicao == 2);
 }
 
-// Painel 2: (A [?1] B) [?2] (¬A) com alvo 00→1, 01→1, 10→0, 11→1. Há exatamente duas soluções.
-// [REQ:PURA-regras_avaliar_circuito] testa as duas soluções do Painel 2
+// Painel 2: (¬A ∨ B) ∧ C acende em 3 das 8 combinações (001, 011 e 111), e o LED do OU do meio é a
+// tabela de SE A, ENTÃO B. O painel abre com só a chave A ligada: uma troca não basta (mínimo de 2).
+// [REQ:PURA-regras_avaliar_circuito] testa as soluções e o começo do Painel 2
 static void testa_painel2(void) {
-    const bool alvo[4] = {true, true, false, true};
-    int solucoes = 0;
-    bool e_ou = false, e_xou = false;
-    for (int p1 = PORTA_E; p1 <= PORTA_NE; p1++) {
-        for (int p2 = PORTA_E; p2 <= PORTA_NE; p2++) {
-            Circuito c;
-            regras_circuito_painel2(&c, (TipoPorta)p1, (TipoPorta)p2);
-            if (!regras_circuito_confere_tabela(&c, alvo)) continue;
-            solucoes++;
-            e_ou = e_ou || (p1 == PORTA_E && p2 == PORTA_OU);
-            e_xou = e_xou || (p1 == PORTA_E && p2 == PORTA_XOU);
-        }
+    Circuito c;
+    regras_circuito_painel2(&c);
+    int acesas = 0;
+    bool so_as_certas = true, ou_eh_implica = true;
+    for (int linha = 0; linha < 8; linha++) { // padrão FOLD: conta as combinações que acendem
+        bool ent[3], leds[MAX_PORTAS];
+        logica_valores_da_linha(linha, 3, ent);
+        bool saida = regras_avaliar_circuito(&c, ent, leds);
+        ou_eh_implica = ou_eh_implica && leds[1] == (!ent[0] || ent[1]);
+        if (!saida) continue;
+        acesas++;
+        so_as_certas = so_as_certas && ent[2] && (!ent[0] || ent[1]);
     }
-    CHECK(solucoes == 2);
-    CHECK(e_ou && e_xou);
+    CHECK(acesas == 3);
+    CHECK(so_as_certas);
+    CHECK(ou_eh_implica);
+    bool inicio[3] = {true, false, false};
+    CHECK(!regras_avaliar_circuito(&c, inicio, NULL));
+    for (int i = 0; i < 3; i++) { // padrão MAP: trocar uma chave só, a partir do começo, não acende
+        bool uma[3] = {true, false, false};
+        uma[i] = !uma[i];
+        CHECK(!regras_avaliar_circuito(&c, uma, NULL));
+    }
+    Bloqueio b = regras_circuito_bloqueio(&c, inicio);
+    CHECK(b.porta == 0 && b.entrada == 0); // desce E → OU → NÃO: a chave A precisa desligar
+    bool tudo_desligado[3] = {false, false, false};
+    b = regras_circuito_bloqueio(&c, tudo_desligado);
+    CHECK(b.porta == 2 && b.entrada == 1); // o OU já acende (¬A): falta a chave C no E final
 }
 
 // Painel 1: (A ∧ ¬B) ∧ C acende só com A=1, B=0, C=1.

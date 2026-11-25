@@ -13,8 +13,7 @@ typedef enum {
     CLIQUE_GENERO,   // professor (0) ou professora (1)
     CLIQUE_OPCAO,    // conectivos e traduções no terminal
     CLIQUE_LUZ,      // as luzes A (0) e B (1) do terminal
-    CLIQUE_CHAVE,    // as chaves A, B e C do painel 1
-    CLIQUE_ENCAIXE,  // os encaixes do painel 2 (0 e 1)
+    CLIQUE_CHAVE,    // as chaves A, B e C dos painéis 1 e 2
     CLIQUE_FICHA,    // as fichas da resposta final
     CLIQUE_PERGUNTA, // a avaliação: cada pergunta
     CLIQUE_ESTRELA,  // a avaliação: pergunta * AVALIACAO_MAX + estrela
@@ -37,7 +36,7 @@ typedef enum {
     TECLA_NENHUMA
 } TeclaClique;
 
-void clique_limpa(void);                                        // no começo de cada desenho
+void clique_limpa(void);                                         // no começo de cada desenho
 void clique_area(GrupoClique grupo, int indice, Rectangle area); // ao desenhar uma opção clicável
 
 // O índice da área do grupo sob o ponteiro (−1 = nenhuma). Só vale com o cursor à mostra.

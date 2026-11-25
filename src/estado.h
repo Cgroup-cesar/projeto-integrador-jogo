@@ -271,9 +271,8 @@ typedef struct {
 
 // ------------------------------------------------------------------ painéis de circuito (saídas)
 typedef struct {
-    int numero; // 1 ou 2
+    int numero; // 1 ou 2 (os dois têm as chaves A, B e C; muda o circuito)
     bool chaves[3];
-    int escolha[2]; // painel 2: TipoPorta escolhida em cada encaixe
     int cursor;
     bool resolvido;
     float resolvido_t;

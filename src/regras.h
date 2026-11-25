@@ -263,10 +263,9 @@ typedef struct {
     int n_entradas; // a saída do circuito é a última porta
 } Circuito;
 
-void regras_circuito_painel1(Circuito *c);                             // (A ∧ ¬B) ∧ C
-void regras_circuito_painel2(Circuito *c, TipoPorta p1, TipoPorta p2); // (A [p1] B) [p2] (¬A)
+void regras_circuito_painel1(Circuito *c); // (A ∧ ¬B) ∧ C
+void regras_circuito_painel2(Circuito *c); // (¬A ∨ B) ∧ C
 bool regras_avaliar_circuito(const Circuito *c, const bool *entradas, bool *leds);
-bool regras_circuito_confere_tabela(const Circuito *c, const bool *alvo);
 // Onde a corrente trava: andando da SAÍDA para trás, a porta e a entrada (0 = a, 1 = b) que a pessoa precisa
 // olhar. porta = −1: a SAÍDA já acende.
 typedef struct {
