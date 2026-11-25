@@ -373,11 +373,12 @@ void regras_circuito_painel1(Circuito *c) {
     c->portas[2] = (Porta){PORTA_E, REF_PORTA(1), 2}; // (A ∧ ¬B) ∧ C
 }
 
-void regras_circuito_painel2(Circuito *c, TipoPorta p1, TipoPorta p2) {
-    *c = (Circuito){.n_entradas = 2, .n_portas = 3};
-    c->portas[0] = (Porta){p1, 0, 1};                       // A [?1] B
-    c->portas[1] = (Porta){PORTA_NAO, 0, 0};                // ¬A
-    c->portas[2] = (Porta){p2, REF_PORTA(0), REF_PORTA(1)}; // (...) [?2] (¬A)
+// O OU do meio é a tabela de SE A, ENTÃO B (¬A ∨ B), sem que a porta SE…ENTÃO apareça: prenúncio da R3.
+void regras_circuito_painel2(Circuito *c) {
+    *c = (Circuito){.n_entradas = 3, .n_portas = 3};
+    c->portas[0] = (Porta){PORTA_NAO, 0, 0};           // ¬A
+    c->portas[1] = (Porta){PORTA_OU, REF_PORTA(0), 1}; // ¬A ∨ B
+    c->portas[2] = (Porta){PORTA_E, REF_PORTA(1), 2};  // (¬A ∨ B) ∧ C
 }
 
 // As portas do painel usam a mesma semântica do motor de lógica (OU-EXCLUSIVO = ¬(A ↔ B), NÃO-E = ¬(A ∧ B)).
@@ -415,16 +416,6 @@ bool regras_avaliar_circuito(const Circuito *c, const bool *entradas, bool *leds
         if (leds != NULL) leds[i] = portas[i];
     }
     return c->n_portas > 0 ? portas[c->n_portas - 1] : false;
-}
-
-bool regras_circuito_confere_tabela(const Circuito *c, const bool *alvo) {
-    bool entradas[LOGICA_MAX_ATOMOS] = {false};
-    int linhas = 1 << c->n_entradas;
-    for (int linha = 0; linha < linhas; linha++) {
-        logica_valores_da_linha(linha, c->n_entradas, entradas);
-        if (regras_avaliar_circuito(c, entradas, NULL) != alvo[linha]) return false;
-    }
-    return true;
 }
 
 // [REQ:PURA-regras_circuito_bloqueio] da SAÍDA para trás, de porta apagada em porta apagada, até a entrada

@@ -116,7 +116,6 @@ typedef enum {
     TXT_PAINEL1_TITULO,
     TXT_PAINEL2_TITULO,
     TXT_PAINEL_RESOLVIDO,
-    TXT_PAINEL_ALVO,
     TXT_PAINEL_SAIDA,
     TXT_PAINEL_CHAVE_LIGADA,
     TXT_PAINEL_CHAVE_DESLIGADA,
@@ -156,8 +155,6 @@ typedef enum {
     TXT_TECLA_SAIR,
     TXT_TECLA_FECHAR,
     TXT_TECLA_CHAVES,
-    TXT_TECLA_ENCAIXE,
-    TXT_TECLA_PORTA,
     TXT_TECLA_MOVER,
     TXT_TECLA_USAR_FICHA,
     TXT_TECLA_ANDAR,
@@ -173,7 +170,7 @@ typedef enum {
     TXT_COLA_E,
     TXT_COLA_OU,
     TXT_COLA_SE,
-    TXT_COLA_XOU, // as duas portas que só existem no painel 2
+    TXT_COLA_XOU, // OU-EXCLUSIVO e NÃO-E: o motor de lógica tem, nenhum painel usa hoje
     TXT_COLA_NE,
     TXT_COLA_COMPARE,
     TXT_COLA_SUA_FRASE,
@@ -184,8 +181,7 @@ typedef enum {
     TXT_TABELA_RESPOSTA,
     TXT_TABELA_VERDADE,
     TXT_TABELA_FALSO,
-    TXT_PAINEL_OBJETIVO1,
-    TXT_PAINEL_OBJETIVO2,
+    TXT_PAINEL_OBJETIVO,
     TXT_MENU_RANKING, // ranking e avaliação
     TXT_MENU_GANCHO,
     TXT_MENU_DATA_FITA,
@@ -225,7 +221,6 @@ typedef enum {
     TXT_PAINEL_DICA_E,
     TXT_PAINEL_DICA_OU,
     TXT_PAINEL_DICA_NAO,
-    TXT_PAINEL2_DICA,
     TXT_VHS_ROTULO,
     TXT_VHS_DESLIGADO,
     TXT_VHS_ORIGINAL,
