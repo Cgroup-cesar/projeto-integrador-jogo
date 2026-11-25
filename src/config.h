@@ -386,6 +386,16 @@
 #define JUMPSCARE_LUZ          1.1f  // força da luz branca de baixo no rosto (pisca)
 // Onde fica o rosto do modelo (fração da caixa) está em modelos_criatura.c (ModeloCriatura.rosto).
 #define COR_MARCA_ROSTO (Color){0x0a, 0x0a, 0x0c, 255} // os olhos pintados no rosto liso (meios-discos)
+// A boca do susto: abre logo depois que ele chega colado na câmera e fica mastigando. Dentro, anéis de
+// dentes finos, um atrás do outro até o fundo da garganta, girando em sentidos alternados.
+#define JUMPSCARE_BOCA_ABRE_S 0.25f  // de fechada a escancarada, depois de chegar
+#define JUMPSCARE_BOCA_HZ     6.0f   // a mastigada: abre e fecha um pouco, sem ritmo de relógio
+#define BOCA_ANEIS            8      // anéis de dentes, do lábio até a garganta
+#define BOCA_DENTES           34     // dentes por anel
+#define BOCA_FUNDO_M          0.006f // quanto cada anel fica mais para dentro (m)
+#define COR_DENTE             (Color){0xd4, 0xc8, 0xa0, 255}
+#define COR_GENGIVA           (Color){0x3a, 0x05, 0x0a, 255}
+#define COR_GARGANTA          (Color){0x06, 0x00, 0x02, 255}
 
 // ---------------------------------------------------------------- sala, vidro e placar
 #define VIDAS_VIDRO               3

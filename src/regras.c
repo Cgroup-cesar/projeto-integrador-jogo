@@ -265,7 +265,7 @@ static float tremida(int ciclo, unsigned semente) {
     return regras_sorteio(ciclo, semente) * 2.0f - 1.0f;
 }
 
-// [REQ:PURA-regras_quadro_susto] o rosto pula até a câmera, freia colado nela e treme sem parar
+// [REQ:PURA-regras_quadro_susto] o rosto pula até a câmera, freia colado nela, treme sem parar e abre a boca
 QuadroSusto regras_quadro_susto(float t) {
     if (t < 0.0f) t = 0.0f;
     float x = fminf(1.0f, t / JUMPSCARE_PULO_S);
@@ -279,6 +279,9 @@ QuadroSusto regras_quadro_susto(float t) {
     q.tremor_y = tremida(ciclo, 0x6b43u) * JUMPSCARE_TREMOR_M * forca;
     q.giro_graus = tremida(ciclo, 0xa7c5u) * JUMPSCARE_TREMOR_GRAUS * forca;
     q.clarao = depois < 0.0f ? 0.0f : fmaxf(0.0f, 1.0f - depois / JUMPSCARE_CLARAO_S);
+    float abre = depois < 0.0f ? 0.0f : fminf(1.0f, depois / JUMPSCARE_BOCA_ABRE_S);
+    float mastiga = sinf(2.0f * PI * JUMPSCARE_BOCA_HZ * t) * sinf(2.0f * PI * 1.7f * t); // −1..1, irregular
+    q.boca = abre * abre * (3.0f - 2.0f * abre) * (0.88f + 0.12f * mastiga);
     return q;
 }
 

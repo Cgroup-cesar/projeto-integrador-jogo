@@ -399,7 +399,7 @@ static void testa_volumes_trilhas(void) {
     CHECK(v[TRILHA_VOZ_PRECURSOR] < VOL_VOZ_PRECURSOR);                  // ...e baixo
 }
 
-// [REQ:PURA-regras_quadro_susto] testa o pulo até a câmera, o tremor e o clarão
+// [REQ:PURA-regras_quadro_susto] testa o pulo até a câmera, o tremor, o clarão e a boca
 static void testa_quadro_susto(void) {
     QuadroSusto inicio = regras_quadro_susto(0.0f);
     CHECK(perto(inicio.distancia, JUMPSCARE_LONGE_M) && perto(inicio.clarao, 0.0f)); // começa longe
@@ -422,6 +422,14 @@ static void testa_quadro_susto(void) {
     CHECK(perto(antes.distancia, JUMPSCARE_PERTO_M) && perto(antes.clarao, 0.0f)); // fica colado, sem clarão
     CHECK(mudou >= (int)(2.0f * JUMPSCARE_TREMOR_HZ) - 4); // treme rápido: ~40 posições novas por segundo
     CHECK(regras_quadro_susto(0.77f).tremor_y == regras_quadro_susto(0.77f).tremor_y); // repetível
+    CHECK(perto(regras_quadro_susto(JUMPSCARE_PULO_S * 0.5f).boca, 0.0f)); // no pulo, a boca fechada
+    float menor = 1.0f, maior = 0.0f;
+    for (int i = 0; i < 150; i++) { // padrão FOLD: 1,5 s depois de escancarar, ela mastiga
+        float b = regras_quadro_susto(JUMPSCARE_PULO_S + JUMPSCARE_BOCA_ABRE_S + i * 0.01f).boca;
+        menor = fminf(menor, b);
+        maior = fmaxf(maior, b);
+    }
+    CHECK(menor > 0.7f && maior <= 1.0f && maior - menor > 0.05f); // aberta, mexendo um pouco
 }
 
 // [REQ:PURA-regras_placar] testa o placar sem eventos, o total e o placar por fase
