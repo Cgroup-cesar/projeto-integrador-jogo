@@ -9,7 +9,6 @@
 #include "efeitos.h"
 #include "jogador.h"
 #include "lampada_sala.h"
-#include "nivel.h"
 #include "audio_sintese.h"
 #include "posfx.h"
 #include "rlgl.h"

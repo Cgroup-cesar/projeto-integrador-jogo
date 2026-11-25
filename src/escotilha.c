@@ -34,14 +34,15 @@ void escotilha_desenha_teto(const Estado *e) {
         {{(x1 + largura) * 0.5f, y, ESCOTILHA_Z}, {largura - x1, 0.1f, ESCOTILHA_LADO_M}}};
     for (int i = 0; i < 4; i++) // padrão MAP: cada peça da laje
         texturas_caixa_mat(e, MATERIAL_TETO, pecas[i][0], pecas[i][1], uv, WHITE);
-    float alto = PE_DIREITO + ESCOTILHA_POCO_M * 0.5f, lado = ESCOTILHA_LADO_M + 0.1f;
+    float parede = ESCOTILHA_POCO_M - 0.1f, alto = PE_DIREITO + 0.1f + parede * 0.5f,
+          lado = ESCOTILHA_LADO_M + 0.1f;
     ModoUV concreto = texturas_modo(MATERIAL_CONCRETO, 41);
     const Vector3 poco[5][2] = {
-        // as quatro paredes do poço e o fundo, lá em cima
-        {{ESCOTILHA_X, alto, z0 - 0.025f}, {lado, ESCOTILHA_POCO_M, 0.05f}},
-        {{ESCOTILHA_X, alto, z1 + 0.025f}, {lado, ESCOTILHA_POCO_M, 0.05f}},
-        {{x0 - 0.025f, alto, ESCOTILHA_Z}, {0.05f, ESCOTILHA_POCO_M, lado}},
-        {{x1 + 0.025f, alto, ESCOTILHA_Z}, {0.05f, ESCOTILHA_POCO_M, lado}},
+        // as paredes do poço (sobre a laje: nada no mesmo plano da borda dela) e o fundo
+        {{ESCOTILHA_X, alto, z0 - 0.025f}, {lado, parede, 0.05f}},
+        {{ESCOTILHA_X, alto, z1 + 0.025f}, {lado, parede, 0.05f}},
+        {{x0 - 0.025f, alto, ESCOTILHA_Z}, {0.05f, parede, lado}},
+        {{x1 + 0.025f, alto, ESCOTILHA_Z}, {0.05f, parede, lado}},
         {{ESCOTILHA_X, PE_DIREITO + ESCOTILHA_POCO_M, ESCOTILHA_Z}, {lado, 0.02f, lado}}};
     for (int i = 0; i < 5; i++) // padrão MAP: cada parede do poço
         texturas_caixa_mat(e, MATERIAL_CONCRETO, poco[i][0], poco[i][1], concreto,

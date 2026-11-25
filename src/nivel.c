@@ -490,9 +490,9 @@ static void desenha_moveis(const Estado *e, bool completo) {
     Vector3 con = n->console;
     metal(e, (Vector3){con.x, 0.5f, con.z - 0.6f}, (Vector3){1.6f, 1.0f, 0.8f}, COR_OLIVA, 1);
     metal(e, (Vector3){con.x, 1.02f, con.z - 0.75f}, (Vector3){1.5f, 0.06f, 0.5f}, cinza, 2);
+    escotilha_desenha(e); // a escada e a tampa: em todos os passes (o reflexo não pode mostrar o vão aberto)
     if (completo) {
         caixas_desenha(e);
-        escotilha_desenha(e); // a escada e a tampa da escotilha, ao lado dos caixotes
         cameras_desenha(e);
         quadro_desenha(e);
         console_modelo_desenha(e); // o computador de época na mesa (sem o modelo, a tela verde abaixo)

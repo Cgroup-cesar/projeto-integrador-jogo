@@ -312,7 +312,7 @@ typedef struct {
 
 // ------------------------------------------------------------------ intro, legendas e fim
 // FALANTE_VARELA_FALSO: o Precursor imitando o Varela no rádio (mesmo rótulo, voz grave e legenda falhando).
-// FALANTE_VARELA_PRESENTE: o Varela em pessoa, sem o rádio (o fim do corredor, na cena do final bom).
+// FALANTE_VARELA_PRESENTE: o Varela em pessoa, sem o rádio (lá em cima da escotilha, na cena do final bom).
 typedef enum { FALANTE_VARELA, FALANTE_VARELA_FALSO, FALANTE_JOGADOR, FALANTE_SISTEMA, FALANTE_VARELA_PRESENTE } Falante;
 
 typedef struct {

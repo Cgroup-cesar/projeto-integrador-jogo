@@ -55,8 +55,8 @@
 #define ESCOTILHA_X          5.2f   // centro do vão (m): de x 4,8 a 5,6
 #define ESCOTILHA_Z          13.45f // de z 13,05 a 13,85; a dobradiça fica no lado sul
 #define ESCOTILHA_LADO_M     0.8f
-#define ESCOTILHA_POCO_M     0.5f   // o poço curto acima da laje (de y 3,0 a 3,5)
-#define ESCOTILHA_ABRE_GRAUS 105.0f // aberta, a tampa passa um pouco da vertical
+#define ESCOTILHA_POCO_M     0.9f   // o poço acima da laje (de y 3,0 a 3,9): a tampa aberta cabe nele
+#define ESCOTILHA_ABRE_GRAUS 80.0f  // aberta, a tampa fica quase em pé, na frente da parede do poço
 #define ESCADA_PLANO_Z       13.82f // o plano dos degraus (a parede sul fica em z 14)
 #define ESCADA_LARGURA_M     0.46f  // entre os trilhos
 #define ESCADA_DEGRAU_M      0.30f  // um degrau a cada 0,3 m
