@@ -1,26 +1,13 @@
-// esqueleto.c — o modelo escolhido (as tabelas ficam em modelos_criatura.c), a cinemática direta, as
+// esqueleto.c — o rig do Precursor (a tabela fica em modelos_criatura.c): a cinemática direta, as
 // matrizes de skinning e o IK de dois ossos. Puro: só raymath.h.
 #include "esqueleto.h"
 #include <math.h>
-#include <string.h>
 
-// O modelo escolhido (modelos_criatura.c). Um só por partida: o rig e a animação leem daqui.
-static const ModeloCriatura *atual = &MODELOS_CRIATURA[CRIATURA_PRECURSOR];
-#define OSSOS (atual->ossos)
+#define OSSOS (MODELO_CRIATURA.ossos)
 
-// [REQ:PURA-modelos_criatura] o modelo escolhido: as tabelas de cada um ficam em modelos_criatura.c
-void esqueleto_usa(int id) {
-    if (id >= 0 && id < CRIATURAS_TOTAL) atual = &MODELOS_CRIATURA[id];
-}
-
-int esqueleto_modelo_por_nome(const char *nome) {
-    for (int i = 0; i < CRIATURAS_TOTAL; i++) // padrão FOLD: o primeiro com esse nome
-        if (strcmp(MODELOS_CRIATURA[i].nome, nome) == 0) return i;
-    return -1;
-}
-
+// [REQ:PURA-modelos_criatura] o modelo do Precursor: a tabela de ossos e medidas fica em modelos_criatura.c
 const ModeloCriatura *esqueleto_modelo(void) {
-    return atual;
+    return &MODELO_CRIATURA;
 }
 
 typedef char confere_ossos_glsl[(OSSOS_TOTAL == OSSOS_TOTAL_GLSL) ? 1 : -1]; // não compila se divergir
@@ -147,21 +134,4 @@ void esqueleto_marca_pontos(const MarcaRosto *m, Vector3 *saida) {
         Vector3 borda = Vector3Subtract(Vector3Scale(u, cosf(a)), Vector3Scale(cima, sinf(a)));
         saida[k] = Vector3Add(m->centro, Vector3Scale(borda, m->raio));
     }
-}
-
-// ------------------------------------------------------------------ a mandíbula
-// Medidas do arquivo (atual->queixo): o queixo fica abaixo da boca e à frente do pescoço.
-
-static float suaviza(float de, float ate, float x) {
-    float t = Clamp((x - de) / (ate - de), 0.0f, 1.0f);
-    return t * t * (3.0f - 2.0f * t);
-}
-
-// 1 no queixo; cai a zero na linha da boca, embaixo, nas laterais e para trás (sem rasgar a pele).
-float esqueleto_peso_mandibula(Vector3 v) {
-    const QueixoModelo *q = &atual->queixo;
-    if (q->meia_largura <= 0.0f) return 0.0f; // modelo sem boca
-    return suaviza(q->y_max, q->y_max - 0.025f, v.y) * suaviza(q->y_min, q->y_min + 0.03f, v.y) *
-           suaviza(q->meia_largura, q->meia_largura - 0.03f, fabsf(v.x - q->x_centro)) *
-           suaviza(q->z_min, q->z_min + 0.04f, v.z);
 }

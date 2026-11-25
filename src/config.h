@@ -304,7 +304,7 @@
 #define CRIATURA_LANTERNA_ALCANCE_M 16.0f // até onde a lanterna, apontada para ele, começa a falhar
 #define CRIATURA_OLHO_PX            1.0f  // no menu: raio, em pixels da cena, dos dois pontinhos dos olhos
 #define CRIATURA_DIST_ARMARIO  2.0f  // entrar no armário a menos disso enquanto ele vê = pego
-#define CRIATURA_ALTURA_M      2.6f  // o precursor.glb é escalado para essa altura, com os pés no chão
+#define CRIATURA_ALTURA_M      2.6f  // o modelo é escalado para essa altura, com os pés no chão
 // ---------------------------------------------------------------- animação do Precursor (rig: esqueleto.c)
 // Ele é RETRAÍDO: doente, desconfiado, contido. Na dúvida, menos é mais. Ângulos em graus, distâncias em m.
 // Postura (sempre)
@@ -384,10 +384,7 @@
 #define JUMPSCARE_CLARAO_S     0.12f // clarão branco quando ele chega
 #define JUMPSCARE_ESCURECE     0.85f // o cenário ao fundo fica 85% mais escuro: o foco é a criatura
 #define JUMPSCARE_LUZ          1.1f  // força da luz branca de baixo no rosto (pisca)
-#define JUMPSCARE_BOCA_HZ      4.5f  // quantas vezes por segundo a boca abre e fecha
-#define JUMPSCARE_BOCA_FECHA   8.0f  // graus que a mandíbula sobe para a boca fechar
-#define JUMPSCARE_BOCA_ABRE    28.0f // e escancarada
-// Onde fica o rosto de cada modelo (fração da caixa) está em modelos_criatura.c (ModeloCriatura.rosto).
+// Onde fica o rosto do modelo (fração da caixa) está em modelos_criatura.c (ModeloCriatura.rosto).
 #define COR_MARCA_ROSTO (Color){0x0a, 0x0a, 0x0c, 255} // os olhos pintados no rosto liso (meios-discos)
 
 // ---------------------------------------------------------------- sala, vidro e placar

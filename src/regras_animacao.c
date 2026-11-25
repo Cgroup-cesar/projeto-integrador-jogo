@@ -194,8 +194,8 @@ static void camada_tiques(const AnimCriatura *a, Vector3 *ang) {
 }
 
 // ================================================================== camadas
-// O que o modelo pede a mais (esqueleto_modelo()->postura): um modelo reto ganha a curvatura que o
-// precursor já tem no arquivo, e o quadril desce para os joelhos dobrarem.
+// O que o modelo pede a mais (esqueleto_modelo()->postura): o arquivo é reto e ganha aqui a curvatura
+// ameaçadora, e o quadril desce para os joelhos dobrarem.
 static void postura_do_modelo(Vector3 *ang, Vector3 *raiz, float fora_do_cano) {
     const PosturaModelo *m = &esqueleto_modelo()->postura;
     soma(ang, OSSO_LOMBAR, m->lombar, 0, 0);

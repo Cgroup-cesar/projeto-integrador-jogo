@@ -551,7 +551,6 @@ static void le_argumentos(Estado *e, int argc, char **argv) {
     for (int i = 1; i < argc; i++) {
         if (bancada_le_argumento(argc, argv, &i)) continue; // --olhar, --lanterna, --energia, --medir
         if (qualidade_le_argumento(argc, argv, &i)) continue; // --qualidade, --sem
-        if (criatura_le_argumento(argc, argv, &i)) continue;  // --criatura precursor|papelao
         if (strcmp(argv[i], "--smoke") == 0) e->modo_smoke = true;
         if (strcmp(argv[i], "--feira") == 0) e->modo_feira = true;
         if (strcmp(argv[i], "--mudo") == 0) mudo = true;
@@ -653,7 +652,6 @@ static void carrega_recursos(void) {
     trilhas_carrega(&estado.rec);
     tubulacao_som_carrega(&estado.rec);
     criatura_carrega_modelo(&estado.rec);
-    susto_carrega_boca(&estado.rec);
     lanterna_carrega_modelo(&estado.rec);
     console_modelo_carrega(&estado.rec); // depois da luz (posfx_inicia): usa o shader dela
     caixas_carrega(&estado.rec);
@@ -680,7 +678,6 @@ static void descarrega_recursos(void) {
     caixas_descarrega(&estado.rec);
     console_modelo_descarrega(&estado.rec);
     lanterna_descarrega_modelo(&estado.rec);
-    susto_descarrega_boca(&estado.rec);
     criatura_descarrega_modelo(&estado.rec);
     tubulacao_som_descarrega(&estado.rec);
     trilhas_descarrega(&estado.rec);

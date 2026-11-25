@@ -2,7 +2,7 @@
 // ficam em rig.c, animacao.c e regras_animacao.c).
 // Estados: PATRULHA → INVESTIGA (ruído mais forte) → PERSEGUE (vê o jogador) → PROCURA (6 s) → PATRULHA.
 // A decisão de estado é pura (regras_proximo_estado_criatura); aqui ficam percepção, caminho e movimento.
-// Exceção ao limite de ~500 linhas: o carregamento e o desenho do modelo escolhido (--criatura) ficam aqui.
+// Exceção ao limite de ~500 linhas: o carregamento e o desenho do modelo (precursor_papelao.glb) ficam aqui.
 #include "criatura.h"
 #include "susto.h"
 #include "nivel.h"
@@ -27,22 +27,10 @@ static const int PATRULHA[][2] = {{8, 5}, {21, 5}, {19, 2}, {21, 11}, {8, 11}, {
 #define N_PATRULHA ((int)(sizeof(PATRULHA) / sizeof(PATRULHA[0])))
 
 // ================================================================== modelo opcional
-// --criatura <nome>: qual modelo carregar (modelos_criatura.c). Nome desconhecido: fica o padrão.
-bool criatura_le_argumento(int argc, char **argv, int *i) {
-    if (strcmp(argv[*i], "--criatura") != 0 || *i + 1 >= argc) return false;
-    const char *nome = argv[++*i];
-    int id = esqueleto_modelo_por_nome(nome);
-    if (id < 0)
-        TraceLog(LOG_WARNING, "PRECURSOR: não conheço a criatura \"%s\"; fica \"%s\"", nome,
-                 esqueleto_modelo()->nome);
-    esqueleto_usa(id);
-    return true;
-}
-
 // [REQ:RNF4] asset ausente: sem o .glb, o placeholder procedural entra e só fica um TraceLog
 void criatura_carrega_modelo(Recursos *rec) {
     char caminho[512];
-    const char *arquivo = esqueleto_modelo()->arquivo; // o modelo escolhido (--criatura)
+    const char *arquivo = esqueleto_modelo()->arquivo; // modelos_criatura.c
     rec->tem_modelo = false;
     if (!ui_caminho_asset(arquivo, caminho, sizeof(caminho))) {
         TraceLog(LOG_INFO, "PRECURSOR: sem assets/%s; usando o placeholder procedural", arquivo);
@@ -457,8 +445,8 @@ static void desenha_caminho(const Estado *e) {
 }
 
 // No menu: dois pontinhos brancos nos olhos da silhueta, e mais nada. Ficam fora do shader de luz (sem luz
-// nem névoa). Os pontos foram medidos em cada modelo (modelos_criatura.c), nas unidades do arquivo (y de −1
-// a 1, rosto em +z), e seguem o osso da cabeça; no modelo de rosto liso, eles acendem as marcas dos olhos.
+// nem névoa). Os pontos foram medidos no modelo (modelos_criatura.c), nas unidades do arquivo (y de −1 a 1,
+// rosto em +z), e seguem o osso da cabeça: no rosto liso, eles acendem as marcas dos olhos.
 static void desenha_olhos_no_menu(const Estado *e, Matrix corpo) {
     if (e->fase != FASE_MENU || !e->cri.contido || !e->rec.tem_modelo) return;
     const Vector3 *OLHOS = esqueleto_modelo()->olhos;
