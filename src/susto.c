@@ -6,25 +6,10 @@
 #include <math.h>
 #include <stdlib.h>
 
-// ================================================================== a boca (mandíbula sem esqueleto)
-// Medidas do precursor.glb, nas unidades do arquivo (a caixa vai de −1 a 1 em y; o rosto olha para +z):
-// a dobradiça fica perto das orelhas, e a mandíbula é o que está abaixo da boca, à frente do pescoço.
+// ================================================================== a boca (mandíbula)
+// O rosto do susto é desenhado sem o rig (pose de repouso, ver rig.c): aqui a mandíbula gira na CPU. A
+// dobradiça é a mesma do osso da mandíbula (esqueleto.c), e o peso de cada vértice também.
 static const float DOBRADICA_Y = 0.80f, DOBRADICA_Z = 0.03f;
-static const float QUEIXO_Y_MIN = 0.60f, QUEIXO_Y_MAX = 0.765f, QUEIXO_Z_MIN = 0.06f;
-static const float QUEIXO_X_CENTRO = -0.015f, QUEIXO_MEIA_LARGURA = 0.12f;
-
-static float suaviza(float de, float ate, float x) {
-    float t = fminf(1.0f, fmaxf(0.0f, (x - de) / (ate - de)));
-    return t * t * (3.0f - 2.0f * t);
-}
-
-// 1 no queixo; cai a zero na linha da boca, embaixo, nas laterais e para trás (sem rasgar a pele).
-static float peso_da_mandibula(Vector3 v) {
-    return suaviza(QUEIXO_Y_MAX, QUEIXO_Y_MAX - 0.025f, v.y) *
-           suaviza(QUEIXO_Y_MIN, QUEIXO_Y_MIN + 0.03f, v.y) *
-           suaviza(QUEIXO_MEIA_LARGURA, QUEIXO_MEIA_LARGURA - 0.03f, fabsf(v.x - QUEIXO_X_CENTRO)) *
-           suaviza(QUEIXO_Z_MIN, QUEIXO_Z_MIN + 0.04f, v.z);
-}
 
 static void libera_boca(BocaModelo *b) {
     free(b->indice);
@@ -49,7 +34,7 @@ void susto_carrega_boca(Recursos *rec) {
         return;
     }
     for (int i = 0; i < m->vertexCount; i++) { // padrão FILTER: só os vértices da mandíbula
-        float p = peso_da_mandibula(v[i]);
+        float p = esqueleto_peso_mandibula(v[i]);
         if (p <= 0.0f) continue;
         b->indice[b->n] = i;
         b->peso[b->n] = p;
@@ -172,7 +157,8 @@ static void acende_luzes(const Estado *e, Vector3 olho, float t) {
     Vector3 cor[3] = {{p, p, p * 0.95f}, {0.35f, 0.35f, 0.38f}, {0.12f, 0.12f, 0.13f}};
     Vector4 cone[3] = {{0, -1, 0, -2.0f}, {0, -1, 0, -2.0f}, {0, -1, 0, -2.0f}}; // pontuais
     float queda[3] = {1.0f, 1.0f, 1.0f};
-    posfx_comeca_luz(e, pos, cor, cone, queda, 3, 0.02f);
+    posfx_comeca_luz(e, pos, cor, cone, queda, NULL, 3, -1, 0.02f);
+    posfx_saida_direta(e); // o rosto vai para um alvo LDR próprio: sem passar pelo tone mapping da cena
     posfx_olho(e, olho);
 }
 

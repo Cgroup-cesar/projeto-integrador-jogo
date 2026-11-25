@@ -3,9 +3,11 @@
 #include "raylib.h"
 #include "checagem.h"
 #include "regras.h"
+#include "regras_animacao.h"
 #include "colecoes.h"
 #include "materiais.h"
 #include <math.h>
+#include <stdlib.h>
 #include <string.h>
 
 static bool perto(float a, float b) {
@@ -23,6 +25,18 @@ static void testa_movimento(void) {
     CHECK(perto(Vector3Length(diagonal), 1.0f)); // diagonal não é mais rápida
     Vector3 meio_dt = regras_nova_posicao(origem, 0.0f, (Vector2){0, 1}, 2.5f, 0.05f);
     CHECK(perto(meio_dt.z, 0.125f)); // movimento proporcional ao dt
+}
+
+// Analógico: a zona morta zera, a direção se mantém, a ponta chega a 1 e a curva deixa o meio mais suave
+static void testa_analogico(void) {
+    Vector2 parado = regras_analogico((Vector2){0.1f, 0.05f}, 0.2f, 2.0f);
+    CHECK(perto(parado.x, 0) && perto(parado.y, 0));
+    Vector2 ponta = regras_analogico((Vector2){0.0f, -1.0f}, 0.2f, 2.0f);
+    CHECK(perto(ponta.x, 0) && perto(ponta.y, -1.0f));
+    Vector2 alem = regras_analogico((Vector2){1.0f, 1.0f}, 0.2f, 2.0f); // canto do quadrado: não passa de 1
+    CHECK(perto(Vector2Length(alem), 1.0f) && perto(alem.x, alem.y));
+    Vector2 meio = regras_analogico((Vector2){0.6f, 0.0f}, 0.2f, 2.0f); // (0,4/0,8)² = 0,25
+    CHECK(perto(meio.x, 0.25f) && perto(meio.y, 0));
 }
 
 // [REQ:PURA-regras_criatura_ve_jogador] testa o cone, a distância, a parede no meio e o esconderijo
@@ -66,21 +80,200 @@ static void testa_estados_criatura(void) {
     CHECK(regras_proximo_estado_criatura(CRIATURA_PERSEGUE, armario) == CRIATURA_PERSEGUE); // vai até a porta
 }
 
-// [REQ:PURA-regras_postura_criatura] testa a postura parado, andando e perseguindo
-static void testa_postura_criatura(void) {
-    PosturaCriatura parado = regras_postura_criatura(0.0f, 0.4f, 1.0f);
-    CHECK(perto(parado.balanco_graus, 0.0f) && perto(parado.sobe, 0.0f)); // parado não balança
-    CHECK(perto(parado.inclina_graus, CRIATURA_INCLINA_PARADO));
-    CHECK(fabsf(parado.respira - 1.0f) <= CRIATURA_RESPIRA + 0.0001f); // respira só um pouco
-    float quarto = CRIATURA_PASSADA_M / 4.0f;                          // pico do balanço
-    PosturaCriatura anda = regras_postura_criatura(CRIATURA_VEL_PATRULHA, quarto, 1.0f);
-    CHECK(perto(anda.balanco_graus, CRIATURA_BALANCO_GRAUS) && perto(anda.sobe, CRIATURA_SOBE_M));
-    PosturaCriatura persegue = regras_postura_criatura(CRIATURA_VEL_PERSEGUE, quarto, 1.0f);
-    CHECK(persegue.inclina_graus > anda.inclina_graus); // mais rápido, mais curvado
-    CHECK(perto(persegue.inclina_graus, CRIATURA_INCLINA_CORRENDO));
-    CHECK(perto(persegue.respira, 1.0f)); // andando não respira
-    PosturaCriatura rapido = regras_postura_criatura(99.0f, quarto, 1.0f);
-    CHECK(perto(rapido.inclina_graus, CRIATURA_INCLINA_CORRENDO)); // não passa do limite
+// [REQ:PURA-esqueleto] testa o rig: repouso sem deformar, IK que alcança e joelho que nunca dobra ao
+// contrário
+static void testa_esqueleto(void) {
+    Pose p = esqueleto_pose_repouso();
+    PoseGlobal g;
+    Matrix m[OSSOS_TOTAL];
+    esqueleto_fk(&p, &g);
+    esqueleto_matrizes(&g, m);
+    for (int i = 0; i < OSSOS_TOTAL; i++) { // padrão MAP: em repouso, cada junta no lugar e matriz identidade
+        CHECK(Vector3Distance(g.junta[i], esqueleto_osso(i)->cabeca) < 1e-5f);
+        CHECK(fabsf(m[i].m0 - 1.0f) < 1e-5f && fabsf(m[i].m12) < 1e-5f && fabsf(m[i].m13) < 1e-5f);
+        CHECK(esqueleto_osso(i)->pai < i); // os pais vêm antes (a cinemática direta é uma passada só)
+    }
+    Vector3 tornozelo = esqueleto_osso(OSSO_PE_E)->cabeca;
+    Vector3 alvo = Vector3Add(tornozelo, (Vector3){0.03f, 0.08f, -0.15f});
+    float falta = esqueleto_ik(&p, &g, OSSO_COXA_E, alvo, (Vector3){0, 0, 1});
+    esqueleto_fk(&p, &g);
+    CHECK(falta < 1e-3f && Vector3Distance(g.junta[OSSO_PE_E], alvo) < 2e-3f); // alcançou
+    Vector3 quadril = g.junta[OSSO_COXA_E], joelho = g.junta[OSSO_CANELA_E];
+    Vector3 meio = Vector3Lerp(quadril, alvo, 0.5f);
+    CHECK(joelho.z > meio.z); // o joelho dobra para a frente
+    Vector3 longe = Vector3Add(quadril, (Vector3){0.0f, -3.0f, 0.0f});
+    CHECK(esqueleto_ik(&p, &g, OSSO_COXA_E, longe, (Vector3){0, 0, 1}) > 0.5f); // não alcança...
+    esqueleto_fk(&p, &g);
+    Vector3 coxa = Vector3Normalize(Vector3Subtract(g.junta[OSSO_CANELA_E], g.junta[OSSO_COXA_E]));
+    Vector3 canela = Vector3Normalize(Vector3Subtract(g.junta[OSSO_PE_E], g.junta[OSSO_CANELA_E]));
+    CHECK(Vector3DotProduct(coxa, canela) < 0.9999f); // ...e nem assim trava a perna esticada
+}
+
+static EntradaAnim entrada_anim(Vector3 pos) {
+    EntradaAnim in = {0};
+    in.pos = pos;
+    in.escala = CRIATURA_ALTURA_M / 1.993f;
+    in.base_y = -0.997f;
+    in.bueiro_t = -1.0f;
+    return in;
+}
+
+// O tornozelo desenhado, no mundo (o corpo olha para +z: yaw 0).
+static Vector3 tornozelo_no_mundo(const AnimCriatura *a, const EntradaAnim *in, int lado) {
+    Vector3 j = a->global.junta[OSSO_COXA(lado) + 2];
+    return (Vector3){in->pos.x + j.x * in->escala, (j.y - in->base_y) * in->escala,
+                     in->pos.z + j.z * in->escala};
+}
+
+static float distancia_xz(Vector3 a, Vector3 b) {
+    return sqrtf((a.x - b.x) * (a.x - b.x) + (a.z - b.z) * (a.z - b.z));
+}
+
+// [REQ:PURA-regras_anim_passo] testa a passada: os pés alternam, o pé plantado não desliza, o comprimento
+// de cada passo varia, o pé desenhado fica sobre a âncora e, ao parar, ele se acomoda e fica quieto
+static void testa_anim_passos(void) {
+    static AnimCriatura a;
+    memset(&a, 0, sizeof(a));
+    float dt = 1.0f / 60.0f, z = 0.0f, menor = 99.0f, maior = 0.0f;
+    int levantou[2] = {0, 0}, ambos_no_ar = 0, deslizou = 0, longe = 0;
+    Vector3 pousou[2] = {{0}};
+    for (int q = 0; q < 12 * 60; q++) { // 12 s andando na velocidade da patrulha
+        EntradaAnim in = entrada_anim((Vector3){0, 0, z});
+        PeAnim antes[2] = {a.pe[0], a.pe[1]};
+        regras_anim_passo(&a, &in, dt);
+        z += CRIATURA_VEL_PATRULHA * dt;
+        ambos_no_ar += a.pe[0].no_ar && a.pe[1].no_ar;
+        for (int l = 0; l < 2; l++) { // padrão MAP: confere cada pé neste quadro
+            bool plantado = !antes[l].no_ar && !a.pe[l].no_ar;
+            deslizou += q > 0 && plantado && Vector3Distance(antes[l].ancora, a.pe[l].ancora) > 1e-5f;
+            levantou[l] += !antes[l].no_ar && a.pe[l].no_ar;
+            if (antes[l].no_ar && !a.pe[l].no_ar) {
+                float passo = Vector3Distance(pousou[l], a.pe[l].ancora);
+                if (q > 120) menor = fminf(menor, passo), maior = fmaxf(maior, passo);
+                pousou[l] = a.pe[l].ancora;
+            }
+            longe += q > 60 && distancia_xz(tornozelo_no_mundo(&a, &in, l), a.pe[l].agora) > 0.04f;
+        }
+    }
+    CHECK(ambos_no_ar == 0 && deslizou == 0);
+    CHECK(levantou[0] >= 6 && levantou[1] >= 6 && abs(levantou[0] - levantou[1]) <= 1); // alternam
+    CHECK(maior - menor > 0.03f);      // nunca dois passos iguais
+    CHECK(longe == 0);                 // o pé desenhado fica sobre o ponto plantado (IK)
+    for (int q = 0; q < 5 * 60; q++) { // para: 5 s no mesmo lugar
+        EntradaAnim in = entrada_anim((Vector3){0, 0, z});
+        regras_anim_passo(&a, &in, dt);
+    }
+    EntradaAnim in = entrada_anim((Vector3){0, 0, z});
+    for (int l = 0; l < 2; l++) { // padrão MAP: os dois pés no chão, perto do lugar de descanso
+        Vector3 n = regras_anim_neutro(&a, &in, l);
+        CHECK(!a.pe[l].no_ar && Vector3Distance(a.pe[l].ancora, n) < 0.15f);
+    }
+}
+
+// Maior rotação de um osso entre dois quadros (graus): uma pose que salta aparece aqui.
+static float maior_salto(const Pose *antes, const Pose *depois) {
+    float maior = 0.0f;
+    for (int i = 0; i < OSSOS_TOTAL; i++) { // padrão FOLD: o maior ângulo entre as duas rotações
+        Quaternion p = antes->local[i], q = depois->local[i];
+        float d = fabsf(p.x * q.x + p.y * q.y + p.z * q.z + p.w * q.w);
+        maior = fmaxf(maior, 2.0f * acosf(fminf(1.0f, d)) * RAD2DEG);
+    }
+    return maior;
+}
+
+// Testa parado (os pés não saem do lugar, a pose nunca congela, tiques raros: um por vez) e as
+// transições entre estados (nenhum osso salta mais que alguns graus de um quadro para o outro).
+static void testa_anim_parado_e_transicoes(void) {
+    static AnimCriatura a;
+    memset(&a, 0, sizeof(a));
+    float dt = 1.0f / 60.0f, salto = 0.0f, mexeu = 0.0f;
+    EntradaAnim in = entrada_anim((Vector3){3, 0, 3});
+    regras_anim_passo(&a, &in, dt);
+    Vector3 pe0 = a.pe[0].ancora;
+    for (int q = 0; q < 90 * 60; q++) { // 90 s parado
+        Pose antes = a.pose;
+        regras_anim_passo(&a, &in, dt);
+        mexeu = fmaxf(mexeu, maior_salto(&antes, &a.pose));
+        CHECK(!a.pe[0].no_ar && !a.pe[1].no_ar);
+    }
+    CHECK(Vector3Distance(pe0, a.pe[0].ancora) < 1e-5f);
+    CHECK(mexeu > 0.0f);                      // respira, muda o peso, mexe a cabeça
+    CHECK(a.tique_n >= 4 && a.tique_n <= 15); // raros: entre 6 e 15 s um do outro
+    float z = 3.0f;
+    for (int q = 0; q < 14 * 60; q++) { // anda, persegue, para, lanterna, fala, distorção
+        float s = q * dt;
+        in.persegue = (s > 4.0f && s < 8.0f) ? 1.0f : 0.0f;
+        float v =
+            s < 2.0f ? 0.0f : (s < 4.0f ? CRIATURA_VEL_PATRULHA : (s < 8.0f ? CRIATURA_VEL_PERSEGUE : 0.0f));
+        z += v * dt;
+        in.pos = (Vector3){3, 0, z};
+        in.lanterna = (s > 9.0f && s < 10.0f) ? 1.0f : 0.0f;
+        in.fala = s > 10.0f && s < 11.5f;
+        in.distorcao = Clamp((s - 12.0f) / 1.5f, 0.0f, 1.0f);
+        Pose antes = a.pose;
+        regras_anim_passo(&a, &in, dt);
+        salto = fmaxf(salto, maior_salto(&antes, &a.pose));
+    }
+    CHECK(salto < 12.0f); // a 60 quadros por segundo, nenhum osso pula de pose
+}
+
+// Testa a saída do bueiro: primeiro só as mãos aparecem (na borda, com a cabeça ainda embaixo do chão),
+// depois a cabeça sobe, e no fim ele está de pé no lugar, com os pés plantados.
+static void testa_anim_bueiro(void) {
+    static AnimCriatura a;
+    memset(&a, 0, sizeof(a));
+    float total = ANIM_BUEIRO_PRE_S + ANIM_BUEIRO_SAI_S, escala = total / 6.5f, dt = 1.0f / 60.0f;
+    EntradaAnim in = entrada_anim((Vector3){0, 0, 0});
+    for (float t = 0.0f; t < 1.25f * escala; t += dt) { // as mãos agarram a borda
+        in.bueiro_t = t;
+        regras_anim_passo(&a, &in, dt);
+    }
+    float mao = (a.global.junta[OSSO_MAO_E].y - in.base_y) * in.escala;
+    float cabeca = (esqueleto_osso(OSSO_CABECA)->cauda.y - in.base_y + a.pose.raiz.y) * in.escala;
+    CHECK(fabsf(mao - 0.05f) < 0.05f); // o punho na borda (5 cm acima do chão)
+    CHECK(cabeca < 0.0f);              // a cabeça ainda escondida
+    for (float t = 1.25f * escala; t < 3.6f * escala; t += dt) {
+        in.bueiro_t = t;
+        regras_anim_passo(&a, &in, dt);
+    }
+    float olhos = (a.global.junta[OSSO_CABECA].y - in.base_y) * in.escala;
+    CHECK(olhos > -0.3f && olhos < 0.4f); // a cabeça rente ao chão, olhando em volta
+    for (float t = 3.6f * escala; t < total; t += dt) {
+        in.bueiro_t = t;
+        regras_anim_passo(&a, &in, dt);
+    }
+    CHECK(fabsf(a.pose.raiz.y) < 0.02f && !a.pe[0].no_ar && !a.pe[1].no_ar); // de pé
+    in.bueiro_t = -1.0f;
+    float salto = 0.0f;
+    for (int q = 0; q < 90; q++) { // sai da cena para o jogo sem pular de pose
+        Pose antes = a.pose;
+        regras_anim_passo(&a, &in, dt);
+        salto = fmaxf(salto, maior_salto(&antes, &a.pose));
+    }
+    CHECK(salto < 12.0f);
+}
+
+// A descida pela tubulação da cela (a saída do bueiro ao contrário): começa de pé, sem pular de pose, e
+// termina com o corpo inteiro abaixo do chão (só a boca preta fica à vista).
+static void testa_anim_descida(void) {
+    static AnimCriatura a;
+    memset(&a, 0, sizeof(a));
+    float total = ANIM_BUEIRO_PRE_S + ANIM_BUEIRO_SAI_S, dt = 1.0f / 60.0f, salto = 0.0f;
+    EntradaAnim in = entrada_anim((Vector3){0, 0, 0});
+    for (int q = 0; q < 90; q++) // parado, de pé
+        regras_anim_passo(&a, &in, dt);
+    in.desce = true;
+    for (float t = 0.0f; t < ANIM_CANO_DESCE_S; t += dt) {
+        in.bueiro_t = total * (1.0f - t / ANIM_CANO_DESCE_S);
+        Pose antes = a.pose;
+        regras_anim_passo(&a, &in, dt);
+        salto = fmaxf(salto, maior_salto(&antes, &a.pose));
+    }
+    CHECK(salto < 12.0f);
+    float cabeca = (esqueleto_osso(OSSO_CABECA)->cauda.y - in.base_y + a.pose.raiz.y) * in.escala;
+    float mao = (fmaxf(a.global.junta[OSSO_MAO_E].y, a.global.junta[OSSO_MAO_D].y) - in.base_y) * in.escala;
+    CHECK(cabeca < 0.0f); // a cabeça abaixo do chão (como no começo da saída do bueiro)
+    CHECK(mao < 0.0f);    // e as mãos já soltaram a borda
 }
 
 // [REQ:PURA-regras_falha_lanterna] testa a falha: fica entre 0,05 e 1, cai e volta, e é repetível
@@ -234,6 +427,76 @@ static void testa_evento_do_erro(void) {
     CHECK(regras_evento_do_erro(2) == EV_NENHUM);
     CHECK(regras_evento_do_erro(1) == EV_NENHUM);
     CHECK(regras_evento_do_erro(0) == EV_VIDRO_ROMPEU);
+}
+
+// [REQ:PURA-regras_tenta_porta_arquivo] testa a porta do Arquivo: antes da hora, sem a chave e com ela
+static void testa_porta_arquivo(void) {
+    CHECK(regras_tenta_porta_arquivo(FASE_S1, false) == PORTA_ARQUIVO_ANTES_DA_HORA);
+    CHECK(regras_tenta_porta_arquivo(FASE_S1, true) == PORTA_ARQUIVO_ANTES_DA_HORA); // na S1, nem com a chave
+    CHECK(regras_tenta_porta_arquivo(FASE_R2, true) == PORTA_ARQUIVO_ANTES_DA_HORA);
+    CHECK(regras_tenta_porta_arquivo(FASE_S2, false) == PORTA_ARQUIVO_SEM_CHAVE);
+    CHECK(regras_tenta_porta_arquivo(FASE_S2, true) == PORTA_ARQUIVO_ABRE);
+}
+
+// [REQ:PURA-regras_chave_visivel] testa que a chave só aparece na 2ª queda de energia, até ser pega
+static void testa_chave_visivel(void) {
+    CHECK(!regras_chave_visivel(FASE_S1, false)); // 1ª queda: o chaveiro está vazio
+    CHECK(!regras_chave_visivel(FASE_R2, false));
+    CHECK(regras_chave_visivel(FASE_S2, false));
+    CHECK(!regras_chave_visivel(FASE_S2, true)); // já está com o jogador
+    CHECK(!regras_chave_visivel(FASE_R3, false));
+    CHECK(regras_interativo_ativo(INTER_CHAVEIRO, FASE_S2));
+    CHECK(!regras_interativo_ativo(INTER_CHAVEIRO, FASE_S1));
+    CHECK(regras_interativo_ativo(INTER_PORTA_ARQUIVO, FASE_S1)); // trancada, mas responde ("não é por aqui")
+    CHECK(regras_interativo_ativo(INTER_PORTA_ARQUIVO, FASE_S2));
+    CHECK(!regras_interativo_ativo(INTER_PORTA_ARQUIVO, FASE_R1));
+}
+
+// [REQ:PURA-regras_porta_passo] testa a folha da porta da sala abrindo e fechando, sem passar dos limites
+static void testa_porta_sala(void) {
+    CHECK(perto(regras_porta_passo(0.0f, true, 0.9f, 1.8f), 0.5f)); // metade do tempo, metade do caminho
+    CHECK(perto(regras_porta_passo(0.9f, true, 1.0f, 1.8f), 1.0f)); // não passa de aberta
+    CHECK(perto(regras_porta_passo(1.0f, false, 0.6f, 1.2f), 0.5f));
+    CHECK(perto(regras_porta_passo(0.1f, false, 1.0f, 1.2f), 0.0f)); // nem de fechada
+    CHECK(perto(regras_porta_passo(0.4f, true, 0.0f, 1.8f), 0.4f));  // sem tempo, não anda
+    CHECK(regras_porta_solida(0.0f));                                // fechada segura o jogador
+    CHECK(regras_porta_solida(PORTA_SOLIDA_ATE - 0.01f));
+    CHECK(!regras_porta_solida(PORTA_SOLIDA_ATE));
+    CHECK(!regras_porta_solida(1.0f));
+    CHECK(regras_interativo_ativo(INTER_PORTA, FASE_R1)); // trancada, mas responde
+    CHECK(regras_interativo_ativo(INTER_PORTA, FASE_S1)); // nas saídas, abre e fecha
+    CHECK(regras_interativo_ativo(INTER_PORTA, FASE_S2));
+    CHECK(!regras_interativo_ativo(INTER_PORTA, FASE_MENU));
+}
+
+// [REQ:PURA-regras_retorno_pose] testa a volta à sala: começa onde o jogador estava, para de frente para a
+// porta, fica parado enquanto fecha, termina sala adentro e vira pelo lado mais curto
+static void testa_retorno(void) {
+    PoseJogador de = {{13.9f, 0.0f, 11.3f}, -PI * 0.5f, 0.2f};
+    PoseJogador porta = {{13.65f, 0.0f, 11.0f}, PI * 0.5f, -0.05f};
+    PoseJogador sala = {{11.25f, 0.0f, 11.0f}, 3.5f, 0.0f};
+    float fecha = RETORNO_VIRA_S, entra = fecha + RETORNO_FECHA_S, fim = entra + RETORNO_ENTRA_S;
+    PoseJogador p = regras_retorno_pose(0.0f, de, porta, sala);
+    CHECK(perto(p.pos.x, de.pos.x) && perto(p.pos.z, de.pos.z) && perto(p.yaw, de.yaw));
+    p = regras_retorno_pose(fecha, de, porta, sala);
+    CHECK(perto(p.pos.x, porta.pos.x) && perto(p.pos.z, porta.pos.z) && perto(cosf(p.yaw), cosf(porta.yaw)));
+    p = regras_retorno_pose(fecha + PORTA_FECHA_S * 0.5f, de, porta, sala); // puxando a folha
+    CHECK(perto(p.pos.x, porta.pos.x) && p.pitch < porta.pitch);
+    p = regras_retorno_pose(fim + 1.0f, de, porta, sala);
+    CHECK(perto(p.pos.x, sala.pos.x) && perto(sinf(p.yaw), sinf(sala.yaw)) &&
+          perto(cosf(p.yaw), cosf(sala.yaw)));
+    CHECK(regras_retorno_etapa(0.0f) == RETORNO_VIRA);
+    CHECK(regras_retorno_etapa(fecha) == RETORNO_FECHA);
+    CHECK(regras_retorno_etapa(entra) == RETORNO_ENTRA);
+    CHECK(regras_retorno_etapa(fim) == RETORNO_FIM);
+    CHECK(perto(regras_angulo_mistura(0.1f, 2.0f * PI - 0.1f, 1.0f), -0.1f)); // 0,2 rad, não 6,08
+    CHECK(perto(regras_angulo_mistura(PI * 0.5f, 3.5f, 0.5f), (PI * 0.5f + 3.5f) * 0.5f));
+    CHECK(perto(regras_retorno_faixa(0.0f), 0.0f));  // as faixas entram...
+    CHECK(perto(regras_retorno_faixa(entra), 1.0f)); // ...ficam no meio da cena...
+    CHECK(perto(regras_retorno_faixa(fim), 0.0f));   // ...e saem no fim
+    CHECK(perto(regras_retorno_luz(entra), 0.0f));   // a rodada começa com a luz da saída...
+    CHECK(perto(regras_retorno_luz(fim), 1.0f));     // ...e termina com a dela
+    CHECK(regras_retorno_luz(entra + RETORNO_ENTRA_S * 0.5f) > 0.3f);
 }
 
 // [REQ:PURA-regras_integridade_vidro] testa as vidas depois de 0, 1, 2 e 3 erros
@@ -423,7 +686,7 @@ static void testa_materiais(void) {
     PixelMaterial a = materiais_pixel(MATERIAL_CONCRETO, 0.3f, 0.6f, 0.8f, 1985u);
     PixelMaterial b = materiais_pixel(MATERIAL_CONCRETO, 0.3f, 0.6f, 0.8f, 1985u);
     CHECK(a.brilho == b.brilho && a.mistura == b.mistura);
-    PixelMaterial limpo = materiais_pixel(MATERIAL_OLIVA, 0.3f, 0.6f, 0.0f, 1985u); // sujeira 0: sem mistura
+    PixelMaterial limpo = materiais_pixel(MATERIAL_AZULEJO, 0.3f, 0.6f, 0.0f, 1985u); // sujeira 0
     CHECK(limpo.mistura >= 0.0f && limpo.mistura <= 1.0f);
 }
 
@@ -432,6 +695,10 @@ static void testa_decalques(void) {
     CHECK(materiais_mancha(DECALQUE_ARRASTO, 0.5f, 1.0f, 1u) == 0.0f);
     CHECK(materiais_mancha(DECALQUE_UMIDADE, 0.5f, 0.35f, 1u) > 0.3f); // e existe no meio
     CHECK(materiais_mancha(DECALQUE_POSTO, 0.5f, 0.5f, 1u) == 0.0f);   // placa de texto não é mancha
+    for (int d = DECALQUE_MOLHADO; d <= DECALQUE_POEIRA; d++) { // padrão MAP: água e poeira somem na borda
+        CHECK(materiais_mancha((Decalque)d, 0.0f, 0.5f, 1u) == 0.0f);
+        CHECK(materiais_mancha((Decalque)d, 0.5f, 1.0f, 1u) == 0.0f);
+    }
     float minimo = 1.0f, maximo = 0.0f;
     // padrão FOLD: faixa do desgaste da tinta de estêncil
     for (int i = 0; i < 256; i++) {
@@ -560,6 +827,12 @@ static void testa_sanidade_recupera(void) {
     CHECK(perto(depois, 50.0f + SANIDADE_REGEN));
     float bem_longe = regras_sanidade_passo(50.0f, 60.0f, 1.0f, false, SANIDADE_ESPERA_REGEN, true, 1.0f);
     CHECK(perto(bem_longe, depois)); // volta contínua e sempre igual: não depende da distância
+    // Entre SANIDADE_RAIO_VOLTA e SANIDADE_RAIO: chegando (tempo_longe 0), cai; afastando, já volta.
+    float entre = (SANIDADE_RAIO_VOLTA + SANIDADE_RAIO) * 0.5f;
+    CHECK(regras_sanidade_passo(50.0f, entre, 1.0f, false, 0.0f, true, 1.0f) < 50.0f);
+    CHECK(perto(regras_sanidade_passo(50.0f, entre, 1.0f, false, SANIDADE_ESPERA_REGEN, true, 1.0f), depois));
+    float dentro = SANIDADE_RAIO_VOLTA - 0.5f; // mais perto que o raio da volta: cai sempre
+    CHECK(regras_sanidade_passo(50.0f, dentro, 1.0f, false, SANIDADE_ESPERA_REGEN, true, 1.0f) < 50.0f);
     float sala = regras_sanidade_passo(50.0f, 2.0f, 1.0f, false, 0.0f, false, 1.0f);
     CHECK(perto(sala, 50.0f + SANIDADE_REGEN)); // na rodada sobe na hora (a criatura está contida)
     CHECK(perto(regras_sanidade_passo(99.9f, 20.0f, 1.0f, false, 10.0f, false, 1.0f), SANIDADE_MAX));
@@ -595,6 +868,29 @@ static void testa_sanidade_intensidade(void) {
         antes = g;
     }
     CHECK(linear);
+}
+
+// [REQ:PURA-regras_surto] sanidade zerada: o surto entra e sai suave; a visão falha alternando
+static void testa_surto(void) {
+    CHECK(perto(regras_surto_passo(0.0f, 0.0f, SURTO_ENTRA_S), 1.0f)); // zerada: chega ao máximo
+    CHECK(perto(regras_surto_passo(1.0f, 30.0f, SURTO_SAI_S), 0.0f));  // voltou: some
+    CHECK(perto(regras_surto_passo(0.0f, 30.0f, 1.0f), 0.0f));         // com sanidade, nada
+    float meio = regras_surto_passo(0.0f, 0.0f, SURTO_ENTRA_S * 0.5f);
+    CHECK(meio > 0.4f && meio < 0.6f); // entra aos poucos
+    int falhas = 0, seguidas = 0;
+    bool na_faixa = true;
+    float antes = 1.0f;
+    for (int i = 0; i < 1100; i++) { // padrão FOLD: 100 s, um valor por sorteio
+        float v = regras_surto_piscada((i + 0.5f) / SURTO_FALHA_HZ);
+        if (v < SURTO_ESCURO_MIN - 0.001f || v > 1.0f) na_faixa = false;
+        if (v < 1.0f) falhas++;
+        if (v < 1.0f && antes < 1.0f) seguidas++;
+        antes = v;
+    }
+    CHECK(na_faixa);
+    CHECK(seguidas == 0);                // falha e volta: nunca duas seguidas
+    CHECK(falhas > 150 && falhas < 450); // pisca bastante, mas fica acesa a maior parte do tempo
+    CHECK(regras_surto_piscada(7.3f) == regras_surto_piscada(7.3f)); // repetível
 }
 
 // [REQ:PURA-regras_respiracao] a linha vai e volta, acelera a cada erro e acerta só dentro da faixa
@@ -672,13 +968,49 @@ static void testa_intro_escuro(void) {
     CHECK(desce);
 }
 
+// [REQ:PURA-regras_som_espacial] cai em dB com a distância, vem do lado certo e abafa atrás da parede
+static void testa_som_espacial(void) {
+    Vector3 eu = {0, 0, 0}; // olhando para +z (yaw 0); a direita é −x
+    float a = 22.0f;
+    SomEspacial colado = regras_som_espacial(eu, 0.0f, (Vector3){0, 0, 1.0f}, a, false);
+    SomEspacial meio = regras_som_espacial(eu, 0.0f, (Vector3){0, 0, (SOM_PERTO_M + a) * 0.5f}, a, false);
+    CHECK(perto(colado.volume, 1.0f) && perto(colado.pan, 0.0f)); // perto e na frente: cheio, no centro
+    CHECK(perto(regras_som_espacial(eu, 0.0f, (Vector3){0, 0, SOM_PERTO_M}, a, false).volume, 1.0f));
+    CHECK(perto(meio.volume, powf(10.0f, -SOM_QUEDA_DB * powf(0.5f, SOM_CURVA) / 20.0f))); // no meio: a curva
+    CHECK(regras_som_espacial(eu, 0.0f, (Vector3){0, 0, a}, a, false).volume == 0.0f); // além do alcance
+    bool desce = true;
+    float antes = 2.0f;
+    for (int d = 1; d < 22; d++) { // padrão FOLD: quanto mais longe, mais baixo
+        float v = regras_som_espacial(eu, 0.0f, (Vector3){0, 0, (float)d}, a, false).volume;
+        desce = desce && v <= antes;
+        antes = v;
+    }
+    CHECK(desce);
+    SomEspacial dir = regras_som_espacial(eu, 0.0f, (Vector3){-8.0f, 0, 0}, a, false);
+    SomEspacial esq = regras_som_espacial(eu, 0.0f, (Vector3){8.0f, 0, 0}, a, false);
+    CHECK(perto(dir.pan, SOM_PAN_MAX) && perto(esq.pan, -SOM_PAN_MAX)); // de lado: quase todo num ouvido
+    SomEspacial virou = regras_som_espacial(eu, PI, (Vector3){-8.0f, 0, 0}, a, false);
+    CHECK(perto(virou.pan, -SOM_PAN_MAX)); // virou de costas: o mesmo som troca de ouvido
+    SomEspacial atras = regras_som_espacial(eu, 0.0f, (Vector3){0, 0, -8.0f}, a, false);
+    SomEspacial frente = regras_som_espacial(eu, 0.0f, (Vector3){0, 0, 8.0f}, a, false);
+    SomEspacial parede = regras_som_espacial(eu, 0.0f, (Vector3){0, 0, 8.0f}, a, true);
+    CHECK(perto(atras.volume, frente.volume * powf(10.0f, -SOM_ATRAS_DB / 20.0f)));
+    CHECK(perto(parede.volume, frente.volume * powf(10.0f, -SOM_PAREDE_DB / 20.0f)));
+    CHECK(perto(regras_som_espacial(eu, 0.0f, eu, a, false).volume, 1.0f)); // em cima: cheio, sem divisão
+}
+
 int main(void) {
     SetTraceLogLevel(LOG_ERROR); // o aviso de vetor cheio é esperado aqui
     testa_movimento();
+    testa_analogico();
     testa_visao();
     testa_ruido_percebido();
     testa_estados_criatura();
-    testa_postura_criatura();
+    testa_esqueleto();
+    testa_anim_passos();
+    testa_anim_parado_e_transicoes();
+    testa_anim_bueiro();
+    testa_anim_descida();
     testa_piscada_cela();
     testa_no_cone();
     testa_falha_lanterna();
@@ -694,6 +1026,10 @@ int main(void) {
     testa_ranking_linha();
     testa_vidro();
     testa_evento_do_erro();
+    testa_porta_arquivo();
+    testa_chave_visivel();
+    testa_porta_sala();
+    testa_retorno();
     testa_monta_texto();
     testa_nome_edita();
     testa_falha_texto();
@@ -711,5 +1047,7 @@ int main(void) {
     testa_sanidade_recupera();
     testa_sanidade_bonus();
     testa_sanidade_intensidade();
+    testa_surto();
+    testa_som_espacial();
     return resultado_final("test_regras");
 }

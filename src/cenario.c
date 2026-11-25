@@ -2,6 +2,9 @@
 // (1 célula = TAMANHO_CELULA): mudou o mapa, confira as tabelas abaixo.
 #include "cenario.h"
 #include "texturas.h"
+#include "posfx.h"
+#include "goteira.h"
+#include "entulho.h"
 #include "rlgl.h"
 #include <math.h>
 
@@ -46,19 +49,67 @@ static const Placa PLACAS[] = {
     {DECALQUE_SANGUE, {BORDA(8) + DESCOLA, 0.85f, 14.6f}, {0, 0, -1.4f}, {0, 1.5f, 0}, {255, 255, 255, 225}},
     // corredor sul, perto da boca do duto, de onde ele sai
     {DECALQUE_SANGUE, {30.6f, 1.15f, BORDA(12) - DESCOLA}, {-1.8f, 0, 0}, {0, 2.0f, 0}, {255, 255, 255, 235}},
+    // ferrugem escorrendo da goteira da sala do gerador (parede leste), embaixo do cano
+    {DECALQUE_UMIDADE,
+     {BORDA(22) - DESCOLA, 1.2f, GOTEIRA_Z},
+     {0, 0, 0.55f},
+     {0, 1.0f, 0},
+     {0x8c, 0x52, 0x30, 210}},
     // marcas de arrasto no chão, saindo da boca do duto (coluna 14, linha 11) para oeste
     {DECALQUE_ARRASTO, {26.15f, DESCOLA * 0.5f, 23.0f}, {4.5f, 0, 0}, {0, 0, -1.2f}, {255, 255, 255, 255}},
 };
+
+// Chão molhado: poucas manchas, cada uma de um jeito (borrão, escorrido, respingos), de tamanho e
+// ângulo próprios, onde a água teria vindo de algum lugar (a umidade da parede, a goteira). Com o reflexo
+// ligado: a lanterna e as lâmpadas brilham nelas.
+typedef struct {
+    Decalque tipo;
+    float x, z, comprimento, largura, graus; // semieixos em metros; graus: o giro em torno do eixo y
+    unsigned char alfa;
+} Mancha;
+
+static const Mancha CHAO_MOLHADO[] = {
+    // corredor norte: a umidade da parede sul (x = 27) escorreu na diagonal para o meio do corredor
+    {DECALQUE_ESCORRIDO, 26.4f, 11.1f, 1.5f, 0.45f, 118.0f, 205},
+    // corredor leste, encostado na parede, embaixo da mancha de umidade
+    {DECALQUE_MOLHADO, 42.9f, 16.7f, 0.85f, 0.6f, 23.0f, 190},
+    // corredor sul: respingos de algo que pingou do eletroduto
+    {DECALQUE_RESPINGO, 34.1f, 22.7f, 0.55f, 0.55f, 71.0f, 175},
+    // corredor oeste, perto do armário: um borrão comprido e meio seco
+    {DECALQUE_MOLHADO, 17.2f, 20.9f, 0.6f, 1.05f, -34.0f, 150},
+    // sala do gerador: a água da poça que correu para o meio da sala
+    {DECALQUE_ESCORRIDO, 42.2f, 6.3f, 1.2f, 0.35f, 205.0f, 190},
+    {DECALQUE_POCA, GOTEIRA_X - 0.05f, GOTEIRA_Z + 0.05f, 0.62f, 0.52f, 12.0f, 240}, // embaixo da goteira
+};
+
+static void desenha_tabela(const Estado *e, const Placa *tabela, size_t n) {
+    // laço de desenho: só percorre a tabela para desenhar (não é map/filter/fold)
+    for (size_t i = 0; i < n; i++)
+        texturas_quadro(e->rec.decalque[tabela[i].tipo], tabela[i].centro, tabela[i].direita, tabela[i].cima,
+                        tabela[i].tinta);
+}
+
+// Cada mancha vira um quadro no chão, girado: a frente (direita × cima) fica para cima.
+static void desenha_manchas(const Estado *e) {
+    // laço de desenho: só percorre a tabela para desenhar
+    for (size_t i = 0; i < sizeof(CHAO_MOLHADO) / sizeof(CHAO_MOLHADO[0]); i++) {
+        const Mancha *m = &CHAO_MOLHADO[i];
+        float a = m->graus * DEG2RAD, y = DESCOLA * (0.3f + 0.05f * (float)i); // sem duas na mesma altura
+        Vector3 direita = {cosf(a) * m->comprimento, 0.0f, sinf(a) * m->comprimento};
+        Vector3 cima = {sinf(a) * m->largura, 0.0f, -cosf(a) * m->largura};
+        texturas_quadro(e->rec.decalque[m->tipo], (Vector3){m->x, y, m->z}, direita, cima,
+                        (Color){255, 255, 255, m->alfa});
+    }
+}
 
 // Decalques com alfa e sem escrever profundidade: a criatura e as partículas passam por cima.
 static void desenha_decalques(const Estado *e) {
     rlDrawRenderBatchActive();
     rlDisableDepthMask();
-    // laço de desenho: só percorre a tabela para desenhar (não é map/filter/fold)
-    for (size_t i = 0; i < sizeof(PLACAS) / sizeof(PLACAS[0]); i++) {
-        const Placa *p = &PLACAS[i];
-        texturas_quadro(e->rec.decalque[p->tipo], p->centro, p->direita, p->cima, p->tinta);
-    }
+    desenha_tabela(e, PLACAS, sizeof(PLACAS) / sizeof(PLACAS[0]));
+    posfx_molhado(e, CHAO_MOLHADO_BRILHO); // envia o lote antes: só o chão molhado reflete
+    desenha_manchas(e);
+    posfx_molhado(e, 0.0f);
     rlDrawRenderBatchActive();
     rlEnableDepthMask();
 }
@@ -84,14 +135,15 @@ static const Vector3 FIOS[][3] = {
 };
 
 static void desenha_dutos(const Estado *e) {
-    Texture2D metal = e->rec.material[MATERIAL_METAL];
     Color cor = {0x30, 0x33, 0x2e, 255};
     // laço de desenho: cada trecho vira uma caixa fina entre os dois pontos
     for (size_t i = 0; i < sizeof(DUTOS) / sizeof(DUTOS[0]); i++) {
         Vector3 a = DUTOS[i][0], b = DUTOS[i][1];
         Vector3 tam = {fabsf(b.x - a.x) + 0.07f, 0.07f, fabsf(b.z - a.z) + 0.07f};
-        texturas_caixa(metal, Vector3Lerp(a, b, 0.5f), tam, texturas_modo(MATERIAL_METAL, 30 + (int)i), cor);
-        texturas_caixa(metal, a, (Vector3){0.2f, 0.16f, 0.2f}, texturas_modo(MATERIAL_METAL, 40 + (int)i),
+        ModoUV uv = texturas_modo(MATERIAL_METAL, 30 + (int)i);
+        texturas_caixa_mat(e, MATERIAL_METAL, Vector3Lerp(a, b, 0.5f), tam, uv, cor);
+        uv = texturas_modo(MATERIAL_METAL, 40 + (int)i);
+        texturas_caixa_mat(e, MATERIAL_METAL, a, (Vector3){0.2f, 0.16f, 0.2f}, uv,
                        cor);
     }
 }
@@ -100,7 +152,7 @@ static void desenha_grelhas(const Estado *e) {
     // laço de desenho: moldura de metal e quatro aletas escuras por grelha
     for (size_t i = 0; i < sizeof(GRELHAS) / sizeof(GRELHAS[0]); i++) {
         Vector3 c = GRELHAS[i];
-        texturas_caixa(e->rec.material[MATERIAL_METAL], c, (Vector3){0.7f, 0.36f, 0.04f},
+        texturas_caixa_mat(e, MATERIAL_METAL, c, (Vector3){0.7f, 0.36f, 0.04f},
                        texturas_modo(MATERIAL_METAL, 50 + (int)i), (Color){0x2a, 0x2d, 0x28, 255});
         for (int k = 0; k < 4; k++)
             DrawCubeV((Vector3){c.x, c.y - 0.12f + k * 0.08f, c.z}, (Vector3){0.6f, 0.035f, 0.06f},
@@ -122,7 +174,9 @@ void cenario_desenha(const Estado *e) {
     desenha_dutos(e);
     desenha_grelhas(e);
     desenha_fios();
+    entulho_desenha(e);
     desenha_decalques(e);
+    goteira_desenha(e);
 }
 
 // ------------------------------------------------------------------ halo das lâmpadas

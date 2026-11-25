@@ -1,4 +1,5 @@
-// criatura.c — o Precursor: corpo procedural, a cela, a IA dos corredores (A*), captura e o susto.
+// criatura.c — o Precursor: a IA dos corredores (A*), a captura e o desenho do corpo (o rig e a animação
+// ficam em rig.c, animacao.c e regras_animacao.c).
 // Estados: PATRULHA → INVESTIGA (ruído mais forte) → PERSEGUE (vê o jogador) → PROCURA (6 s) → PATRULHA.
 // A decisão de estado é pura (regras_proximo_estado_criatura); aqui ficam percepção, caminho e movimento.
 #include "criatura.h"
@@ -10,6 +11,8 @@
 #include "posfx.h"
 #include "cela.h"
 #include "lanterna.h"
+#include "rig.h"
+#include "animacao.h"
 #include "rlgl.h"
 #include <math.h>
 #include <stdlib.h>
@@ -29,30 +32,31 @@ void criatura_carrega_modelo(Recursos *rec) {
     rec->tem_modelo = false;
     if (!ui_caminho_asset("modelos/precursor.glb", caminho, sizeof(caminho))) {
         TraceLog(LOG_INFO, "PRECURSOR: sem assets/modelos/precursor.glb; usando o placeholder procedural");
+        rig_carrega(rec); // a escala nominal: o corpo procedural usa o mesmo esqueleto
         return;
     }
     rec->modelo_precursor = LoadModel(caminho);
     rec->tem_modelo = IsModelValid(rec->modelo_precursor) && rec->modelo_precursor.meshCount > 0;
     if (!rec->tem_modelo) {
         TraceLog(LOG_WARNING, "PRECURSOR: não deu para carregar %s; usando o placeholder", caminho);
+        rig_carrega(rec);
         return;
     }
     for (int i = 0; i < rec->modelo_precursor.materialCount && rec->luz_ok; i++)
         rec->modelo_precursor.materials[i].shader = rec->luz;
+    rig_carrega(rec); // os pesos dos ossos em cada vértice (o .glb não tem esqueleto)
 }
 
 void criatura_descarrega_modelo(Recursos *rec) {
+    rig_descarrega(rec);
     if (rec->tem_modelo) UnloadModel(rec->modelo_precursor);
 }
 
-// O modelo é escalado para CRIATURA_ALTURA_M (2,6 m), com os pés no chão.
+// O modelo é escalado para CRIATURA_ALTURA_M (2,6 m), com os pés no chão; o rig deforma na GPU.
 static void desenha_modelo(const Estado *e, Color cor) {
-    const Model *m = &e->rec.modelo_precursor;
-    BoundingBox caixa = GetModelBoundingBox(*m);
-    float altura = fmaxf(0.01f, caixa.max.y - caixa.min.y);
-    float escala = CRIATURA_ALTURA_M / altura;
-    DrawModelEx(*m, (Vector3){0, -caixa.min.y * escala, 0}, (Vector3){0, 1, 0}, 0.0f,
-                (Vector3){escala, escala, escala}, cor);
+    float s = e->rec.rig_escala;
+    DrawModelEx(e->rec.modelo_precursor, (Vector3){0, -e->rec.rig_base_y * s, 0}, (Vector3){0, 1, 0}, 0.0f,
+                (Vector3){s, s, s}, cor);
 }
 
 // ================================================================== estados iniciais
@@ -203,6 +207,8 @@ static void escolhe_destino(Estado *e, PercepcaoCriatura p, Vector3 ruido, float
         if (p.chegou_ao_destino) c->patrulha_i = (c->patrulha_i + 1) % N_PATRULHA;
         if (p.chegou_ao_destino || c->caminho_n == 0 || replaneja)
             planeja(e, nivel_centro_celula(PATRULHA[c->patrulha_i][0], PATRULHA[c->patrulha_i][1]));
+        if (c->caminho_n == 0 && !p.chegou_ao_destino) // sem caminho (atrás da porta trancada do Arquivo)
+            c->patrulha_i = (c->patrulha_i + 1) % N_PATRULHA;
         break;
     case CRIATURA_INVESTIGA:
         if (p.ouviu_ruido && (replaneja || Vector3Distance(ruido, c->destino) > 2.0f)) planeja(e, ruido);
@@ -237,8 +243,8 @@ static void passos_da_criatura(Estado *e, float dt) {
     c->som_passo_t += dt;
     if (c->som_passo_t < 0.75f) return;
     c->som_passo_t = 0.0f;
-    float longe = Vector3Distance(c->pos, e->jog.pos);
-    if (longe < 16.0f) audio_toca(e, SOM_PASSO_CRIATURA, 1.0f - longe / 16.0f, 0.7f);
+    // [som no espaço] mais baixo quanto mais longe, do lado em que ele está e abafado atrás de parede
+    audio_toca_em(e, SOM_PASSO_CRIATURA, c->pos, PASSO_CRIATURA_ALCANCE_M, PASSO_CRIATURA_TOM);
 }
 
 // Ir direto ao jogador só se o passo não bater em nada (a visão sai a 2,4 m e passa por cima de móveis
@@ -278,12 +284,6 @@ static void anda(Estado *e, float dt) {
     passos_da_criatura(e, dt);
 }
 
-// Quanto ele andou neste quadro alimenta a postura do corpo (regras_postura_criatura).
-static void mede_passada(Criatura *c, float andou, float dt) {
-    c->passada += andou;
-    c->vel_suave += (andou / fmaxf(dt, 0.0001f) - c->vel_suave) * fminf(1.0f, 6.0f * dt);
-}
-
 // [REQ:RF4] captura com CheckCollisionSpheres: duas esferas de 0,8 m (pego quando a distância < 1,6 m)
 static void tenta_capturar(Estado *e) {
     const Criatura *c = &e->cri;
@@ -320,7 +320,7 @@ void criatura_na_porta_do_armario(Estado *e) {
     c->pos = Vector3Add(armario, Vector3Scale(fora, d));
     c->pos.y = 0.0f;
     c->yaw = atan2f(-fora.x, -fora.z); // de frente para a porta
-    audio_toca(e, SOM_PASSO_CRIATURA, 1.0f, 0.6f);
+    audio_toca_em(e, SOM_PASSO_CRIATURA, c->pos, PASSO_CRIATURA_ALCANCE_M, 0.6f);
 }
 
 void criatura_chega_mais_perto(Estado *e) {
@@ -374,8 +374,7 @@ static bool atualiza_surgimento(Estado *e, float dt) {
     if (c->tempo_para_surgir > 0.0f) return true;
     c->ativo = true;
     c->estado = CRIATURA_PATRULHA;
-    c->tempo_replanejar = 99.0f;
-    audio_toca(e, SOM_DISTORCAO, 0.8f, 0.55f); // sair do duto não é fala: um rugido grave
+    c->tempo_replanejar = 99.0f; // sair do duto só tem o som da tampa (tubulacao_som.c)
     return true;
 }
 
@@ -396,9 +395,7 @@ static void atualiza_nos_corredores(Estado *e, float dt) {
     c->estado = novo;
     c->tempo_replanejar += dt;
     escolhe_destino(e, p, ruido, dt);
-    Vector3 antes = c->pos;
     anda(e, dt);
-    mede_passada(c, Vector3Distance(antes, c->pos), dt);
     tenta_capturar(e);
 }
 
@@ -411,31 +408,7 @@ void criatura_atualiza(Estado *e, float dt) {
         atualiza_nos_corredores(e, dt);
 }
 
-// ================================================================== corpo procedural
-// Humanoide de ~2,6 m: magro demais, cabeça elipsoide, dedos longos. Move-se com pausas e trancos.
-static void membro(Vector3 a, Vector3 b, float raio, Color cor) {
-    DrawCylinderEx(a, b, raio, raio * 0.8f, 5, cor);
-}
-
-static void mao(Vector3 pulso, Vector3 direcao, Color cor) {
-    for (int d = -1; d <= 1; d++) {
-        Vector3 ponta =
-            Vector3Add(pulso, Vector3Add(Vector3Scale(direcao, 0.32f), (Vector3){d * 0.05f, -0.02f, 0}));
-        membro(pulso, ponta, 0.012f, cor);
-    }
-}
-
-static void cabeca(float altura, float fenda, Color cor) {
-    rlPushMatrix();
-    rlTranslatef(0.0f, altura, 0.0f);
-    rlScalef(0.16f, 0.25f, 0.18f);
-    DrawSphereEx((Vector3){0, 0, 0}, 1.0f, 8, 10, cor);
-    rlPopMatrix();
-    // A fenda vertical no rosto liso: se abre quando ele "fala".
-    DrawCubeV((Vector3){0.0f, altura - 0.02f, 0.175f}, (Vector3){0.012f + fenda * 0.05f, 0.26f, 0.02f},
-              (Color){18, 4, 6, 255});
-}
-
+// ================================================================== desenho
 // Brilho do corpo na cela: com as luzes A e B apagadas, ele é quase invisível.
 static float visibilidade(const Estado *e) {
     if (!e->cri.contido) return 1.0f - e->cri.distorcao;
@@ -452,28 +425,6 @@ static Color escurece(Color c, float f) {
     return (Color){(unsigned char)(c.r * f), (unsigned char)(c.g * f), (unsigned char)(c.b * f), c.a};
 }
 
-static void desenha_corpo(const Estado *e, Color pele) {
-    const Criatura *c = &e->cri;
-    float t = e->tempo_total;
-    float tranco = (fmodf(t * 0.7f, 1.0f) > 0.85f) ? sinf(t * 40.0f) * 0.04f : 0.0f; // pausa... tranco
-    float cabeca_y = 2.42f + sinf(t * 1.3f) * 0.015f + tranco;
-    membro((Vector3){-0.1f, 0, 0}, (Vector3){-0.09f, 1.25f, 0}, 0.05f, pele);
-    membro((Vector3){0.1f, 0, 0}, (Vector3){0.09f, 1.25f, 0}, 0.05f, pele);
-    membro((Vector3){0, 1.2f, 0}, (Vector3){0, 2.05f, 0}, 0.13f, pele);
-    membro((Vector3){0, 2.0f, 0}, (Vector3){0, 2.22f, 0}, 0.04f, pele);
-    Vector3 ombro_e = {-0.2f, 2.0f, 0}, ombro_d = {0.2f, 2.0f, 0};
-    Vector3 pulso_e = {-0.26f, 0.85f, 0.05f}, pulso_d = {0.26f, 0.85f, 0.05f};
-    if (c->mao_no_vidro) pulso_d = (Vector3){0.3f, 1.75f, 0.25f}; // a mão encostada no vidro
-    if (c->estado == CRIATURA_PERSEGUE && c->ativo)
-        pulso_e = pulso_d = (Vector3){0, 1.6f, 0.55f}; // braços estendidos
-    membro(ombro_e, pulso_e, 0.035f, pele);
-    membro(ombro_d, pulso_d, 0.035f, pele);
-    mao(pulso_e, (Vector3){0, -1, 0}, pele);
-    mao(pulso_d, c->mao_no_vidro ? (Vector3){0, 0.3f, 1} : (Vector3){0, -1, 0}, pele);
-    cabeca(cabeca_y,
-           c->fala_t > 0.0f || c->estado == CRIATURA_PERSEGUE ? 0.6f + 0.4f * sinf(t * 18.0f) : 0.0f, pele);
-}
-
 // Com F3: o caminho do A* em amarelo.
 static void desenha_caminho(const Estado *e) {
     const Criatura *c = &e->cri;
@@ -484,26 +435,15 @@ static void desenha_caminho(const Estado *e) {
     }
 }
 
-// Sem animação no modelo: corcunda, balanço e respiração por transformação, com o pivô nos pés.
-static void aplica_postura(const Estado *e) {
-    PosturaCriatura p = regras_postura_criatura(e->cri.vel_suave, e->cri.passada, e->tempo_total);
-    rlTranslatef(0.0f, p.sobe, 0.0f);
-    rlRotatef(p.inclina_graus, 1.0f, 0.0f, 0.0f); // +X inclina a cabeça para +Z (a frente)
-    rlRotatef(p.balanco_graus, 0.0f, 0.0f, 1.0f);
-    rlScalef(p.respira, 1.0f, p.respira);
-}
-
 // No menu: dois pontinhos brancos nos olhos da silhueta, e mais nada. Ficam fora do shader de luz (sem luz
-// nem névoa). Os olhos foram medidos no precursor.glb, nas unidades do arquivo (y de -1 a 1, rosto em +z).
+// nem névoa). Os olhos foram medidos no precursor.glb, nas unidades do arquivo (y de -1 a 1, rosto em +z), e
+// seguem o osso da cabeça.
 static void desenha_olhos_no_menu(const Estado *e, Matrix corpo) {
     if (e->fase != FASE_MENU || !e->cri.contido || !e->rec.tem_modelo) return;
     static const Vector3 OLHOS[2] = {{-0.0495f, 0.8485f, 0.2f}, {0.0275f, 0.8485f, 0.2f}};
-    BoundingBox caixa = GetModelBoundingBox(e->rec.modelo_precursor);
-    float escala = CRIATURA_ALTURA_M / fmaxf(0.01f, caixa.max.y - caixa.min.y);
     posfx_termina_luz(e);
-    for (int i = 0; i < 2; i++) { // os dois olhos, no espaço do modelo → no mundo
-        Vector3 local = {OLHOS[i].x * escala, (OLHOS[i].y - caixa.min.y) * escala, OLHOS[i].z * escala};
-        Vector3 olho = Vector3Transform(local, corpo);
+    for (int i = 0; i < 2; i++) { // os dois olhos, presos à cabeça → no mundo
+        Vector3 olho = Vector3Transform(rig_ponto_no_corpo(e, OSSO_CABECA, OLHOS[i]), corpo);
         // o raio cresce com a distância: o pontinho fica sempre com CRIATURA_OLHO_PX pixels na imagem
         float px_por_m = e->rec.alvo_altura / (2.0f * tanf(e->camera.fovy * 0.5f * DEG2RAD) *
                                                Vector3Distance(olho, e->camera.position));
@@ -512,35 +452,38 @@ static void desenha_olhos_no_menu(const Estado *e, Matrix corpo) {
     posfx_retoma_luz(e);
 }
 
+// Onde e para onde o corpo é desenhado. Puxado pela contenção, ele se estica (o rig faz o resto).
+static void aplica_transformacao(const Estado *e) {
+    const Criatura *c = &e->cri;
+    Vector3 p = animacao_pos(e);
+    rlTranslatef(p.x, p.y, p.z);
+    rlRotatef(animacao_yaw(e) * RAD2DEG, 0.0f, 1.0f, 0.0f);
+    if (c->distorcao > 0.0f)
+        rlScalef(1.0f - c->distorcao * 0.8f, 1.0f + c->distorcao * 1.5f, 1.0f - c->distorcao * 0.8f);
+}
+
 void criatura_desenha(const Estado *e) {
     const Criatura *c = &e->cri;
     desenha_caminho(e);
-    if ((!c->contido && !c->ativo) || susto_rosto_na_tela(e)) return; // no susto, só o rosto aparece
-    float t = e->tempo_total;
-    float jitter = (fmodf(t * 0.9f, 1.0f) > 0.9f) ? sinf(t * 55.0f) * 4.0f : sinf(t * 0.8f) * 1.5f;
-    if (e->fase == FASE_FIM_BOM)
-        jitter = c->congelado_t > 0.0f ? 0.0f : sinf(t * 80.0f) * 22.0f; // convulsiona e congela
+    if (!animacao_visivel(e) || susto_rosto_na_tela(e)) return; // no susto, só o rosto aparece
     Color pele = escurece(COR_PELE, visibilidade(e));
-    // A contraluz liga e desliga FORA do rlPushMatrix: ela envia o lote pendente, e a raylib manda junto a
-    // transformação atual como matModel. Dentro do push, as paredes eram iluminadas na posição dele (pretas).
+    // A contraluz e os ossos ligam e desligam FORA do rlPushMatrix: eles enviam o lote pendente, e a raylib
+    // manda junto a transformação atual como matModel (dentro do push, as paredes seriam iluminadas na
+    // posição dele).
     float contraluz = (c->contido ? CONTRALUZ_CELA : CONTRALUZ_CORREDOR) * (1.0f - c->distorcao);
     posfx_contraluz(e, COR_CONTRALUZ, contraluz); // recorta a silhueta; desligada logo depois do corpo
     bool menu = e->fase == FASE_MENU;
     if (menu) posfx_nevoa_cela(e, 0.0f); // no menu, sem névoa no corpo: preto puro contra a névoa clara
+    if (e->rec.tem_modelo) rig_liga(e);
     rlPushMatrix();
-    float subida = c->contido ? 0.0f : (c->surgindo - 1.0f) * 2.7f; // sobe pelo duto
-    rlTranslatef(c->pos.x + (c->distorcao > 0.0f ? sinf(t * 70.0f) * c->distorcao * 0.4f : 0.0f),
-                 c->pos.y + subida, c->pos.z);
-    rlRotatef(c->yaw * RAD2DEG + jitter, 0.0f, 1.0f, 0.0f);
-    aplica_postura(e);
-    if (c->distorcao > 0.0f)
-        rlScalef(1.0f - c->distorcao * 0.8f, 1.0f + c->distorcao * 1.5f, 1.0f - c->distorcao * 0.8f);
+    aplica_transformacao(e);
     Matrix corpo = rlGetMatrixTransform(); // a mesma transformação leva os olhos junto com o corpo
     if (e->rec.tem_modelo)
         desenha_modelo(e, pele);
     else
-        desenha_corpo(e, pele);
+        rig_desenha_procedural(e, pele);
     rlPopMatrix();
+    if (e->rec.tem_modelo) rig_desliga(e);
     posfx_contraluz(e, COR_CONTRALUZ, 0.0f); // envia o corpo procedural (lote) ainda com a contraluz
     if (menu) posfx_nevoa_cela(e, NEVOA_CELA_DENSIDADE);
     desenha_olhos_no_menu(e, corpo);

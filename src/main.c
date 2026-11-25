@@ -10,26 +10,35 @@
 #include "susto.h"
 #include "lanterna.h"
 #include "nivel.h"
+#include "retorno.h"
 #include <math.h>
 #include "posfx.h"
 #include "vhs.h"
 #include "audio_sintese.h"
 #include "trilhas.h"
+#include "tubulacao_som.h"
 #include "ui.h"
 #include "texturas.h"
 #include "fita.h"
+#include "botoes.h"
 #include "console_modelo.h"
 #include "caixas.h"
 #include "mesa_bilhete.h"
 #include "armario_modelo.h"
 #include "porta_bunker.h"
+#include "porta_sala.h"
 #include "cameras.h"
 #include "quadro.h"
+#include "lampada_sala.h"
 #include "corpo.h"
 #include "dialogo.h"
 #include "ranking.h"
 #include "respiracao.h"
 #include "clique.h"
+#include "bancada.h"
+#include "efeitos.h"
+#include "qualidade.h"
+#include "controle.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -46,7 +55,7 @@ static const char *pasta_galeria = NULL;   // --galeria-vhs <pasta>: uma captura
 
 // ================================================================== entrada
 // [REQ:RF2] controle por teclado e mouse: lido uma vez por quadro (WASD, mouse, Shift, E, 1/2/3, setas,
-// Enter, Esc)
+// Enter, Esc); o controle de Xbox entra por cima, em controle.c
 static void le_entrada(Entrada *in) {
     memset(in, 0, sizeof(*in));
     in->mover.x = (float)(IsKeyDown(KEY_D) - IsKeyDown(KEY_A));
@@ -55,6 +64,7 @@ static void le_entrada(Entrada *in) {
     in->correr = IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT);
     in->interagir = IsKeyPressed(KEY_E);
     in->voltar = IsKeyPressed(KEY_ESCAPE);
+    in->pausa = in->voltar;
     in->confirmar = IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER);
     in->cima = IsKeyPressed(KEY_UP);
     in->baixo = IsKeyPressed(KEY_DOWN);
@@ -66,11 +76,13 @@ static void le_entrada(Entrada *in) {
     in->lanterna = IsKeyPressed(KEY_F);
     in->ajuda = IsKeyPressed(KEY_H);
     in->respirar = IsKeyPressed(KEY_SPACE);
+    in->comandos = IsKeyPressed(KEY_B);
 #if TECLAS_DEBUG
     in->f1 = IsKeyPressed(KEY_F1);
     in->f2 = IsKeyPressed(KEY_F2);
     in->f3 = IsKeyPressed(KEY_F3);
     in->f5 = IsKeyPressed(KEY_F5);
+    in->f7 = IsKeyPressed(KEY_F7);
     in->f9 = IsKeyPressed(KEY_F9);
     in->f12 = IsKeyPressed(KEY_F12);
 #endif
@@ -87,6 +99,8 @@ static void le_entrada(Entrada *in) {
     in->ponteiro_moveu = in->ponteiro_livre && (in->mouse.x != 0.0f || in->mouse.y != 0.0f);
     in->clique = in->ponteiro_livre && IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
     clique_aperta_teclas(in); // clicar numa tecla da barra do rodapé vale como apertá-la
+    controle_le(in); // [REQ:RF2] o controle soma por cima (depois do teclado: usa in->alguma)
+    dialogo_usa_controle(in->controle);
 }
 
 // ================================================================== piloto automático (--smoke)
@@ -108,6 +122,10 @@ typedef struct {
     int armario_etapa;       // 2ª partida, S1: 0 escondido à toa, 1 monta a perseguição, 2 espera, 3 ok
     float armario_t;         // tempo_fase em que a perseguição foi montada
     float placar_t;          // quanto tempo o placar final ficou na tela (precisa aparecer de verdade)
+    bool porta_tentada;      // S2: já tentou a porta do Arquivo sem a chave
+    bool porta_conferida;    // S2: a porta segurou sem a chave e abriu com ela
+    bool sala_tentada;       // saídas: já apertou E na porta da sala, que começou fechada
+    bool sala_conferida;     // saídas: a porta da sala segurou fechada e abriu com E
     int codigo_saida;        // −1 = ainda jogando; 0 = ok; 1 = falhou
 } Piloto;
 
@@ -143,6 +161,20 @@ static void piloto_confere_nome(Fase para) {
 }
 
 // Confere a troca de fase contra o roteiro. Recomeços (vidro rompido, pego) mantêm a fase e são aceitos.
+// Saída → rodada: a volta à sala tem de ter fechado a porta (sólida de novo) e continuar com o jogador onde
+// ele estava, perto da porta (sem o teleporte para o início de antes).
+static void piloto_confere_volta(const Estado *e, Fase de, Fase para) {
+    if (!regras_fase_eh_saida(de) || !regras_fase_eh_rodada(para)) return;
+    Vector3 p = e->nivel.porta_sala;
+    bool parede = col_paredes_colide(&e->paredes, (Vector3){p.x, 0.0f, p.z}, 0.3f, 1.8f);
+    bool no_inicio = Vector3Distance(e->jog.pos, e->nivel.inicio) < 1.0f;
+    if (!retorno_ativo(e) || e->porta.aberta || !parede || no_inicio)
+        piloto_falha("a volta à sala não fechou a porta ou teleportou o jogador");
+    else
+        printf("SMOKE  volta ok: a cena fechou a porta e a %s começou com o jogador ali, sem corte\n",
+               regras_nome_fase(para));
+}
+
 static void piloto_confere_troca(Fase de, Fase para) {
     if (piloto.roteiro_i >= piloto.roteiro_n) {
         piloto_falha("fase além do roteiro");
@@ -301,11 +333,61 @@ static bool piloto_le_diario(Estado *e, Entrada *in) {
     return true;
 }
 
+// Na S2 a porta do Arquivo está trancada: tenta abrir sem a chave (tem de continuar trancada e sólida), pega
+// a chave no chaveiro ao lado do quadro e abre a porta.
+static bool piloto_chave(Estado *e, Entrada *in) {
+    if (e->fase != FASE_S2 || e->jog.modo != MODO_ANDANDO) return false;
+    Vector3 p = e->nivel.porta_arquivo;
+    bool parede = col_paredes_colide(&e->paredes, (Vector3){p.x, 0.0f, p.z}, 0.3f, 1.8f);
+    if (e->chave.porta_aberta) {
+        if (piloto.porta_conferida) return false;
+        piloto.porta_conferida = true;
+        if (!e->chave.pega || parede)
+            piloto_falha("a porta do Arquivo abriu sem a chave ou continuou sólida");
+        else
+            printf("SMOKE  porta ok: trancada sem a chave; com a chave do chaveiro, abriu\n");
+        return false;
+    }
+    if (piloto.porta_tentada && !parede) piloto_falha("a porta do Arquivo trancada não segura o jogador");
+    Vector3 diante_da_porta = {p.x + 1.6f, 0.0f, p.z};
+    if (!e->chave.pega && piloto.porta_tentada) // pega a chave: de frente para o chaveiro
+        jogador_teleporta(e, (Vector3){CHAVEIRO_X, 0.0f, QUADRO_PAREDE_Z - 1.1f}, 0.0f);
+    else
+        jogador_teleporta(e, diante_da_porta, -PI * 0.5f); // de frente para a porta (oeste)
+    piloto.porta_tentada = true;
+    in->interagir = true;
+    return true;
+}
+
+// Toda saída começa com a porta da sala fechada: ela tem de segurar o jogador; com E, abre e deixa passar.
+static bool piloto_porta_sala(Estado *e, Entrada *in) {
+    if (piloto.sala_conferida || e->jog.modo != MODO_ANDANDO) return false;
+    Vector3 p = e->nivel.porta_sala;
+    bool parede = col_paredes_colide(&e->paredes, (Vector3){p.x, 0.0f, p.z}, 0.3f, 1.8f);
+    if (!piloto.sala_tentada) {
+        if (e->porta.aberta || !parede) piloto_falha("a saída começou com a porta da sala aberta");
+        jogador_teleporta(e, (Vector3){p.x - 1.3f, 0.0f, p.z}, PI * 0.5f); // de frente para a porta (leste)
+        in->interagir = true;
+        piloto.sala_tentada = true;
+        return true;
+    }
+    if (porta_sala_abertura(e) < 1.0f) return true; // a folha ainda está abrindo
+    piloto.sala_conferida = true;
+    if (parede)
+        piloto_falha("a porta da sala abriu mas continuou segurando o jogador");
+    else
+        printf("SMOKE  porta da sala ok: começou fechada e sólida; com E, abriu\n");
+    return false;
+}
+
 static void piloto_saida(Estado *e, Entrada *in) {
     bool painel1 = e->fase == FASE_S1;
-    if (piloto_testa_armario(e, in) || piloto_le_diario(e, in)) return;
-    if (e->painel.resolvido) {
-        jogador_teleporta(e, e->nivel.inicio, PI); // volta para a sala de observação
+    if (piloto_porta_sala(e, in) || piloto_testa_armario(e, in) || piloto_chave(e, in) ||
+        piloto_le_diario(e, in))
+        return;
+    if (e->painel.resolvido) { // entra na sala pela porta; dali, a volta à sala (retorno.c) assume
+        Vector3 p = e->nivel.porta_sala;
+        if (!retorno_ativo(e)) jogador_teleporta(e, (Vector3){p.x - 1.15f, 0.0f, p.z}, -PI * 0.5f);
         return;
     }
     if (e->jog.modo == MODO_PAINEL) {
@@ -339,10 +421,11 @@ static void piloto_age(Estado *e, Entrada *in) {
     case FASE_R1:
     case FASE_R2:
     case FASE_R3:
+        if (retorno_ativo(e)) break; // a volta à sala ainda está com o jogador
         if (e->jog.modo == MODO_TERMINAL) {
             rodadas_piloto(e, in, piloto_erros_desejados(e));
         } else if (e->jog.modo == MODO_ANDANDO) {
-            jogador_vai_ao_console(e);
+            jogador_poe_no_console(e); // na hora, para o E já mirar no console neste quadro
             in->interagir = true;
         }
         break;
@@ -381,14 +464,19 @@ static void piloto_entrada(Estado *e, Entrada *in, float dt) {
     if (e->fase != piloto.fase_vista) {
         piloto.placar_t = 0.0f;
         piloto_confere_troca(piloto.fase_vista, e->fase);
+        piloto_confere_volta(e, piloto.fase_vista, e->fase);
         piloto.fase_vista = e->fase;
         piloto.tempo_na_fase = 0.0f;
+        piloto.porta_tentada = piloto.porta_conferida = false;
+        piloto.sala_tentada = piloto.sala_conferida = false;
         piloto.tempo_fase_anterior = 0.0f;
     }
     if (e->tempo_fase + 0.001f < piloto.tempo_fase_anterior)
         printf("SMOKE  partida %d: %s recomeçou (%d erro(s) na fase)\n", piloto.partida + 1,
                regras_nome_fase(e->fase), e->erros_na_fase);
     piloto.tempo_fase_anterior = e->tempo_fase;
+    if (retorno_ativo(e) && col_paredes_colide(&e->paredes, e->jog.pos, JOGADOR_RAIO, 1.8f))
+        piloto_falha("a volta à sala atravessou uma parede ou um móvel");
     if (e->fase == FASE_S1 && piloto_confere_colisao(e, in, dt)) return;
     if (piloto_espera_ser_pego(e, in)) return; // a cada quadro: precisa segurar a corrida
     piloto.tempo_na_fase += dt;
@@ -414,6 +502,7 @@ static void atualiza(Estado *e, float dt) {
     jogo_atualiza(e, dt);
     audio_atualiza(e, dt);
     trilhas_atualiza(e, dt);
+    tubulacao_som_atualiza(e, dt);
 }
 
 // [REQ:RNF3] desenhar recebe const Estado *: não muda nada; o loop é entrada → atualiza → desenha
@@ -457,6 +546,8 @@ static void captura_numerada(void) {
 // ================================================================== início e fim
 static void le_argumentos(Estado *e, int argc, char **argv) {
     for (int i = 1; i < argc; i++) {
+        if (bancada_le_argumento(argc, argv, &i)) continue; // --olhar, --lanterna, --energia, --medir
+        if (qualidade_le_argumento(argc, argv, &i)) continue; // --qualidade, --sem
         if (strcmp(argv[i], "--smoke") == 0) e->modo_smoke = true;
         if (strcmp(argv[i], "--feira") == 0) e->modo_feira = true;
         if (strcmp(argv[i], "--mudo") == 0) mudo = true;
@@ -490,6 +581,7 @@ static void abre_janela(void) {
     InitWindow(LARGURA_JANELA, ALTURA_JANELA, titulo);
     SetWindowMinSize(640, 360);
     SetExitKey(KEY_NULL); // Esc é do jogo (sair do terminal, pausar), não fecha a janela
+    controle_inicia();
 }
 
 // --galeria-vhs: desenha o mesmo quadro (tempo parado) com cada preset e salva pasta/vhs_<N>.png; o nome do
@@ -548,11 +640,14 @@ static void quadro(Estado *e) {
 // Carrega tudo o que depende da janela: render target e shaders, fonte, sons e o modelo opcional.
 static void carrega_recursos(void) {
     posfx_inicia(&estado.rec);
+    efeitos_carrega(&estado.rec); // depois do shader de luz e dos alvos
     ui_carrega_fonte(&estado.rec);
     texturas_carrega(&estado.rec); // depois da fonte: as placas de estêncil usam a fonte
     fita_carrega(&estado.rec);
+    botoes_carrega(&estado.rec);
     audio_inicia(&estado.rec);
     trilhas_carrega(&estado.rec);
+    tubulacao_som_carrega(&estado.rec);
     criatura_carrega_modelo(&estado.rec);
     susto_carrega_boca(&estado.rec);
     lanterna_carrega_modelo(&estado.rec);
@@ -563,11 +658,13 @@ static void carrega_recursos(void) {
     porta_bunker_carrega(&estado.rec);
     cameras_carrega(&estado.rec);
     quadro_carrega(&estado.rec);
+    lampada_sala_carrega(&estado.rec);
     corpo_carrega(&estado.rec);
     if (mudo || estado.modo_smoke) SetMasterVolume(0.0f); // o smoke roda calado
 }
 
 static void descarrega_recursos(void) {
+    lampada_sala_descarrega(&estado.rec);
     corpo_descarrega(&estado.rec);
     quadro_descarrega(&estado.rec);
     cameras_descarrega(&estado.rec);
@@ -579,11 +676,14 @@ static void descarrega_recursos(void) {
     lanterna_descarrega_modelo(&estado.rec);
     susto_descarrega_boca(&estado.rec);
     criatura_descarrega_modelo(&estado.rec);
+    tubulacao_som_descarrega(&estado.rec);
     trilhas_descarrega(&estado.rec);
     audio_finaliza(&estado.rec);
+    botoes_descarrega(&estado.rec);
     fita_descarrega(&estado.rec);
     texturas_descarrega(&estado.rec);
     ui_descarrega_fonte(&estado.rec);
+    efeitos_descarrega();
     posfx_finaliza(&estado.rec);
     CloseWindow();
 }
@@ -611,6 +711,7 @@ int main(int argc, char **argv) {
     }
     jogo_inicia(&estado);
     if (!estado.modo_smoke) jogo_vai_para_fase(&estado, fase_inicial);
+    bancada_aplica(&estado);
     if (sanidade_inicial >= 0.0f) { // já com o grão no ponto (sem a subida suave), para a captura sair certa
         estado.sanidade = fminf(sanidade_inicial, SANIDADE_MAX);
         estado.sanidade_grao = regras_sanidade_intensidade(estado.sanidade);
@@ -619,6 +720,7 @@ int main(int argc, char **argv) {
     while (!WindowShouldClose() && !estado.sair) {
         quadro(&estado);
         if (estado.modo_smoke && piloto.codigo_saida >= 0) break;
+        if (bancada_quadro(GetFrameTime())) break; // --medir terminou
     }
     memset(estado.ident.nome, 0, sizeof(estado.ident.nome)); // o jogo encerrou: o nome some junto
     descarrega_recursos();

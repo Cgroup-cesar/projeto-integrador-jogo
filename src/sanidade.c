@@ -41,13 +41,18 @@ void sanidade_atualiza(Estado *e, float dt) {
     bool saida = regras_fase_eh_saida(e->fase);
     float dist = saida && e->cri.ativo ? Vector3Distance(e->cri.pos, e->jog.pos) : LONGE_DEMAIS;
     if (fase_de_jogo(e->fase)) {
-        e->sanidade_longe_t = dist < SANIDADE_RAIO ? 0.0f : e->sanidade_longe_t + dt;
+        // Longe = além do raio da volta e sem chegar mais perto (a pessoa fugindo ou ele indo embora).
+        bool chegando = dist < e->sanidade_dist - 0.001f;
+        bool perto = dist < SANIDADE_RAIO_VOLTA || (dist < SANIDADE_RAIO && chegando);
+        e->sanidade_longe_t = perto ? 0.0f : e->sanidade_longe_t + dt;
         e->sanidade = regras_sanidade_passo(e->sanidade, dist, e->cri.surgindo, e->jog.modo == MODO_ARMARIO,
                                             e->sanidade_longe_t, saida, dt);
     }
+    e->sanidade_dist = dist;
     atualiza_barra(e, dt);
     // A força do efeito segue a barra (e não a sanidade crua): muda junto com a porcentagem, sem saltos.
     e->sanidade_grao = regras_sanidade_intensidade(e->sanidade_barra);
+    e->sanidade_surto = regras_surto_passo(e->sanidade_surto, e->sanidade_barra, dt); // zerada: o surto
 }
 
 // ------------------------------------------------------------------ desenho

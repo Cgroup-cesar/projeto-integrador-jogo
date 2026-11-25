@@ -9,7 +9,8 @@
 void armario_modelo_carrega(Recursos *rec); // [REQ:RNF4] sem o arquivo, só registra no log
 void armario_modelo_descarrega(Recursos *rec);
 // Desenha o armário com a porta virada para `frente` (unitário, no chão) e a frente rente à face da caixa
-// de colisão (`centro` e `tam` são os dela). Devolve false sem o modelo.
-bool armario_modelo_desenha(const Estado *e, Vector3 centro, Vector3 tam, Vector3 frente);
+// de colisão (`centro` e `tam` são os dela), com as folhas da porta abertas `porta_graus` (negativo: sem
+// as folhas, para quem está dentro e vê a porta pelas frestas da tela). Devolve false sem o modelo.
+bool armario_modelo_desenha(const Estado *e, Vector3 centro, Vector3 tam, Vector3 frente, float porta_graus);
 
 #endif

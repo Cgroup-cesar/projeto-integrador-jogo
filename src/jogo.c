@@ -3,6 +3,7 @@
 #include "nivel.h"
 #include "jogador.h"
 #include "criatura.h"
+#include "animacao.h"
 #include "susto.h"
 #include "lanterna.h"
 #include "rodadas.h"
@@ -17,9 +18,15 @@
 #include "teclas.h"
 #include "ui.h"
 #include "cenario.h"
+#include "chave.h"
+#include "porta_sala.h"
+#include "retorno.h"
 #include "respiracao.h"
 #include "sanidade.h"
 #include "clique.h"
+#include "goteira.h"
+#include "cameras.h"
+#include "efeitos.h"
 #include <string.h>
 
 // ================================================================== início e fim
@@ -30,6 +37,7 @@ static void limpa_partida(Estado *e) {
     e->tempo_partida = 0.0f;
     e->diario_lido = false;
     e->ajuda_aberta = false;
+    e->comandos_abertos = false;
     memset(e->conectivo_decifrado, 0, sizeof(e->conectivo_decifrado));
 }
 
@@ -65,13 +73,12 @@ static void prepara_mundo(Estado *e, Fase fase) {
     e->ruidos.n = 0;
     e->particulas.n = 0;
     nivel_constroi_paredes(&e->nivel, &e->paredes);
-    if (!regras_fase_eh_saida(fase)) nivel_tranca_porta(&e->nivel, &e->paredes);
     nivel_constroi_interativos(&e->nivel, &e->interativos);
     col_interativos_filtra_fase(&e->interativos, fase);
     e->jog.modo = MODO_ANDANDO;
     e->jog.folego = JOGADOR_FOLEGO_MAX;
     e->jog.exausto = false;
-    e->jumpscare_t = e->silencio_t = e->apagao_t = e->falha_luz_t = e->alarme_t = e->retorno_t = 0.0f;
+    e->jumpscare_t = e->silencio_t = e->apagao_t = e->falha_luz_t = e->alarme_t = 0.0f;
     e->legendas.n = 0;
 }
 
@@ -80,17 +87,32 @@ static void entra_rodada(Estado *e, Fase fase, bool reinicio) {
     rodadas_inicia(e, regras_numero_rodada(fase));
     criatura_contem(e);
     if (fase != FASE_R1) e->cri.avanco_vidro = 1.0f; // depois da R1 ele ficou mais perto do vidro
-    jogador_teleporta(e, e->nivel.inicio, PI);
+    // Ninguém é levado ao início: vindo da saída, a volta à sala (retorno.c) ainda está com o jogador; vindo
+    // da intro ou de um recomeço, ele já está na sala e fica onde está (no console, dá um passo para trás).
+    // Só quem está fora da sala (atalhos de debug) vai para o início.
+    if (!retorno_ativo(e)) {
+        if (jogador_na_sala(e))
+            jogador_sai_do_console(e);
+        else
+            jogador_teleporta(e, e->nivel.inicio, PI);
+    }
     if (reinicio) ui_fala(e, FALAS_RODADA_RECOMECA);
 }
 
 static void entra_saida(Estado *e, Fase fase, bool reinicio) {
     circuito_inicia(e, fase == FASE_S1 ? 1 : 2);
     criatura_inicia_saida(e);
-    jogador_teleporta(e, e->nivel.inicio, PI * 0.5f); // olhando para a porta da sala, a leste (+x)
+    // Sem teleporte nem virada: quem estava no console só dá um passo para trás, olhando para onde olhava
+    // (na S2, o chaveiro com a chave do Arquivo fica atrás, ao lado do quadro: o aviso diz isso). Só no
+    // recomeço (pego) ou vindo de fora da sala (debug) ele volta ao início: na S1, olhando para a porta da
+    // sala, a leste (+x); na S2, de frente para o console.
+    if (!reinicio && jogador_na_sala(e))
+        jogador_sai_do_console(e);
+    else
+        jogador_teleporta(e, e->nivel.inicio, fase == FASE_S2 ? PI : PI * 0.5f);
     ui_fala(e, reinicio ? FALAS_PEGO : fase == FASE_S1 ? FALAS_INICIO_S1 : FALAS_INICIO_S2);
-    // A porta da sala abre (e faz barulho); as luzes ficam vermelhas e fracas até a energia voltar.
-    col_ruidos_adiciona(&e->ruidos, (Ruido){e->nivel.porta_sala, RUIDO_RAIO_PORTA, 1.0f, RUIDO_PORTA});
+    // A trava da porta da sala solta (quem abre é o jogador, com E: porta_sala.c); as luzes ficam
+    // vermelhas e fracas até a energia voltar.
     audio_toca(e, SOM_INTERRUPTOR, 1.0f, 0.5f);
 }
 
@@ -100,6 +122,7 @@ static void entra_menu(Estado *e) {
     jogador_teleporta(e, e->nivel.inicio, PI);
     e->menu.cursor = 0;
     e->sanidade = e->sanidade_barra = e->sanidade_eco = SANIDADE_MAX;
+    e->sanidade_surto = 0.0f;
 }
 
 static void entra_resposta_final(Estado *e) {
@@ -108,7 +131,10 @@ static void entra_resposta_final(Estado *e) {
     e->rod.luz_a = e->rod.luz_b = true; // as duas luzes da cela acesas: ele está ali, encostado no vidro
     e->cri.avanco_vidro = 1.0f;
     e->cri.mao_no_vidro = true;
-    jogador_vai_ao_console(e);
+    if (jogador_na_sala(e)) // vindo do terminal da R3, já está ali; de fora da sala (F9), vai na hora
+        jogador_vai_ao_console(e);
+    else
+        jogador_poe_no_console(e);
     e->jog.modo = MODO_TERMINAL;
 }
 
@@ -133,6 +159,9 @@ static void entra_fase(Estado *e, Fase fase, bool reinicio) {
     }
     e->sanidade_longe_t = 0.0f;
     prepara_mundo(e, fase);
+    porta_sala_entra_fase(e);              // a porta da sala começa fechada em toda fase
+    chave_entra_fase(e, fase, reinicio);   // a porta do Arquivo trancada e a chave (só na S2)
+    retorno_entra_fase(e, fase, reinicio); // a volta à sala continua na rodada seguinte
     switch (fase) {
     case FASE_MENU:
         entra_menu(e);
@@ -350,7 +379,7 @@ void jogo_atualiza(Estado *e, float dt) {
     }
     bool anda_livre = e->fase != FASE_MENU && e->fase != FASE_FIM_BOM && e->fase != FASE_FIM_RUIM &&
                       !(e->fase == FASE_INTRO && e->intro.etapa != INTRO_RADIO);
-    if (e->in.voltar && anda_livre && e->jog.modo == MODO_ANDANDO) {
+    if (e->in.pausa && anda_livre && e->jog.modo == MODO_ANDANDO) { // Esc ou Start (o B não pausa)
         e->pausado = true;
         e->menu.cursor = 0;
         return;
@@ -358,20 +387,27 @@ void jogo_atualiza(Estado *e, float dt) {
     atualiza_temporizadores(e, dt);
     susto_atualiza(e, dt);
     if (anda_livre && !susto_ativo(e)) {
-        jogador_atualiza(e, dt);
+        if (!retorno_ativo(e)) jogador_atualiza(e, dt); // na volta à sala, quem anda é a cena
         lanterna_atualiza(e, dt);
         respiracao_atualiza(e, dt);
     }
+    retorno_atualiza(e, dt); // começa ao entrar na sala com a energia de volta; troca a fase no meio
     nivel_atualiza(e, dt);
+    porta_sala_atualiza(e, dt);
+    chave_atualiza(e, dt);
     atualiza_fase(e, dt);
     if (!respiracao_segura_criatura(e)) criatura_atualiza(e, dt); // na porta do armário, ele só espera
+    animacao_atualiza(e, dt); // a animação segue mesmo com a IA parada (ele escuta na porta)
     sanidade_atualiza(e, dt); // depois da criatura e do jogador: usa a distância deste quadro
+    goteira_atualiza(e, dt);
+    cameras_atualiza(e, dt);
     glifos_atualiza(e, dt);
     col_ruidos_atualiza(&e->ruidos, dt);
     col_particulas_atualiza(
         &e->particulas, dt, (Vector3){0, -0.5f, 0},
         (Vector3){MAPA_LARGURA * TAMANHO_CELULA, PE_DIREITO, MAPA_ALTURA * TAMANHO_CELULA});
     ui_atualiza(e, dt);
+    teclas_atualiza(e, dt);
     jogador_atualiza_camera(e);
     atualiza_folds(e);
     EventoFase ev = e->evento;
@@ -383,14 +419,45 @@ void jogo_atualiza(Estado *e, float dt) {
 static void desenha_mundo_3d(const Estado *e) {
     Vector3 pos[LUZES_SHADER], cor[LUZES_SHADER];
     Vector4 cone[LUZES_SHADER];
-    float queda[LUZES_SHADER] = {1.0f, 1.0f, 1.0f, 1.0f, 1.0f}; // as lâmpadas do cenário: queda comum
-    int n = nivel_luzes(e, pos, cor, cone);
-    if (lanterna_luz(e, &pos[n], &cor[n], &cone[n], &queda[n])) n++; // a 5ª luz
+    float queda[LUZES_SHADER];
+    for (int i = 0; i < LUZES_SHADER; i++) // padrão MAP: as lâmpadas do cenário têm a queda comum
+        queda[i] = 1.0f;
+    int ids[LUZES_SHADER];
+    int n = nivel_luzes(e, pos, cor, cone, ids), lanterna = -1;
+    if (lanterna_luz(e, &pos[n], &cor[n], &cone[n], &queda[n])) { // a última: a lanterna (tem sombra própria)
+        ids[n] = -1;
+        lanterna = n++;
+    }
     bool sem_energia = regras_fase_eh_saida(e->fase) && !e->painel.resolvido;
     float ambiente = LUZ_AMBIENTE * (sem_energia ? SEM_ENERGIA_AMBIENTE : 1.0f);
     if (e->apagao_t > 0.0f) ambiente = LUZ_AMBIENTE * 0.3f * (sem_energia ? SEM_ENERGIA_AMBIENTE : 1.0f);
+    efeitos_guarda_luzes(pos, cor, cone, queda, ids, n, lanterna);
+    Vector3 frente = {cone[lanterna >= 0 ? lanterna : 0].x, cone[lanterna >= 0 ? lanterna : 0].y,
+                      cone[lanterna >= 0 ? lanterna : 0].z};
+    if (lanterna >= 0 && efeitos_comeca_sombra(e, pos[lanterna], frente)) { // o mapa de sombra da lanterna
+        nivel_desenha_reflexo(e); // o chão não faz sombra em nada: fica de fora
+        criatura_desenha(e);
+        efeitos_termina_sombra(e);
+    } else {
+        efeitos_sem_sombra(e);
+    }
+    if (posfx_comeca_reflexo(e)) { // a cena espelhada no chão (y = 0): câmera embaixo dele, olhando para cima
+        Camera3D espelho = e->camera;
+        espelho.position.y = -espelho.position.y;
+        espelho.target.y = -espelho.target.y;
+        BeginMode3D(espelho);
+        posfx_comeca_luz(e, pos, cor, cone, queda, ids, n, lanterna, ambiente);
+        posfx_olho(e, espelho.position);
+        nivel_desenha_reflexo(e);
+        criatura_desenha(e);
+        posfx_termina_luz(e);
+        nivel_desenha_emissivos(e);
+        EndMode3D();
+        posfx_termina_reflexo(e);
+    }
     BeginMode3D(e->camera);
-    posfx_comeca_luz(e, pos, cor, cone, queda, n, ambiente);
+    efeitos_guarda_camera(); // projeção e vista: os passes de tela reconstroem a posição pela profundidade
+    posfx_comeca_luz(e, pos, cor, cone, queda, ids, n, lanterna, ambiente);
     nivel_desenha(e);
     cenario_desenha(e);
     criatura_desenha(e);
@@ -410,6 +477,7 @@ void jogo_desenha_cena(const Estado *e) {
     ClearBackground(BLACK);
     bool tela_preta = e->fase == FASE_INTRO && e->intro.etapa != INTRO_RADIO;
     if (!tela_preta) desenha_mundo_3d(e);
+    posfx_resolve(e); // a cena HDR vira o quadro; daqui em diante, desenho direto no quadro
     jogador_desenha(e);
     susto_desenha(e);
     if (e->fase == FASE_INTRO && e->intro.etapa == INTRO_RADIO) // a sala saindo do preto
@@ -426,7 +494,9 @@ void jogo_desenha_interface(const Estado *e) {
     }
     sanidade_desenha(e);
     identidade_desenha(e);
-    respiracao_desenha(e); // a barrinha do armário (e o tutorial por cima de tudo)
-    teclas_desenha(e);     // a barra de teclas do rodapé, por baixo das legendas e da pausa
+    chave_desenha_aviso(e); // a porta do Arquivo trancada: onde está a chave
+    respiracao_desenha(e);  // a barrinha do armário (e o tutorial por cima de tudo)
+    teclas_desenha(e);      // o B — Comandos do canto (e a lista), por baixo das legendas e da pausa
+    retorno_desenha(e);     // as faixas de cinema da volta à sala (as legendas ficam por cima)
     ui_desenha(e);
 }

@@ -19,6 +19,8 @@
 #define MENU_FALHA_LEVE       0.4f // intensidade da falha nas opções da pausa e das perguntas (1 = a do menu)
 #define TELAS_ESTATICA_ALFA   0.03f // chuvisco da pausa e das perguntas da intro: bem mínimo
 #define TELAS_ESTATICA_PICO   0.02f
+// Os ícones dos botões do controle na barra de teclas (botoes.c): um por botão citado nela.
+#define BOTOES_TOTAL 13
 // A fita do avistamento na intro (fita.c): três fotos de assets/fita/ por trás do texto datilografado.
 #define FITA_FOTOS         3
 #define FITA_LINHA_QUEDA   2     // na 3ª linha da intro o sinal cai: falha, chuvisco e tela preta
@@ -38,6 +40,10 @@
 #define CONSOLE_TERMINAL_LARGURA_M 0.75f  // de lado a lado
 #define CONSOLE_TAMPO_Y            1.05f  // altura do tampo da mesa (a base do terminal)
 #define CONSOLE_TERMINAL_Z         -0.62f // em relação ao ponto do console (negativo: para o lado do vidro)
+// Chegar ao console e sair dele sem teleporte (jogador.c): o corpo anda sozinho, com colisão.
+#define CONSOLE_CHEGA_S  0.45f // E no console: o passo até a frente da mesa, virando para o vidro
+#define CONSOLE_SAI_S    0.5f  // ao sair (Esc ou fim da rodada): o passo para trás, sem virar
+#define CONSOLE_AFASTA_M 0.7f  // o quanto ele se afasta da frente da mesa ao sair
 // As pilhas de caixotes das salas (caixas.c): a colisão usa estas medidas, com ou sem o modelo.
 #define CAIXAS_COMPRIMENTO_M  2.5f
 #define CAIXAS_ALTURA_M       1.21f
@@ -55,22 +61,70 @@
 #define MESA_COR_LUZ       (Color){0xff, 0x9a, 0x3c, 255} // âmbar quente: a única luz assim no Arquivo
 // A porta de bunker da sala de observação (porta_bunker.c) e as câmeras de segurança (cameras.c).
 #define PORTA_ALTURA_M        2.2f  // o batente cabe embaixo da verga das portas
-#define PORTA_ABRE_S          1.8f  // quanto a folha leva para abrir quando a saída começa
+#define PORTA_ABRE_S          1.8f  // quanto a folha leva para abrir (E na porta, nas saídas)
+#define PORTA_FECHA_S         1.2f  // e para fechar (o som bate junto com a folha no batente)
+#define PORTA_SOLIDA_ATE      0.35f // abaixo desta abertura a folha já fecha o vão (colisão)
+#define PORTA_CRIATURA_ABRE_M 2.2f  // a criatura chegando a esta distância da porta fechada, ela abre...
+#define PORTA_CRIATURA_ABRE_S 0.45f // ...com um tranco: a folha abre nesse tempo
 #define CAMERA_COMPRIMENTO_M  0.65f // da placa do suporte até a frente da carcaça
 #define CAMERA_ALTURA_M       2.5f  // onde a placa encosta na parede
 #define CAMERA_INCLINA_GRAUS  22.0f // a lente aponta um pouco para baixo
+#define MAX_CAMERAS           8     // vagas para o estado de cada câmera (cameras.c tem 7)
+#define ARMARIO_ENTRA_S       0.7f  // a animação de entrar no armário: o passo para dentro, a volta e a porta
+#define ARMARIO_SAI_S         0.55f // a de sair: a porta abre e o passo para fora
+#define ARMARIO_ABRE_S        0.25f // as folhas da porta abrem (no começo da entrada e da saída)
+#define ARMARIO_FECHA_S       0.2f  // e fecham: no fim da entrada (por dentro) e depois da saída (por fora)
+#define ARMARIO_FECHA_ATRAS_S 0.2f  // fora do armário, a porta fecha atrás do jogador depois desse tempo
+#define ARMARIO_PORTA_GRAUS   100.0f // o quanto cada folha gira aberta
+#define ARMARIO_BATIDA_S      0.15f // no som de fechar (armario_fecha), a batida vem depois do rangido
+#define ARMARIO_MAX_PARTES    8     // malhas do armario.glb que a porta separa em folhas
+#define CAMERA_BRACO_M        0.16f // a câmera gira na ponta de um braço curto, fora da parede
+#define CAMERA_VISAO_M        16.0f // até onde uma câmera enxerga o jogador
+#define CAMERA_GIRO_MAX_GRAUS 70.0f // o quanto ela vira para cada lado, a partir de para onde aponta
+#define CAMERA_VELOCIDADE     45.0f // graus por segundo no máximo: o motor é lento, dá para ver ele virando
+#define CAMERA_FIRMEZA        3.0f  // o motor desacelera perto do alvo (passo = diferença × isto × dt)
+#define CAMERA_REACAO_S       0.35f // ao avistar o jogador, demora isto para começar a virar
+#define CAMERA_ATRASO_S       0.55f // a mira persegue onde o jogador esteve (constante de tempo, em s)
+#define CAMERA_ESPERA_S       2.5f  // depois de perder o jogador, fica parada olhando antes de voltar
+// A volta à sala depois de religar a energia (retorno.c): uma cena sem corte, de 4,6 s.
+#define RETORNO_VIRA_S         0.9f   // vira para a porta, de dentro da sala...
+#define RETORNO_FECHA_S        1.5f   // ...fecha (a rodada seguinte começa quando a folha bate)...
+#define RETORNO_ENTRA_S        2.2f   // ...e entra na sala, virando para a cela
+#define RETORNO_ESPERA_S       1.0f   // a cena só começa este tempo depois de o painel resolver
+#define RETORNO_DIANTE_PORTA_M 1.35f  // de onde ele fecha a porta (o plano da folha fica no meio da célula D)
+#define RETORNO_ENTRA_M        2.4f   // quanto ele anda sala adentro depois de fechar
+#define RETORNO_PUXA_PITCH     0.1f   // o olhar desce um pouco enquanto ele puxa a folha
+#define RETORNO_FAIXA_S        0.45f  // as faixas pretas de cinema entram e saem nesse tempo
+#define RETORNO_FAIXA_ALTURA   0.085f // cada faixa, em fração da altura da tela
 // O quadro de investigação na parede sul da sala de observação (quadro.c), atrás de quem está no console.
 #define QUADRO_LARGURA_M 1.95f
 #define QUADRO_X         8.6f   // centro, no meio da parede sul
 #define QUADRO_PAREDE_Z  13.995f // a parede sul da sala (linha 7 do mapa: z = 14)
 #define QUADRO_BASE_Y    0.95f  // onde fica a borda de baixo
+// O chaveiro com a chave do Arquivo (chave.c): na mesma parede, à direita do quadro para quem olha a parede,
+// bem atrás de quem começa a S2 de frente para o console.
+#define CHAVEIRO_X           6.3f
+#define CHAVEIRO_Y           1.68f // logo acima do azulejo (BARRADO_ALTURA)
+#define CHAVEIRO_LARGURA_M   0.34f
+#define CHAVEIRO_ALTURA_M    0.24f
+#define CHAVEIRO_FUNDO_M     0.025f
+#define COR_CHAVE            (Color){0xd4, 0xa8, 0x4a, 255} // latão
+#define CHAVE_AVISO_S        9.0f                           // o aviso da chave no começo da S2
+#define CHAVE_AVISO_CURTO_S  3.5f                           // porta trancada, chave pega
+#define PORTA_ARQUIVO_ABRE_S 1.2f                           // a folha desliza para dentro da parede
+
 // O corpo do americano (corpo.c): no fim das marcas de arrasto do corredor sul, rente à parede sul (z = 24).
 #define CORPO_X            22.7f
 #define CORPO_Z            23.45f
 #define CORPO_COMPRIMENTO_M 1.8f
 #define FITA_HORA_INICIO   (21 * 3600 + 47 * 60 + 52) // a câmera às 21:47:52, durante o canto
-#define TECLAS_ANDAR_S     10.0f // da R2 em diante, andando, a barra de teclas some depois disso em cada fase
-#define TECLAS_ESCALA_JOGO 0.88f // tamanho da barra de teclas durante a partida (1 = original)
+#define TECLAS_ESCALA_JOGO 0.62f // tamanho do B — Comandos e da lista na partida (1 = a barra do menu)
+#define MIRA_RAIO_PX       1.6f  // a mira: um ponto branco pequeno (px na tela de 1280x720)
+#define HUD_TEXTO_PX       16.0f // VIDRO e PLACAR, no canto superior direito
+#define HUD_OBJETIVO_PX    15.0f // a missão, no canto superior esquerdo
+#define DICA_LANTERNA_HZ   1.8f  // até a 1ª vez que acende, o F do canto pulsa em amarelo nesse ritmo
+#define DICA_LANTERNA_COR  (Color){0xff, 0xd8, 0x4a, 255}
+#define DICA_LANTERNA_GLOW 0.16f // força do brilho em volta do F no pico do pulso (camadas somadas)
 
 // ---------------------------------------------------------------- janela e tempo
 #define LARGURA_JANELA 1280
@@ -97,7 +151,7 @@
     {0.06f, 0.8f, 0.10f, 0.45f, 2.0f, 1.5f, 0.50f, 0.15f, -0.60f, 0.06f, 0.02f, 0.50f, 1.00f}, /* câmera de vigilância */ \
 }
 // clang-format on
-#define VHS_UNIFORMES (VHS_PARAMETROS + 3) // + tempo, resolução e insanidade (grão)
+#define VHS_UNIFORMES (VHS_PARAMETROS + 5) // + tempo, resolução, insanidade (grão), surto e piscada
 
 // ---------------------------------------------------------------- sanidade (barra no topo e grão na tela)
 // Cai com a criatura perto (só nos corredores), volta devagar enquanto se joga e volta muito ao concluir
@@ -113,7 +167,8 @@
 #define SANIDADE_ACELERA_PERTO   2.0f  // ...até 2× colado nela (24 pontos/s: 100 → 0 em ~4 s)
 #define SANIDADE_FATOR_ARMARIO   0.5f  // escondido no armário a queda cai pela metade
 #define SANIDADE_REGEN           2.0f  // pontos/s, contínuo e sempre igual (+50 em 25 s): ele se afastou
-#define SANIDADE_ESPERA_REGEN    0.5f  // s fora do raio antes de subir (só para não piscar na borda)
+#define SANIDADE_RAIO_VOLTA      10.0f // metros: além disso, com ele sem se aproximar, a sanidade já volta
+#define SANIDADE_ESPERA_REGEN    0.5f  // s afastando antes de subir (as pausas do passo dele são mais curtas)
 #define SANIDADE_BONUS_RODADA    35.0f // decifrou e traduziu (EV_RODADA_CONCLUIDA)
 #define SANIDADE_BONUS_SAIDA     40.0f // religou a energia e voltou à sala (EV_SAIDA_CONCLUIDA)
 #define SANIDADE_BONUS_CONECTIVO 10.0f // cada conectivo decifrado pela primeira vez
@@ -134,6 +189,19 @@
 #define SANIDADE_BARRA_SOBE       3.0f   // a barra enche suave com os bônus (1/s)
 #define SANIDADE_ECO_VEL          12.0f  // pontos/s: o pedaço perdido (mais escuro) alcança a barra
 #define SANIDADE_ALERTA           30.0f  // abaixo disso a barra fica vermelha e pulsa
+// Sanidade zerada (o surto): a visão falha em apagões curtos e alternados e uma vinheta vermelha fecha as
+// bordas (vhs.c). Some devagar quando a sanidade volta a subir.
+#define SURTO_LIMIAR       0.5f  // sanidade (a da barra) até aqui conta como zerada
+#define SURTO_ENTRA_S      0.5f  // quanto o surto leva para chegar ao máximo
+#define SURTO_SAI_S        1.2f  // e para sumir depois que a sanidade volta
+#define SURTO_FALHA_HZ     11.0f // sorteios por segundo: cada um decide se a visão falha agora
+#define SURTO_FALHA_CHANCE 0.40f // fração dos sorteios que falham (nunca dois seguidos)
+#define SURTO_ESCURO_MIN   0.10f // brilho no meio de uma falha (0 = preto total)...
+#define SURTO_ESCURO_MAX   0.45f // ...até este
+#define SURTO_VINHETA      0.9f  // força do vermelho nas bordas (continua acesa nas falhas)
+#define SURTO_TINGE        0.45f // quanto a imagem inteira puxa para o vermelho
+#define SURTO_NEVOA        1.0f  // névoa vermelha somada à imagem (tira o preto puro, como sangue no olho)
+#define SURTO_TREMOR_PX    10.0f // quanto as linhas escorregam de lado numa falha
 
 // ---------------------------------------------------------------- debug e modos
 #define TECLAS_DEBUG                                                                                         \
@@ -174,6 +242,14 @@
 #define JOGADOR_FOLEGO_MAX      4.0f // segundos de corrida
 #define JOGADOR_FOLEGO_RECUPERA 0.8f // fôlego recuperado por segundo andando/parado
 #define SENSIBILIDADE_MOUSE     0.0025f
+// Controle (Xbox ou qualquer um que a raylib reconheça; controle.c). O olhar é em radianos por segundo, com
+// o analógico direito todo empurrado; o vertical gira mais devagar, como na maioria dos jogos de console.
+#define CONTROLE_GIRO_RAD_S     2.8f
+#define CONTROLE_GIRO_VERTICAL  0.65f // fração do giro horizontal
+#define CONTROLE_ZONA_MORTA     0.18f // analógico: abaixo disso conta como solto (deriva do controle)
+#define CONTROLE_CURVA          2.0f  // resposta do analógico do olhar (2 = ao quadrado: mira fina no meio)
+#define CONTROLE_MENU_LIMIAR    0.6f  // analógico esquerdo empurrado além disso vira uma seta nos menus
+#define CONTROLE_GATILHO_LIMIAR 0.5f  // LT apertado além disso (eixo de -1 a 1) corre, como o LB
 #define DISTANCIA_INTERACAO     2.4f
 #define ANGULO_INTERACAO_GRAUS  35.0f
 
@@ -202,13 +278,71 @@
 #define CRIATURA_OLHO_PX            1.0f  // no menu: raio, em pixels da cena, dos dois pontinhos dos olhos
 #define CRIATURA_DIST_ARMARIO  2.0f  // entrar no armário a menos disso enquanto ele vê = pego
 #define CRIATURA_ALTURA_M      2.6f  // o precursor.glb é escalado para essa altura, com os pés no chão
-// Postura procedural (o modelo .glb não tem animação): ver regras_postura_criatura
-#define CRIATURA_PASSADA_M        1.6f   // metros por passada completa (pernas longas)
-#define CRIATURA_INCLINA_PARADO   3.0f   // graus para a frente, parado
-#define CRIATURA_INCLINA_CORRENDO 18.0f  // graus para a frente, perseguindo
-#define CRIATURA_BALANCO_GRAUS    5.0f   // de um lado para o outro a cada passo
-#define CRIATURA_SOBE_M           0.05f  // sobe e desce a cada passo
-#define CRIATURA_RESPIRA          0.015f // o tronco se expande 1,5% parado
+// ---------------------------------------------------------------- animação do Precursor (rig: esqueleto.c)
+// Ele é RETRAÍDO: doente, desconfiado, contido. Na dúvida, menos é mais. Ângulos em graus, distâncias em m.
+// Postura (sempre)
+#define ANIM_CURVA_GRAUS   7.0f  // a coluna se curva para a frente (soma-se à curvatura do modelo)
+#define ANIM_OMBROS_GRAUS  9.0f  // os ombros se fecham para dentro
+#define ANIM_CABECA_FRENTE 10.0f // o pescoço projeta a cabeça à frente (a cabeça compensa e olha adiante)
+// Passada (o ritmo segue a distância andada: o pé plantado não desliza)
+#define ANIM_PASSADA_M       1.45f  // passada completa (dois passos) andando devagar
+#define ANIM_PASSADA_CORRE_M 2.2f   // passada completa na perseguição
+#define ANIM_PASSO_VARIA     0.12f  // cada passo sai até 12% mais curto ou mais longo (nunca dois iguais)
+#define ANIM_PE_ALTURA_M     0.10f  // quanto o pé sobe no meio do passo
+#define ANIM_PE_ARRASTA      0.55f  // o pé direito sobe só isso da altura (arrasta um pouco: algo errado)
+#define ANIM_PASSO_LENTO_S   0.8f   // um passo nunca demora mais que isso (termina mesmo se ele parar)
+#define ANIM_SOBE_M          0.035f // o quadril sobe e desce a cada passo
+#define ANIM_BALANCO_M       0.035f // o quadril vai para o lado do pé de apoio
+#define ANIM_QUADRIL_GRAUS   7.0f   // o quadril gira com a perna que avança; o tronco gira ao contrário
+#define ANIM_BRACO_GRAUS     6.0f   // o balanço dos braços (pesados: pouco)
+#define ANIM_BRACO_MOLA      6.5f   // rad/s: quanto menor, mais os braços atrasam em relação ao tronco
+#define ANIM_INCLINA_CORRE   12.0f  // a mais de inclinação na perseguição
+// Parado (idle) e cabeça
+#define ANIM_RESPIRA_S     4.6f   // um ciclo de respiração (varia ±15%)
+#define ANIM_RESPIRA_GRAUS 1.6f   // o peito e os ombros sobem e descem
+#define ANIM_PESO_M        0.035f // o peso passa de uma perna para a outra
+#define ANIM_PESO_S        7.0f   // ...devagar e sem ritmo fixo
+#define ANIM_OLHAR_GRAUS_S 55.0f  // a cabeça vira no máximo isso por segundo (devagar)
+#define ANIM_ESTABILIZA    0.7f   // 0..1: quanto a cabeça segura o olhar enquanto o corpo balança
+#define ANIM_ESPIADA_MIN_S 5.0f   // de tempos em tempos ele vira a cabeça devagar para um lado
+#define ANIM_ESPIADA_MAX_S 12.0f
+#define ANIM_ESPIADA_GRAUS 35.0f
+// Tiques: raros e pequenos (um dedo, a cabeça inclinando, um ombro se ajustando)
+#define ANIM_TIQUE_MIN_S 6.0f // intervalo entre tiques: sorteado entre MIN e MAX
+#define ANIM_TIQUE_MAX_S 15.0f
+#define ANIM_TIQUE_GRAUS 8.0f // amplitude típica (o dedo vai ao dobro)
+// Transições (crossfade): quanto maior, mais rápido um estado entra no lugar do outro (1/s)
+#define ANIM_TRANSICAO 3.0f
+// Saída do bueiro: começa ANIM_BUEIRO_PRE_S antes de ele ficar ativo (sem mudar o tempo do jogo) e termina
+// junto com os 1,5 s de `surgindo`.
+#define ANIM_BUEIRO_PRE_S 5.0f
+#define ANIM_BUEIRO_SAI_S 1.5f // o mesmo tempo de atualiza_surgimento (criatura.c)
+// Saída pela tubulação da cela, no fim da R1 e da R2 (só apresentação: não muda o tempo das fases). Começa
+// na falha de luz e continua nos primeiros segundos da saída seguinte, bem antes de ele surgir no duto.
+#define ANIM_CANO_INICIO_S 2.2f  // depois de concluir a rodada: o mesmo instante da falha de luz (rodadas.c)
+#define ANIM_CANO_VIRA_S   0.6f  // vira para a tubulação (e, lá, de volta para o vidro)
+#define ANIM_CANO_ANDA_S   2.8f  // anda até a boca
+#define ANIM_CANO_DESCE_S  5.0f  // desce: a saída do bueiro ao contrário, um pouco mais rápida...
+#define ANIM_CANO_VISTO    0.7f  // ...e passa esta fração do tempo no que se vê do vidro (até os ombros)
+#define CANO_CELA_DX       -2.2f // a boca, em relação ao lugar dele na cela (m): à esquerda de quem olha
+#define CANO_CELA_DZ       -2.3f // ...e no fundo (o console tapa a direita; perto do vidro, o parapeito)
+// A boca da cela é igual ao duto do corredor (nivel.c). Os marcos da cena, em segundos de cano_t:
+#define ANIM_CANO_DESCE_EM (2.0f * ANIM_CANO_VIRA_S + ANIM_CANO_ANDA_S) // chegou à boca e virou para o vidro
+#define ANIM_CANO_FIM      (ANIM_CANO_DESCE_EM + ANIM_CANO_DESCE_S)
+// Sons da tubulação (tubulacao_som.c). A tampa sai de assets/audio/som-tampa-tubulacao.mp3 (28 s com vários
+// golpes): dois trechos cortados ao carregar. Os passos (passos-tubulacao.wav) emendam sem corte.
+#define TAMPA_SAI_DE_S    7.10f // sair do duto: a tampa arrasta e cai (o baque em +0,85 s: as mãos na borda)
+#define TAMPA_SAI_ATE_S   9.25f
+#define TAMPA_ENTRA_DE_S  17.65f // entrar na tubulação: o baque forte (+0,3 s) e a tampa se acomodando
+#define TAMPA_ENTRA_ATE_S 19.75f
+#define TAMPA_ALCANCE_M   26.0f
+#define TAMPA_VOLUME      1.0f
+#define TAMPA_PISO        0.4f // volume mínimo (0..1): longe ou atrás da parede, ainda se ouve
+// Os passos por dentro dos canos: do fim da entrada na cela ao começo da saída no corredor.
+#define PASSOS_TUBO_ALCANCE_M 30.0f // a travessia vai da cela ao corredor sul (~30 m)
+#define PASSOS_TUBO_VOLUME    1.0f
+#define PASSOS_TUBO_PISO      0.5f // volume mínimo: por cima da voz do rádio, sempre audível
+#define PASSOS_TUBO_FUNDO_M   1.0f // os canos passam por baixo do chão
 // Susto (jumpscare): o rosto do modelo pula até a câmera e fica tremendo (ver regras_quadro_susto).
 // Com assets/audio/jumpscare.mp3, o rosto fica até o fim do trecho alto do som (depois só sobra o eco).
 #define JUMPSCARE_S            1.2f  // duração com o som sintetizado (sem assets/audio/jumpscare.*)
@@ -263,16 +397,34 @@
 
 // ---------------------------------------------------------------- texturas do mapa (procedurais; override
 // opcional em assets/texturas/<material>.png). Geradas uma vez ao abrir o jogo, com semente fixa.
-#define TEXTURA_LADO_PX         256   // lado das texturas quadradas (piso, teto, oliva, metal, porta)
-#define TEXTURA_CONCRETO_PX     512   // o concreto é 512 × 256: cobre 6 m × 3 m sem repetir à vista
+#define TEXTURA_LADO_PX         1024  // lado das texturas quadradas (piso, teto, oliva, metal, porta)
+#define TEXTURA_CONCRETO_PX     2048  // o concreto é 2048 × 1024: cobre 6 m × 3 m sem repetir à vista
 #define TEXTURA_SEMENTE         1985u // mesma semente → mesma imagem em toda execução
 #define TEXTURA_SUJEIRA         0.8f  // 0 = limpo; 1 = manchas, escorridos e descascado no máximo
 #define TEXTURA_METROS_CONCRETO 6.0f  // metros por repetição na horizontal (na vertical: PE_DIREITO)
 #define TEXTURA_METROS_PISO     2.0f  // 4 × 4 placas de 0,5 m
 #define TEXTURA_METROS_TETO     2.0f  // 3 × 3 placas de forro
 #define TEXTURA_METROS_METAL    1.0f
+#define EXPOSICAO               1.25f // multiplica a cena HDR antes do tone mapping (ACES)
+// Névoa volumétrica, bloom e gradação de cor (efeitos.c; os presets de qualidade ligam e desligam)
+#define NEVOA_VOLUME_DENSIDADE  0.05f    // por metro; a poeira faz variar em volta disso
+#define NEVOA_VOLUME_AMBIENTE   0.004f   // a luz que a névoa espalha sozinha: o fundo do corredor clareia
+#define BLOOM_CORTE             1.0f     // só o que passa disso (em HDR) brilha em volta
+#define BLOOM_FORCA             0.18f
+#define GRADACAO_SOMBRA         {0.78f, 1.02f, 1.0f}  // as sombras puxam para o azul-petróleo
+#define GRADACAO_LUZ            {0.92f, 1.06f, 0.95f} // as luzes, para o verde-claro
+#define GRADACAO_SATURACAO      0.78f
+#define GRADACAO_CONTRASTE      1.06f
+#define GRADACAO_ELEVACAO       {0.012f, 0.028f, 0.03f} // os escuros puxam para o azul-petróleo...
+#define GRADACAO_PISO_PRETO     0.08f // ...com força total só a partir deste brilho: o preto fica preto
+#define GRADACAO_VINHETA        0.85f
+#define GRADACAO_GRAO           0.03f
+#define GRADACAO_ABERRACAO      0.012f
+#define AGUA_NO_CHAO            1.0f  // 0 = piso seco; 1 = manchas de água e o rejunte cheio
 #define TEXTURA_ARQUIVO_MAX_PX  1024  // PNG maior que isso (ou fora de potência de 2) é redimensionado
-#define BARRADO_ALTURA          1.2f  // tinta oliva do chão até aqui (acima: concreto aparente)
+#define BARRADO_ALTURA          1.5f  // azulejo do chão até aqui (acima: reboco pintado, descascando); múltiplo
+                                      // de 15 cm a partir do teto: a fiada de cima não sai cortada
+#define RODAPE_ALTURA           0.15f // a fiada de baixo, mais escura (uma peça de 15 cm)
 #define DECALQUE_PX             256   // manchas: 256 × 256; placas: 512 × 128
 #define HALO_LAMPADA_M          1.3f  // tamanho do brilho em volta das lâmpadas
 #define HALO_LAMPADA_ALFA       0.35f // força do brilho (some com a névoa)
@@ -280,12 +432,24 @@
 // ---------------------------------------------------------------- luz e névoa
 #define LUZ_AMBIENTE       0.045f // era 0,06: o escuro pesa mais, mas a lanterna e os holofotes não mudaram
 #define NEVOA_DENSIDADE    0.095f // era 0,085: o fundo do corredor some um pouco antes
+#define LUZ_BIT_MESA       13    // o bit da lâmpada da mesa no mapa de alcance (as luminárias: 0..12)
+#define LUMINARIAS_ACESAS  7     // quantas luminárias (as mais próximas) entram no shader de luz
+#define LUMINARIAS_FALHANDO 0.3f // fração das luminárias que falham (flicker)
+#define LUMINARIA_FORCA     1.6f  // a luz de cada luminária com a energia de volta
+#define LUMINARIA_EMISSAO   7.0f  // o brilho do painel (HDR: estoura no bloom e no reflexo do chão)
+#define LUMINARIA_LUZ_ABAIXO_M 0.12f // a luz fica logo abaixo do painel do teto
+// A lâmpada pendurada da sala de observação (lampada_sala.c), no centro da célula S, em cima de quem começa.
+#define LAMPADA_SALA_X          7.0f
+#define LAMPADA_SALA_Z          11.0f
+#define LAMPADA_SALA_ALTURA_M   0.7f  // do gancho no teto ao fundo da gaiola (o modelo é escalado por ela)
+#define LAMPADA_SALA_BULBO      0.68f // altura do bulbo, em fração da lâmpada medida a partir do teto
+#define LAMPADA_SALA_BULBO_RAIO 0.04f
+#define LAMPADA_SALA_COR_VIDRO  (Color){0xd8, 0xe8, 0xe0, 40} // o vidro da gaiola: um tom fraco
 #define LUZ_CORREDOR_GANHO 0.8f   // força das lâmpadas dos corredores (a luz fraca no jogador fica igual)
 // Sem energia (nas saídas, até o painel ser resolvido): só as luzes de emergência, fracas, e quase nada de
 // ambiente. Sem a lanterna, dá para ver o vulto do corredor, mas não o que tem nele.
 #define SEM_ENERGIA_AMBIENTE   0.35f // multiplica LUZ_AMBIENTE
-#define SEM_ENERGIA_EMERGENCIA 0.6f  // força das lâmpadas vermelhas (antes 1,7)
-#define SEM_ENERGIA_JOGADOR    0.14f // a luz fraquinha no próprio jogador (com energia, 0,32)
+#define SEM_ENERGIA_JOGADOR    0.06f // sem energia as luminárias apagam: só a lanterna e este resto de luz
 // Holofotes da cela (luzes A e B): ficam à frente e acima do Precursor, apontados para o peito dele.
 #define HOLOFOTE_ABERTURA_GRAUS 30.0f // meia-abertura do cone; fora dele sobram 15% (a cela não fica preta)
 #define HOLOFOTE_GANHO          1.6f  // compensa a luz que deixou de se espalhar pela cela
@@ -307,7 +471,7 @@
 #define NEVOA_CELA_COR_R 0.045f // a cor da névoa sem luz: só um pouco acima do preto, para a silhueta
 #define NEVOA_CELA_COR_G 0.050f // escura dele aparecer contra ela
 #define NEVOA_CELA_COR_B 0.055f
-#define LUZES_SHADER 5
+#define LUZES_SHADER 12 // até 9 luminárias + a luz fraca no jogador + a lanterna (+1 de folga)
 
 // ---------------------------------------------------------------- lanterna (tecla F, sem bateria)
 #define LANTERNA_ABERTURA_GRAUS 22.0f // meia-abertura do cone
@@ -328,6 +492,21 @@
 #define VOL_CORACAO        0.85f
 #define VOL_PASSO_ANDAR    0.55f
 #define VOL_PASSO_CORRER   0.8f
+#define PASSO_CRIATURA_ALCANCE_M 22.0f // até onde o passo dele se ouve
+#define SOM_PERTO_M              4.0f  // som no espaço: daqui para perto, volume cheio
+#define SOM_QUEDA_DB             28.0f // quanto cai em dB do perto até o alcance
+#define SOM_CURVA                1.6f  // > 1: a queda começa suave e acelera longe (perto continua alto)
+#define SOM_ATRAS_DB             3.0f  // bem atrás soa um pouco mais baixo: ajuda a saber se é na frente
+#define SOM_PAREDE_DB            8.0f  // com parede no meio, abafado
+#define SOM_PAN_MAX              0.85f // o mais para um lado que vai (nunca 100% num ouvido)
+#define GOTA_INTERVALO_S         1.3f  // goteira: uma gota a cada ~1,3 s (o instante é sorteado no intervalo)
+#define GOTA_QUEDA_S             0.6f  // da boca do cano até a poça
+#define GOTA_INCHA_S             0.3f  // a gota cresce na boca antes de cair
+#define GOTA_ONDA_S              0.9f  // quanto dura a onda na poça
+#define GOTA_ONDA_RAIO_M         0.3f
+#define GOTA_ALCANCE_M           14.0f // até onde se ouve o pingo
+#define CHAO_MOLHADO_BRILHO      2.5f  // força do reflexo das luzes no chão molhado e na poça
+#define PASSO_CRIATURA_TOM       0.8f  // abaixo de 1 soa pesado; mais baixo, o grave some na caixa de som
 
 // ---------------------------------------------------------------- paleta (só use onde a raylib já foi
 // incluída)
@@ -335,6 +514,7 @@
 #define COR_CONCRETO  (Color){0x2b, 0x3a, 0x33, 255}
 #define COR_OLIVA     (Color){0x4a, 0x4f, 0x3a, 255}
 #define COR_LAMPADA   (Color){0xd9, 0xa4, 0x41, 255}
+#define COR_LUMINARIA (Color){0xb4, 0xe2, 0xd2, 255} // a luz fria das luminárias com a energia de volta
 #define COR_FOSFORO   (Color){0x7d, 0xff, 0x9a, 255}
 #define COR_VIDRO     (Color){0x5a, 0xa0, 0xc8, 255}
 #define COR_ALARME    (Color){0xff, 0x5a, 0x4f, 255}

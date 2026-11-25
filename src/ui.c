@@ -405,18 +405,19 @@ static void desenha_pausa(const Estado *e) {
 static void desenha_vidas(const Estado *e, Vector2 pos) {
     float s = ui_escala();
     Color cor = e->vidas <= 1 ? COR_ALARME : COR_VIDRO;
-    ui_texto(e, dialogo_texto(TXT_HUD_VIDRO), pos, 20 * s, cor);
-    float x = pos.x + ui_mede(e, dialogo_texto(TXT_HUD_VIDRO), 20 * s).x + 12 * s;
-    ui_quadrados_vidro(e->vidas, (Vector2){x, pos.y + 2 * s}, 14 * s, cor);
+    float t = HUD_TEXTO_PX * s;
+    ui_texto(e, dialogo_texto(TXT_HUD_VIDRO), pos, t, cor);
+    float x = pos.x + ui_mede(e, dialogo_texto(TXT_HUD_VIDRO), t).x + 10 * s;
+    ui_quadrados_vidro(e->vidas, (Vector2){x, pos.y + 2 * s}, t * 0.7f, cor);
 }
 
 static void desenha_vidro_e_placar(const Estado *e) {
     float s = ui_escala();
     char texto[64];
-    float x = GetScreenWidth() - 300 * s;
+    float x = GetScreenWidth() - 220 * s;
     if (!regras_fase_eh_saida(e->fase)) desenha_vidas(e, (Vector2){x, 20 * s});
     snprintf(texto, sizeof(texto), "%s %03d", dialogo_texto(TXT_HUD_PLACAR), e->placar);
-    ui_texto(e, texto, (Vector2){x, 46 * s}, 20 * s, COR_FOSFORO);
+    ui_texto(e, texto, (Vector2){x, 42 * s}, HUD_TEXTO_PX * s, COR_FOSFORO);
 }
 
 static void desenha_folego(const Estado *e) {
@@ -425,8 +426,7 @@ static void desenha_folego(const Estado *e) {
     if (!regras_fase_eh_saida(e->fase) || j->folego >= JOGADOR_FOLEGO_MAX - 0.01f) return;
     float s = ui_escala();
     float fracao = j->folego / JOGADOR_FOLEGO_MAX;
-    Rectangle r = {260 * s, GetScreenHeight() - 84 * s, 200 * s,
-                   8 * s}; // acima da barra de teclas
+    Rectangle r = {260 * s, GetScreenHeight() - 30 * s, 200 * s, 8 * s}; // ao lado do B Comandos
     Color cor = j->exausto ? COR_ALARME : COR_FOSFORO;
     Color cor_texto = Fade(COR_FOSFORO, 0.7f);
     ui_texto(e, dialogo_texto(TXT_HUD_FOLEGO), (Vector2){r.x, r.y - 24 * s}, 16 * s, cor_texto);
@@ -437,6 +437,8 @@ static void desenha_folego(const Estado *e) {
 static TextoId objetivo(const Estado *e) {
     if (regras_fase_eh_saida(e->fase)) {
         if (e->painel.resolvido) return TXT_OBJETIVO_VOLTAR;
+        if (regras_chave_visivel(e->fase, e->chave.pega))
+            return TXT_OBJETIVO_S2_CHAVE; // a porta está trancada
         return e->fase == FASE_S1 ? TXT_OBJETIVO_S1 : TXT_OBJETIVO_S2;
     }
     return e->fase == FASE_RESPOSTA_FINAL ? TXT_OBJETIVO_RESPOSTA : TXT_OBJETIVO_SALA;
@@ -445,23 +447,31 @@ static TextoId objetivo(const Estado *e) {
 static void desenha_mira(const Estado *e) {
     float s = ui_escala();
     int cx = GetScreenWidth() / 2, cy = GetScreenHeight() / 2;
-    if (e->jog.modo == MODO_ANDANDO) DrawCircle(cx, cy, 2.5f * s, Fade(COR_FOSFORO, 0.6f));
+    if (e->jog.modo == MODO_ANDANDO)
+        DrawCircleV((Vector2){(float)cx, (float)cy}, fmaxf(MIRA_RAIO_PX * s, 1.0f), Fade(WHITE, 0.85f));
     TextoId dica = TXT_TOTAL;
-    if (e->jog.modo == MODO_ARMARIO) // segurando o ar, o E não sai: a dica some (a barra mostra o ESPAÇO)
+    if (e->jog.modo ==
+        MODO_ARMARIO) // segurando o ar, o E não sai: a dica some (a respiração mostra o ESPAÇO)
         dica = e->resp.etapa == RESP_NADA ? TXT_ARMARIO_SAIR : TXT_TOTAL;
     else if (e->jog.mira >= 0) {
-        static const TextoId por_tipo[] = {TXT_MIRA_CONSOLE, TXT_MIRA_PAINEL,  TXT_MIRA_PAINEL,
-                                           TXT_MIRA_DIARIO,  TXT_MIRA_ARMARIO, TXT_MIRA_PORTA,
+        static const TextoId por_tipo[] = {TXT_MIRA_CONSOLE,  TXT_MIRA_PAINEL,       TXT_MIRA_PAINEL,
+                                           TXT_MIRA_DIARIO,   TXT_MIRA_ARMARIO,      TXT_MIRA_PORTA,
+                                           TXT_MIRA_CHAVEIRO, TXT_MIRA_PORTA_ARQUIVO,
                                            TXT_MIRA_CORPO};
-        dica = por_tipo[e->interativos.itens[e->jog.mira].tipo];
+        TipoInterativo tipo = e->interativos.itens[e->jog.mira].tipo;
+        dica = por_tipo[tipo];
+        if (tipo == INTER_PORTA && regras_fase_eh_saida(e->fase)) // nas saídas, a porta abre e fecha
+            dica = e->porta.aberta ? TXT_MIRA_PORTA_FECHAR : TXT_MIRA_PORTA_ABRIR;
     }
     if (dica != TXT_TOTAL) ui_texto_centro(e, dialogo_texto(dica), cy + 40 * s, 22 * s, COR_FOSFORO);
 }
 
 static void desenha_hud(const Estado *e) {
+    if (e->retorno.ativo) return; // na volta à sala (uma cena), a tela fica limpa
     float s = ui_escala();
     if (e->jog.modo == MODO_ANDANDO || e->jog.modo == MODO_ARMARIO)
-        ui_texto(e, dialogo_texto(objetivo(e)), (Vector2){24 * s, 66 * s}, 18 * s, Fade(COR_FOSFORO, 0.7f));
+        ui_texto(e, dialogo_texto(objetivo(e)), (Vector2){24 * s, 62 * s}, HUD_OBJETIVO_PX * s,
+                 Fade(COR_FOSFORO, 0.7f));
     if (e->jog.modo != MODO_TERMINAL && e->jog.modo != MODO_PAINEL)
         desenha_vidro_e_placar(e); // o terminal já mostra
     desenha_folego(e);
@@ -474,7 +484,7 @@ static void desenha_legenda(const Estado *e) {
     const Legenda *l = &e->legendas.fila[0];
     float largura = 900 * s;
     float x = (GetScreenWidth() - largura) * 0.5f,
-          y = GetScreenHeight() - 216 * s; // acima da barra de teclas
+          y = GetScreenHeight() - 216 * s; // acima do B Comandos aberto
     if (e->jog.modo == MODO_TERMINAL) {    // o terminal ocupa a direita: a legenda vai para a esquerda
         largura = GetScreenWidth() - 680 * s;
         x = 24 * s;

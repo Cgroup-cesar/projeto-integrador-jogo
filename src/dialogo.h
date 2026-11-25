@@ -65,11 +65,20 @@ typedef enum {
     TXT_MIRA_DIARIO,
     TXT_MIRA_ARMARIO,
     TXT_MIRA_PORTA,
+    TXT_MIRA_CHAVEIRO,
+    TXT_MIRA_PORTA_ARQUIVO,
+    TXT_MIRA_PORTA_ABRIR, // a porta da sala nas saídas (porta_sala.c)
+    TXT_MIRA_PORTA_FECHAR,
     TXT_MIRA_CORPO,
     TXT_ARMARIO_SAIR,
     TXT_OBJETIVO_SALA,
     TXT_OBJETIVO_S1,
     TXT_OBJETIVO_S2,
+    TXT_OBJETIVO_S2_CHAVE,
+    TXT_AVISO_CHAVE, // a porta do Arquivo e a chave (chave.c)
+    TXT_AVISO_CHAVE_PEGA,
+    TXT_AVISO_PORTA_SEM_CHAVE,
+    TXT_AVISO_PORTA_ANTES,
     TXT_OBJETIVO_VOLTAR,
     TXT_OBJETIVO_RESPOSTA,
     TXT_TERMINAL_TITULO,
@@ -156,6 +165,7 @@ typedef enum {
     TXT_TECLA_LANTERNA,
     TXT_TECLA_PAUSA,
     TXT_TECLA_SAIR_ARMARIO,
+    TXT_TECLA_COMANDOS,
     TXT_COLA_TITULO,
     TXT_COLA_NAO,
     TXT_COLA_E,
@@ -224,6 +234,9 @@ typedef enum {
     TXT_TOTAL
 } TextoId;
 
+// Com o controle em uso, as dicas que citam teclas ("E —", "ENTER", "ESPAÇO", "Esc") trocam pelos botões
+// (A, B, X, Y). main.c avisa a cada quadro; dialogo_texto escolhe sozinho.
+void dialogo_usa_controle(bool controle);
 const char *dialogo_texto(TextoId id);
 
 // Troca os marcadores de um texto pelo que o jogador escolheu no início: {NOME}, {PROF} ("Professor" ou

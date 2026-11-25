@@ -32,28 +32,33 @@ Projeto Integrador da disciplina **Programação Imperativa e Funcional (PIF)**,
 
 **Objetivo:** descobrir o que o Precursor diz, sobreviver às quedas de energia e, no fim, dar a resposta certa.
 
-**Fases:** Intro ("Professor ou professora?", o nome — vazio vira "Moura" —, o texto datilografado e a carta do Gen. Varela pelo rádio) → Rodada 1 → Saída 1 (gerador) → Rodada 2 → Saída 2 (Arquivo) → Rodada 3 → Resposta final → Final → menu. Cada erro numa rodada racha o vidro; no 3º erro ele rompe e a rodada recomeça. Ser pego nos corredores recomeça a saída.
+**Fases:** Intro ("Professor ou professora?", o nome — vazio vira "Moura" —, o texto datilografado e a carta do Gen. Varela pelo rádio) → Rodada 1 → Saída 1 (gerador) → Rodada 2 → Saída 2 (Arquivo) → Rodada 3 → Resposta final → Final → menu. Cada erro numa rodada racha o vidro; no 3º erro ele rompe e a rodada recomeça. Ser pego nos corredores recomeça a saída. A sala do segundo gerador (o Arquivo) fica trancada: na segunda queda de energia, um aviso manda pegar a chave no chaveiro atrás do jogador, ao lado do quadro da sala de observação. A porta da sala de observação começa fechada em cada saída: o jogador a abre e fecha com E (o Precursor, chegando nela fechada, abre com um tranco). Com a energia de volta, ao entrar na sala, uma cena curta assume o jogador: ele vira, fecha a porta e entra na sala, e a rodada seguinte começa ali, sem corte; no fim da cena, o controle volta.
 
-| Ação | Tecla |
-| :---- | :---- |
-| Andar | W A S D |
-| Olhar | mouse |
-| Correr (4 s de fôlego; faz barulho) | Shift |
-| Interagir: console, painel, diário, armário (entrar e sair) | E |
-| Lanterna: liga e desliga (sem bateria; apaga sozinha no armário) | F |
-| Segurar a respiração no armário (só se ele te seguiu até a porta): quando a linha vermelha passar sobre a faixa branca | ESPAÇO |
-| Sair do terminal, do painel ou do diário; pausar | Esc |
-| Luzes A e B da cela (no console) | 1 e 2 |
-| Chaves A, B e C (painel 1) | 1, 2 e 3 |
-| Escolher no terminal, nos painéis e nas fichas | setas e ENTER |
-| Fora do andar (menu, pausa, perguntas da intro, terminal, painéis, fichas, avaliação): passar por cima escolhe, clicar confirma; as teclas da barra do rodapé também são clicáveis | mouse (botão esquerdo) |
-| Começo da intro: escolher professor ou professora; digitar o nome (até 16 letras, com acento), apagar, confirmar | setas · teclado · Backspace · ENTER |
+| Ação | Teclado | Controle (Xbox) |
+| :---- | :---- | :---- |
+| Andar | W A S D | analógico esquerdo |
+| Olhar | mouse | analógico direito |
+| Correr (4 s de fôlego; faz barulho) | Shift | LB, LT ou clicar o analógico esquerdo |
+| Interagir: console, painel, diário, armário (entrar e sair), porta da sala (abrir e fechar, nas saídas) | E | A |
+| Lanterna: liga e desliga (sem bateria; apaga sozinha no armário) | F | Y |
+| Segurar a respiração no armário (só se ele te seguiu até a porta): quando a linha vermelha passar sobre a faixa branca | ESPAÇO | A |
+| Sair do terminal, do painel ou do diário | Esc | B |
+| Pausar (andando) | Esc | Start |
+| Ajuda dos conectivos (terminal e painéis) | H | View |
+| Comandos: abre e fecha, no canto da tela, a lista das teclas que valem agora | B | RB |
+| Luzes A e B da cela (no console) | 1 e 2 | X e Y |
+| Chaves A, B e C (painel 1) | 1, 2 e 3 | direcional e A (X e Y também ligam A e B) |
+| Escolher no terminal, nos painéis e nas fichas | setas e ENTER | direcional (ou analógico esquerdo) e A |
+| Fora do andar (menu, pausa, perguntas da intro, terminal, painéis, fichas, avaliação): passar por cima escolhe, clicar confirma; as teclas da barra do rodapé também são clicáveis | mouse (botão esquerdo) | — |
+| Começo da intro: escolher professor ou professora; digitar o nome (até 16 letras, com acento), apagar, confirmar | setas · teclado · Backspace · ENTER | direcional · — · — · A (sem teclado, fica o nome padrão) |
 
-**Teclas de debug:** F1 troca o filtro VHS (desligado, original, fita caseira, fita gasta, monitor CRT, câmera de vigilância; o nome aparece no canto) · F2 pula a fase · F3 mostra o estado e o caminho da criatura, a sanidade e a força do efeito · F5 reinicia a fase · F9 vai à resposta final · F12 salva uma captura em `docs/img/`. Para desligá-las, mude `#define TECLAS_DEBUG 1` para `0` em `src/config.h`; no modo feira (`--feira`) elas ficam desligadas sozinhas.
+**Controle:** qualquer controle que a raylib reconheça (Xbox, com fio ou pelo adaptador/Bluetooth) funciona junto com o teclado, sem configurar nada (`src/controle.c`). As dicas da tela (o "Comandos" e a "Lanterna" no canto, a lista de comandos, a barra do rodapé no menu, "A — usar o console", a tecla embaixo da barra da respiração) trocam para os botões do controle assim que ele é usado e voltam para as teclas quando alguém mexe no teclado ou no mouse. Sensibilidade, zona morta e curva do analógico ficam em `CONTROLE_*` (`src/config.h`). Ao conectar, o log mostra `CONTROLE: 0 conectado (nome)`.
+
+**Teclas de debug:** F1 troca o filtro VHS (desligado, original, fita caseira, fita gasta, monitor CRT, câmera de vigilância; o nome aparece no canto) · F2 pula a fase · F3 mostra o estado e o caminho da criatura, a sanidade e a força do efeito · F5 reinicia a fase · F7 troca a qualidade gráfica (baixa, média, alta, ultra) · F9 vai à resposta final · F12 salva uma captura em `docs/img/`. Para desligá-las, mude `#define TECLAS_DEBUG 1` para `0` em `src/config.h`; no modo feira (`--feira`) elas ficam desligadas sozinhas.
 
 **Nome de quem joga (pensado para a feira):** fica só na memória, durante a partida. Entra nas falas pelos marcadores `{NOME}`, `{PROF}` e `{x|y}` de `dialogo.c` (sempre como "Professora Inês"), no alto do terminal e na tela final. Fora da partida, o nome só vai para um lugar: o ranking da feira (`ranking.txt`, na pasta do jogo e fora do git), com o placar, o tempo e o resultado, e aparece no menu (o 1º lugar) e na tabela do ranking. Isso foi decidido de propósito (decisão 101): quem joga no estande digita o nome para aparecer no ranking. A avaliação do jogo em estrelas vai para outro arquivo (`avaliacoes.csv`) sem nome. O nome não é impresso no terminal. Na memória, ele é apagado ao voltar ao menu (fim de jogo, pausa, inatividade no modo feira, partida nova) e ao fechar o jogo; recomeçar uma fase não o apaga. **Atenção:** uma captura (F12 ou `--captura`) das perguntas da intro, das legendas, do terminal ou da tela final grava o nome na imagem.
 
-**Linha de comando:** `--feira` (sem SAIR no menu, sem debug, volta ao menu após 90 s sem ninguém mexer, inclusive nas perguntas da intro e na pausa) · `--mudo` · `--fase S2` (começa direto numa fase) · `--smoke` (pula as perguntas e usa o nome padrão) · `--captura arquivo.png --captura-em 2 [--captura-fase R1]` · `--exporta-sons pasta` (grava os sons sintetizados em WAV) · `--vhs N` (abre com o preset N do filtro VHS; 0 = desligado) · `--sanidade N` (começa com sanidade N, de 0 a 100, já com o efeito no ponto; para capturas) · `--vitrine-vhs [s]` (troca de preset sozinho a cada s segundos, padrão 4) · `--galeria-vhs pasta` (salva `pasta/vhs_<N>.png` com o mesmo quadro em cada preset e fecha; combine com `--fase S1 --captura-fase S1 --captura-em 5`).
+**Linha de comando:** `--feira` (sem SAIR no menu, sem debug, volta ao menu após 90 s sem ninguém mexer, inclusive nas perguntas da intro e na pausa) · `--mudo` · `--fase S2` (começa direto numa fase) · `--smoke` (pula as perguntas e usa o nome padrão) · `--captura arquivo.png --captura-em 2 [--captura-fase R1]` · `--exporta-sons pasta` (grava os sons sintetizados em WAV) · `--vhs N` (abre com o preset N do filtro VHS; 0 = desligado) · `--sanidade N` (começa com sanidade N, de 0 a 100, já com o efeito no ponto; para capturas) · `--vitrine-vhs [s]` (troca de preset sozinho a cada s segundos, padrão 4) · `--galeria-vhs pasta` (salva `pasta/vhs_<N>.png` com o mesmo quadro em cada preset e fecha; combine com `--fase S1 --captura-fase S1 --captura-em 5`) · `--qualidade baixa|media|alta|ultra` (padrão: alta) · `--sem ssao,volume,bloom,sombra,reflexo,mapas,pos` (desliga esses efeitos) · bancada de capturas e desempenho: `--olhar x,z,yaw,pitch`, `--lanterna`, `--energia`, `--tamanho LxA`, `--medir s` (veja `docs/graficos.md`).
 
 **Escolher o filtro VHS:** rode `--galeria-vhs` (ou `--vitrine-vhs`) para comparar, depois mude `VHS_PRESET_PADRAO` em `src/config.h`. Os valores de cada preset ficam em `VHS_PRESETS`, uma linha por preset.
 
@@ -64,8 +69,9 @@ Projeto Integrador da disciplina **Programação Imperativa e Funcional (PIF)**,
 A barra no topo da tela mostra a **SANIDADE** em porcentagem, também com o painel ou o bilhete abertos: quando ela cai, ele está perto (nas salas, cheia, ela some). Ela é verde, fica âmbar abaixo de 60% e vermelha e pulsando abaixo de 30%; o pedaço que a criatura acabou de tirar aparece em vermelho escuro por um instante.
 
 - **Cai** nos corredores quando o Precursor está a menos de 15 m, mais rápido quanto mais perto: cerca de 2 pontos por segundo na borda e 24 colado nele (de 100% a 0% em uns 4 s). Escondido no armário, cai pela metade.
-- **Sobe de forma contínua** quando ele se afasta: 2 pontos por segundo, sempre no mesmo ritmo, assim que ele sai dos 15 m (nas salas, também), e **sobe bastante** ao concluir tarefas: +35 por rodada, +40 por saída e +10 por conectivo decifrado. Ser pego ou romper o vidro recomeça a fase com pelo menos 60%.
+- **Sobe de forma contínua** quando ele se afasta: 2 pontos por segundo, sempre no mesmo ritmo, assim que ele está a mais de 10 m e não está chegando mais perto; entre 10 e 15 m, ela cai se ele se aproxima e sobe se ele se afasta (nas salas, sobe sempre), e **sobe bastante** ao concluir tarefas: +35 por rodada, +40 por saída e +10 por conectivo decifrado. Ser pego ou romper o vidro recomeça a fase com pelo menos 60%.
 - **Na tela**, o efeito tem força proporcional ao que falta: 100% não tem nada, 20% tem 80% da força. É uma mistura de cansaço (a vista embaça em ondas lentas, mais nas bordas que no centro, a visão fecha em túnel e as cores desbotam) e fita VHS gasta (ruído em estrias horizontais, ruído de cor nas sombras, riscos claros e, abaixo de 25%, linhas que tremem). Mesmo com 0% o cenário, a criatura e os textos continuam visíveis.
+- **Em 0%**, a visão começa a falhar: apagões curtos, alternados e um pouco aleatórios, com as linhas escorregando de lado, e uma vinheta vermelho-sangue fecha as bordas. O efeito some aos poucos assim que a sanidade volta a subir.
 - **Zerar não mata:** a criatura é a única ameaça. Como em Call of Cthulhu e Amnesia, a sanidade pesa sem encerrar a partida.
 
 Os números ficam em `src/config.h` (`SANIDADE_*`) e as regras em `src/regras_sanidade.c` (puras e testadas). O efeito funciona com qualquer preset do VHS, inclusive desligado.
@@ -136,6 +142,8 @@ src/regras.c/.h          regras do jogo (puras)
 src/regras_texto.c       regras puras de texto: marcadores do roteiro, nome digitado, legenda com defeito
 src/regras_ranking.c     regras puras do ranking: lugar da partida, linha do arquivo <-> partida
 src/regras_sanidade.c    regras da sanidade (puras): queda pela distância, recuperação, bônus, força do efeito
+src/regras_som.c         som no espaço (puro): volume pela distância e lado esquerdo/direito
+src/regras_porta.c       a porta da sala e a volta à sala (puro): a folha, a colisão, a coreografia da cena
 src/colecoes.c/.h        as 6 coleções: ruídos, partículas, rachaduras, eventos, interativos, paredes
 src/funcional.h          fx_map, fx_filter_inplace, fx_fold
 src/glifos.c/.h          os glifos da língua do Precursor e a projeção no vidro
@@ -143,20 +151,26 @@ src/rodadas.c/.h         dados e fluxo das 3 rodadas
 src/terminal.c/.h        interface do ANALISADOR SEMÂNTICO SNI-85
 src/manual.c/.h          o manual dos conectivos (lâmpada, ✓/✗, mini-tabela, cartão), do terminal e dos painéis
 src/crt.c/.h             a cara de monitor das telas de tarefa: moldura com quinas, scanlines, varredura, caixas e faixas
-src/teclas.c/.h          a barra de teclas do rodapé (só as teclas que valem agora; andando, sempre na R1 e na S1)
+src/teclas.c/.h          as teclas que valem agora: na partida, B abre a lista no canto; no menu e no fim, a barra do rodapé
 src/clique.c/.h          o mouse nas telas: as áreas clicáveis de cada quadro e o clique nas teclas da barra
 src/compositor.c/.h      resposta final por fichas e os dois finais
 src/circuito.c/.h        painéis de circuito 1 e 2
 src/nivel.c/.h           mapa ASCII → geometria, paredes, interativos e luzes
-src/jogador.c/.h         câmera, movimento, fôlego, armário, mira
+src/jogador.c/.h         câmera, movimento, fôlego, armário, mira, passo até o console e para trás
 src/respiracao.c/.h      segurar a respiração no armário: se ele vinha atrás, vai até a porta; 3 chances
 src/lanterna.c/.h        a lanterna: tecla F, luz em cone saindo dos olhos, modelo na mão
-src/criatura.c/.h        o Precursor: IA, A*, placeholder procedural, captura
+src/criatura.c/.h        o Precursor: IA, A*, captura e o desenho do corpo
+src/esqueleto.c/.h       o rig do Precursor (puro): 22 ossos medidos no modelo, cinemática direta, skinning e IK
+src/regras_animacao.c/.h a animação procedural (pura): camadas, crossfade, passada com os pés plantados, tiques
+src/regras_animacao_cenas.c os passos e as cenas: saída do bueiro (e a descida pela tubulação da cela), distorção, convulsão (puro)
+src/animacao.c/.h        liga o jogo à animação: lê o estado da criatura e monta a entrada de cada quadro
+src/rig.c/.h             os pesos dos ossos em cada vértice do .glb (ao carregar) e o skinning na GPU
 src/cela.c/.h            o Precursor contido: no centro da cela, olhando o vidro
 src/sanidade.c/.h        a sanidade a cada quadro e a barra no topo da tela
 src/susto.c/.h           o jumpscare: o rosto do modelo pula até a câmera e treme; dura o trecho alto do som
 src/dialogo.c/.h         todos os textos do jogo
 src/audio_sintese.c/.h   sons curtos gerados em código (e substituição por .ogg, .wav ou .mp3)
+src/tubulacao_som.c/.h   os sons da tubulação: a tampa ao entrar e ao sair e os passos que atravessam da cela ao corredor
 src/trilhas.c/.h         sons longos gravados (assets/audio): trilha do menu, vozes, coração e passos
 src/posfx.c/.h           render target, luz e névoa
 src/vhs.c/.h             filtro VHS: shader, presets (F1), efeito de sanidade (cansaço + fita)
@@ -167,23 +181,37 @@ src/console_modelo.c/.h   o computador de época sobre a mesa do console (assets
 src/caixas.c/.h          pilhas de caixotes do Exército nas salas, com colisão (assets/modelos/caixas.glb, opcional)
 src/mesa_bilhete.c/.h    a mesa do bilhete no Arquivo: escrivaninha, folhas, a lâmpada âmbar que pisca e o brilho do bilhete
 src/armario_modelo.c/.h  a aparência dos armários de esconderijo (assets/modelos/armario.glb, opcional)
-src/porta_bunker.c/.h    a porta de bunker da sala de observação: fechada nas rodadas, abre para o corredor na saída
-src/cameras.c/.h         câmeras de segurança nas salas e corredores, com o LED de REC piscando
+src/porta_bunker.c/.h    o modelo da porta de bunker da sala de observação (a folha gira na dobradiça)
+src/porta_sala.c/.h      a porta da sala de observação: trancada nas rodadas; nas saídas, abre e fecha com E, sem som
+src/retorno.c/.h         a volta à sala sem corte: vira, fecha a porta e entra; a rodada seguinte começa no meio da cena
+src/cameras.c/.h         câmeras de segurança nas salas e corredores (LED de REC piscando); as que veem o jogador viram para ele, em silêncio
 src/quadro.c/.h          o quadro de investigação da sala de observação (jornal Rede Bola, relatório do SNI, fichas)
+src/chave.c/.h           a porta trancada do Arquivo (a sala do segundo gerador) e a chave dela, no chaveiro ao lado do quadro
+src/lampada_sala.c/.h    a lâmpada pendurada da sala de observação, com o bulbo aceso (assets/modelos/lampada.glb, opcional)
 src/corpo.c/.h           o corpo coberto do consultor americano no fim do rastro de arrasto (E — examinar)
 src/tela_fim.c/.h        depois do final: desempenho, avaliação do jogo em estrelas e o ranking
 src/ranking.c/.h         ranking.txt e avaliacoes.csv no disco do estande (nada no --smoke)
 src/identidade.c/.h      "Professor ou professora?" e o nome, no começo da intro (só em memória, só na partida)
 src/materiais.c/.h       desenho das texturas procedurais e UV de mundo (puro, testado sem janela)
 src/texturas.c/.h        gera/carrega as texturas uma vez, libera ao sair; caixa e quadro texturizados
-src/cenario.c/.h         ambientação sem colisão: placas, umidade, arrasto, eletrodutos, fios, halos
+src/cenario.c/.h         ambientação sem colisão: placas, umidade, arrasto, chão molhado, eletrodutos, fios, halos
+src/goteira.c/.h         o cano pingando na sala do gerador: gota, ondas na poça e o pingo no espaço
+src/entulho.c/.h         sujeira do chão sorteada por célula: poeira no pé da parede, cacos, papéis, lascas
+src/bancada.c/.h         bancada de capturas e desempenho: --olhar, --lanterna, --energia, --tamanho, --medir
+src/mapas.c/.h           mapas PBR dos materiais gerados em C: cor, normal (da altura) e ORM
+src/materiais_parede.c   paredes e teto (puros): azulejo esmaltado, tinta descascando, laje manchada
+src/sombreadores.c/.h    os textos GLSL: luz PBR (330) e o fallback 100, tone mapping, emissivo
+src/sombreadores_pos.c   os textos GLSL dos passes de tela: SSAO, névoa volumétrica, bloom, composição
+src/efeitos.c/.h         sombra da lanterna e passes de tela da cena HDR (SSAO, névoa, bloom, gradação)
+src/qualidade.c/.h       presets gráficos (baixa, média, alta, ultra) e o liga/desliga de cada efeito
+src/painel_modelo.c/.h   o quadro elétrico dos geradores em aço pintado (só desenho; a colisão é a caixa)
 src/menu_inicial.c/.h    menu inicial com visual VHS/CRT (em desenvolvimento; teste visual: make test-menu)
 tests/checagem.h         a macro CHECK
 tests/test_logica.c      conectivos, classificações, parser, painéis
 tests/test_regras.c      regras puras (inclusive sanidade) e coleções, com as bordas
 tests/test_fluxo.c       partidas inteiras pela máquina de fases
 tests/test_menu.c        teste visual do menu inicial (abre janela; não entra no make test)
-assets/fontes/ · assets/modelos/ · assets/audio/ · assets/texturas/   opcionais (por enquanto, modelos/precursor.glb, modelos/lanterna.glb, modelos/terminal.glb, modelos/caixas.glb, modelos/mesa.glb, modelos/papeis.glb, modelos/armario.glb, modelos/porta_bunker.glb, modelos/camera.glb, modelos/quadro.glb, modelos/corpo.glb, texturas/sangue.png, audio/jumpscare.mp3 e os sons gravados em audio/; texturas: ver "Texturas do mapa")
+assets/fontes/ · assets/modelos/ · assets/audio/ · assets/texturas/   opcionais (por enquanto, modelos/precursor.glb, modelos/lanterna.glb, modelos/terminal.glb, modelos/caixas.glb, modelos/mesa.glb, modelos/papeis.glb, modelos/armario.glb, modelos/porta_bunker.glb, modelos/camera.glb, modelos/quadro.glb, modelos/lampada.glb, modelos/corpo.glb, texturas/sangue.png, audio/jumpscare.mp3 e os sons gravados em audio/; texturas: ver "Texturas do mapa")
 docs/ESPECIFICACAO_PROJETO_PRECURSOR.md   a especificação (fonte da verdade do design)
 docs/ARQUITETURA.md · docs/DECISOES.md · docs/PROGRESSO.md   arquitetura · decisões · progresso da v0
 docs/img/                capturas de tela
@@ -230,11 +258,11 @@ Cada trecho que cumpre um requisito tem, logo acima, um comentário-âncora `// 
 
 | Requisito | Onde | Âncora | Como foi cumprido |
 | :---- | :---- | :---- | :---- |
-| RF1 Janela e game loop a 60 FPS com `GetFrameTime()` | [src/main.c#L603-L604](src/main.c#L603-L604)<br>[src/main.c#L521-L530](src/main.c#L521-L530)<br>[src/criatura.c#L273-L274](src/criatura.c#L273-L274) | `[REQ:RF1]` | `SetTargetFPS(60)`; `dt = GetFrameTime()` limitado a 0,05 s e passado a todo `xxx_atualiza`, que multiplica movimento, temporizadores e animações (aqui, o passo da criatura). |
-| RF2 Controle do jogador por teclado/mouse | [src/main.c#L48-L90](src/main.c#L48-L90)<br>[src/jogador.c#L44-L58](src/jogador.c#L44-L58)<br>[src/jogador.c#L107-L115](src/jogador.c#L107-L115) | `[REQ:RF2]` | Câmera em 1ª pessoa pelo mouse; WASD, Shift (corrida com fôlego), E, 1/2/3, setas, ENTER e Esc, lidos uma vez por quadro numa `struct Entrada`. |
-| RF3 Coleção (vetor) de múltiplos objetos | [src/estado.h#L342-L347](src/estado.h#L342-L347) | `[REQ:RF3]` | Seis coleções de capacidade fixa com contador (ruídos, partículas, rachaduras, eventos, interativos, paredes), sem `malloc` por quadro; ver a tabela de map, filter e fold. |
-| RF4 Colisões com funções da Raylib | [src/jogador.c#L61-L68](src/jogador.c#L61-L68)<br>[src/colecoes.c#L186-L196](src/colecoes.c#L186-L196)<br>[src/colecoes.c#L145-L165](src/colecoes.c#L145-L165)<br>[src/criatura.c#L176-L177](src/criatura.c#L176-L177)<br>[src/criatura.c#L287-L294](src/criatura.c#L287-L294) | `[REQ:RF4]` | `CheckCollisionBoxes` (jogador × paredes, vidro, móveis e armários, eixo por eixo), `GetRayCollisionBox` (mira de interação e visão da criatura contra as paredes) e `CheckCollisionSpheres` (captura). |
-| RF5 Placar, vidas, telas de início e fim | [src/jogo.c#L56-L61](src/jogo.c#L56-L61)<br>[src/menu.c#L156-L187](src/menu.c#L156-L187)<br>[src/tela_fim.c#L88-L124](src/tela_fim.c#L88-L124) | `[REQ:RF5]` | Placar = fold dos eventos; vidas = integridade do vidro (fold das rachaduras), recalculados a cada quadro; tela de início com o título, o gancho, as opções INICIAR, RANKING e SAIR, o convite do 1º lugar ("você pode ser o próximo") e o aviso de nome provisório, intro e tela de fim só com o principal: resultado, placar e lugar no ranking, mais a avaliação do jogo em estrelas. |
+| RF1 Janela e game loop a 60 FPS com `GetFrameTime()` | [src/main.c#L702-L703](src/main.c#L702-L703)<br>[src/main.c#L612-L621](src/main.c#L612-L621)<br>[src/criatura.c#L279-L280](src/criatura.c#L279-L280) | `[REQ:RF1]` | `SetTargetFPS(60)`; `dt = GetFrameTime()` limitado a 0,05 s e passado a todo `xxx_atualiza`, que multiplica movimento, temporizadores e animações (aqui, o passo da criatura). |
+| RF2 Controle do jogador por teclado/mouse (e controle de Xbox) | [src/main.c#L54-L98](src/main.c#L54-L98)<br>[src/jogador.c#L86-L102](src/jogador.c#L86-L102)<br>[src/jogador.c#L151-L159](src/jogador.c#L151-L159) | `[REQ:RF2]` | Câmera em 1ª pessoa pelo mouse; WASD, Shift (corrida com fôlego), E, 1/2/3, setas, ENTER e Esc, lidos uma vez por quadro numa `struct Entrada`; o controle soma por cima em `src/controle.c` (o analógico direito gira a câmera em rad/s, multiplicado por `dt`). |
+| RF3 Coleção (vetor) de múltiplos objetos | [src/estado.h#L451-L457](src/estado.h#L451-L457) | `[REQ:RF3]` | Seis coleções de capacidade fixa com contador (ruídos, partículas, rachaduras, eventos, interativos, paredes), sem `malloc` por quadro; ver a tabela de map, filter e fold. |
+| RF4 Colisões com funções da Raylib | [src/jogador.c#L105-L112](src/jogador.c#L105-L112)<br>[src/colecoes.c#L186-L196](src/colecoes.c#L186-L196)<br>[src/colecoes.c#L145-L165](src/colecoes.c#L145-L165)<br>[src/criatura.c#L180-L181](src/criatura.c#L180-L181)<br>[src/criatura.c#L287-L294](src/criatura.c#L287-L294) | `[REQ:RF4]` | `CheckCollisionBoxes` (jogador × paredes, vidro, móveis e armários, eixo por eixo), `GetRayCollisionBox` (mira de interação e visão da criatura contra as paredes) e `CheckCollisionSpheres` (captura). |
+| RF5 Placar, vidas, telas de início e fim | [src/jogo.c#L64-L69](src/jogo.c#L64-L69)<br>[src/menu.c#L156-L187](src/menu.c#L156-L187)<br>[src/tela_fim.c#L88-L124](src/tela_fim.c#L88-L124) | `[REQ:RF5]` | Placar = fold dos eventos; vidas = integridade do vidro (fold das rachaduras), recalculados a cada quadro; tela de início com o título, o gancho, as opções INICIAR, RANKING e SAIR, o convite do 1º lugar ("você pode ser o próximo") e o aviso de nome provisório, intro e tela de fim só com o principal: resultado, placar e lugar no ranking, mais a avaliação do jogo em estrelas. |
 | RF6 Condição de vitória/derrota | [src/compositor.c#L62-L76](src/compositor.c#L62-L76)<br>[src/tela_fim.c#L88-L124](src/tela_fim.c#L88-L124) | `[REQ:RF6]` | A frase transmitida vai para `regras_avalia_transmissao`: contradição → final bom (VITÓRIA); satisfazível → final ruim (DERROTA); inválida → SINTAXE INVÁLIDA, sem penalidade. |
 
 ### Map, filter e fold nas coleções
@@ -249,10 +277,12 @@ Cada laço leva o comentário `// padrão MAP`, `// padrão FILTER` ou `// padr�
 | Partículas: map | [src/colecoes.c#L87-L88](src/colecoes.c#L87-L88) | `[REQ:MAP-particulas]` | `fx_map` move e envelhece cada fagulha, poeira e fragmento. |
 | Partículas: filter | [src/colecoes.c#L89-L90](src/colecoes.c#L89-L90) | `[REQ:FILTER-particulas]` | `fx_filter_inplace` remove as mortas e as que saíram do mapa. |
 | Rachaduras: map | [src/colecoes.c#L101-L106](src/colecoes.c#L101-L106) | `[REQ:MAP-rachaduras]` | Anima o crescimento de cada rachadura (de 1 a 3 por erro). |
-| Rachaduras: fold | [src/regras.c#L318-L328](src/regras.c#L318-L328) | `[REQ:FOLD-rachaduras]` | Soma o dano das rachaduras: a integridade do vidro são as vidas. |
-| Eventos: fold | [src/regras.c#L292-L299](src/regras.c#L292-L299) | `[REQ:FOLD-eventos]` | O placar total é a soma dos eventos (rodada sem erro +100, erro −25, saída sem ser pego +50, bônus de tempo, final bom +200). |
-| Eventos: filter + fold | [src/regras.c#L301-L311](src/regras.c#L301-L311) | `[REQ:FILTER-eventos]` | Os pontos por fase da tela de fim. Para a função continuar pura, o filter compacta uma cópia local dos eventos, não o vetor da partida. |
+| Rachaduras: fold | [src/regras.c#L314-L324](src/regras.c#L314-L324) | `[REQ:FOLD-rachaduras]` | Soma o dano das rachaduras: a integridade do vidro são as vidas. |
+| Eventos: fold | [src/regras.c#L288-L295](src/regras.c#L288-L295) | `[REQ:FOLD-eventos]` | O placar total é a soma dos eventos (rodada sem erro +100, erro −25, saída sem ser pego +50, bônus de tempo, final bom +200). |
+| Eventos: filter + fold | [src/regras.c#L297-L307](src/regras.c#L297-L307) | `[REQ:FILTER-eventos]` | Os pontos por fase da tela de fim. Para a função continuar pura, o filter compacta uma cópia local dos eventos, não o vetor da partida. |
 | Interativos: filter | [src/colecoes.c#L136-L139](src/colecoes.c#L136-L139) | `[REQ:FILTER-interativos]` | Ao entrar em cada fase, ficam só os interativos ativos nela (console nas rodadas, painéis e armários nas saídas...). |
+| Interativos e paredes: filter (a chave e a porta do Arquivo) | [src/chave.c#L27-L35](src/chave.c#L27-L35)<br>[src/chave.c#L37-L44](src/chave.c#L37-L44) | `[REQ:FILTER-interativos-usados]` `[REQ:FILTER-parede-porta]` | A chave pega e a porta aberta saem da coleção de interativos; destrancada, a porta sai das paredes de colisão (compactando o vetor). |
+| Paredes: filter (a porta da sala) | [src/porta_sala.c#L22-L28](src/porta_sala.c#L22-L28) | `[REQ:FILTER-parede-porta-sala]` | Abrindo, a folha da porta da sala sai das paredes de colisão (compactando o vetor); quase fechada (`regras_porta_solida`), ela volta. |
 | Interativos: fold | [src/colecoes.c#L145-L165](src/colecoes.c#L145-L165) | `[REQ:FOLD-interativos]` | Acha o mais próximo no campo de visão (`GetRayCollisionBox` na mira): é o que a tecla E aciona. |
 | Paredes: fold | [src/colecoes.c#L186-L196](src/colecoes.c#L186-L196) | `[REQ:FOLD-paredes]` | "Colidiu com alguma?" é um fold com OU sobre `CheckCollisionBoxes` (`fx_fold`). |
 
@@ -260,35 +290,42 @@ Cada laço leva o comentário `// padrão MAP`, `// padrão FILTER` ou `// padr�
 
 | Requisito | Onde (função · teste) | Âncora | Como foi cumprido |
 | :---- | :---- | :---- | :---- |
-| `regras_nova_posicao` | [src/regras.c#L141-L150](src/regras.c#L141-L150)<br>[tests/test_regras.c#L15-L26](tests/test_regras.c#L15-L26) | `[REQ:PURA-regras_nova_posicao]` | Posição nova a partir da entrada, da velocidade e do `dt`; a diagonal não é mais rápida. |
-| `regras_criatura_ve_jogador` | [src/regras.c#L152-L162](src/regras.c#L152-L162)<br>[tests/test_regras.c#L28-L38](tests/test_regras.c#L28-L38) | `[REQ:PURA-regras_criatura_ve_jogador]` | Cone de 70°, 14 m, resultado do raycast recebido pronto, invisível no armário. |
-| `regras_ruido_percebido` | [src/regras.c#L164-L170](src/regras.c#L164-L170)<br>[tests/test_regras.c#L40-L48](tests/test_regras.c#L40-L48) | `[REQ:PURA-regras_ruido_percebido]` | O ruído enfraquece com a distância e some fora do raio. |
-| `regras_proximo_estado_criatura` | [src/regras.c#L172-L187](src/regras.c#L172-L187)<br>[tests/test_regras.c#L50-L67](tests/test_regras.c#L50-L67) | `[REQ:PURA-regras_proximo_estado_criatura]` | PATRULHA → INVESTIGA → PERSEGUE → PROCURA (6 s) → PATRULHA; quem se escondeu com ele atrás é perseguido até a porta do armário. |
-| `regras_postura_criatura` | [src/regras.c#L195-L206](src/regras.c#L195-L206)<br>[tests/test_regras.c#L69-L112](tests/test_regras.c#L69-L112) | `[REQ:PURA-regras_postura_criatura]` | Postura procedural no lugar da animação: corcunda que cresce com a velocidade, balanço da passada (zero parado) e respiração (só parado). |
-| `regras_no_cone` | [src/regras.c#L224-L231](src/regras.c#L224-L231)<br>[tests/test_regras.c#L103-L112](tests/test_regras.c#L103-L112) | `[REQ:PURA-regras_no_cone]` | O ponto está no facho da lanterna (dentro do alcance e da abertura do cone)? É o que faz a lanterna falhar ao mirar o Precursor. |
-| `regras_falha_lanterna` | [src/regras.c#L217-L222](src/regras.c#L217-L222)<br>[tests/test_regras.c#L86-L101](tests/test_regras.c#L86-L101) | `[REQ:PURA-regras_falha_lanterna]` | A lanterna com mau contato: a cada 50 ms, um sorteio (sem `rand()`) decide se a luz cai para 5–35% ou fica acesa. |
-| `regras_piscada_cela` | [src/regras.c#L233-L243](src/regras.c#L233-L243)<br>[tests/test_regras.c#L114-L131](tests/test_regras.c#L114-L131) | `[REQ:PURA-regras_piscada_cela]` | Lâmpada com defeito na cela apagada: piscada dupla a cada ~3 s (2,1 a 3,9 s, às vezes pula), sem `rand()`: repetível. |
-| `regras_volumes_trilhas` | [src/regras.c#L246-L265](src/regras.c#L246-L265)<br>[tests/test_regras.c#L133-L173](tests/test_regras.c#L133-L173) | `[REQ:PURA-regras_volumes_trilhas]` | Volume de cada som longo a partir da situação: silêncio vence tudo; passo devagar ou rápido; coração nada além de 16 m, normal até 6 m e rápido abaixo. |
-| `regras_quadro_susto` | [src/regras.c#L272-L289](src/regras.c#L272-L289)<br>[tests/test_regras.c#L175-L206](tests/test_regras.c#L175-L206) | `[REQ:PURA-regras_quadro_susto]` | O susto quadro a quadro: o rosto pula de 2,6 m até 0,2 m da câmera em 0,16 s e treme (posição e giro novos 40 vezes por segundo), com um clarão na chegada. Sem `rand()`: repetível. |
-| `regras_placar` | [src/regras.c#L292-L299](src/regras.c#L292-L299)<br>[tests/test_regras.c#L208-L221](tests/test_regras.c#L208-L221) | `[REQ:PURA-regras_placar]` | Fold dos eventos (sem eventos, 0). |
-| `regras_integridade_vidro` | [src/regras.c#L318-L328](src/regras.c#L318-L328)<br>[tests/test_regras.c#L239-L252](tests/test_regras.c#L239-L252) | `[REQ:PURA-regras_integridade_vidro]` | Vidas = máximo − fold do dano das rachaduras. |
-| `regras_evento_do_erro` | [src/regras.c#L330-L333](src/regras.c#L330-L333)<br>[tests/test_regras.c#L232-L237](tests/test_regras.c#L232-L237) | `[REQ:PURA-regras_evento_do_erro]` | Só o 3º erro rompe o vidro e recomeça a rodada. |
-| `regras_avaliar_circuito` | [src/regras.c#L396-L407](src/regras.c#L396-L407)<br>[tests/test_logica.c#L121-L138](tests/test_logica.c#L121-L138) | `[REQ:PURA-regras_avaliar_circuito]` | Avalia porta a porta (cada LED) com a semântica de `logica_aplica`; o Painel 2 tem exatamente duas soluções. |
-| `regras_circuito_bloqueio` | [src/regras.c#L419-L436](src/regras.c#L419-L436)<br>[tests/test_logica.c#L157-L171](tests/test_logica.c#L157-L171) | `[REQ:PURA-regras_circuito_bloqueio]` | Da SAÍDA para trás, de porta apagada em porta apagada, acha a entrada que trava a corrente: o painel aponta esse ponto, uma pergunta por vez. |
-| `regras_bonus_movimentos` | [src/regras.c#L438-L444](src/regras.c#L438-L444)<br>[tests/test_regras.c#L223-L230](tests/test_regras.c#L223-L230) | `[REQ:PURA-regras_bonus_movimentos]` | Painel resolvido com poucos movimentos vale bônus (metade com alguns a mais; nada para quem chuta). |
-| `regras_respiracao_linha` · `_periodo` · `_acertou` | [src/regras.c#L446-L463](src/regras.c#L446-L463)<br>[tests/test_regras.c#L600-L622](tests/test_regras.c#L600-L622) | `[REQ:PURA-regras_respiracao]` | Segurar a respiração no armário: a linha vermelha vai e volta (0 → 1 → 0), cada erro a deixa mais rápida e acertar é ela estar dentro da faixa branca. |
-| `regras_armario_perseguido` · `_chegou` | [src/regras.c#L465-L473](src/regras.c#L465-L473)<br>[tests/test_regras.c#L624-L637](tests/test_regras.c#L624-L637) | `[REQ:PURA-regras_armario]` | O armário esconde: o Precursor só vem até a porta se vinha atrás de quem entrou (vendo, perseguindo ou procurando); aí ele vai até lá, e a respiração começa quando ele chega a 3 m. |
-| `regras_fita_tomada` | [src/regras.c#L475-L     466](src/regras.c#L475-L     466)<br>[tests/test_regras.c#L640-L660](tests/test_regras.c#L640-L660) | `[REQ:PURA-regras_fita_tomada]` | A fita do avistamento na intro: qual foto aparece em cada linha datilografada (a do feixe entra com "desceu da nave", mesmo pulando com ENTER) e quanto o sinal falha no corte, ao pegar e ao cair. |
-| `regras_intro_escuro` | [src/regras.c#L496-L500](src/regras.c#L496-L500)<br>[tests/test_regras.c#L662-L674](tests/test_regras.c#L662-L674) | `[REQ:PURA-regras_intro_escuro]` | Sem corte seco para o jogo: depois da intro, a sala sai do preto em 2 s, devagar no começo e no fim. |
-| `regras_ranking_insere` | [src/regras_ranking.c#L14-L26](src/regras_ranking.c#L14-L26)<br>[tests/test_regras.c#L494-L514](tests/test_regras.c#L494-L514) | `[REQ:PURA-regras_ranking_insere]` | Põe a partida no lugar dela: maior placar primeiro; empate, o mais rápido; empate total, quem chegou antes. Cheio (100), a pior sai. |
-| `regras_ranking_le_linha` | [src/regras_ranking.c#L28-L45](src/regras_ranking.c#L28-L45)<br>[tests/test_regras.c#L516-L531](tests/test_regras.c#L516-L531) | `[REQ:PURA-regras_ranking_le_linha]` | Converte uma linha do `ranking.txt` em partida (e de volta); uma linha estragada é recusada sem derrubar o ranking. |
+| `regras_nova_posicao` | [src/regras.c#L141-L168](src/regras.c#L141-L168)<br>[tests/test_regras.c#L17-L52](tests/test_regras.c#L17-L52) | `[REQ:PURA-regras_nova_posicao]` | Posição nova a partir da entrada, da velocidade e do `dt`; a diagonal não é mais rápida. |
+| `regras_criatura_ve_jogador` | [src/regras.c#L161-L171](src/regras.c#L161-L171)<br>[tests/test_regras.c#L42-L52](tests/test_regras.c#L42-L52) | `[REQ:PURA-regras_criatura_ve_jogador]` | Cone de 70°, 14 m, resultado do raycast recebido pronto, invisível no armário. |
+| `regras_ruido_percebido` | [src/regras.c#L173-L179](src/regras.c#L173-L179)<br>[tests/test_regras.c#L54-L62](tests/test_regras.c#L54-L62) | `[REQ:PURA-regras_ruido_percebido]` | O ruído enfraquece com a distância e some fora do raio. |
+| `regras_proximo_estado_criatura` | [src/regras.c#L181-L196](src/regras.c#L181-L196)<br>[tests/test_regras.c#L64-L81](tests/test_regras.c#L64-L81) | `[REQ:PURA-regras_proximo_estado_criatura]` | PATRULHA → INVESTIGA → PERSEGUE → PROCURA (6 s) → PATRULHA; quem se escondeu com ele atrás é perseguido até a porta do armário. |
+| `esqueleto_ik` (o rig) | [src/esqueleto.c#L125-L141](src/esqueleto.c#L125-L141)<br>[tests/test_regras.c#L83-L110](tests/test_regras.c#L83-L110) | `[REQ:PURA-esqueleto]` | O rig do Precursor tem 22 ossos medidos no modelo (quadril, coluna, pescoço, cabeça, mandíbula, ombros, braços, mãos, dedos, pernas e pés). O IK de dois ossos põe o pé ou a mão no alvo dobrando a articulação para o lado certo; perto do alcance máximo a distância é comprimida suavemente (o joelho não estala nem trava esticado). Em repouso, as matrizes de skinning são a identidade. |
+| `regras_anim_passo` | [src/regras_animacao.c#L426-L440](src/regras_animacao.c#L426-L440)<br>[tests/test_regras.c#L132-L171](tests/test_regras.c#L132-L171) | `[REQ:PURA-regras_anim_passo]` | Um quadro da animação: camadas com crossfade (parado, andar, perseguir, escutar, lanterna, fala, mão no vidro, tiques) e as cenas (saída do bueiro, distorção, convulsão). Testado: os pés alternam e o plantado não desliza, os passos variam, ele se acomoda ao parar, os tiques são raros, nenhum osso salta de pose entre estados e a saída do bueiro mostra primeiro só as mãos. |
+| `regras_no_cone` | [src/regras.c#L220-L227](src/regras.c#L220-L227)<br>[tests/test_regras.c#L296-L305](tests/test_regras.c#L296-L305) | `[REQ:PURA-regras_no_cone]` | O ponto está no facho da lanterna (dentro do alcance e da abertura do cone)? É o que faz a lanterna falhar ao mirar o Precursor. |
+| `regras_falha_lanterna` | [src/regras.c#L213-L218](src/regras.c#L213-L218)<br>[tests/test_regras.c#L279-L294](tests/test_regras.c#L279-L294) | `[REQ:PURA-regras_falha_lanterna]` | A lanterna com mau contato: a cada 50 ms, um sorteio (sem `rand()`) decide se a luz cai para 5–35% ou fica acesa. |
+| `regras_piscada_cela` | [src/regras.c#L229-L239](src/regras.c#L229-L239)<br>[tests/test_regras.c#L307-L324](tests/test_regras.c#L307-L324) | `[REQ:PURA-regras_piscada_cela]` | Lâmpada com defeito na cela apagada: piscada dupla a cada ~3 s (2,1 a 3,9 s, às vezes pula), sem `rand()`: repetível. |
+| `regras_volumes_trilhas` | [src/regras.c#L242-L261](src/regras.c#L242-L261)<br>[tests/test_regras.c#L326-L366](tests/test_regras.c#L326-L366) | `[REQ:PURA-regras_volumes_trilhas]` | Volume de cada som longo a partir da situação: silêncio vence tudo; passo devagar ou rápido; coração nada além de 16 m, normal até 6 m e rápido abaixo. |
+| `regras_quadro_susto` | [src/regras.c#L268-L285](src/regras.c#L268-L285)<br>[tests/test_regras.c#L368-L399](tests/test_regras.c#L368-L399) | `[REQ:PURA-regras_quadro_susto]` | O susto quadro a quadro: o rosto pula de 2,6 m até 0,2 m da câmera em 0,16 s e treme (posição e giro novos 40 vezes por segundo), com um clarão na chegada. Sem `rand()`: repetível. |
+| `regras_placar` | [src/regras.c#L288-L295](src/regras.c#L288-L295)<br>[tests/test_regras.c#L401-L414](tests/test_regras.c#L401-L414) | `[REQ:PURA-regras_placar]` | Fold dos eventos (sem eventos, 0). |
+| `regras_integridade_vidro` | [src/regras.c#L314-L324](src/regras.c#L314-L324)<br>[tests/test_regras.c#L502-L515](tests/test_regras.c#L502-L515) | `[REQ:PURA-regras_integridade_vidro]` | Vidas = máximo − fold do dano das rachaduras. |
+| `regras_evento_do_erro` | [src/regras.c#L326-L329](src/regras.c#L326-L329)<br>[tests/test_regras.c#L425-L430](tests/test_regras.c#L425-L430) | `[REQ:PURA-regras_evento_do_erro]` | Só o 3º erro rompe o vidro e recomeça a rodada. |
+| `regras_tenta_porta_arquivo` | [src/regras.c#L357-L361](src/regras.c#L357-L361)<br>[tests/test_regras.c#L432-L439](tests/test_regras.c#L432-L439) | `[REQ:PURA-regras_tenta_porta_arquivo]` | A porta do Arquivo só abre na S2 (a 2ª queda de energia) e com a chave; na S1, "não é por aqui". |
+| `regras_chave_visivel` | [src/regras.c#L363-L366](src/regras.c#L363-L366)<br>[tests/test_regras.c#L441-L453](tests/test_regras.c#L441-L453) | `[REQ:PURA-regras_chave_visivel]` | A chave só aparece no chaveiro na S2, até o jogador pegá-la. |
+| `regras_porta_passo` · `regras_porta_solida` | [src/regras_porta.c#L11-L15](src/regras_porta.c#L11-L15)<br>[src/regras_porta.c#L17-L20](src/regras_porta.c#L17-L20)<br>[tests/test_regras.c#L455-L470](tests/test_regras.c#L455-L470) | `[REQ:PURA-regras_porta_passo]` `[REQ:PURA-regras_porta_solida]` | A folha da porta da sala anda para aberta ou fechada no tempo de cada movimento, sem passar dos limites; abaixo de 35% de abertura ela já fecha o vão (entra na colisão). |
+| `regras_retorno_pose` · `_faixa` · `_luz` | [src/regras_porta.c#L39-L54](src/regras_porta.c#L39-L54)<br>[src/regras_porta.c#L56-L60](src/regras_porta.c#L56-L60)<br>[src/regras_porta.c#L62-L66](src/regras_porta.c#L62-L66)<br>[tests/test_regras.c#L472-L500](tests/test_regras.c#L472-L500) | `[REQ:PURA-regras_retorno_pose]` `[REQ:PURA-regras_retorno_faixa]` `[REQ:PURA-regras_retorno_luz]` | A volta à sala como função do tempo: onde o jogador está e para onde olha (vira para a porta pelo lado mais curto, para enquanto puxa a folha, entra na sala virando para a cela), as faixas de cinema entrando e saindo e a luz da saída passando para a da rodada. |
+| `regras_avaliar_circuito` | [src/regras.c#L407-L418](src/regras.c#L407-L418)<br>[tests/test_logica.c#L121-L138](tests/test_logica.c#L121-L138) | `[REQ:PURA-regras_avaliar_circuito]` | Avalia porta a porta (cada LED) com a semântica de `logica_aplica`; o Painel 2 tem exatamente duas soluções. |
+| `regras_circuito_bloqueio` | [src/regras.c#L430-L447](src/regras.c#L430-L447)<br>[tests/test_logica.c#L157-L171](tests/test_logica.c#L157-L171) | `[REQ:PURA-regras_circuito_bloqueio]` | Da SAÍDA para trás, de porta apagada em porta apagada, acha a entrada que trava a corrente: o painel aponta esse ponto, uma pergunta por vez. |
+| `regras_bonus_movimentos` | [src/regras.c#L449-L455](src/regras.c#L449-L455)<br>[tests/test_regras.c#L416-L423](tests/test_regras.c#L416-L423) | `[REQ:PURA-regras_bonus_movimentos]` | Painel resolvido com poucos movimentos vale bônus (metade com alguns a mais; nada para quem chuta). |
+| `regras_respiracao_linha` · `_periodo` · `_acertou` | [src/regras.c#L457-L474](src/regras.c#L457-L474)<br>[tests/test_regras.c#L896-L918](tests/test_regras.c#L896-L918) | `[REQ:PURA-regras_respiracao]` | Segurar a respiração no armário: a linha vermelha vai e volta (0 → 1 → 0), cada erro a deixa mais rápida e acertar é ela estar dentro da faixa branca. |
+| `regras_armario_perseguido` · `_chegou` | [src/regras.c#L476-L484](src/regras.c#L476-L484)<br>[tests/test_regras.c#L920-L933](tests/test_regras.c#L920-L933) | `[REQ:PURA-regras_armario]` | O armário esconde: o Precursor só vem até a porta se vinha atrás de quem entrou (vendo, perseguindo ou procurando); aí ele vai até lá, e a respiração começa quando ele chega a 3 m. |
+| `regras_fita_tomada` | [src/regras.c#L486-L492](src/regras.c#L486-L492)<br>[tests/test_regras.c#L935-L955](tests/test_regras.c#L935-L955) | `[REQ:PURA-regras_fita_tomada]` | A fita do avistamento na intro: qual foto aparece em cada linha datilografada (a do feixe entra com "desceu da nave", mesmo pulando com ENTER) e quanto o sinal falha no corte, ao pegar e ao cair. |
+| `regras_intro_escuro` | [src/regras.c#L507-L511](src/regras.c#L507-L511)<br>[tests/test_regras.c#L957-L969](tests/test_regras.c#L957-L969) | `[REQ:PURA-regras_intro_escuro]` | Sem corte seco para o jogo: depois da intro, a sala sai do preto em 2 s, devagar no começo e no fim. |
+| `regras_ranking_insere` | [src/regras_ranking.c#L14-L26](src/regras_ranking.c#L14-L26)<br>[tests/test_regras.c#L761-L781](tests/test_regras.c#L761-L781) | `[REQ:PURA-regras_ranking_insere]` | Põe a partida no lugar dela: maior placar primeiro; empate, o mais rápido; empate total, quem chegou antes. Cheio (100), a pior sai. |
+| `regras_ranking_le_linha` | [src/regras_ranking.c#L28-L45](src/regras_ranking.c#L28-L45)<br>[tests/test_regras.c#L783-L798](tests/test_regras.c#L783-L798) | `[REQ:PURA-regras_ranking_le_linha]` | Converte uma linha do `ranking.txt` em partida (e de volta); uma linha estragada é recusada sem derrubar o ranking. |
 | `regras_proxima_fase` | [src/regras.c#L59-L87](src/regras.c#L59-L87)<br>[tests/test_fluxo.c#L25-L41](tests/test_fluxo.c#L25-L41) | `[REQ:PURA-regras_proxima_fase]` | A máquina de fases inteira: (fase, evento) → próxima fase. |
 | `regras_avalia_transmissao` | [src/regras.c#L121-L134](src/regras.c#L121-L134)<br>[tests/test_fluxo.c#L44-L73](tests/test_fluxo.c#L44-L73) | `[REQ:PURA-regras_avalia_transmissao]` | Inválida, contradição (final bom) ou satisfazível (final ruim). |
-| `regras_monta_texto` | [src/regras_texto.c#L56-L79](src/regras_texto.c#L56-L79)<br>[tests/test_regras.c#L334-L350](tests/test_regras.c#L334-L350) | `[REQ:PURA-regras_monta_texto]` | Troca `{NOME}`, `{PROF}` e `{x\ |
-| `regras_nome_edita` | [src/regras_texto.c#L104-L129](src/regras_texto.c#L104-L129)<br>[tests/test_regras.c#L352-L380](tests/test_regras.c#L352-L380) | `[REQ:PURA-regras_nome_edita]` | Edita o nome digitado: letras com acento (UTF-8), Backspace, até 16 letras, maiúscula no começo de cada palavra, sem espaço sobrando. |
-| `regras_falha_texto` | [src/regras_texto.c#L141-L158](src/regras_texto.c#L141-L158)<br>[tests/test_regras.c#L465-L492](tests/test_regras.c#L465-L492) | `[REQ:PURA-regras_falha_texto]` | A legenda do rádio falso falha de leve: em janelas curtas e irregulares, letras viram símbolos; repetível e sem quebrar acentos. |
+| `regras_monta_texto` | [src/regras_texto.c#L56-L79](src/regras_texto.c#L56-L79)<br>[tests/test_regras.c#L597-L613](tests/test_regras.c#L597-L613) | `[REQ:PURA-regras_monta_texto]` | Troca `{NOME}`, `{PROF}` e `{x\ |
+| `regras_nome_edita` | [src/regras_texto.c#L104-L129](src/regras_texto.c#L104-L129)<br>[tests/test_regras.c#L615-L643](tests/test_regras.c#L615-L643) | `[REQ:PURA-regras_nome_edita]` | Edita o nome digitado: letras com acento (UTF-8), Backspace, até 16 letras, maiúscula no começo de cada palavra, sem espaço sobrando. |
+| `regras_falha_texto` | [src/regras_texto.c#L141-L158](src/regras_texto.c#L141-L158)<br>[tests/test_regras.c#L732-L759](tests/test_regras.c#L732-L759) | `[REQ:PURA-regras_falha_texto]` | A legenda do rádio falso falha de leve: em janelas curtas e irregulares, letras viram símbolos; repetível e sem quebrar acentos. |
 | `regras_radio_falso` | [src/regras.c#L114-L118](src/regras.c#L114-L118)<br>[tests/test_fluxo.c#L158-L165](tests/test_fluxo.c#L158-L165) | `[REQ:PURA-regras_radio_falso]` | O plot twist: a partir da S2, quem fala no rádio é o Precursor imitando o Varela (troca as falas de pego, vidro e porta pela versão falsa). |
-| `regras_sanidade_passo` | [src/regras_sanidade.c#L15-L29](src/regras_sanidade.c#L15-L29)<br>[tests/test_regras.c#L533-L553](tests/test_regras.c#L533-L553) | `[REQ:SANIDADE]` | Um quadro de sanidade: cai a menos de 15 m da criatura (de 1,5× a 2× mais rápido quanto mais perto, metade no armário) e, com ela fora do raio, volta num ritmo contínuo e sempre igual (2 pontos por segundo); nas rodadas, sobe no mesmo ritmo. Os bônus e a força do efeito (1 − sanidade/100) também são funções puras, testadas em seguida. |
+| `regras_sanidade_passo` | [src/regras_sanidade.c#L15-L31](src/regras_sanidade.c#L15-L31)<br>[tests/test_regras.c#L800-L820](tests/test_regras.c#L800-L820) | `[REQ:SANIDADE]` | Um quadro de sanidade: cai a menos de 15 m da criatura (de 1,5× a 2× mais rápido quanto mais perto, metade no armário) e volta num ritmo contínuo e sempre igual (2 pontos por segundo) assim que ela está a mais de 10 m sem se aproximar; nas rodadas, sobe no mesmo ritmo. Os bônus e a força do efeito (1 − sanidade/100) também são funções puras, testadas em seguida. |
+| `regras_surto_passo` · `regras_surto_piscada` | [src/regras_sanidade.c#L59-L73](src/regras_sanidade.c#L59-L73)<br>[tests/test_regras.c#L873-L894](tests/test_regras.c#L873-L894) | `[REQ:PURA-regras_surto]` | Sanidade zerada: o surto entra em 0,5 s e some em 1,2 s quando ela volta; a visão falha em apagões curtos sorteados 11 vezes por segundo, nunca dois seguidos (falha e volta, alternando), sempre iguais para o mesmo instante. |
+| `regras_som_espacial` | [src/regras_som.c#L6-L25](src/regras_som.c#L6-L25)<br>[tests/test_regras.c#L971-L1000](tests/test_regras.c#L971-L1000) | `[REQ:PURA-regras_som_espacial]` | Som no espaço (a raylib não posiciona som em 3D): cheio até 4 m, depois cai até 28 dB no alcance numa curva (suave perto, forte longe); um pouco mais baixo atrás e abafado com parede no meio; o pan (esquerda/direita) vem do lado em que a fonte está em relação a onde a pessoa olha. É o que deixa ouvir de onde vêm os passos do Precursor. |
 | `logica_avalia` | [src/logica.c#L56-L65](src/logica.c#L56-L65)<br>[tests/test_logica.c#L24-L35](tests/test_logica.c#L24-L35) | `[REQ:PURA-logica_avalia]` | Avalia a árvore da frase para uma valoração das luzes; é daqui que saem as respostas do Precursor. |
 | `logica_eh_contradicao` | [src/logica.c#L99-L102](src/logica.c#L99-L102)<br>[tests/test_logica.c#L37-L58](tests/test_logica.c#L37-L58) | `[REQ:PURA-logica_eh_contradicao]` | Nenhuma linha da tabela-verdade é verdadeira (a chave do final bom). |
 | `logica_parse_fichas` | [src/logica.c#L249-L258](src/logica.c#L249-L258)<br>[tests/test_logica.c#L65-L100](tests/test_logica.c#L65-L100) | `[REQ:PURA-logica_parse_fichas]` | Fichas → árvore, com precedência ¬ > ∧ > ∨ > → > ↔ e mensagem amigável no erro. |
@@ -298,10 +335,10 @@ Cada laço leva o comentário `// padrão MAP`, `// padrão FILTER` ou `// padr�
 | Requisito | Onde | Âncora | Como foi cumprido |
 | :---- | :---- | :---- | :---- |
 | RNF1 Legibilidade | [.clang-format#L1-L12](.clang-format#L1-L12) | `[REQ:RNF1]` | Nomes em português, claros e consistentes (`atualiza_…`, `desenha_…`, `colidiu_…`); funções de até ~40 linhas (a única exceção, em `audio_sintese.c`, está comentada); o código segue o `.clang-format` (`clang-format --dry-run` sem avisos). |
-| RNF2 Modularização | [src/estado.h#L307-L368](src/estado.h#L307-L368) | `[REQ:RNF2]` | Uma struct por objeto, uma função por responsabilidade, um módulo por sistema; o maior arquivo tem menos de 500 linhas. |
-| RNF3 Separação update/render | [src/main.c#L419-L432](src/main.c#L419-L432) | `[REQ:RNF3]` | Todo módulo tem `xxx_atualiza(Estado *e, float dt)` e `xxx_desenha(const Estado *e)`; o `const` garante que desenhar não muda nada; nenhum `Draw*` em `*_atualiza` (auditado com grep). |
-| RNF4 Robustez | [src/colecoes.c#L9-L14](src/colecoes.c#L9-L14)<br>[src/main.c#L521-L530](src/main.c#L521-L530)<br>[src/nivel.c#L45-L49](src/nivel.c#L45-L49)<br>[src/ui.c#L33-L60](src/ui.c#L33-L60)<br>[src/criatura.c#L26-L42](src/criatura.c#L26-L42) | `[REQ:RNF4]` | Vetor cheio descarta com `TraceLog`, sem travar; listas vazias (sem ruídos, sem eventos) testadas; `dt` limitado; fora do mapa conta como parede; sem fonte, som ou modelo, entra o placeholder. |
-| RNF5 Documentação | [README.md#L226-L226](README.md#L226-L226) | `[REQ:RNF5]` | Este README, `docs/ARQUITETURA.md`, `docs/DECISOES.md` (as escolhas e por quê), `docs/PROGRESSO.md` e `CLAUDE.md`. |
+| RNF2 Modularização | [src/estado.h#L400-L476](src/estado.h#L400-L476) | `[REQ:RNF2]` | Uma struct por objeto, uma função por responsabilidade, um módulo por sistema; o maior arquivo tem menos de 500 linhas. |
+| RNF3 Separação update/render | [src/main.c#L508-L521](src/main.c#L508-L521) | `[REQ:RNF3]` | Todo módulo tem `xxx_atualiza(Estado *e, float dt)` e `xxx_desenha(const Estado *e)`; o `const` garante que desenhar não muda nada; nenhum `Draw*` em `*_atualiza` (auditado com grep). |
+| RNF4 Robustez | [src/colecoes.c#L9-L14](src/colecoes.c#L9-L14)<br>[src/main.c#L612-L621](src/main.c#L612-L621)<br>[src/nivel.c#L50-L54](src/nivel.c#L50-L54)<br>[src/ui.c#L33-L60](src/ui.c#L33-L60)<br>[src/criatura.c#L29-L48](src/criatura.c#L29-L48) | `[REQ:RNF4]` | Vetor cheio descarta com `TraceLog`, sem travar; listas vazias (sem ruídos, sem eventos) testadas; `dt` limitado; fora do mapa conta como parede; sem fonte, som ou modelo, entra o placeholder. |
+| RNF5 Documentação | [README.md#L254-L254](README.md#L254-L254) | `[REQ:RNF5]` | Este README, `docs/ARQUITETURA.md`, `docs/DECISOES.md` (as escolhas e por quê), `docs/PROGRESSO.md` e `CLAUDE.md`. |
 | RNF6 Versionamento + Makefile | [Makefile#L1-L2](Makefile#L1-L2) | `[REQ:RNF6]` | `Makefile` como build principal (com `test`, `smoke`, `readme-check`); um commit por marco na v0 (M0 a M9) e, daqui em diante, branch por card e PR (ver Metodologia). |
 
 ### Critérios de avaliação
@@ -320,7 +357,7 @@ Cada laço leva o comentário `// padrão MAP`, `// padrão FILTER` ou `// padr�
 **O game loop (RF1):** `dt` limitado e o quadro entrada → atualiza → desenha.
 
 ```c
-// src/main.c#L520-L530
+// src/main.c#L612-L622
 static void quadro(Estado *e) {
     // [REQ:RF1] [REQ:RNF4] dt de GetFrameTime() limitado a DT_MAXIMO; no smoke, passo fixo (velocidade
     // acelerada)
@@ -351,7 +388,7 @@ static void tenta_capturar(Estado *e) {
 **O placar (RF5):** dois folds recalculados a cada quadro.
 
 ```c
-// src/jogo.c#L56-L61
+// src/jogo.c#L64-L69
 // [REQ:RF5] placar = fold dos eventos; vidas = integridade do vidro (fold das rachaduras).
 // Recalculados a cada quadro, para o HUD e o terminal mostrarem o erro na hora.
 static void atualiza_folds(Estado *e) {
@@ -403,7 +440,7 @@ int col_ruidos_mais_forte(const ColRuidos *c, Vector3 ouvinte, float *intensidad
 **Uma função pura e o teste dela:** a integridade do vidro.
 
 ```c
-// src/regras.c#L318-L328
+// src/regras.c#L314-L324
 // [REQ:FOLD-rachaduras] [REQ:PURA-regras_integridade_vidro] vidas = máximo − soma (fold) do dano das
 // rachaduras
 int regras_integridade_vidro(const Rachadura *rachaduras, int n, int vidas_max) {
@@ -418,7 +455,7 @@ int regras_integridade_vidro(const Rachadura *rachaduras, int n, int vidas_max) 
 ```
 
 ```c
-// tests/test_regras.c#L239-L252
+// tests/test_regras.c#L502-L515
 // [REQ:PURA-regras_integridade_vidro] testa as vidas depois de 0, 1, 2 e 3 erros
 static void testa_vidro(void) {
     CHECK(regras_integridade_vidro(NULL, 0, VIDAS_VIDRO) == 3); // sem rachaduras
@@ -438,7 +475,7 @@ static void testa_vidro(void) {
 **Desenhar só lê o estado (RNF3):**
 
 ```c
-// src/main.c#L419-L432
+// src/main.c#L508-L521
 // [REQ:RNF3] desenhar recebe const Estado *: não muda nada; o loop é entrada → atualiza → desenha
 static void desenha(const Estado *e) {
     clique_limpa();   // as telas registram de novo, ao se desenhar, onde estão as opções clicáveis
@@ -464,7 +501,7 @@ static void desenha(const Estado *e) {
 | Tabela-verdade | [src/logica.c#L72-L82](src/logica.c#L72-L82) | `[REQ:PURA-logica_tabela_verdade]` | O terminal preenche uma linha por combinação; o padrão revela o conectivo (NÃO, E, OU, SE…ENTÃO). |
 | Sintaxe e precedência | [src/logica.c#L249-L258](src/logica.c#L249-L258) | `[REQ:PURA-logica_parse_fichas]` | A resposta final é montada com fichas; frases mal formadas dão SINTAXE INVÁLIDA com a explicação. |
 | Contradição e satisfatibilidade | [src/logica.c#L99-L102](src/logica.c#L99-L102)<br>[src/regras.c#L121-L134](src/regras.c#L121-L134) | `[REQ:PURA-logica_eh_contradicao]` `[REQ:PURA-regras_avalia_transmissao]` | Uma frase que nunca pode ser verdadeira (P ∧ ¬P) cala o Precursor; qualquer frase satisfazível (até uma tautologia, P ∨ ¬P) o liberta. |
-| Circuitos lógicos | [src/regras.c#L396-L407](src/regras.c#L396-L407) | `[REQ:PURA-regras_avaliar_circuito]` | Painel 1: (A ∧ ¬B) ∧ C; Painel 2: escolher as portas para a saída bater com A → B (prenúncio da R3). |
+| Circuitos lógicos | [src/regras.c#L407-L418](src/regras.c#L407-L418) | `[REQ:PURA-regras_avaliar_circuito]` | Painel 1: (A ∧ ¬B) ∧ C; Painel 2: escolher as portas para a saída bater com A → B (prenúncio da R3). |
 
 O trecho que avalia a frase para as luzes atuais:
 
@@ -548,8 +585,10 @@ SMOKE OK: a partida foi jogada até os dois finais.
 - **Fonte VT323** (opcional), de Peter Hull, licença SIL Open Font License 1.1: [fonts.google.com/specimen/VT323](https://fonts.google.com/specimen/VT323). É baixada por `tools/baixa_fonte` e não vem no repositório.
 - **Modelo 3D do Precursor** (`assets/modelos/precursor.glb`): *"Gaunt Horror Creature – Free Creepy 3D Model"* by **Purple.Point**, publicado no Sketchfab, licensed under [Creative Commons Attribution 4.0 (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/). <!-- colar aqui o link da página do modelo no Sketchfab --> Alteração feita pela equipe: as texturas JPEG embutidas foram convertidas para PNG (a raylib padrão não lê JPEG); a geometria não foi alterada. Sem o arquivo, o jogo usa o corpo procedural.
 - **Modelo 3D da lanterna** (`assets/modelos/lanterna.glb`): *"Lowpoly Flashlight (Lanterna)"* by **EnrycoDosSantos**, publicado no Sketchfab, licensed under [Creative Commons Attribution 4.0 (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/). <!-- colar aqui o link da página do modelo no Sketchfab --> Usado sem alterações. Sem o arquivo, o jogo desenha uma lanterna de cilindros.
-- **Sons gravados** (`assets/audio/`: trilha do menu, voz do Precursor, voz do rádio, coração e passos): reunidos pela equipe. <!-- preencher: origem (site/autor) e licença de cada som --> A trilha do menu foi amplificada 5× e os arquivos foram convertidos para WAV de 16 bits quando preciso.
+- **Modelo 3D da lâmpada da sala de observação** (`assets/modelos/lampada.glb`): *"Old Lamp"* by **_surovic_** ([Samuel Surovic](https://sketchfab.com/samuelsurovic)), publicado no [Sketchfab](https://sketchfab.com/3d-models/old-lamp-9ba4921431114368887bf058dee1f752), licensed under [Creative Commons Attribution 4.0 (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/). Alterações feitas pela equipe: a malha foi simplificada de ~471 mil para ~37 mil triângulos e as texturas reduzidas de 1024 para 512 px (com o [gltf-transform](https://gltf-transform.dev)); no jogo, o vidro ganhou um tom fraco no lugar da "transmissão", que a raylib não lê. Sem o arquivo, o jogo desenha uma lâmpada simples.
+- **Sons gravados** (`assets/audio/`: trilha do menu, voz do Precursor, voz do rádio, coração, passos e a porta do armário abrindo e fechando): reunidos pela equipe. <!-- preencher: origem (site/autor) e licença de cada som --> A trilha do menu foi amplificada 5× e os arquivos foram convertidos para WAV de 16 bits quando preciso. Os dois sons do armário (`armario_abre.wav` e `armario_fecha.wav`) foram recortados de uma gravação só: a trava e o começo do rangido de abrir; o rangido curto e a batida de fechar.
 - **Função de ruído do shader VHS** (`hash12` de *"Hash without Sine"*), de **Dave Hoskins**, licença MIT: [shadertoy.com/view/4djSRW](https://www.shadertoy.com/view/4djSRW). Adaptada em `src/vhs.c`.
 - **Fotos do avistamento** (`assets/fita/avistamento_1..3.png`): escolhidas pela equipe para a intro. A equipe recortou as fotos para 16:9 (saíram a borda serrilhada, o "REC" gravado e o ruído de baixo) e reduziu para 1024 × 576; o OSD da câmera é desenhado pelo jogo. Sem os arquivos, a intro fica com a tela preta.
+- **Ícones do controle** (`assets/botoes/*.png`): "Xbox Series Button Icons & Controls", de Zacksly (licença CC BY). Cada botão foi recortado da folha e passou a branco com fundo transparente (o jogo pinta com a cor fósforo); o ↑↓ e o ←→ do direcional juntam duas variações da folha. Sem um arquivo, aquele botão aparece como texto na barra de teclas.
 - **Sons curtos, glifos e texturas do mapa:** gerados em código pela equipe. Se outro asset for adicionado em `assets/`, credite-o aqui.
 - **Equipe:** <!-- preencher: nome e usuário do GitHub de cada integrante -->

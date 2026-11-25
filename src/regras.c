@@ -149,6 +149,15 @@ Vector3 regras_nova_posicao(Vector3 pos, float yaw, Vector2 mover, float velocid
     return Vector3Add(pos, Vector3Scale(direcao, velocidade * dt / tamanho));
 }
 
+// O analógico nunca volta exatamente a zero e é mais sensível do que precisa perto do centro: a zona morta
+// tira a deriva e a curva dá precisão para mirar devagar sem perder a volta rápida.
+Vector2 regras_analogico(Vector2 bruto, float zona_morta, float curva) {
+    float tamanho = Vector2Length(bruto);
+    if (tamanho <= zona_morta || zona_morta >= 1.0f) return (Vector2){0.0f, 0.0f};
+    float util = fminf((tamanho - zona_morta) / (1.0f - zona_morta), 1.0f);
+    return Vector2Scale(bruto, powf(util, curva) / tamanho);
+}
+
 // [REQ:PURA-regras_criatura_ve_jogador] cone de 70° e 14 m; o raycast contra as paredes chega pronto
 bool regras_criatura_ve_jogador(Vector3 olho, Vector3 frente, Vector3 alvo, bool caminho_livre,
                                 bool escondido) {
@@ -192,21 +201,8 @@ const char *regras_nome_estado_criatura(EstadoCriatura estado) {
     return nomes[estado];
 }
 
-// [REQ:PURA-regras_postura_criatura] postura procedural: corcunda, balanço da passada e respiração
-PosturaCriatura regras_postura_criatura(float velocidade, float passada, float t) {
-    float ritmo = fminf(1.0f, fmaxf(0.0f, velocidade / CRIATURA_VEL_PERSEGUE)); // 0 parado, 1 perseguindo
-    float andando = fminf(1.0f, ritmo * 3.0f); // o balanço já entra inteiro na patrulha
-    float ciclo = passada * (2.0f * PI / CRIATURA_PASSADA_M);
-    PosturaCriatura p;
-    p.inclina_graus = CRIATURA_INCLINA_PARADO + (CRIATURA_INCLINA_CORRENDO - CRIATURA_INCLINA_PARADO) * ritmo;
-    p.balanco_graus = sinf(ciclo) * CRIATURA_BALANCO_GRAUS * andando;
-    p.sobe = fabsf(sinf(ciclo)) * CRIATURA_SOBE_M * andando;
-    p.respira = 1.0f + sinf(t * 1.1f) * CRIATURA_RESPIRA * (1.0f - andando);
-    return p;
-}
-
 // Número "sorteado" em [0, 1) a partir do ciclo: sem rand(), então o resultado é puro e repetível.
-static float sorteio(int ciclo, unsigned semente) {
+float regras_sorteio(int ciclo, unsigned semente) {
     unsigned h = (unsigned)ciclo * 2654435761u ^ semente;
     h ^= h >> 13;
     h *= 0x5bd1e995u;
@@ -217,8 +213,8 @@ static float sorteio(int ciclo, unsigned semente) {
 // [REQ:PURA-regras_falha_lanterna] a lanterna falhando: a cada sorteio a luz cai (quase apaga) ou volta
 float regras_falha_lanterna(float t) {
     int ciclo = (int)(fmaxf(t, 0.0f) * LANTERNA_FALHA_HZ);
-    if (sorteio(ciclo, 0x51edu) >= LANTERNA_FALHA_CHANCE) return 1.0f;
-    return 0.05f + 0.3f * sorteio(ciclo, 0x2a9fu);
+    if (regras_sorteio(ciclo, 0x51edu) >= LANTERNA_FALHA_CHANCE) return 1.0f;
+    return 0.05f + 0.3f * regras_sorteio(ciclo, 0x2a9fu);
 }
 
 // [REQ:PURA-regras_no_cone] o ponto dentro do facho: perto o bastante e dentro da abertura do cone
@@ -234,8 +230,8 @@ bool regras_no_cone(Vector3 origem, Vector3 direcao, float cos_meia_abertura, fl
 float regras_piscada_cela(float t) {
     if (t < 0.0f) return 0.0f;
     int ciclo = (int)(t / PISCADA_INTERVALO_S);
-    if (sorteio(ciclo, 0x9e37u) < PISCADA_PULA) return 0.0f; // às vezes ela não falha
-    float s = t - ciclo * PISCADA_INTERVALO_S - sorteio(ciclo, 0x85ebu) * PISCADA_VARIACAO_S;
+    if (regras_sorteio(ciclo, 0x9e37u) < PISCADA_PULA) return 0.0f; // às vezes ela não falha
+    float s = t - ciclo * PISCADA_INTERVALO_S - regras_sorteio(ciclo, 0x85ebu) * PISCADA_VARIACAO_S;
     if (s < 0.0f || s >= 0.30f) return 0.0f;
     if (s < 0.07f) return 1.0f;               // acende
     if (s < 0.13f) return 0.0f;               // apaga
@@ -266,7 +262,7 @@ void regras_volumes_trilhas(SituacaoSom s, float v[TRILHA_TOTAL]) {
 
 // Sorteio em [−1, 1): uma posição do tremor.
 static float tremida(int ciclo, unsigned semente) {
-    return sorteio(ciclo, semente) * 2.0f - 1.0f;
+    return regras_sorteio(ciclo, semente) * 2.0f - 1.0f;
 }
 
 // [REQ:PURA-regras_quadro_susto] o rosto pula até a câmera, freia colado nela e treme sem parar
@@ -339,7 +335,7 @@ bool regras_interativo_ativo(TipoInterativo tipo, int fase) {
     case INTER_CONSOLE:
         return rodada;
     case INTER_PORTA:
-        return rodada; // a porta da sala fica trancada nas fases de sala
+        return rodada || saida; // trancada nas fases de sala; nas saídas, E abre e fecha
     case INTER_PAINEL1:
         return fase == FASE_S1;
     case INTER_PAINEL2:
@@ -348,10 +344,25 @@ bool regras_interativo_ativo(TipoInterativo tipo, int fase) {
         return saida;
     case INTER_ARMARIO:
         return saida;
+    case INTER_CHAVEIRO:
+        return fase == FASE_S2;
+    case INTER_PORTA_ARQUIVO:
+        return saida; // na S1 ela também fica trancada: o jogador fica sabendo que não é por ali
     case INTER_CORPO:
         return saida;
     }
     return false;
+}
+
+// [REQ:PURA-regras_tenta_porta_arquivo] a porta do Arquivo só abre na S2 e com a chave do chaveiro
+ResultadoPortaArquivo regras_tenta_porta_arquivo(int fase, bool tem_chave) {
+    if (fase != FASE_S2) return PORTA_ARQUIVO_ANTES_DA_HORA;
+    return tem_chave ? PORTA_ARQUIVO_ABRE : PORTA_ARQUIVO_SEM_CHAVE;
+}
+
+// [REQ:PURA-regras_chave_visivel] a chave fica no chaveiro só na S2 (a 2ª queda de energia), até ser pega
+bool regras_chave_visivel(int fase, bool chave_pega) {
+    return fase == FASE_S2 && !chave_pega;
 }
 
 // ================================================================== circuitos dos painéis

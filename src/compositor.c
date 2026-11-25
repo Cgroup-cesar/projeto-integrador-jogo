@@ -110,6 +110,7 @@ void compositor_atualiza(Estado *e, float dt) {
     if (e->jog.modo != MODO_TERMINAL) return;
     if (e->in.voltar) {
         e->jog.modo = MODO_ANDANDO;
+        jogador_sai_do_console(e); // um passo para trás, sem virar
         return;
     }
     move_cursor(c, &e->in);

@@ -84,22 +84,14 @@ typedef struct {
 
 Vector3 regras_frente(float yaw);
 Vector3 regras_nova_posicao(Vector3 pos, float yaw, Vector2 mover, float velocidade, float dt);
+// Analógico do controle: zona morta radial (abaixo dela, zero), o resto reescalado para 0..1 e elevado a
+// `curva` (2 = ao quadrado: precisão perto do centro, velocidade total na ponta). Mantém a direção.
+Vector2 regras_analogico(Vector2 bruto, float zona_morta, float curva);
 bool regras_criatura_ve_jogador(Vector3 olho, Vector3 frente, Vector3 alvo, bool caminho_livre,
                                 bool escondido);
 float regras_ruido_percebido(Ruido ruido, Vector3 ouvinte);
 EstadoCriatura regras_proximo_estado_criatura(EstadoCriatura atual, PercepcaoCriatura p);
 const char *regras_nome_estado_criatura(EstadoCriatura estado);
-
-// Postura do corpo a cada quadro: substitui a animação que o modelo .glb não tem.
-// `velocidade` em m/s (já suavizada), `passada` = metros andados (dá o ritmo dos passos), `t` em s.
-typedef struct {
-    float inclina_graus; // para a frente (corcunda); cresce com a velocidade
-    float balanco_graus; // de um lado para o outro a cada passo; zero parado
-    float sobe;          // metros: sobe e desce duas vezes por passada; zero parado
-    float respira;       // escala horizontal do corpo (~1); só parado
-} PosturaCriatura;
-
-PosturaCriatura regras_postura_criatura(float velocidade, float passada, float t);
 
 // Susto: `t` = segundos desde que o rosto apareceu. O rosto pula de JUMPSCARE_LONGE_M até JUMPSCARE_PERTO_M
 // em JUMPSCARE_PULO_S e treme (posição nova JUMPSCARE_TREMOR_HZ vezes por segundo). Determinístico.
@@ -161,6 +153,40 @@ int regras_integridade_vidro(const Rachadura *rachaduras, int n, int vidas_max);
 EventoFase regras_evento_do_erro(int vidas_restantes);
 bool regras_interativo_ativo(TipoInterativo tipo, int fase);
 
+// A porta do Arquivo (a sala do segundo gerador) e a chave dela, no chaveiro da sala de observação.
+typedef enum {
+    PORTA_ARQUIVO_ABRE,
+    PORTA_ARQUIVO_ANTES_DA_HORA,
+    PORTA_ARQUIVO_SEM_CHAVE
+} ResultadoPortaArquivo;
+// O que acontece ao tentar abrir: só abre na S2 (a 2ª queda de energia) e com a chave.
+ResultadoPortaArquivo regras_tenta_porta_arquivo(int fase, bool tem_chave);
+// A chave só aparece no chaveiro na S2, até o jogador pegá-la.
+bool regras_chave_visivel(int fase, bool chave_pega);
+
+// ------------------------------------------------------------------ porta da sala e volta (regras_porta.c)
+// A folha anda de `abertura` (0 = fechada, 1 = aberta) para onde `aberta` manda, em `duracao` segundos.
+float regras_porta_passo(float abertura, bool aberta, float dt, float duracao);
+// Abaixo de PORTA_SOLIDA_ATE, a folha já fecha o vão: ela entra nas paredes de colisão.
+bool regras_porta_solida(float abertura);
+// O ângulo de `de` até `para` pelo lado mais curto (u = 0..1), para virar sem dar a volta inteira.
+float regras_angulo_mistura(float de, float para, float u);
+
+// A volta à sala depois de religar a energia: vira para a porta, fecha a porta, entra na sala.
+typedef enum { RETORNO_VIRA, RETORNO_FECHA, RETORNO_ENTRA, RETORNO_FIM } EtapaRetorno;
+typedef struct {
+    Vector3 pos; // pés
+    float yaw, pitch;
+} PoseJogador;
+EtapaRetorno regras_retorno_etapa(float t);
+// Onde o jogador está e para onde olha no instante t: de `de` (onde a cena o pegou) até `porta` (de frente
+// para a porta, de dentro da sala), parado enquanto fecha, e de `porta` até `sala` (sala adentro).
+PoseJogador regras_retorno_pose(float t, PoseJogador de, PoseJogador porta, PoseJogador sala);
+// As faixas pretas de cinema: 0 = fora da tela, 1 = inteiras. Entram no começo e saem no fim da cena.
+float regras_retorno_faixa(float t);
+// A luz da sala na rodada que começa no meio da cena: 0 = ainda a da saída, 1 = a da rodada.
+float regras_retorno_luz(float t);
+
 // ------------------------------------------------------------------ sanidade (regras_sanidade.c)
 // Um quadro de sanidade (0..SANIDADE_MAX). Nos corredores (`fase_saida`), cai com a criatura a menos de
 // SANIDADE_RAIO (de QUEDA_MIN × ACELERA_LONGE na borda a QUEDA_MAX × ACELERA_PERTO em SANIDADE_PERTO,
@@ -175,6 +201,26 @@ float regras_sanidade_bonus(float s, EventoFase ev);
 float regras_sanidade_conectivos(float s, int antes, int agora);
 // Força do efeito na tela (0..1), linear no que falta de sanidade: 1 − s/SANIDADE_MAX.
 float regras_sanidade_intensidade(float s);
+// Sanidade zerada (o surto): sobe rápido enquanto ela está em 0 e some devagar quando ela volta (0..1).
+float regras_surto_passo(float surto, float sanidade, float dt);
+// O brilho da visão no surto: 1, ou uma falha curta (SURTO_ESCURO_MIN..MAX) sorteada a cada
+// 1/SURTO_FALHA_HZ s, nunca duas seguidas (falha e volta, alternando). Determinística: o mesmo `t` dá
+// sempre o mesmo valor.
+float regras_surto_piscada(float t);
+// Número "sorteado" em [0, 1) a partir do ciclo e da semente: sem rand(), então é puro e repetível.
+float regras_sorteio(int ciclo, unsigned semente);
+
+// ------------------------------------------------------------------ som no espaço (regras_som.c)
+typedef struct {
+    float volume; // 0..1
+    float pan;    // −1 esquerda, 0 centro, 1 direita (como SetSoundPan)
+} SomEspacial;
+
+// Volume e lado de um som em `fonte` para quem está em `ouvinte` olhando para `yaw`: cheio até
+// SOM_PERTO_M, cai SOM_QUEDA_DB (em dB, curva SOM_CURVA) até `alcance` e some; −SOM_ATRAS_DB bem atrás e
+// −SOM_PAREDE_DB com parede no meio. O pan vai até ±SOM_PAN_MAX.
+SomEspacial regras_som_espacial(Vector3 ouvinte, float yaw, Vector3 fonte, float alcance,
+                                bool atras_da_parede);
 
 // ------------------------------------------------------------------ circuitos dos painéis
 typedef enum { PORTA_E, PORTA_OU, PORTA_XOU, PORTA_NE, PORTA_NAO, PORTA_TOTAL } TipoPorta;

@@ -39,6 +39,7 @@ static const Legenda APOS_R2[] = {
 };
 static const Legenda INICIO_S2[] = {
     {"De novo, {PROF} {NOME}. O painel da contenção fica no Arquivo.", 4.0f, V},
+    {"A porta do Arquivo está trancada. A chave fica atrás de você, no chaveiro ao lado do quadro.", 5.0f, V},
     {"Eu vou descer até a cela. Se eu não voltar...", 3.5f, V},
 };
 static const Legenda FIM_S2[] = {
@@ -175,11 +176,24 @@ static const char *const TEXTOS[TXT_TOTAL] = {
     [TXT_MIRA_DIARIO] = "E — ler o bilhete",
     [TXT_MIRA_ARMARIO] = "E — esconder-se no armário",
     [TXT_MIRA_PORTA] = "E — porta da sala de observação",
+    [TXT_MIRA_CHAVEIRO] = "E — pegar a chave do Arquivo",
+    [TXT_MIRA_PORTA_ARQUIVO] = "E — porta do Arquivo",
+    [TXT_MIRA_PORTA_ABRIR] = "E — abrir a porta",
+    [TXT_MIRA_PORTA_FECHAR] = "E — fechar a porta",
     [TXT_MIRA_CORPO] = "E — examinar",
     [TXT_ARMARIO_SAIR] = "E — sair do armário",
     [TXT_OBJETIVO_SALA] = "Vá ao console (E) e descubra o que ele diz.",
     [TXT_OBJETIVO_S1] = "Religue o gerador: painel 1, no fim do corredor (ao norte).",
     [TXT_OBJETIVO_S2] = "Religue a contenção: painel 2, no Arquivo, ao sul da sala.",
+    [TXT_OBJETIVO_S2_CHAVE] = "Pegue a chave atrás de você, no chaveiro ao lado do quadro.",
+    [TXT_AVISO_CHAVE] =
+        "A sala do segundo gerador está trancada. Pegue a chave atrás de você, no chaveiro ao "
+        "lado do quadro, para abrir a porta e voltar a energia.",
+    [TXT_AVISO_CHAVE_PEGA] =
+        "Você pegou a chave. Saia da sala e siga o corredor para o sul: a porta do Arquivo fica à direita.",
+    [TXT_AVISO_PORTA_SEM_CHAVE] =
+        "Trancada. A chave fica no chaveiro da sala de observação, ao lado do quadro.",
+    [TXT_AVISO_PORTA_ANTES] = "Trancada. Não é por aqui agora: o gerador fica no fim do corredor, ao norte.",
     [TXT_OBJETIVO_VOLTAR] = "Volte para a sala de observação.",
     [TXT_OBJETIVO_RESPOSTA] = "Responda pelo console.",
     [TXT_TERMINAL_TITULO] = "ANALISADOR SEMÂNTICO SNI-85",
@@ -267,6 +281,7 @@ static const char *const TEXTOS[TXT_TOTAL] = {
     [TXT_TECLA_LANTERNA] = "Lanterna",
     [TXT_TECLA_PAUSA] = "Pausa",
     [TXT_TECLA_SAIR_ARMARIO] = "Sair do armário",
+    [TXT_TECLA_COMANDOS] = "Comandos",
     // A cola do analisador (R1 e R2): cada conectivo em palavras do dia a dia, usando as luzes
     [TXT_COLA_TITULO] = "MANUAL DO ANALISADOR — os conectivos",
     [TXT_COLA_NAO] = "Inverte: luz acesa vira FALSO.",
@@ -351,8 +366,42 @@ static const char *const TEXTOS[TXT_TOTAL] = {
     [TXT_VHS_VIGILANCIA] = "CÂMERA DE VIGILÂNCIA",
 };
 
+// As mesmas dicas, com os botões do controle de Xbox. Só entram aqui os textos que citam teclas; o resto
+// (NULL) fica igual. Os formatos (%s, %d) são os mesmos da versão do teclado.
+static const char *const TEXTOS_CONTROLE[TXT_TOTAL] = {
+    [TXT_INTRO_PULAR] = "A pula",
+    [TXT_ID_DICA_GENERO] = "← → escolhem · A confirma",
+    [TXT_ID_DICA_NOME] = "A confirma · sem teclado, fica \"%s\"",
+    [TXT_MIRA_CONSOLE] = "A — usar o console",
+    [TXT_MIRA_PAINEL] = "A — abrir o painel de circuito",
+    [TXT_MIRA_DIARIO] = "A — ler o bilhete",
+    [TXT_MIRA_ARMARIO] = "A — esconder-se no armário",
+    [TXT_MIRA_PORTA] = "A — porta da sala de observação",
+    [TXT_MIRA_CHAVEIRO] = "A — pegar a chave do Arquivo",
+    [TXT_MIRA_PORTA_ARQUIVO] = "A — porta do Arquivo",
+    [TXT_MIRA_PORTA_ABRIR] = "A — abrir a porta",
+    [TXT_MIRA_PORTA_FECHAR] = "A — fechar a porta",
+    [TXT_ARMARIO_SAIR] = "A — sair do armário",
+    [TXT_OBJETIVO_SALA] = "Vá ao console (A) e descubra o que ele diz.",
+    [TXT_TERMINAL_OBSERVE] =
+        "Acenda e apague a LUZ A [X] e veja o que ele responde. A tabela se preenche sozinha.",
+    [TXT_TERMINAL_OBSERVE_DUAS] = "Teste as 4 combinações das luzes A [X] e B [Y] e veja o que ele responde.",
+    [TXT_TERMINAL_SELO_AJUDA] = "[VIEW] AJUDA",
+    [TXT_TERMINAL_SELO_FECHAR] = "[VIEW] FECHAR AJUDA",
+    [TXT_DIARIO_FECHAR] = "A ou B — fechar",
+    [TXT_FIM_VER_PLACAR] = "A — ver o placar  (%d)",
+    [TXT_FIM_ENTER] = "Pressione A",
+};
+
+static bool usa_controle = false;
+
+void dialogo_usa_controle(bool controle) {
+    usa_controle = controle;
+}
+
 const char *dialogo_texto(TextoId id) {
     if (id < 0 || id >= TXT_TOTAL || TEXTOS[id] == NULL) return "";
+    if (usa_controle && TEXTOS_CONTROLE[id] != NULL) return TEXTOS_CONTROLE[id];
     return TEXTOS[id];
 }
 

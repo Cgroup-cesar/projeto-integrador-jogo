@@ -66,9 +66,9 @@ stateDiagram-v2
     note right of INTRO: etapas: professor ou professora, nome, texto datilografado, carta pelo rádio
     INTRO --> R1: INTRO_TERMINOU
     R1 --> S1: RODADA_CONCLUIDA
-    S1 --> R2: SAIDA_CONCLUIDA
+    S1 --> R2: SAIDA_CONCLUIDA (na volta à sala, quando a porta bate)
     R2 --> S2: RODADA_CONCLUIDA
-    S2 --> R3: SAIDA_CONCLUIDA
+    S2 --> R3: SAIDA_CONCLUIDA (idem)
     R3 --> RESPOSTA_FINAL: RODADA_CONCLUIDA
     RESPOSTA_FINAL --> FIM_BOM: TRANSMITIU_CONTRADICAO
     RESPOSTA_FINAL --> FIM_RUIM: TRANSMITIU_SATISFAZIVEL
@@ -89,21 +89,27 @@ stateDiagram-v2
 | `main.c` | janela, game loop, leitura da entrada, capturas, `--smoke` (piloto automático) |
 | `jogo.c` | aplica `regras_proxima_fase`, prepara cada fase, pontua, pausa, debug, modo feira |
 | `config.h` · `estado.h` | constantes · todo o estado do jogo |
-| `logica.c` · `regras.c` · `regras_texto.c` · `regras_ranking.c` · `funcional.h` · `colecoes.c` | a camada pura (`regras_texto.c`: marcadores do roteiro, nome digitado e legenda com defeito do rádio falso; `regras_ranking.c`: o lugar da partida no ranking e a linha do arquivo) |
+| `logica.c` · `regras.c` · `regras_texto.c` · `regras_ranking.c` · `regras_porta.c` · `funcional.h` · `colecoes.c` | a camada pura (`regras_texto.c`: marcadores do roteiro, nome digitado e legenda com defeito do rádio falso; `regras_ranking.c`: o lugar da partida no ranking e a linha do arquivo; `regras_porta.c`: a folha da porta da sala e a coreografia da volta à sala) |
 | `nivel.c` | mapa ASCII → paredes, móveis, interativos, luzes; desenho do bloco de contenção com as texturas |
 | `materiais.c` | puro: ruído contínuo nas bordas, o desenho de cada material (`materiais_pixel`), manchas, desgaste do estêncil e `materiais_uv` (UV em metros) |
 | `texturas.c` | gera ou carrega as texturas uma vez, libera ao sair; `texturas_caixa` (6 faces, UV de mundo ou local) e `texturas_quadro` (decalque) |
 | `cenario.c` | ambientação sem colisão: placas em estêncil, umidade, arrasto do duto, eletrodutos, grelhas, fios e halo das lâmpadas |
-| `jogador.c` | câmera, movimento com colisão, fôlego, passos, armário, mira |
+| `jogador.c` | câmera, movimento com colisão, fôlego, passos, armário, mira; o passo até o console (E) e o passo para trás ao sair dele, sem teleporte |
 | `respiracao.c` | o armário: esconde; se o Precursor vinha atrás de quem entrou (`regras_armario_perseguido`), ele vai até lá e, a 3 m (`regras_armario_chegou`), para na porta e a pessoa segura a respiração (ESPAÇO sobre a faixa branca; 3 chances). Sem tutorial: a tecla ESPAÇO aparece embaixo da barra |
 | `lanterna.c` | a lanterna: F liga e desliga, a 5ª luz do shader (cone saindo dos olhos) e o modelo na mão |
-| `criatura.c` | o Precursor: corpo procedural, IA, A*, captura |
+| `criatura.c` | o Precursor: IA, A*, captura e o desenho do corpo |
+| `esqueleto.c` | o rig do Precursor (puro): 22 ossos medidos no modelo, cinemática direta, matrizes de skinning e IK de dois ossos |
+| `regras_animacao.c`, `regras_animacao_cenas.c` | a animação dele (pura): camadas com crossfade, passada com os pés plantados, cabeça, tiques, saída do bueiro, distorção e convulsão |
+| `animacao.c` | liga o jogo à animação: lê a fase, a IA, a cela, a lanterna e o armário e pede a pose; roda todo quadro, mesmo com a IA parada |
+| `rig.c` | os pesos dos ossos em cada vértice do `.glb` (calculados ao carregar) e o skinning no shader de luz |
 | `cela.c` | o Precursor contido: no centro da cela, olhando o vidro (a lanterna não o move; ela falha ao mirá-lo, em `lanterna.c`) |
 | `susto.c` | o jumpscare: silêncio, grito e o rosto do modelo pulando até a câmera e tremendo (movimento em `regras_quadro_susto`); dura o trecho alto do `jumpscare.mp3` |
 | `rodadas.c` · `terminal.c` · `glifos.c` | as 3 rodadas (o ENTER decide), o analisador SNI-85 (setas, H e Esc), a língua dos glifos |
 | `manual.c` | o manual dos conectivos que o terminal e os painéis compartilham: lâmpada, ✓/✗, mini-tabela e cartão |
 | `crt.c` | a cara de monitor de fósforo das telas de tarefa (analisador, painéis, manual): moldura com quinas, scanlines, varredura descendo, caixas com legenda e opções em faixa |
-| `teclas.c` | a barra de teclas do rodapé: só as teclas que valem no contexto; andando, sempre na R1 e na S1 e, depois, só nos primeiros `TECLAS_ANDAR_S` de cada fase |
+| `teclas.c` | as teclas que valem no contexto: na partida, um "B Comandos" pequeno no canto inferior esquerdo abre e fecha a lista; no menu e nas telas depois do final, a barra do rodapé |
+| `controle.c` | o controle de Xbox: soma botões e analógicos na mesma `Entrada` do teclado e decide se as dicas mostram botões ou teclas; `controle_inicia` ensina à raylib os controles que ela não conhece (`MAPEAMENTOS` e, opcional, `assets/gamecontrollerdb.txt`) |
+| `botoes.c` | os ícones dos botões do controle (`assets/botoes/`), carregados uma vez; sem um arquivo, a barra de teclas mostra o nome do botão em texto |
 | `clique.c` | o mouse nas telas de interface: ao desenhar, cada tela registra as áreas clicáveis do quadro (`clique_area`); no quadro seguinte, o atualiza pergunta o que está sob o ponteiro (`clique_escolhe`: passar por cima escolhe, clicar confirma). Um clique numa tecla da barra do rodapé vale como apertá-la |
 | `circuito.c` | os painéis 1 e 2: corrente nos fios, o ponto que trava (`regras_circuito_bloqueio`), barulho e movimentos |
 | `compositor.c` | a resposta final por fichas e os dois finais |
@@ -111,6 +117,7 @@ stateDiagram-v2
 | `dialogo.c` | todos os textos; `dialogo_personaliza` troca `{NOME}`, `{PROF}` e `{x\|y}` (regra em `regras_monta_texto`) |
 | `audio_sintese.c` | os sons curtos gerados em código (ou lidos de `assets/audio/`) |
 | `trilhas.c` | os sons longos gravados: trilha do menu, vozes, coração e passos (o volume vem de `regras_volumes_trilhas`) |
+| `tubulacao_som.c` | os sons da tubulação: a tampa ao entrar na da cela e ao sair pelo duto do corredor (dois trechos cortados de um arquivo ao carregar) e os passos dele por dentro dos canos, numa fonte que anda em linha reta de uma boca à outra |
 | `posfx.c` | render target, luz e névoa |
 | `vhs.c` | filtro VHS: shader, presets (`VHS_PRESETS`), troca com F1 e o efeito de sanidade (cansaço + fita) |
 | `sanidade.c` | sanidade: queda pela distância da criatura, recuperação, bônus e a barra no topo (regras em `regras_sanidade.c`) |
@@ -121,7 +128,9 @@ stateDiagram-v2
 | `caixas.c` | pilhas de caixotes de madeira encostadas nas paredes das salas (`assets/modelos/caixas.glb`), com colisão e as placas "EXÉRCITO BRASILEIRO / CHÃ DE ALEGRIA - PE" sobre o "Fragile" do modelo; sem o arquivo, caixas simples |
 | `mesa_bilhete.c` | a mesa do bilhete no fundo do Arquivo, de frente para a porta (`mesa.glb`, `papeis.glb`), a lâmpada âmbar pendurada que pisca (a única luz da sala, sempre acesa a até 14 m) e o brilho que respira no bilhete até ele ser lido |
 | `armario_modelo.c` | o armário de metal de duas portas no lugar da caixa dos esconderijos, girado para o corredor e com a frente rente à colisão; só o desenho (o esconderijo e a respiração não mudam) |
-| `porta_bunker.c` | a porta da sala de observação: ao carregar, separa a folha do batente (peças da mesma malha) pelo plano da folha; a folha gira na dobradiça, fechada nas rodadas e abrindo em 1,8 s na saída |
+| `porta_bunker.c` | o modelo da porta da sala de observação: ao carregar, separa a folha do batente (peças da mesma malha) pelo plano da folha; a folha gira na dobradiça até a abertura que `porta_sala.c` manda |
+| `porta_sala.c` | a porta da sala de observação: trancada nas rodadas; nas saídas começa fechada e abre e fecha com E (sem som); a criatura, chegando nela fechada, abre com um tranco; quase fechada (`regras_porta_solida`), a folha entra nas paredes de colisão, e ao abrir sai delas (filter) |
+| `retorno.c` | a volta à sala depois de religar a energia, como cena: ao entrar na sala, vira para a porta, fecha, e entra virando para a cela, com faixas de cinema; a saída é concluída quando a folha bate e a rodada seguinte começa com o jogador ali (`jogo.c` não teleporta); a coreografia é `regras_retorno_pose` |
 | `cameras.c` | 7 câmeras de segurança presas retas no alto das paredes das salas e corredores, inclinadas para baixo, com o LED de REC |
 | `quadro.c` | o quadro de investigação na parede sul da sala de observação, atrás do console; desenhado sem descartar faces de trás (os papéis do modelo vêm com a face invertida) |
 | `corpo.c` | o corpo coberto do consultor americano no fim do rastro de arrasto, perto do gerador; interativo nas saídas (`INTER_CORPO`) |
