@@ -29,8 +29,8 @@ static float lombada(float t, float de, float ate) { // 0 → 1 → 0
 }
 
 // ================================================================== os pés
-// Onde o tornozelo descansa (mundo, no chão). Andando, os pés ficam mais juntos e embaixo do quadril (o
-// modelo, em repouso, tem os pés à frente dele: a passada não alcançaria).
+// Onde o tornozelo descansa (mundo, no chão). Andando, os pés ficam mais juntos e logo à frente do quadril
+// (4 cm), de onde a passada sai para a frente e para trás por igual.
 Vector3 regras_anim_neutro(const AnimCriatura *a, const EntradaAnim *in, int lado) {
     const OssoRepouso *coxa = esqueleto_osso(OSSO_COXA(lado)), *pe = esqueleto_osso(OSSO_COXA(lado) + 2);
     float x = pe->cabeca.x * (1.0f - 0.2f * a->w_anda) * in->escala;

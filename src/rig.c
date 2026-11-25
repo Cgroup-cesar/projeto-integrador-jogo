@@ -101,7 +101,7 @@ static bool vizinhos_de_osso(int a, int b) {
 static int pesos_do_ponto(Vector3 p, unsigned permitido, float *w) {
     float d[OSSOS_TOTAL], menor = 1e9f, soma = 0.0f;
     int perto = 0;
-    for (int b = 0; b < OSSOS_TOTAL; b++) { // padrão FOLD: o osso mais perto (a mandíbula vem depois)
+    for (int b = 0; b < OSSOS_TOTAL; b++) { // padrão FOLD: o osso mais perto (a mandíbula fica de fora)
         const OssoRepouso *o = esqueleto_osso(b);
         bool vale = b != OSSO_MANDIBULA && (permitido >> b & 1u);
         d[b] = vale ? distancia_segmento(p, o->cabeca, o->cauda) - o->raio : 1e9f;
