@@ -23,6 +23,37 @@ static const char *const FONTES_CANDIDATAS[] = {
 static const int SIMBOLOS_EXTRAS[] = {0x2190, 0x2191, 0x2192, 0x2193, 0x2194, 0x2227, 0x2228,
                                       0x25A0, 0x25A1, 0x2014, 0x2026, 0x2713, 0x2714};
 
+// Como LoadFontEx, mas o "e" lógico (∧, U+2227) vira o "v" de cabeça para baixo: a ShareTechMono desenha o
+// ∧ como um pontinho, que no bilhete e nas fórmulas parecia um marcador de lista.
+static Font carrega_com_conectivos(const char *caminho, int *codigos, int n) {
+    Font f = {0};
+    int tamanho = 0;
+    unsigned char *dados = LoadFileData(caminho, &tamanho);
+    if (dados == NULL) return f;
+    f.baseSize = 48;
+    f.glyphPadding = 4;
+    f.glyphs = LoadFontData(dados, tamanho, 48, codigos, n, FONT_DEFAULT, &f.glyphCount);
+    UnloadFileData(dados);
+    if (f.glyphs == NULL) return (Font){0};
+    int v = -1, e_logico = -1;
+    for (int i = 0; i < f.glyphCount; i++) { // padrão FOLD: onde estão o "v" e o ∧
+        if (f.glyphs[i].value == 'v') v = i;
+        if (f.glyphs[i].value == 0x2227) e_logico = i;
+    }
+    if (v >= 0 && e_logico >= 0 && f.glyphs[v].image.data != NULL) {
+        UnloadImage(f.glyphs[e_logico].image);
+        f.glyphs[e_logico].image = ImageCopy(f.glyphs[v].image);
+        ImageFlipVertical(&f.glyphs[e_logico].image);
+        f.glyphs[e_logico].offsetX = f.glyphs[v].offsetX;
+        f.glyphs[e_logico].offsetY = f.glyphs[v].offsetY;
+        f.glyphs[e_logico].advanceX = f.glyphs[v].advanceX;
+    }
+    Image atlas = GenImageFontAtlas(f.glyphs, &f.recs, f.glyphCount, 48, f.glyphPadding, 0);
+    f.texture = LoadTextureFromImage(atlas);
+    UnloadImage(atlas);
+    return f;
+}
+
 bool ui_caminho_asset(const char *relativo, char *saida, size_t tamanho) {
     snprintf(saida, tamanho, "assets/%s", relativo);
     if (FileExists(saida)) return true;
@@ -47,7 +78,7 @@ void ui_carrega_fonte(Recursos *rec) {
     char caminho[512];
     for (size_t i = 0; i < sizeof(FONTES_CANDIDATAS) / sizeof(FONTES_CANDIDATAS[0]); i++) {
         if (!ui_caminho_asset(FONTES_CANDIDATAS[i], caminho, sizeof(caminho))) continue;
-        Font f = LoadFontEx(caminho, 48, codigos, n);
+        Font f = carrega_com_conectivos(caminho, codigos, n);
         if (IsFontValid(f) && f.texture.id != 0) {
             SetTextureFilter(f.texture, TEXTURE_FILTER_BILINEAR);
             rec->fonte = f;

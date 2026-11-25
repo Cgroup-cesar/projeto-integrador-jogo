@@ -116,4 +116,10 @@ void mesa_bilhete_desenha_brilho(const Estado *e) {
     float respira = 0.5f + 0.5f * sinf(e->tempo_total * 2.2f);
     DrawBillboard(e->camera, e->rec.halo, (Vector3){d.x, MESA_ALTURA_M + 0.06f, d.z}, 0.55f,
                   Fade(MESA_COR_LUZ, 0.10f + 0.18f * respira));
+    if (e->fase != FASE_S2) return; // no segundo apagão, uma bolinha vermelha piscando em cima do bilhete
+    float pisca = 0.5f + 0.5f * sinf(e->tempo_total * 5.0f);
+    Vector3 marca = {d.x, MESA_ALTURA_M + 0.42f + 0.03f * sinf(e->tempo_total * 1.8f), d.z};
+    Color vermelho = {255, 40, 30, 255};
+    DrawSphereEx(marca, 0.06f, 12, 12, Fade(vermelho, 0.25f + 0.45f * pisca));
+    DrawBillboard(e->camera, e->rec.halo, marca, 0.45f, Fade(vermelho, 0.35f * pisca));
 }
