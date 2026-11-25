@@ -240,9 +240,11 @@ static bool piloto_espera_ser_pego(Estado *e, Entrada *in) {
     // Olhando para o duto (oeste) e "correndo" de lado contra a parede norte: não sai do lugar, mas faz
     // barulho.
     if (e->tempo_fase < 0.2f) jogador_teleporta(e, nivel_centro_celula(18, 11), -PI * 0.5f);
-    bool surgiu = e->cri.ativo && e->cri.surgindo >= 1.0f;
-    in->correr = surgiu;
-    in->mover.x = surgiu ? 1.0f : 0.0f;
+    // Corre já enquanto ela surge: assim o barulho chega antes de ela escolher a rota da patrulha (que tem
+    // sorteio) e se afastar; esperar o fim do surgimento fazia o teste depender de poucos quadros.
+    bool surgindo = e->cri.ativo && e->cri.surgindo > 0.5f;
+    in->correr = surgindo;
+    in->mover.x = surgindo ? 1.0f : 0.0f;
     return true;
 }
 
