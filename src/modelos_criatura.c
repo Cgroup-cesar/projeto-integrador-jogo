@@ -72,7 +72,7 @@ const ModeloCriatura MODELO_CRIATURA =
         .n_marcas = 2,
         // a frente da cara é mais saliente em y ≈ 0,80 (z 0,042), entre os olhos (0,856) e o queixo (0,74);
         // escancarada, a boca toma quase toda a parte de baixo do rosto
-        .boca = {{-0.004f, 0.799f, 0.043f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, 0.026f, 0.029f},
+        .boca = {{-0.004f, 0.796f, 0.043f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, 0.035f, 0.038f},
         .peito_m = 1.9f,        // reto, o peito fica mais alto
         .cela_avanco_m = 0.18f, // reto, ele ficaria longe do vidro: chega um pouco mais perto
         // abaixo de y 0,40 a malha é três peças (o corpo com as pernas e os dois braços): a ponta da mão
