@@ -6,6 +6,7 @@
 #include "estado.h"
 
 // Modelo opcional (assets/modelos/precursor.glb). Sem ele, o placeholder procedural entra sem erro.
+bool criatura_le_argumento(int argc, char **argv, int *i); // --criatura <nome> (modelos_criatura.c)
 void criatura_carrega_modelo(Recursos *rec);
 void criatura_descarrega_modelo(Recursos *rec);
 

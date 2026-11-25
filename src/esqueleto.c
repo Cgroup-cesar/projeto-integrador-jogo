@@ -1,35 +1,27 @@
-// esqueleto.c — a tabela dos ossos (medida no precursor.glb pelas linhas centrais de cada membro), a
-// cinemática direta, as matrizes de skinning e o IK de dois ossos. Puro: só raymath.h.
+// esqueleto.c — o modelo escolhido (as tabelas ficam em modelos_criatura.c), a cinemática direta, as
+// matrizes de skinning e o IK de dois ossos. Puro: só raymath.h.
 #include "esqueleto.h"
 #include <math.h>
+#include <string.h>
 
-// Em repouso o modelo já está curvado: quadril para trás, joelhos dobrados ~45°, braços pendendo à frente.
-// Ele é um pouco assimétrico (o braço direito pende mais à frente): a tabela segue o modelo como ele é.
-static const OssoRepouso OSSOS[OSSOS_TOTAL] = {
-    [OSSO_QUADRIL] = {"quadril", -1, {-0.03f, 0.08f, -0.27f}, {-0.03f, 0.24f, -0.27f}, 0.17f},
-    [OSSO_LOMBAR] = {"lombar", OSSO_QUADRIL, {-0.03f, 0.24f, -0.26f}, {-0.03f, 0.42f, -0.20f}, 0.15f},
-    [OSSO_PEITO] = {"peito", OSSO_LOMBAR, {-0.03f, 0.42f, -0.20f}, {-0.03f, 0.64f, -0.09f}, 0.15f},
-    [OSSO_PESCOCO] = {"pescoco", OSSO_PEITO, {-0.03f, 0.64f, -0.08f}, {-0.02f, 0.77f, 0.00f}, 0.06f},
-    [OSSO_CABECA] = {"cabeca", OSSO_PESCOCO, {-0.02f, 0.77f, 0.00f}, {-0.02f, 0.95f, 0.08f}, 0.11f},
-    [OSSO_MANDIBULA] = {"mandibula", OSSO_CABECA, {-0.015f, 0.80f, 0.03f}, {-0.015f, 0.66f, 0.12f}, 0.0f},
-    [OSSO_OMBRO_E] = {"ombro_e", OSSO_PEITO, {-0.01f, 0.60f, -0.08f}, {0.17f, 0.60f, -0.06f}, 0.07f},
-    [OSSO_BRACO_E] = {"braco_e", OSSO_OMBRO_E, {0.18f, 0.60f, -0.06f}, {0.33f, 0.18f, -0.01f}, 0.045f},
-    [OSSO_ANTEBRACO_E] = {"antebraco_e", OSSO_BRACO_E, {0.33f, 0.18f, -0.01f}, {0.33f, -0.14f, 0.18f}, 0.04f},
-    [OSSO_MAO_E] = {"mao_e", OSSO_ANTEBRACO_E, {0.33f, -0.14f, 0.18f}, {0.33f, -0.30f, 0.26f}, 0.04f},
-    [OSSO_DEDOS_E] = {"dedos_e", OSSO_MAO_E, {0.33f, -0.30f, 0.26f}, {0.335f, -0.64f, 0.30f}, 0.02f},
-    [OSSO_OMBRO_D] = {"ombro_d", OSSO_PEITO, {-0.05f, 0.60f, -0.08f}, {-0.21f, 0.60f, -0.03f}, 0.07f},
-    [OSSO_BRACO_D] = {"braco_d", OSSO_OMBRO_D, {-0.22f, 0.60f, -0.02f}, {-0.31f, 0.22f, 0.06f}, 0.045f},
-    [OSSO_ANTEBRACO_D] =
-        {"antebraco_d", OSSO_BRACO_D, {-0.31f, 0.22f, 0.06f}, {-0.32f, -0.09f, 0.26f}, 0.04f},
-    [OSSO_MAO_D] = {"mao_d", OSSO_ANTEBRACO_D, {-0.32f, -0.09f, 0.26f}, {-0.34f, -0.20f, 0.35f}, 0.04f},
-    [OSSO_DEDOS_D] = {"dedos_d", OSSO_MAO_D, {-0.34f, -0.20f, 0.35f}, {-0.38f, -0.40f, 0.44f}, 0.02f},
-    [OSSO_COXA_E] = {"coxa_e", OSSO_QUADRIL, {0.11f, 0.08f, -0.26f}, {0.29f, -0.33f, 0.07f}, 0.07f},
-    [OSSO_CANELA_E] = {"canela_e", OSSO_COXA_E, {0.29f, -0.33f, 0.07f}, {0.28f, -0.88f, 0.02f}, 0.045f},
-    [OSSO_PE_E] = {"pe_e", OSSO_CANELA_E, {0.28f, -0.88f, 0.02f}, {0.29f, -0.99f, 0.29f}, 0.04f},
-    [OSSO_COXA_D] = {"coxa_d", OSSO_QUADRIL, {-0.16f, 0.08f, -0.26f}, {-0.36f, -0.33f, 0.05f}, 0.07f},
-    [OSSO_CANELA_D] = {"canela_d", OSSO_COXA_D, {-0.36f, -0.33f, 0.05f}, {-0.35f, -0.88f, 0.02f}, 0.045f},
-    [OSSO_PE_D] = {"pe_d", OSSO_CANELA_D, {-0.35f, -0.88f, 0.02f}, {-0.30f, -0.99f, 0.30f}, 0.04f},
-};
+// O modelo escolhido (modelos_criatura.c). Um só por partida: o rig e a animação leem daqui.
+static const ModeloCriatura *atual = &MODELOS_CRIATURA[CRIATURA_PRECURSOR];
+#define OSSOS (atual->ossos)
+
+// [REQ:PURA-modelos_criatura] o modelo escolhido: as tabelas de cada um ficam em modelos_criatura.c
+void esqueleto_usa(int id) {
+    if (id >= 0 && id < CRIATURAS_TOTAL) atual = &MODELOS_CRIATURA[id];
+}
+
+int esqueleto_modelo_por_nome(const char *nome) {
+    for (int i = 0; i < CRIATURAS_TOTAL; i++) // padrão FOLD: o primeiro com esse nome
+        if (strcmp(MODELOS_CRIATURA[i].nome, nome) == 0) return i;
+    return -1;
+}
+
+const ModeloCriatura *esqueleto_modelo(void) {
+    return atual;
+}
 
 typedef char confere_ossos_glsl[(OSSOS_TOTAL == OSSOS_TOTAL_GLSL) ? 1 : -1]; // não compila se divergir
 
@@ -131,6 +123,8 @@ float esqueleto_ik(Pose *p, const PoseGlobal *g, int osso1, Vector3 alvo, Vector
     Vector3 d1_rep = Vector3Subtract(OSSOS[osso2].cabeca, OSSOS[osso1].cabeca);
     Vector3 d2_rep = Vector3Subtract(OSSOS[osso2].cauda, OSSOS[osso2].cabeca);
     Vector3 n_rep = Vector3CrossProduct(d1_rep, d2_rep);
+    if (Vector3LengthSqr(n_rep) < 1e-10f) // membro reto no repouso: o plano de dobra é o de lado (x)
+        n_rep = (Vector3){osso1 == OSSO_COXA_E || osso1 == OSSO_COXA_D ? 1.0f : -1.0f, 0.0f, 0.0f};
     Vector3 d1 = Vector3Subtract(meio, a), d2 = Vector3Subtract(fim, meio);
     Vector3 n = Vector3CrossProduct(d1, d2);
     Quaternion g1 = alinha(d1_rep, n_rep, d1, n), g2 = alinha(d2_rep, n_rep, d2, n);
@@ -140,10 +134,23 @@ float esqueleto_ik(Pose *p, const PoseGlobal *g, int osso1, Vector3 alvo, Vector
     return Vector3Distance(fim, alvo);
 }
 
+// ------------------------------------------------------------------ as marcas do rosto
+// [REQ:PURA-esqueleto_marca_pontos] o meio-disco de um olho: a reta em cima, a curva embaixo
+void esqueleto_marca_pontos(const MarcaRosto *m, Vector3 *saida) {
+    Vector3 n = Vector3Normalize(m->normal);
+    Vector3 u = Vector3Normalize(Vector3Subtract(m->eixo, Vector3Scale(n, Vector3DotProduct(m->eixo, n))));
+    Vector3 cima = Vector3CrossProduct(n, u);
+    if (cima.y < 0.0f) cima = Vector3Negate(cima); // a reta fica em cima nos dois olhos
+    saida[0] = m->centro;
+    for (int k = 1; k < MARCA_PONTOS; k++) { // padrão MAP: de uma ponta da reta à outra, pelo arco de baixo
+        float a = PI * (float)(k - 1) / (float)(MARCA_PONTOS - 2);
+        Vector3 borda = Vector3Subtract(Vector3Scale(u, cosf(a)), Vector3Scale(cima, sinf(a)));
+        saida[k] = Vector3Add(m->centro, Vector3Scale(borda, m->raio));
+    }
+}
+
 // ------------------------------------------------------------------ a mandíbula
-// Medidas do arquivo: a dobradiça fica perto das orelhas; o queixo, abaixo da boca e à frente do pescoço.
-static const float QUEIXO_Y_MIN = 0.60f, QUEIXO_Y_MAX = 0.765f, QUEIXO_Z_MIN = 0.06f;
-static const float QUEIXO_X_CENTRO = -0.015f, QUEIXO_MEIA_LARGURA = 0.12f;
+// Medidas do arquivo (atual->queixo): o queixo fica abaixo da boca e à frente do pescoço.
 
 static float suaviza(float de, float ate, float x) {
     float t = Clamp((x - de) / (ate - de), 0.0f, 1.0f);
@@ -152,8 +159,9 @@ static float suaviza(float de, float ate, float x) {
 
 // 1 no queixo; cai a zero na linha da boca, embaixo, nas laterais e para trás (sem rasgar a pele).
 float esqueleto_peso_mandibula(Vector3 v) {
-    return suaviza(QUEIXO_Y_MAX, QUEIXO_Y_MAX - 0.025f, v.y) *
-           suaviza(QUEIXO_Y_MIN, QUEIXO_Y_MIN + 0.03f, v.y) *
-           suaviza(QUEIXO_MEIA_LARGURA, QUEIXO_MEIA_LARGURA - 0.03f, fabsf(v.x - QUEIXO_X_CENTRO)) *
-           suaviza(QUEIXO_Z_MIN, QUEIXO_Z_MIN + 0.04f, v.z);
+    const QueixoModelo *q = &atual->queixo;
+    if (q->meia_largura <= 0.0f) return 0.0f; // modelo sem boca
+    return suaviza(q->y_max, q->y_max - 0.025f, v.y) * suaviza(q->y_min, q->y_min + 0.03f, v.y) *
+           suaviza(q->meia_largura, q->meia_largura - 0.03f, fabsf(v.x - q->x_centro)) *
+           suaviza(q->z_min, q->z_min + 0.04f, v.z);
 }

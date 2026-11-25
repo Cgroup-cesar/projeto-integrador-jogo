@@ -1,11 +1,14 @@
-// rig.c — os pesos do skinning, calculados uma vez ao carregar o precursor.glb (o arquivo não tem ossos):
+// rig.c — os pesos do skinning, calculados uma vez ao carregar o modelo do Precursor (o .glb não tem ossos;
+// o esqueleto é o do modelo escolhido, em modelos_criatura.c):
 //   1. solda os vértices repetidos nas costuras de UV (mesma posição = mesmo ponto da pele);
 //   2. cada ponto pega o osso mais perto (distância ao segmento menos a espessura da carne) e mistura com o
 //      pai e os filhos dele, perto das articulações;
 //   3. os pesos são suavizados pela SUPERFÍCIE (vizinhos na malha), só entre ossos vizinhos na hierarquia;
+//      nos modelos de braços soltos (bracos_soltos_y), ponto do braço não pega osso do corpo e vice-versa;
 //   4. o queixo passa para a mandíbula; ficam os 4 ossos mais fortes de cada vértice, que vão para a GPU;
-//   5. no modelo, a ponta dos dedos esquerdos está fundida à canela: os triângulos que ligam partes longe
-//      uma da outra no esqueleto viram triângulos vazios (senão esticariam como uma teia quando a mão sobe).
+//   5. no precursor.glb, a ponta dos dedos esquerdos está fundida à canela: os triângulos que ligam partes
+//      longe uma da outra no esqueleto viram triângulos vazios (senão esticariam como uma teia quando a mão
+//      sobe). Só nos modelos com corta_emendas.
 // Alocações só aqui (no carregamento) e liberadas no fim; nada por quadro.
 #include "rig.h"
 #include "rlgl.h"
@@ -17,8 +20,6 @@
 #define INFLUENCIAS      4
 #define PASSADAS_SUAVIZA 6
 #define PESO_ESPALHA     0.025f // unidades do modelo: quanto a mistura entre dois ossos se espalha
-#define ALTURA_NOMINAL   1.993f // o precursor.glb vai de y = −0,997 a 0,996
-#define BASE_NOMINAL     -0.997f
 
 typedef struct {
     int *inicio; // CSR: os vizinhos do ponto i ficam em viz[inicio[i] .. inicio[i + 1])
@@ -99,13 +100,14 @@ static bool vizinhos_de_osso(int a, int b) {
     return a == b || esqueleto_osso(a)->pai == b || esqueleto_osso(b)->pai == a;
 }
 
-// Devolve o osso mais perto (o "dono" do ponto).
-static int pesos_do_ponto(Vector3 p, float *w) {
+// Devolve o osso mais perto (o "dono" do ponto), só entre os `permitido` (bit b = osso b).
+static int pesos_do_ponto(Vector3 p, unsigned permitido, float *w) {
     float d[OSSOS_TOTAL], menor = 1e9f, soma = 0.0f;
     int perto = 0;
     for (int b = 0; b < OSSOS_TOTAL; b++) { // padrão FOLD: o osso mais perto (a mandíbula vem depois)
         const OssoRepouso *o = esqueleto_osso(b);
-        d[b] = b == OSSO_MANDIBULA ? 1e9f : distancia_segmento(p, o->cabeca, o->cauda) - o->raio;
+        bool vale = b != OSSO_MANDIBULA && (permitido >> b & 1u);
+        d[b] = vale ? distancia_segmento(p, o->cabeca, o->cauda) - o->raio : 1e9f;
         if (d[b] < menor) menor = d[b], perto = b;
     }
     for (int b = 0; b < OSSOS_TOTAL; b++) { // padrão MAP: mistura só com o pai e os filhos dele
@@ -118,18 +120,20 @@ static int pesos_do_ponto(Vector3 p, float *w) {
     return perto;
 }
 
-// Só fica peso dos ossos vizinhos do dono: a suavização não atravessa de uma parte para outra.
-static void mascara(float *w, int dono) {
+// Só fica peso dos ossos vizinhos do dono (e permitidos ao ponto): a suavização não atravessa de uma parte
+// para outra.
+static void mascara(float *w, int dono, unsigned permitido) {
     float soma = 0.0f;
     for (int b = 0; b < OSSOS_TOTAL; b++) { // padrão MAP: zera o que não é vizinho do dono
-        if (!vizinhos_de_osso(b, dono)) w[b] = 0.0f;
+        if (!vizinhos_de_osso(b, dono) || !(permitido >> b & 1u)) w[b] = 0.0f;
         soma += w[b];
     }
     for (int b = 0; b < OSSOS_TOTAL; b++) // padrão MAP: normaliza
         w[b] = soma > 0.0f ? w[b] / soma : (b == dono ? 1.0f : 0.0f);
 }
 
-static void suaviza(const Grafo *g, int pontos, const int *dono, float *w, float *aux) {
+static void suaviza(const Grafo *g, int pontos, const int *dono, const unsigned *permitido, float *w,
+                    float *aux) {
     for (int passada = 0; passada < PASSADAS_SUAVIZA; passada++) { // padrão MAP: a malha inteira, N vezes
         for (int p = 0; p < pontos; p++) { // padrão MAP: metade dele, metade da média dos vizinhos
             int de = g->inicio[p], ate = g->inicio[p + 1];
@@ -142,10 +146,57 @@ static void suaviza(const Grafo *g, int pontos, const int *dono, float *w, float
             for (int b = 0; b < OSSOS_TOTAL; b++) // padrão MAP: metade dele, metade da média
                 saida[b] = ate > de ? 0.5f * w[p * OSSOS_TOTAL + b] + 0.5f * saida[b] / (float)(ate - de)
                                     : w[p * OSSOS_TOTAL + b];
-            mascara(saida, dono[p]);
+            mascara(saida, dono[p], permitido[p]);
         }
         memcpy(w, aux, (size_t)pontos * OSSOS_TOTAL * sizeof(float));
     }
+}
+
+// ================================================================== 3b. os braços soltos do corpo
+#define TODOS_OS_OSSOS ((1u << OSSOS_TOTAL) - 1u)
+
+static unsigned ossos_do_braco(int lado) {
+    unsigned m = 0;
+    for (int k = 0; k < 5; k++) // padrão FOLD: ombro, braço, antebraço, mão e dedos daquele lado
+        m |= 1u << (OSSO_OMBRO(lado) + k);
+    return m;
+}
+
+// Abaixo de bracos_soltos_y (modelos_criatura.c), a malha se divide em peças: a que tem o ponto mais baixo
+// é o corpo (as pernas); as outras são os braços (o lado vem do x médio). Ponto de braço só pega osso
+// daquele braço; ponto do corpo não pega osso de braço. Acima do limite, tudo vale. false = sem memória.
+static bool separa_bracos(const Grafo *g, int pontos, const Vector3 *v, const int *rep, unsigned *permitido) {
+    float limite = esqueleto_modelo()->bracos_soltos_y;
+    int *peca = malloc((size_t)pontos * sizeof(int)), *fila = malloc((size_t)pontos * sizeof(int)), baixo = 0;
+    if (peca == NULL || fila == NULL) {
+        free(peca), free(fila);
+        return false;
+    }
+    for (int p = 0; p < pontos; p++) { // padrão MAP: tudo vale, nenhuma peça ainda (e acha o mais baixo)
+        permitido[p] = TODOS_OS_OSSOS;
+        peca[p] = -1;
+        if (v[rep[p]].y < v[rep[baixo]].y) baixo = p;
+    }
+    for (int p = 0, n = 0; p < pontos && limite != 0.0f; p++) { // padrão MAP: cada peça, pela superfície
+        if (peca[p] >= 0 || v[rep[p]].y >= limite) continue;
+        int ini = 0, fim = 0;
+        float soma_x = 0.0f;
+        peca[p] = n, fila[fim++] = p;
+        while (ini < fim) { // busca em largura pelos vizinhos que também estão abaixo do limite
+            int a = fila[ini++];
+            soma_x += v[rep[a]].x;
+            for (int k = g->inicio[a]; k < g->inicio[a + 1]; k++)
+                if (peca[g->viz[k]] < 0 && v[rep[g->viz[k]]].y < limite)
+                    peca[g->viz[k]] = n, fila[fim++] = g->viz[k];
+        }
+        unsigned bracos = ossos_do_braco(0) | ossos_do_braco(1);
+        unsigned m = peca[baixo] == n ? TODOS_OS_OSSOS & ~bracos : ossos_do_braco(soma_x > 0.0f ? 0 : 1);
+        for (int k = 0; k < fim; k++) // padrão MAP: a peça inteira ganha a mesma máscara
+            permitido[fila[k]] = m;
+        n++;
+    }
+    free(peca), free(fila);
+    return true;
 }
 
 // ================================================================== 4. os 4 mais fortes
@@ -181,17 +232,21 @@ static bool calcula_pesos(const Mesh *m, float *ids, float *pesos) {
     float *w = pontos > 0 ? malloc((size_t)pontos * OSSOS_TOTAL * sizeof(float)) : NULL;
     float *aux = pontos > 0 ? malloc((size_t)pontos * OSSOS_TOTAL * sizeof(float)) : NULL;
     int *dono = pontos > 0 ? malloc((size_t)pontos * sizeof(int)) : NULL;
-    if (w == NULL || aux == NULL || dono == NULL || !monta_grafo(m, id, pontos, &g)) {
+    unsigned *permitido = pontos > 0 ? malloc((size_t)pontos * sizeof(unsigned)) : NULL;
+    if (w == NULL || aux == NULL || dono == NULL || permitido == NULL || !monta_grafo(m, id, pontos, &g) ||
+        !separa_bracos(&g, pontos, v, rep, permitido)) {
+        free(permitido);
         libera(id, rep, w, aux, dono, &g);
         return false;
     }
     for (int p = 0; p < pontos; p++) // padrão MAP: pesos iniciais de cada ponto da pele
-        dono[p] = pesos_do_ponto(v[rep[p]], &w[p * OSSOS_TOTAL]);
-    suaviza(&g, pontos, dono, w, aux);
+        dono[p] = pesos_do_ponto(v[rep[p]], permitido[p], &w[p * OSSOS_TOTAL]);
+    suaviza(&g, pontos, dono, permitido, w, aux);
     for (int i = 0; i < n; i++) // padrão MAP: cada vértice herda os pesos do seu ponto
         quatro_maiores(v[i], &w[id[i] * OSSOS_TOTAL], &ids[i * INFLUENCIAS], &pesos[i * INFLUENCIAS]);
     TraceLog(LOG_INFO, "PRECURSOR: rig com %d ossos em %d vértices (%d pontos da pele)", OSSOS_TOTAL, n,
              pontos);
+    free(permitido);
     libera(id, rep, w, aux, dono, &g);
     return true;
 }
@@ -244,7 +299,8 @@ static void envia(Recursos *rec, Mesh *m, int loc_ids, int loc_pesos, const floa
     rec->rig_vbo[1] = rlLoadVertexBuffer(pesos, tamanho, false);
     rlSetVertexAttribute((unsigned int)loc_pesos, INFLUENCIAS, RL_FLOAT, false, 0, 0);
     rlEnableVertexAttribute((unsigned int)loc_pesos);
-    int cortados = corta_emendas(m, ids); // com o VAO dele ligado: os índices continuam dele
+    // com o VAO dele ligado: os índices continuam dele (só nos modelos com partes fundidas)
+    int cortados = esqueleto_modelo()->corta_emendas ? corta_emendas(m, ids) : 0;
     if (cortados > 0)
         rlUpdateVertexBufferElements(m->vboId[RL_DEFAULT_SHADER_ATTRIB_LOCATION_INDICES], m->indices,
                                      m->triangleCount * 3 * (int)sizeof(unsigned short), 0);
@@ -264,8 +320,8 @@ static bool acha_uniformes(Recursos *rec) {
 
 void rig_carrega(Recursos *rec) {
     rec->rig_ok = false;
-    rec->rig_escala = CRIATURA_ALTURA_M / ALTURA_NOMINAL;
-    rec->rig_base_y = BASE_NOMINAL;
+    rec->rig_escala = CRIATURA_ALTURA_M / esqueleto_modelo()->altura_nominal;
+    rec->rig_base_y = esqueleto_modelo()->base_nominal;
     if (!rec->tem_modelo) return;
     BoundingBox caixa = GetModelBoundingBox(rec->modelo_precursor);
     rec->rig_escala = CRIATURA_ALTURA_M / fmaxf(0.01f, caixa.max.y - caixa.min.y);

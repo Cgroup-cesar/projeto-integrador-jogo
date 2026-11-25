@@ -31,7 +31,7 @@ make readme-check   confere as referências     make clean         apaga obj/ e 
 Alternativa: `cmake -B build && cmake --build build && ctest --test-dir build` (`--target smoke` também existe).
 Debug no jogo (`TECLAS_DEBUG` em `src/config.h`): F1 troca o preset do VHS · F2 pula fase · F3 estado e caminho da criatura ·
 F5 reinicia a fase · F9 resposta final · F12 captura em `docs/img/`. Linha de comando: `--fase S2`, `--mudo`,
-`--feira`, `--captura arquivo.png --captura-em 2 [--captura-fase R1]`, `--exporta-sons pasta`, `--vhs N`, `--sanidade N`, `--vitrine-vhs [s]`, `--galeria-vhs pasta`.
+`--feira`, `--captura arquivo.png --captura-em 2 [--captura-fase R1]`, `--exporta-sons pasta`, `--vhs N`, `--sanidade N`, `--vitrine-vhs [s]`, `--galeria-vhs pasta`, `--criatura papelao`.
 No macOS, a janela só abre com a tela acordada (`caffeinate -u -t 5` antes de rodar testes automáticos).
 
 ## Fluxo Git

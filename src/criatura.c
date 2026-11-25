@@ -2,6 +2,7 @@
 // ficam em rig.c, animacao.c e regras_animacao.c).
 // Estados: PATRULHA → INVESTIGA (ruído mais forte) → PERSEGUE (vê o jogador) → PROCURA (6 s) → PATRULHA.
 // A decisão de estado é pura (regras_proximo_estado_criatura); aqui ficam percepção, caminho e movimento.
+// Exceção ao limite de ~500 linhas: o carregamento e o desenho do modelo escolhido (--criatura) ficam aqui.
 #include "criatura.h"
 #include "susto.h"
 #include "nivel.h"
@@ -26,17 +27,37 @@ static const int PATRULHA[][2] = {{8, 5}, {21, 5}, {19, 2}, {21, 11}, {8, 11}, {
 #define N_PATRULHA ((int)(sizeof(PATRULHA) / sizeof(PATRULHA[0])))
 
 // ================================================================== modelo opcional
+// --criatura <nome>: qual modelo carregar (modelos_criatura.c). Nome desconhecido: fica o padrão.
+bool criatura_le_argumento(int argc, char **argv, int *i) {
+    if (strcmp(argv[*i], "--criatura") != 0 || *i + 1 >= argc) return false;
+    const char *nome = argv[++*i];
+    int id = esqueleto_modelo_por_nome(nome);
+    if (id < 0)
+        TraceLog(LOG_WARNING, "PRECURSOR: não conheço a criatura \"%s\"; fica \"%s\"", nome,
+                 esqueleto_modelo()->nome);
+    esqueleto_usa(id);
+    return true;
+}
+
 // [REQ:RNF4] asset ausente: sem o .glb, o placeholder procedural entra e só fica um TraceLog
 void criatura_carrega_modelo(Recursos *rec) {
     char caminho[512];
+    const char *arquivo = esqueleto_modelo()->arquivo; // o modelo escolhido (--criatura)
     rec->tem_modelo = false;
-    if (!ui_caminho_asset("modelos/precursor.glb", caminho, sizeof(caminho))) {
-        TraceLog(LOG_INFO, "PRECURSOR: sem assets/modelos/precursor.glb; usando o placeholder procedural");
+    if (!ui_caminho_asset(arquivo, caminho, sizeof(caminho))) {
+        TraceLog(LOG_INFO, "PRECURSOR: sem assets/%s; usando o placeholder procedural", arquivo);
         rig_carrega(rec); // a escala nominal: o corpo procedural usa o mesmo esqueleto
         return;
     }
     rec->modelo_precursor = LoadModel(caminho);
     rec->tem_modelo = IsModelValid(rec->modelo_precursor) && rec->modelo_precursor.meshCount > 0;
+    // a raylib guarda os índices em 16 bits: com mais de 65.535 vértices, os triângulos sairiam trocados
+    if (rec->tem_modelo && rec->modelo_precursor.meshes[0].vertexCount > 65535) {
+        TraceLog(LOG_WARNING, "PRECURSOR: %s tem vértices demais para a raylib; usando o placeholder",
+                 caminho);
+        UnloadModel(rec->modelo_precursor);
+        rec->tem_modelo = false;
+    }
     if (!rec->tem_modelo) {
         TraceLog(LOG_WARNING, "PRECURSOR: não deu para carregar %s; usando o placeholder", caminho);
         rig_carrega(rec);
@@ -436,11 +457,11 @@ static void desenha_caminho(const Estado *e) {
 }
 
 // No menu: dois pontinhos brancos nos olhos da silhueta, e mais nada. Ficam fora do shader de luz (sem luz
-// nem névoa). Os olhos foram medidos no precursor.glb, nas unidades do arquivo (y de -1 a 1, rosto em +z), e
-// seguem o osso da cabeça.
+// nem névoa). Os pontos foram medidos em cada modelo (modelos_criatura.c), nas unidades do arquivo (y de −1
+// a 1, rosto em +z), e seguem o osso da cabeça; no modelo de rosto liso, eles acendem as marcas dos olhos.
 static void desenha_olhos_no_menu(const Estado *e, Matrix corpo) {
     if (e->fase != FASE_MENU || !e->cri.contido || !e->rec.tem_modelo) return;
-    static const Vector3 OLHOS[2] = {{-0.0495f, 0.8485f, 0.2f}, {0.0275f, 0.8485f, 0.2f}};
+    const Vector3 *OLHOS = esqueleto_modelo()->olhos;
     posfx_termina_luz(e);
     for (int i = 0; i < 2; i++) { // os dois olhos, presos à cabeça → no mundo
         Vector3 olho = Vector3Transform(rig_ponto_no_corpo(e, OSSO_CABECA, OLHOS[i]), corpo);
@@ -450,6 +471,24 @@ static void desenha_olhos_no_menu(const Estado *e, Matrix corpo) {
         DrawSphereEx(olho, CRIATURA_OLHO_PX / px_por_m, 4, 4, WHITE);
     }
     posfx_retoma_luz(e);
+}
+
+// Os olhos pintados no rosto liso (modelos_criatura.c): meios-discos escuros presos ao osso da cabeça,
+// desenhados dos dois lados (a pele curva pode deixar a face de trás à mostra). No menu, o corpo já é
+// silhueta (os olhos acendem).
+static void desenha_marcas(const Estado *e, Matrix corpo) {
+    const ModeloCriatura *m = esqueleto_modelo();
+    if (!e->rec.tem_modelo || e->fase == FASE_MENU) return;
+    Vector3 p[MARCA_PONTOS];
+    for (int i = 0; i < m->n_marcas; i++) { // padrão MAP: cada olho, preso à cabeça → no mundo
+        esqueleto_marca_pontos(&m->marcas[i], p);
+        for (int k = 0; k < MARCA_PONTOS; k++) // padrão MAP: cada ponto do meio-disco
+            p[k] = Vector3Transform(rig_ponto_no_corpo(e, OSSO_CABECA, p[k]), corpo);
+        for (int k = 1; k + 1 < MARCA_PONTOS; k++) { // laço de desenho: o leque, nos dois sentidos
+            DrawTriangle3D(p[0], p[k], p[k + 1], COR_MARCA_ROSTO);
+            DrawTriangle3D(p[0], p[k + 1], p[k], COR_MARCA_ROSTO);
+        }
+    }
 }
 
 // Onde e para onde o corpo é desenhado. Puxado pela contenção, ele se estica (o rig faz o resto).
@@ -485,6 +524,7 @@ void criatura_desenha(const Estado *e) {
     rlPopMatrix();
     if (e->rec.tem_modelo) rig_desliga(e);
     posfx_contraluz(e, COR_CONTRALUZ, 0.0f); // envia o corpo procedural (lote) ainda com a contraluz
+    desenha_marcas(e, corpo);                // depois: sem o fio de contraluz nas bordas
     if (menu) posfx_nevoa_cela(e, NEVOA_CELA_DENSIDADE);
     desenha_olhos_no_menu(e, corpo);
 }

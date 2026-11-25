@@ -66,7 +66,8 @@ static Vector3 origem_da_luz(const Estado *e) {
 bool lanterna_mira_criatura(const Estado *e) {
     const Criatura *c = &e->cri;
     if (!acesa(e) || (!c->contido && !c->ativo)) return false;
-    Vector3 olho = origem_da_luz(e), peito = Vector3Add(c->pos, (Vector3){0.0f, 1.5f, 0.0f});
+    Vector3 olho = origem_da_luz(e),
+            peito = Vector3Add(c->pos, (Vector3){0.0f, esqueleto_modelo()->peito_m, 0.0f});
     float abertura = cosf(LANTERNA_ABERTURA_GRAUS * DEG2RAD);
     if (!regras_no_cone(olho, jogador_direcao(e), abertura, CRIATURA_LANTERNA_ALCANCE_M, peito)) return false;
     if (c->contido) return true;
