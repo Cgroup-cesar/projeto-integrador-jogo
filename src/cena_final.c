@@ -17,11 +17,16 @@
 #include <math.h>
 #include <stdio.h>
 
-// Onde ficam as coisas no modelo (em metros do modelo, antes da BASE_ESCALA): o alto das duas torres e a
-// entrada de tijolo (a escada que desce para o bloco), medidos nas malhas do .glb.
-static const Vector3 TORRE_A = {-7.4f, 5.6f, 8.1f}, TORRE_B = {7.8f, 5.6f, 8.1f};
-static const Vector3 ENTRADA = {-0.65f, 2.45f, 7.0f};
-static const Vector3 PORTA_BASE = {-0.65f, 0.0f, 6.6f}, PATIO = {0.6f, 0.0f, 1.2f}; // de onde ele sai, até onde
+// Onde ficam as coisas no modelo (em metros do modelo, antes da BASE_ESCALA), medidos nas malhas do .glb
+// (Military Base #2): o alto da torre de vigia (canto sudoeste) e o telhado do galpão, de onde saem os dois
+// holofotes; os dois postes de luz do pátio; a porta na parede oeste do galpão comprido, de onde ele sai,
+// e o vão entre as barracas, até onde ele anda. O meio da base é o centro do anel da mata (o muro fica a
+// uns 50 m dele).
+static const Vector3 TORRE_A = {-37.1f, 11.2f, 44.3f}, TORRE_B = {12.4f, 11.0f, -30.0f};
+static const Vector3 POSTE_A = {-9.3f, 8.6f, -29.4f}, POSTE_B = {-31.6f, 8.6f, -29.4f};
+static const Vector3 ENTRADA = {11.4f, 3.1f, -8.4f};
+static const Vector3 PORTA_BASE = {11.0f, 0.0f, -8.4f}, PATIO = {4.6f, 0.0f, -8.2f};
+static const Vector3 MEIO_BASE = {0.5f, 0.0f, -9.0f};
 
 static void com_luz(Model *m, const Recursos *rec) {
     for (int i = 0; i < m->materialCount && rec->luz_ok; i++) // padrão MAP: luz do jogo
@@ -138,7 +143,7 @@ void cena_final_atualiza(Estado *e, float antes, float t) {
     if (cruzou(antes, t, CENA_COMECA_S + CENA_VIRA_S)) porta_sala_abre(e);
     EtapaCena etapa = regras_cena_etapa(t);
     if (etapa == CENA_ANTES || etapa == CENA_FIM) return;
-    PoseJogador saida = {na_base(PORTA_BASE), PI, 0.0f}; // na porta da entrada, olhando para o pátio
+    PoseJogador saida = {na_base(PORTA_BASE), -PI * 0.5f, 0.0f}; // na porta do galpão, olhando para o oeste
     PoseJogador p = etapa <= CENA_BRANCO ? regras_cena_pose(t, f->cena_de, f->cena_porta, f->cena_fim)
                                          : regras_cena_fora(t - CENA_FORA_INICIO_S, saida, na_base(PATIO));
     float dt = Clamp(t - antes, 0.0001f, 0.1f); // o ENTER pula 3 s: os passos não contam o pulo
@@ -219,7 +224,7 @@ void cena_final_desenha_emissivos(const Estado *e) {
 }
 
 // ------------------------------------------------------------------ lá fora
-#define LUZES_FORA 6
+#define LUZES_FORA 7
 
 // Os holofotes das torres varrem o chão em volta da base, cada um no seu ritmo.
 static Vector4 holofote(Vector3 de, Vector3 alvo) {
@@ -235,30 +240,32 @@ static int luzes_fora(const Estado *e, Vector3 *pos, Vector3 *cor, Vector4 *cone
         queda[i] = 1.0f;
     }
     pos[0] = (Vector3){c.x - 70.0f, 90.0f, c.z + 50.0f}; // a lua: longe e sem queda (quase direcional)
-    cor[0] = (Vector3){0.10f, 0.13f, 0.22f};
+    cor[0] = (Vector3){0.045f, 0.06f, 0.10f}; // o asfalto claro do pátio pedia uma lua fraca
     queda[0] = 0.0f;
-    Vector3 torres[2] = {na_base(TORRE_A), na_base(TORRE_B)};
-    for (int i = 0; i < 2; i++) { // os holofotes das torres
-        float a = t * (0.55f + 0.2f * i) + i * 2.4f;
-        Vector3 alvo = {c.x + sinf(a) * 9.0f, 0.0f, c.z + cosf(a * 0.8f) * 9.0f};
+    Vector3 torres[2] = {na_base(TORRE_A), na_base(TORRE_B)}, patio = na_base(PATIO);
+    for (int i = 0; i < 2; i++) { // os holofotes da torre e do galpão varrem o pátio, perto de quem filma
+        float a = t * (0.45f + 0.15f * i) + i * 2.4f;
+        Vector3 alvo = {patio.x + sinf(a) * 11.0f, 0.0f, patio.z + cosf(a * 0.8f) * 11.0f};
         pos[1 + i] = torres[i];
         cone[1 + i] = holofote(torres[i], alvo);
         cor[1 + i] = cor_luz(COR_LANTERNA, 15.0f);
-        queda[1 + i] = 0.08f;
+        queda[1 + i] = i == 0 ? 0.012f : 0.08f; // a torre fica a uns 65 m do pátio; o galpão, a 25 m
     }
-    pos[3] = na_base(ENTRADA); // a lâmpada da entrada do bloco, de onde ele saiu
+    pos[3] = na_base(ENTRADA); // a lâmpada sobre a porta do galpão, de onde ele saiu
     cor[3] = cor_luz(COR_LAMPADA, 2.2f);
     queda[3] = 0.6f;
     // A nave: por cima das árvores, à frente de quem sai pela porta (é o que ele vê primeiro e, no fim da
     // volta, o que ele procura no céu), parada e depois subindo.
     float brilho = regras_cena_nave_brilho(t);
-    Vector3 patio = na_base(PATIO);
-    pos[4] = (Vector3){patio.x + 4.0f, regras_cena_nave_altura(t), patio.z - 40.0f};
+    pos[4] = (Vector3){patio.x - 70.0f, regras_cena_nave_altura(t), patio.z - 6.0f};
     cor[4] = (Vector3){1.1f * brilho, 1.7f * brilho, 1.5f * brilho};
     queda[4] = 0.012f;
-    pos[5] = (Vector3){c.x, 1.2f, c.z}; // um resto de luz no pátio (lâmpadas que a câmera não vê)
-    cor[5] = cor_luz(COR_LAMPADA, 0.6f);
-    queda[5] = 0.5f;
+    pos[5] = na_base(POSTE_A); // os postes de luz do pátio (sódio, alaranjados)
+    cor[5] = cor_luz((Color){255, 170, 90, 255}, 2.6f);
+    queda[5] = 0.25f;
+    pos[6] = na_base(POSTE_B);
+    cor[6] = cor[5];
+    queda[6] = 0.25f;
     return LUZES_FORA;
 }
 
@@ -280,12 +287,12 @@ static void desenha_mata(const Estado *e) {
     const Recursos *r = &e->rec;
     if (!r->tem_mata) return;
     const Model *m = &r->modelo_mata;
-    Vector3 c = BASE_ORIGEM;
+    Vector3 c = na_base(MEIO_BASE), patio = na_base(PATIO);
     for (int i = 0; i < MATA_ARVORES && r->n_arvores > 0; i++) { // laço de desenho: cada árvore
         int tipo = i % r->n_arvores;
-        float a = (i + 0.6f * sorteio(i, 1)) / MATA_ARVORES * 2.0f * PI, raio = 10.0f + 24.0f * sorteio(i, 2);
+        float a = (i + 0.6f * sorteio(i, 1)) / MATA_ARVORES * 2.0f * PI, raio = 58.0f + 30.0f * sorteio(i, 2);
         Vector3 onde = {c.x + sinf(a) * raio, 0.0f, c.z + cosf(a) * raio};
-        float giro = sorteio(i, 3) * 2.0f * PI, escala = 0.6f + 0.25f * sorteio(i, 4) + raio * 0.008f; // as do fundo, maiores
+        float giro = sorteio(i, 3) * 2.0f * PI, escala = 0.9f + 0.35f * sorteio(i, 4) + (raio - 58.0f) * 0.01f; // as do fundo, maiores
         desenha_copia(m, r->mata_casca[tipo], r->mata_pe[tipo], onde, giro, escala);
         desenha_copia(m, r->mata_folha[tipo], r->mata_pe[tipo], onde, giro, escala);
     }
@@ -294,10 +301,10 @@ static void desenha_mata(const Estado *e) {
         BoundingBox b = GetMeshBoundingBox(m->meshes[tufo]);
         Vector3 pe = {(b.min.x + b.max.x) * 0.5f, b.min.y, (b.min.z + b.max.z) * 0.5f};
         float a = sorteio(i, 5) * 2.0f * PI;
-        // um terço encostado na cerca por dentro (o pátio fica livre para quem anda), o resto do lado de fora
-        float raio = i % 3 == 0 ? 5.5f + 1.2f * sorteio(i, 6) : 7.3f + 13.0f * sorteio(i, 6) * sorteio(i, 7);
-        Vector3 onde = {c.x + sinf(a) * raio, 0.0f, c.z + cosf(a) * raio};
-        desenha_copia(m, tufo, pe, onde, sorteio(i, 8) * 2.0f * PI, 0.55f + 0.5f * sorteio(i, 9));
+        // no pátio, nas rachaduras do chão, de 4 a 24 m de onde ele para (o caminho dele fica livre)
+        float raio = 4.0f + 20.0f * sorteio(i, 6) * sorteio(i, 7);
+        Vector3 onde = {patio.x + sinf(a) * raio, 0.0f, patio.z + cosf(a) * raio};
+        desenha_copia(m, tufo, pe, onde, sorteio(i, 8) * 2.0f * PI, 0.4f + 0.4f * sorteio(i, 9));
     }
 }
 
@@ -338,6 +345,8 @@ bool cena_final_desenha_fora(const Estado *e) {
     DrawSphereEx(pos[2], 0.18f, 8, 8, COR_LANTERNA);
     posfx_emissivo(e, 12.0f);
     DrawSphereEx(pos[3], 0.08f, 6, 6, COR_LAMPADA);
+    DrawSphereEx(pos[5], 0.2f, 6, 6, (Color){255, 170, 90, 255});
+    DrawSphereEx(pos[6], 0.2f, 6, 6, (Color){255, 170, 90, 255});
     posfx_emissivo(e, 25.0f * regras_cena_nave_brilho(e->fim.tempo - CENA_FORA_INICIO_S));
     DrawSphereEx(pos[4], 0.9f, 12, 12, (Color){200, 255, 235, 255});
     posfx_emissivo(e, 1.0f);

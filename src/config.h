@@ -235,15 +235,15 @@
 #define CENA_FAIXA_S      0.5f  // as faixas de cinema entram e saem nesse tempo
 // A base lá fora (assets/modelos/base.glb, opcional): longe do mapa, para a névoa da cela não chegar nela.
 #define BASE_ORIGEM        (Vector3){500.0f, 0.0f, 500.0f}
-#define BASE_ESCALA        0.7f  // o modelo vem grande (caixotes de 2 m)
+#define BASE_ESCALA        1.0f  // o modelo já vem em metros (o muro tem 4,8 m)
 #define CENA_SAI_S         3.0f  // lá fora: da porta da entrada até o meio do pátio...
 #define CENA_OLHA_CEU_S    1.6f  // ...uma volta inteira olhando em volta e, no fim, para o céu (a nave)
-#define MATA_ARVORES       50    // as árvores em volta da cerca (cópias das duas do arvores.glb)
-#define MATA_CAPIM         150   // tufos de capim, dentro e fora da cerca
+#define MATA_ARVORES       64    // as árvores em volta da cerca (cópias das duas do arvores.glb)
+#define MATA_CAPIM         70    // tufos de capim nas rachaduras do pátio, em volta de onde ele para
 #define BASE_NEVOA         0.028f // bem menos que a do bloco: a base inteira aparece, o horizonte some
 #define BASE_AMBIENTE      0.02f
 #define NAVE_SOBE_S        7.0f   // a luz da nave começa a subir aos 7 s de fita (no fim da volta)
-#define NAVE_ALTURA_M      14.0f  // de onde ela parte (acima das árvores, à frente de quem sai)
+#define NAVE_ALTURA_M      22.0f  // de onde ela parte (acima do muro e das árvores, à frente de quem sai)
 #define CENA_FITA_HORA     (22 * 3600 + 0 * 60 + 13) // a fita lá fora começa às 22:00:13 (a nave vai embora)
 #define FIM_LEITURA_MAX_S   50.0f // o texto espera a leitura: ENTER ou, no máximo, isso, e vai ao placar
 // O rádio falso (o Precursor imitando o Varela, a partir da S2)
