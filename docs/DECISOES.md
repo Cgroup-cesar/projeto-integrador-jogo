@@ -302,3 +302,9 @@ Registro das escolhas feitas onde a especificação deixava espaço ou onde o am
     - **Quando abre:** fechada no pulo; escancara em 0,25 s (`JUMPSCARE_BOCA_ABRE_S`) depois que o rosto chega colado na câmera e fica mastigando, abrindo e fechando uns 12% sem ritmo de relógio. A curva é pura (`regras_quadro_susto`, campo `boca`) e testada.
     - **Como é por dentro:** são oito anéis de 34 dentes finos (`BOCA_ANEIS` × `BOCA_DENTES`), um atrás do outro até a garganta preta, cada anel menor, mais fundo e mais escuro (a boca parece um túnel). Os dentes têm tamanhos e manchas sorteados (sempre os mesmos), apontam para o fundo, e os anéis vizinhos giram em sentidos contrários. O lábio é vermelho-escuro, com a borda irregular de pele rasgada.
     - **Como é desenhada:** com triângulos por cima da pele, sem teste de profundidade, do fundo para a frente (`susto.c`), no mesmo render target e com a mesma luz do rosto. São uns 2.500 triângulos por quadro (cada um nos dois sentidos), só durante os 2 s do susto.
+
+## Controle de Xbox no Mac
+
+149. **O controle de Xbox Series funciona no Mac pelo Bluetooth.** Testado com o controle de verdade num Mac:
+    - **Pelo cabo USB**, o macOS mostra o aparelho (045e:0b12), mas a raylib recebe 0 botões e 0 eixos: o Xbox por cabo fala o protocolo próprio da Microsoft, não HID, e o macOS não o entrega para quem lê HID (o GLFW da raylib). Não há o que o jogo possa fazer; o README orienta a usar o Bluetooth.
+    - **Pelo Bluetooth**, ele vira "Xbox Wireless Controller" (045e:0b13, firmware 5.09), com 20 botões, 1 hat e 6 eixos, mas a raylib só traz o mapa de versões mais antigas desse controle no Mac: o controle aparecia e nenhum botão chegava. O mapa novo (em `src/controle.c`, junto dos dois de Linux) foi medido botão a botão com o controle e conferido: A, B, X, Y, LB, RB, View, Menu, direcional, LT, RT, L3, R3 e os dois analógicos chegam com o nome certo.
