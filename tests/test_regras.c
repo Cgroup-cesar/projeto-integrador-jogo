@@ -109,31 +109,25 @@ static void testa_esqueleto(void) {
     CHECK(Vector3DotProduct(coxa, canela) < 0.9999f); // ...e nem assim trava a perna esticada
 }
 
-// [REQ:PURA-modelos_criatura] testa as tabelas de cada modelo: pais antes dos filhos, ossos com
-// comprimento, o lado esquerdo em +x, joelho e cotovelo com plano de dobra (o IK precisa) e a escolha pelo
-// nome; e o IK do modelo reto (papelão) alcança e dobra o joelho para a frente
+// [REQ:PURA-modelos_criatura] testa a tabela do Precursor (o alien do papelão): pais antes dos filhos, ossos
+// com comprimento, o lado esquerdo em +x e joelho e cotovelo com plano de dobra (o IK precisa)
 static void testa_modelos_criatura(void) {
-    for (int id = 0; id < CRIATURAS_TOTAL; id++) { // padrão MAP: cada modelo
-        esqueleto_usa(id);
-        CHECK(esqueleto_modelo_por_nome(esqueleto_modelo()->nome) == id);
-        CHECK(esqueleto_modelo()->altura_nominal > 1.0f && esqueleto_modelo()->postura.passo > 0.0f);
-        for (int i = 0; i < OSSOS_TOTAL; i++) // padrão MAP: cada osso
-            CHECK(esqueleto_osso(i)->pai < i && (i == OSSO_MANDIBULA || esqueleto_comprimento(i) > 0.02f));
-        for (int l = 0; l < 2; l++) { // padrão MAP: os dois lados
-            CHECK(LADO_SINAL(l) * esqueleto_osso(OSSO_OMBRO(l) + 1)->cabeca.x > 0.0f);
-            int membros[2] = {OSSO_COXA(l), OSSO_OMBRO(l) + 1};
-            for (int k = 0; k < 2; k++) { // padrão MAP: perna e braço
-                const OssoRepouso *a = esqueleto_osso(membros[k]), *b = esqueleto_osso(membros[k] + 1);
-                Vector3 d1 = Vector3Normalize(Vector3Subtract(a->cauda, a->cabeca));
-                Vector3 d2 = Vector3Normalize(Vector3Subtract(b->cauda, b->cabeca));
-                CHECK(Vector3Length(Vector3CrossProduct(d1, d2)) > sinf(3.0f * DEG2RAD)); // dobra > 3°
-            }
+    CHECK(esqueleto_modelo() == &MODELO_CRIATURA);
+    CHECK(esqueleto_modelo()->altura_nominal > 1.0f && esqueleto_modelo()->postura.passo > 0.0f);
+    for (int i = 0; i < OSSOS_TOTAL; i++) // padrão MAP: cada osso
+        CHECK(esqueleto_osso(i)->pai < i && (i == OSSO_MANDIBULA || esqueleto_comprimento(i) > 0.02f));
+    for (int l = 0; l < 2; l++) { // padrão MAP: os dois lados
+        CHECK(LADO_SINAL(l) * esqueleto_osso(OSSO_OMBRO(l) + 1)->cabeca.x > 0.0f);
+        int membros[2] = {OSSO_COXA(l), OSSO_OMBRO(l) + 1};
+        for (int k = 0; k < 2; k++) { // padrão MAP: perna e braço
+            const OssoRepouso *a = esqueleto_osso(membros[k]), *b = esqueleto_osso(membros[k] + 1);
+            Vector3 d1 = Vector3Normalize(Vector3Subtract(a->cauda, a->cabeca));
+            Vector3 d2 = Vector3Normalize(Vector3Subtract(b->cauda, b->cabeca));
+            CHECK(Vector3Length(Vector3CrossProduct(d1, d2)) > sinf(3.0f * DEG2RAD)); // dobra > 3°
         }
-        testa_esqueleto();
     }
-    CHECK(esqueleto_modelo_por_nome("nenhum") == -1);
-    // [REQ:PURA-esqueleto_marca_pontos] os olhos do papelão: meios-discos com a reta em cima
-    esqueleto_usa(CRIATURA_PAPELAO);
+    // [REQ:PURA-esqueleto_marca_pontos] os olhos do rosto liso: meios-discos com a reta em cima
+    CHECK(esqueleto_modelo()->n_marcas == 2);
     for (int i = 0; i < esqueleto_modelo()->n_marcas; i++) { // padrão MAP: cada olho
         const MarcaRosto *m = &esqueleto_modelo()->marcas[i];
         Vector3 p[MARCA_PONTOS];
@@ -145,11 +139,6 @@ static void testa_modelos_criatura(void) {
         }
         CHECK(p[MARCA_PONTOS / 2 + 1].y < m->centro.y - 0.9f * m->raio); // o fundo do arco, embaixo
     }
-    esqueleto_usa(CRIATURA_PAPELAO);
-    CHECK(esqueleto_peso_mandibula(esqueleto_osso(OSSO_MANDIBULA)->cauda) == 0.0f); // sem boca
-    esqueleto_usa(-1); // fora do intervalo: fica o atual
-    CHECK(esqueleto_modelo() == &MODELOS_CRIATURA[CRIATURA_PAPELAO]);
-    esqueleto_usa(CRIATURA_PRECURSOR);
 }
 
 static EntradaAnim entrada_anim(Vector3 pos) {
@@ -257,7 +246,9 @@ static void testa_anim_parado_e_transicoes(void) {
         regras_anim_passo(&a, &in, dt);
         salto = fmaxf(salto, maior_salto(&antes, &a.pose));
     }
-    CHECK(salto < 12.0f); // a 60 quadros por segundo, nenhum osso pula de pose
+    // a 60 quadros por segundo, nenhum osso pula de pose: correndo, a perna curta dele chega a ~13° por
+    // quadro; um pulo de pose de verdade passa dos 20°
+    CHECK(salto < 14.0f);
 }
 
 // Testa a saída do bueiro: primeiro só as mãos aparecem (na borda, com a cabeça ainda embaixo do chão),
@@ -431,14 +422,6 @@ static void testa_quadro_susto(void) {
     CHECK(perto(antes.distancia, JUMPSCARE_PERTO_M) && perto(antes.clarao, 0.0f)); // fica colado, sem clarão
     CHECK(mudou >= (int)(2.0f * JUMPSCARE_TREMOR_HZ) - 4); // treme rápido: ~40 posições novas por segundo
     CHECK(regras_quadro_susto(0.77f).tremor_y == regras_quadro_susto(0.77f).tremor_y); // repetível
-    CHECK(perto(regras_quadro_susto(JUMPSCARE_PULO_S * 0.5f).boca, 1.0f)); // pula de boca escancarada
-    float menor = 1.0f, maior = 0.0f;
-    for (int i = 0; i < 100; i++) { // 1 s depois do pulo: a boca abre e fecha
-        float b = regras_quadro_susto(JUMPSCARE_PULO_S + i * 0.01f).boca;
-        menor = fminf(menor, b);
-        maior = fmaxf(maior, b);
-    }
-    CHECK(menor >= 0.0f && maior <= 1.0f && menor < 0.15f && maior > 0.85f);
 }
 
 // [REQ:PURA-regras_placar] testa o placar sem eventos, o total e o placar por fase

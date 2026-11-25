@@ -1,85 +1,9 @@
-// susto.c — o jumpscare. Com o modelo, o rosto do precursor.glb pula de longe até colado na câmera e fica
+// susto.c — o jumpscare. Com o modelo, o rosto do Precursor pula de longe até colado na câmera e fica
 // tremendo; sem ele, o rosto procedural (a fenda) faz o mesmo em 2D. O movimento vem de regras_quadro_susto.
 #include "susto.h"
 #include "audio_sintese.h"
 #include "posfx.h"
 #include <math.h>
-#include <stdlib.h>
-
-// ================================================================== a boca (mandíbula)
-// O rosto do susto é desenhado sem o rig (pose de repouso, ver rig.c): aqui a mandíbula gira na CPU. A
-// dobradiça é a cabeça do osso da mandíbula do modelo escolhido (modelos_criatura.c), e o peso de cada
-// vértice também (num modelo sem boca, nenhum vértice entra e o susto fica de boca parada).
-static Vector3 dobradica(void) {
-    return esqueleto_osso(OSSO_MANDIBULA)->cabeca;
-}
-
-static void libera_boca(BocaModelo *b) {
-    free(b->indice);
-    free(b->peso);
-    free(b->original);
-    *b = (BocaModelo){0};
-}
-
-// Alocação única, no carregamento: os vértices de peso > 0 ficam compactados nos vetores da boca.
-void susto_carrega_boca(Recursos *rec) {
-    BocaModelo *b = &rec->boca;
-    *b = (BocaModelo){0};
-    if (!rec->tem_modelo || rec->modelo_precursor.meshes[0].vertices == NULL) return;
-    const Mesh *m = &rec->modelo_precursor.meshes[0];
-    const Vector3 *v = (const Vector3 *)m->vertices;
-    b->indice = malloc((size_t)m->vertexCount * sizeof(int));
-    b->peso = malloc((size_t)m->vertexCount * sizeof(float));
-    b->original = malloc((size_t)m->vertexCount * sizeof(Vector3));
-    if (b->indice == NULL || b->peso == NULL || b->original == NULL) {
-        TraceLog(LOG_WARNING, "PRECURSOR: sem memória para a boca; o susto segue de boca parada");
-        libera_boca(b);
-        return;
-    }
-    for (int i = 0; i < m->vertexCount; i++) { // padrão FILTER: só os vértices da mandíbula
-        float p = esqueleto_peso_mandibula(v[i]);
-        if (p <= 0.0f) continue;
-        b->indice[b->n] = i;
-        b->peso[b->n] = p;
-        b->original[b->n++] = v[i];
-    }
-    b->primeiro = b->n > 0 ? b->indice[0] : 0;
-    b->ultimo = b->n > 0 ? b->indice[b->n - 1] : 0;
-    TraceLog(LOG_INFO, "PRECURSOR: boca com %d vértices", b->n);
-}
-
-void susto_descarrega_boca(Recursos *rec) {
-    libera_boca(&rec->boca);
-}
-
-// Gira a mandíbula em volta da dobradiça (eixo x) e envia à GPU só a faixa da malha que mudou.
-static void gira_mandibula(Recursos *rec, float graus) {
-    BocaModelo *b = &rec->boca;
-    Mesh *m = &rec->modelo_precursor.meshes[0];
-    Vector3 *v = (Vector3 *)m->vertices, d = dobradica();
-    for (int k = 0; k < b->n; k++) { // padrão MAP: posição original → posição girada
-        float a = graus * DEG2RAD * b->peso[k];
-        float y = b->original[k].y - d.y, z = b->original[k].z - d.z;
-        v[b->indice[k]].y = d.y + y * cosf(a) - z * sinf(a);
-        v[b->indice[k]].z = d.z + y * sinf(a) + z * cosf(a);
-    }
-    int n = b->ultimo - b->primeiro + 1;
-    UpdateMeshBuffer(*m, 0, &v[b->primeiro], n * (int)sizeof(Vector3), b->primeiro * (int)sizeof(Vector3));
-    b->graus = graus;
-}
-
-static float tempo_do_rosto(const Estado *e);
-
-// Com o rosto na tela, a boca segue regras_quadro_susto; fora do susto, o modelo volta ao original.
-static void mexe_boca(Estado *e) {
-    if (e->rec.boca.n == 0) return;
-    float graus = 0.0f;
-    if (susto_rosto_na_tela(e)) {
-        float boca = regras_quadro_susto(tempo_do_rosto(e)).boca;
-        graus = -JUMPSCARE_BOCA_FECHA + (JUMPSCARE_BOCA_ABRE + JUMPSCARE_BOCA_FECHA) * boca;
-    }
-    if (graus != e->rec.boca.graus) gira_mandibula(&e->rec, graus);
-}
 
 // ================================================================== estado
 float susto_duracao(const Estado *e) {
@@ -100,7 +24,6 @@ bool susto_ativo(const Estado *e) {
 
 // O grito começa junto com o rosto; o eco que sobra no fim do som continua na tela seguinte.
 void susto_atualiza(Estado *e, float dt) {
-    mexe_boca(e);
     if (e->silencio_t > 0.0f) {
         e->silencio_t -= dt;
         if (e->silencio_t <= 0.0f) audio_toca(e, SOM_JUMPSCARE, 1.0f, 1.0f);
@@ -165,7 +88,7 @@ static void acende_luzes(const Estado *e, Vector3 olho, float t) {
     posfx_olho(e, olho);
 }
 
-// Onde fica o rosto do modelo escolhido (fração da caixa, em modelos_criatura.c) e a escala do jogo.
+// Onde fica o rosto do modelo (fração da caixa, em modelos_criatura.c) e a escala do jogo.
 static Vector3 rosto_do_modelo(const Model *m, float *escala) {
     BoundingBox b = GetModelBoundingBox(*m);
     Vector3 tam = Vector3Subtract(b.max, b.min), f = esqueleto_modelo()->rosto;

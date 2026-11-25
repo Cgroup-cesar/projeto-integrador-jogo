@@ -98,8 +98,8 @@ stateDiagram-v2
 | `respiracao.c` | o armário: esconde; se o Precursor vinha atrás de quem entrou (`regras_armario_perseguido`), ele vai até lá e, a 3 m (`regras_armario_chegou`), para na porta e a pessoa segura a respiração (ESPAÇO sobre a faixa branca; 3 chances). Sem tutorial: a tecla ESPAÇO aparece embaixo da barra |
 | `lanterna.c` | a lanterna: F liga e desliga, a 5ª luz do shader (cone saindo dos olhos) e o modelo na mão |
 | `criatura.c` | o Precursor: IA, A*, captura e o desenho do corpo |
-| `esqueleto.c` | o rig do Precursor (puro): o modelo escolhido (`esqueleto_usa`), cinemática direta, matrizes de skinning e IK de dois ossos |
-| `modelos_criatura.c` | os modelos do Precursor (puro, só dados): para cada .glb, os 22 ossos medidos no arquivo, a caixa, o queixo, os olhos, o rosto do susto, os olhos pintados no rosto liso, a altura do peito, o avanço na cela e a postura extra; `--criatura papelao` troca o padrão (`precursor`) pelo alien do papelão |
+| `esqueleto.c` | o rig do Precursor (puro): cinemática direta, matrizes de skinning e IK de dois ossos |
+| `modelos_criatura.c` | o modelo do Precursor (puro, só dados): os 22 ossos medidos no `precursor_papelao.glb`, a caixa, os olhos, o rosto do susto, os olhos pintados no rosto liso, a altura do peito, o avanço na cela e a postura extra |
 | `regras_animacao.c`, `regras_animacao_cenas.c` | a animação dele (pura): camadas com crossfade, passada com os pés plantados, cabeça, tiques, saída do bueiro, distorção e convulsão |
 | `animacao.c` | liga o jogo à animação: lê a fase, a IA, a cela, a lanterna e o armário e pede a pose; roda todo quadro, mesmo com a IA parada |
 | `rig.c` | os pesos dos ossos em cada vértice do `.glb` (calculados ao carregar) e o skinning no shader de luz |

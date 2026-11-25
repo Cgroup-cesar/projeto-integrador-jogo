@@ -29,8 +29,8 @@ static float lombada(float t, float de, float ate) { // 0 → 1 → 0
 }
 
 // ================================================================== os pés
-// Onde o tornozelo descansa (mundo, no chão). Andando, os pés ficam mais juntos e embaixo do quadril (o
-// modelo, em repouso, tem os pés à frente dele: a passada não alcançaria).
+// Onde o tornozelo descansa (mundo, no chão). Andando, os pés ficam mais juntos e logo à frente do quadril
+// (4 cm), de onde a passada sai para a frente e para trás por igual.
 Vector3 regras_anim_neutro(const AnimCriatura *a, const EntradaAnim *in, int lado) {
     const OssoRepouso *coxa = esqueleto_osso(OSSO_COXA(lado)), *pe = esqueleto_osso(OSSO_COXA(lado) + 2);
     float x = pe->cabeca.x * (1.0f - 0.2f * a->w_anda) * in->escala;
@@ -121,8 +121,8 @@ void regras_anim_pes(AnimCriatura *a, const EntradaAnim *in, float dt, float w_p
 }
 
 // ================================================================== saída do bueiro
-// O roteiro tem 6,5 s (escala para ANIM_BUEIRO_PRE_S + ANIM_BUEIRO_SAI_S). Ele sobe por trás da boca do duto
-// (o corpo 15 cm atrás do centro) e agarra a borda da frente.
+// O roteiro tem 6,5 s (escala para ANIM_BUEIRO_PRE_S + ANIM_BUEIRO_SAI_S). Ele sobe pelo meio da boca do duto
+// e agarra a borda da frente (a 0,6 m do centro: o braço dele alcança com o punho rente ao chão).
 //   0,0–1,3  só as mãos sobem e agarram a borda          1,3–2,3  pausa (a mão esquerda reajusta)
 //   2,3–3,9  a cabeça sobe devagar e olha em volta       3,9–5,0  puxa o corpo: um ombro, depois o outro
 //   5,0–6,0  o tronco passa da borda; o joelho esquerdo vem para o chão
@@ -133,7 +133,7 @@ static void bueiro_raiz_e_maos(float r, CenaAnim *c) {
     c->raiz.y = -2.6f + 0.45f * trecho(r, 2.3f, 3.9f) + 0.25f * trecho(r, 3.9f, 4.35f) +
                 0.40f * trecho(r, 4.5f, 5.0f) + 0.40f * trecho(r, 5.0f, 5.5f) +
                 0.55f * trecho(r, 5.5f, 6.0f) + 0.55f * trecho(r, 6.0f, 6.5f);
-    c->raiz.z = -0.15f + 0.15f * trecho(r, 5.0f, 6.4f);
+    c->raiz.z = 0.0f;
     float reajusta = 0.05f * lombada(r, 1.7f, 2.05f);
     c->mao[0] = (Vector3){0.30f, -0.70f + 0.75f * trecho(r, 0.0f, 1.0f) + reajusta, 0.55f};
     c->mao[1] = (Vector3){-0.32f, -0.70f + 0.75f * trecho(r, 0.3f, 1.3f), 0.53f};

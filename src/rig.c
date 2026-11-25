@@ -1,14 +1,11 @@
 // rig.c — os pesos do skinning, calculados uma vez ao carregar o modelo do Precursor (o .glb não tem ossos;
-// o esqueleto é o do modelo escolhido, em modelos_criatura.c):
+// o esqueleto é o de modelos_criatura.c):
 //   1. solda os vértices repetidos nas costuras de UV (mesma posição = mesmo ponto da pele);
 //   2. cada ponto pega o osso mais perto (distância ao segmento menos a espessura da carne) e mistura com o
 //      pai e os filhos dele, perto das articulações;
 //   3. os pesos são suavizados pela SUPERFÍCIE (vizinhos na malha), só entre ossos vizinhos na hierarquia;
-//      nos modelos de braços soltos (bracos_soltos_y), ponto do braço não pega osso do corpo e vice-versa;
-//   4. o queixo passa para a mandíbula; ficam os 4 ossos mais fortes de cada vértice, que vão para a GPU;
-//   5. no precursor.glb, a ponta dos dedos esquerdos está fundida à canela: os triângulos que ligam partes
-//      longe uma da outra no esqueleto viram triângulos vazios (senão esticariam como uma teia quando a mão
-//      sobe). Só nos modelos com corta_emendas.
+//      abaixo de bracos_soltos_y, ponto do braço não pega osso do corpo e vice-versa;
+//   4. ficam os 4 ossos mais fortes de cada vértice, que vão para a GPU.
 // Alocações só aqui (no carregamento) e liberadas no fim; nada por quadro.
 #include "rig.h"
 #include "rlgl.h"
@@ -104,7 +101,7 @@ static bool vizinhos_de_osso(int a, int b) {
 static int pesos_do_ponto(Vector3 p, unsigned permitido, float *w) {
     float d[OSSOS_TOTAL], menor = 1e9f, soma = 0.0f;
     int perto = 0;
-    for (int b = 0; b < OSSOS_TOTAL; b++) { // padrão FOLD: o osso mais perto (a mandíbula vem depois)
+    for (int b = 0; b < OSSOS_TOTAL; b++) { // padrão FOLD: o osso mais perto (a mandíbula fica de fora)
         const OssoRepouso *o = esqueleto_osso(b);
         bool vale = b != OSSO_MANDIBULA && (permitido >> b & 1u);
         d[b] = vale ? distancia_segmento(p, o->cabeca, o->cauda) - o->raio : 1e9f;
@@ -177,7 +174,7 @@ static bool separa_bracos(const Grafo *g, int pontos, const Vector3 *v, const in
         peca[p] = -1;
         if (v[rep[p]].y < v[rep[baixo]].y) baixo = p;
     }
-    for (int p = 0, n = 0; p < pontos && limite != 0.0f; p++) { // padrão MAP: cada peça, pela superfície
+    for (int p = 0, n = 0; p < pontos; p++) { // padrão MAP: cada peça, pela superfície
         if (peca[p] >= 0 || v[rep[p]].y >= limite) continue;
         int ini = 0, fim = 0;
         float soma_x = 0.0f;
@@ -200,11 +197,10 @@ static bool separa_bracos(const Grafo *g, int pontos, const Vector3 *v, const in
 }
 
 // ================================================================== 4. os 4 mais fortes
-static void quatro_maiores(const Vector3 v, const float *w, float *ids, float *pesos) {
-    float q[OSSOS_TOTAL], soma = 0.0f, mandibula = esqueleto_peso_mandibula(v);
-    for (int b = 0; b < OSSOS_TOTAL; b++) // padrão MAP: o queixo passa da cabeça para a mandíbula
-        q[b] = w[b] * (1.0f - mandibula);
-    q[OSSO_MANDIBULA] += mandibula;
+static void quatro_maiores(const float *w, float *ids, float *pesos) {
+    float q[OSSOS_TOTAL], soma = 0.0f;
+    for (int b = 0; b < OSSOS_TOTAL; b++) // padrão MAP: uma cópia, que vai sendo consumida abaixo
+        q[b] = w[b];
     for (int k = 0; k < INFLUENCIAS; k++) { // padrão FOLD: a maior que sobrou, quatro vezes
         int maior = 0;
         for (int b = 1; b < OSSOS_TOTAL; b++) // padrão FOLD: o maior peso
@@ -243,50 +239,12 @@ static bool calcula_pesos(const Mesh *m, float *ids, float *pesos) {
         dono[p] = pesos_do_ponto(v[rep[p]], permitido[p], &w[p * OSSOS_TOTAL]);
     suaviza(&g, pontos, dono, permitido, w, aux);
     for (int i = 0; i < n; i++) // padrão MAP: cada vértice herda os pesos do seu ponto
-        quatro_maiores(v[i], &w[id[i] * OSSOS_TOTAL], &ids[i * INFLUENCIAS], &pesos[i * INFLUENCIAS]);
+        quatro_maiores(&w[id[i] * OSSOS_TOTAL], &ids[i * INFLUENCIAS], &pesos[i * INFLUENCIAS]);
     TraceLog(LOG_INFO, "PRECURSOR: rig com %d ossos em %d vértices (%d pontos da pele)", OSSOS_TOTAL, n,
              pontos);
     free(permitido);
     libera(id, rep, w, aux, dono, &g);
     return true;
-}
-
-// ================================================================== 5. as emendas que não existem
-static int profundidade(int b) {
-    int d = 0;
-    while (esqueleto_osso(b)->pai >= 0)
-        b = esqueleto_osso(b)->pai, d++;
-    return d;
-}
-
-// Quantos ossos separam a de b na hierarquia (0 = o mesmo; 2 = irmãos ou avô).
-static int distancia_na_arvore(int a, int b) {
-    int da = profundidade(a), db = profundidade(b), n = 0;
-    for (; da > db; da--, n++) // sobe o mais fundo até a mesma altura...
-        a = esqueleto_osso(a)->pai;
-    for (; db > da; db--, n++)
-        b = esqueleto_osso(b)->pai;
-    for (; a != b; n += 2) // ...e sobem juntos até o ancestral comum
-        a = esqueleto_osso(a)->pai, b = esqueleto_osso(b)->pai;
-    return n;
-}
-
-// Um triângulo cujos cantos são de ossos a mais de 3 passos um do outro (a mão e a canela) só existe porque
-// as duas partes se encostam no modelo: vira um triângulo vazio (os três índices iguais). Devolve quantos.
-static int corta_emendas(Mesh *m, const float *ids) {
-    if (m->indices == NULL) return 0;
-    int cortados = 0;
-    for (int t = 0; t < m->triangleCount; t++) { // padrão MAP: confere cada triângulo
-        unsigned short *c = &m->indices[3 * t];
-        int a = (int)ids[c[0] * INFLUENCIAS], b = (int)ids[c[1] * INFLUENCIAS],
-            d = (int)ids[c[2] * INFLUENCIAS];
-        if (distancia_na_arvore(a, b) <= 3 && distancia_na_arvore(b, d) <= 3 &&
-            distancia_na_arvore(a, d) <= 3)
-            continue;
-        c[1] = c[2] = c[0];
-        cortados++;
-    }
-    return cortados;
 }
 
 // Os dois atributos entram no VAO do próprio modelo: o DrawMesh da raylib os liga junto com o resto.
@@ -299,13 +257,7 @@ static void envia(Recursos *rec, Mesh *m, int loc_ids, int loc_pesos, const floa
     rec->rig_vbo[1] = rlLoadVertexBuffer(pesos, tamanho, false);
     rlSetVertexAttribute((unsigned int)loc_pesos, INFLUENCIAS, RL_FLOAT, false, 0, 0);
     rlEnableVertexAttribute((unsigned int)loc_pesos);
-    // com o VAO dele ligado: os índices continuam dele (só nos modelos com partes fundidas)
-    int cortados = esqueleto_modelo()->corta_emendas ? corta_emendas(m, ids) : 0;
-    if (cortados > 0)
-        rlUpdateVertexBufferElements(m->vboId[RL_DEFAULT_SHADER_ATTRIB_LOCATION_INDICES], m->indices,
-                                     m->triangleCount * 3 * (int)sizeof(unsigned short), 0);
     rlDisableVertexArray();
-    TraceLog(LOG_INFO, "PRECURSOR: %d triângulos de emenda (partes encostadas) removidos", cortados);
 }
 
 static bool acha_uniformes(Recursos *rec) {

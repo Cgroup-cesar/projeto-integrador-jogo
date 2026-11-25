@@ -1,4 +1,4 @@
-// rig.h — o rig do precursor.glb (um modelo sem esqueleto): os pesos de cada vértice são calculados ao
+// rig.h — o rig do modelo do Precursor (um .glb sem esqueleto): os pesos de cada vértice são calculados ao
 // carregar, a partir dos ossos de esqueleto.c, e o shader de luz deforma a malha na GPU (skinning).
 // Sem o modelo, o mesmo esqueleto anima o corpo procedural (cilindros entre as articulações).
 #ifndef RIG_H
