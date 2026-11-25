@@ -187,6 +187,29 @@ float regras_retorno_faixa(float t);
 // A luz da sala na rodada que começa no meio da cena: 0 = ainda a da saída, 1 = a da rodada.
 float regras_retorno_luz(float t);
 
+// ------------------------------------------------------------------ a cena do final bom (regras_cena.c)
+// t é o tempo do final (Fim.tempo); a cena começa em CENA_COMECA_S. Antes dela e depois, ANTES e FIM.
+typedef enum { CENA_ANTES, CENA_VIRA, CENA_PORTA, CENA_ANDA, CENA_BRANCO, CENA_FORA, CENA_PRETO, CENA_FIM } EtapaCena;
+EtapaCena regras_cena_etapa(float t);
+// Lá dentro: de `de` (o console) até `porta` (de frente para ela, por dentro), parado enquanto ela abre, e
+// pelo corredor até `fim`, começando e parando devagar.
+PoseJogador regras_cena_pose(float t, PoseJogador de, PoseJogador porta, PoseJogador fim);
+// Lá fora, na altura dos olhos e com a câmera na mão: sai pela porta (`de`), anda até `meio` (o pátio), dá
+// uma volta inteira olhando em volta e termina olhando para o céu.
+PoseJogador regras_cena_fora(float t, PoseJogador de, Vector3 meio);
+// O branco da lanterna por cima de tudo: sobe no fim da caminhada e se desfaz no começo da fita (0..1).
+float regras_cena_branco(float t);
+// O preto no fim da fita (0..1).
+float regras_cena_preto(float t);
+// As faixas de cinema da caminhada (0..1).
+float regras_cena_faixa(float t);
+// Quanto uma luminária a `dist` m da porta já acendeu (0..1): a frente acesa anda a CENA_ACENDE_M_S desde
+// que a porta abre, e cada uma pisca um pouco ao acender.
+float regras_cena_acende(float t, float dist);
+// A luz da nave sobre a base: a altura (m, acima do chão) e o brilho (0..1), que some lá no alto.
+float regras_cena_nave_altura(float t);
+float regras_cena_nave_brilho(float t);
+
 // ------------------------------------------------------------------ sanidade (regras_sanidade.c)
 // Um quadro de sanidade (0..SANIDADE_MAX). Nos corredores (`fase_saida`), cai com a criatura a menos de
 // SANIDADE_RAIO (de QUEDA_MIN × ACELERA_LONGE na borda a QUEDA_MAX × ACELERA_PERTO em SANIDADE_PERTO,

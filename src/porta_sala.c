@@ -62,6 +62,10 @@ void porta_sala_interage(Estado *e) {
         move_folha(e, false, PORTA_FECHA_S, true);
 }
 
+void porta_sala_abre(Estado *e) {
+    if (!e->porta.aberta) move_folha(e, true, PORTA_ABRE_S, false);
+}
+
 void porta_sala_fecha(Estado *e) {
     if (e->porta.aberta) move_folha(e, false, PORTA_FECHA_S, false);
 }

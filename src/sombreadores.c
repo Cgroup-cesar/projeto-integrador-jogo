@@ -57,6 +57,7 @@ static const char *LUZ_FS_330 =
     "uniform float direto; uniform float exposicao;\n"
     "uniform sampler2D mapaCor; uniform float triplanar; uniform float vidro;\n"
     "uniform float modoSombra; uniform vec3 luzSombra;\n"
+    "uniform float recorte;\n" // > 0: o que for mais transparente que isso some (o alambrado da base)
     // as luzes não atravessam paredes: o bit da luz na célula do ponto (Nivel.alcance_luz)
     "uniform sampler2D mapaAlcance; uniform int luzId[" N_LUZES "];\n"
     "bool alcanca(int id, vec3 p) {\n"
@@ -163,6 +164,7 @@ static const char *LUZ_FS_330 =
     "        return;\n"
     "    }\n"
     "    vec4 base = texture(texture0, fragTexCoord) * colDiffuse * fragColor;\n"
+    "    if (base.a < recorte) discard;\n"
     "    vec3 albedo = pow(base.rgb, vec3(2.2));\n" // as texturas são sRGB: a luz é somada em linear
     "    vec3 n = normalize(cross(dFdx(fragPosition), dFdy(fragPosition)));\n"
     "    vec3 paraCamera = camera - fragPosition;\n"
@@ -279,6 +281,7 @@ static const char *LUZ_FS_100 =
     "uniform sampler2D texture0; uniform vec4 colDiffuse;\n"
     "uniform vec3 luzPos[" N_LUZES "]; uniform vec3 luzCor[" N_LUZES "]; uniform vec4 luzCone[" N_LUZES "];\n"
     "uniform float luzQueda[" N_LUZES "];\n"
+    "uniform float recorte;\n"
     "uniform float ambiente; uniform float nevoa; uniform vec3 camera;\n"
     "uniform vec3 contraluz; uniform float molhado; uniform float relevo;\n"
     "float foco(vec4 cone, vec3 paraLuz) {\n"
@@ -320,6 +323,7 @@ static const char *LUZ_FS_100 =
     "}\n"
     "void main() {\n"
     "    vec4 base = texture2D(texture0, fragTexCoord) * colDiffuse * fragColor;\n"
+    "    if (base.a < recorte) discard;\n"
     "    vec3 luz = vec3(ambiente), brilho = vec3(0.0);\n"
     "    vec3 vista = normalize(camera - fragPosition);\n"
     "    for (int i = 0; i < " N_LUZES "; i++) {\n"

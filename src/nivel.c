@@ -11,6 +11,7 @@
 #include "lampada_sala.h"
 #include "chave.h"
 #include "corpo.h"
+#include "cena_final.h"
 #include "texturas.h"
 #include "cenario.h"
 #include "posfx.h"
@@ -426,6 +427,7 @@ int nivel_luzes(const Estado *e, Vector3 *posicoes, Vector3 *cores, Vector4 *con
         cones[i] = (Vector4){0.0f, -1.0f, 0.0f, -2.0f};
         ids[i] = -1;
     }
+    if (cena_final_dentro(e)) return cena_final_luzes(e, posicoes, cores, cones, ids); // o final bom
     if (regras_fase_eh_saida(e->fase)) return luzes_saida(e, posicoes, cores, ids);
     return luzes_sala(e, posicoes, cores, cones);
 }

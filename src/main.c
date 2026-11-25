@@ -31,6 +31,7 @@
 #include "quadro.h"
 #include "lampada_sala.h"
 #include "corpo.h"
+#include "cena_final.h"
 #include "dialogo.h"
 #include "ranking.h"
 #include "respiracao.h"
@@ -662,12 +663,14 @@ static void carrega_recursos(void) {
     quadro_carrega(&estado.rec);
     lampada_sala_carrega(&estado.rec);
     corpo_carrega(&estado.rec);
+    cena_final_carrega(&estado.rec);
     if (mudo || estado.modo_smoke) SetMasterVolume(0.0f); // o smoke roda calado
 }
 
 static void descarrega_recursos(void) {
     lampada_sala_descarrega(&estado.rec);
     corpo_descarrega(&estado.rec);
+    cena_final_descarrega(&estado.rec);
     quadro_descarrega(&estado.rec);
     cameras_descarrega(&estado.rec);
     porta_bunker_descarrega(&estado.rec);

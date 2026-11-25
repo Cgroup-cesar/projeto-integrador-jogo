@@ -21,6 +21,7 @@
 #include "chave.h"
 #include "porta_sala.h"
 #include "retorno.h"
+#include "cena_final.h"
 #include "respiracao.h"
 #include "sanidade.h"
 #include "clique.h"
@@ -417,6 +418,7 @@ void jogo_atualiza(Estado *e, float dt) {
 
 // ================================================================== desenho
 static void desenha_mundo_3d(const Estado *e) {
+    if (cena_final_desenha_fora(e)) return; // o final bom, lá fora: só a base, com as luzes dela
     Vector3 pos[LUZES_SHADER], cor[LUZES_SHADER];
     Vector4 cone[LUZES_SHADER];
     float queda[LUZES_SHADER];
@@ -464,6 +466,7 @@ static void desenha_mundo_3d(const Estado *e) {
     lanterna_desenha(e);
     posfx_termina_luz(e);
     nivel_desenha_emissivos(e);
+    cena_final_desenha_emissivos(e); // o final bom: as luminárias acendendo e a lanterna do Varela
     lanterna_desenha_brilho(e);
     circuito_desenha_3d(e);
     glifos_desenha(e);

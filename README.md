@@ -144,6 +144,7 @@ src/regras_ranking.c     regras puras do ranking: lugar da partida, linha do arq
 src/regras_sanidade.c    regras da sanidade (puras): queda pela distância, recuperação, bônus, força do efeito
 src/regras_som.c         som no espaço (puro): volume pela distância e lado esquerdo/direito
 src/regras_porta.c       a porta da sala e a volta à sala (puro): a folha, a colisão, a coreografia da cena
+src/regras_cena.c        a cena do final bom (puro): as etapas, a caminhada, a volta lá fora, as luzes e a nave
 src/colecoes.c/.h        as 6 coleções: ruídos, partículas, rachaduras, eventos, interativos, paredes
 src/funcional.h          fx_map, fx_filter_inplace, fx_fold
 src/glifos.c/.h          os glifos da língua do Precursor e a projeção no vidro
@@ -189,6 +190,7 @@ src/quadro.c/.h          o quadro de investigação da sala de observação (jor
 src/chave.c/.h           a porta trancada do Arquivo (a sala do segundo gerador) e a chave dela, no chaveiro ao lado do quadro
 src/lampada_sala.c/.h    a lâmpada pendurada da sala de observação, com o bulbo aceso (assets/modelos/lampada.glb, opcional)
 src/corpo.c/.h           o corpo coberto do consultor americano no fim do rastro de arrasto (E — examinar)
+src/cena_final.c/.h      o final bom como cena: a saída pelo corredor até a lanterna do Varela e a fita lá fora, na base com a mata
 src/tela_fim.c/.h        depois do final: desempenho, avaliação do jogo em estrelas e o ranking
 src/ranking.c/.h         ranking.txt e avaliacoes.csv no disco do estande (nada no --smoke)
 src/identidade.c/.h      "Professor ou professora?" e o nome, no começo da intro (só em memória, só na partida)
@@ -211,7 +213,7 @@ tests/test_logica.c      conectivos, classificações, parser, painéis
 tests/test_regras.c      regras puras (inclusive sanidade) e coleções, com as bordas
 tests/test_fluxo.c       partidas inteiras pela máquina de fases
 tests/test_menu.c        teste visual do menu inicial (abre janela; não entra no make test)
-assets/fontes/ · assets/modelos/ · assets/audio/ · assets/texturas/   opcionais (por enquanto, modelos/precursor.glb, modelos/lanterna.glb, modelos/terminal.glb, modelos/caixas.glb, modelos/mesa.glb, modelos/papeis.glb, modelos/armario.glb, modelos/porta_bunker.glb, modelos/camera.glb, modelos/quadro.glb, modelos/lampada.glb, modelos/corpo.glb, texturas/sangue.png, audio/jumpscare.mp3 e os sons gravados em audio/; texturas: ver "Texturas do mapa")
+assets/fontes/ · assets/modelos/ · assets/audio/ · assets/texturas/   opcionais (por enquanto, modelos/precursor.glb, modelos/lanterna.glb, modelos/terminal.glb, modelos/caixas.glb, modelos/mesa.glb, modelos/papeis.glb, modelos/armario.glb, modelos/porta_bunker.glb, modelos/camera.glb, modelos/quadro.glb, modelos/lampada.glb, modelos/corpo.glb, modelos/base.glb, modelos/arvores.glb, texturas/sangue.png, audio/jumpscare.mp3 e os sons gravados em audio/; texturas: ver "Texturas do mapa")
 docs/ESPECIFICACAO_PROJETO_PRECURSOR.md   a especificação (fonte da verdade do design)
 docs/ARQUITETURA.md · docs/DECISOES.md · docs/PROGRESSO.md   arquitetura · decisões · progresso da v0
 docs/img/                capturas de tela
@@ -258,12 +260,12 @@ Cada trecho que cumpre um requisito tem, logo acima, um comentário-âncora `// 
 
 | Requisito | Onde | Âncora | Como foi cumprido |
 | :---- | :---- | :---- | :---- |
-| RF1 Janela e game loop a 60 FPS com `GetFrameTime()` | [src/main.c#L704-L705](src/main.c#L704-L705)<br>[src/main.c#L614-L623](src/main.c#L614-L623)<br>[src/criatura.c#L279-L280](src/criatura.c#L279-L280) | `[REQ:RF1]` | `SetTargetFPS(60)`; `dt = GetFrameTime()` limitado a 0,05 s e passado a todo `xxx_atualiza`, que multiplica movimento, temporizadores e animações (aqui, o passo da criatura). |
-| RF2 Controle do jogador por teclado/mouse (e controle de Xbox) | [src/main.c#L54-L98](src/main.c#L54-L98)<br>[src/jogador.c#L86-L102](src/jogador.c#L86-L102)<br>[src/jogador.c#L151-L159](src/jogador.c#L151-L159) | `[REQ:RF2]` | Câmera em 1ª pessoa pelo mouse; WASD, Shift (corrida com fôlego), E, 1/2/3, setas, ENTER e Esc, lidos uma vez por quadro numa `struct Entrada`; o controle soma por cima em `src/controle.c` (o analógico direito gira a câmera em rad/s, multiplicado por `dt`). |
-| RF3 Coleção (vetor) de múltiplos objetos | [src/estado.h#L451-L457](src/estado.h#L451-L457) | `[REQ:RF3]` | Seis coleções de capacidade fixa com contador (ruídos, partículas, rachaduras, eventos, interativos, paredes), sem `malloc` por quadro; ver a tabela de map, filter e fold. |
+| RF1 Janela e game loop a 60 FPS com `GetFrameTime()` | [src/main.c#L707-L708](src/main.c#L707-L708)<br>[src/main.c#L615-L624](src/main.c#L615-L624)<br>[src/criatura.c#L279-L280](src/criatura.c#L279-L280) | `[REQ:RF1]` | `SetTargetFPS(60)`; `dt = GetFrameTime()` limitado a 0,05 s e passado a todo `xxx_atualiza`, que multiplica movimento, temporizadores e animações (aqui, o passo da criatura). |
+| RF2 Controle do jogador por teclado/mouse (e controle de Xbox) | [src/main.c#L55-L99](src/main.c#L55-L99)<br>[src/jogador.c#L86-L102](src/jogador.c#L86-L102)<br>[src/jogador.c#L151-L159](src/jogador.c#L151-L159) | `[REQ:RF2]` | Câmera em 1ª pessoa pelo mouse; WASD, Shift (corrida com fôlego), E, 1/2/3, setas, ENTER e Esc, lidos uma vez por quadro numa `struct Entrada`; o controle soma por cima em `src/controle.c` (o analógico direito gira a câmera em rad/s, multiplicado por `dt`). |
+| RF3 Coleção (vetor) de múltiplos objetos | [src/estado.h#L462-L468](src/estado.h#L462-L468) | `[REQ:RF3]` | Seis coleções de capacidade fixa com contador (ruídos, partículas, rachaduras, eventos, interativos, paredes), sem `malloc` por quadro; ver a tabela de map, filter e fold. |
 | RF4 Colisões com funções da Raylib | [src/jogador.c#L105-L112](src/jogador.c#L105-L112)<br>[src/colecoes.c#L186-L196](src/colecoes.c#L186-L196)<br>[src/colecoes.c#L145-L165](src/colecoes.c#L145-L165)<br>[src/criatura.c#L180-L181](src/criatura.c#L180-L181)<br>[src/criatura.c#L287-L294](src/criatura.c#L287-L294) | `[REQ:RF4]` | `CheckCollisionBoxes` (jogador × paredes, vidro, móveis e armários, eixo por eixo), `GetRayCollisionBox` (mira de interação e visão da criatura contra as paredes) e `CheckCollisionSpheres` (captura). |
-| RF5 Placar, vidas, telas de início e fim | [src/jogo.c#L64-L69](src/jogo.c#L64-L69)<br>[src/menu.c#L156-L187](src/menu.c#L156-L187)<br>[src/tela_fim.c#L88-L124](src/tela_fim.c#L88-L124) | `[REQ:RF5]` | Placar = fold dos eventos; vidas = integridade do vidro (fold das rachaduras), recalculados a cada quadro; tela de início com o título, o gancho, as opções INICIAR, RANKING e SAIR, o convite do 1º lugar ("você pode ser o próximo") e o aviso de nome provisório, intro e tela de fim só com o principal: resultado, placar e lugar no ranking, mais a avaliação do jogo em estrelas. |
-| RF6 Condição de vitória/derrota | [src/compositor.c#L62-L76](src/compositor.c#L62-L76)<br>[src/tela_fim.c#L88-L124](src/tela_fim.c#L88-L124) | `[REQ:RF6]` | A frase transmitida vai para `regras_avalia_transmissao`: contradição → final bom (VITÓRIA); satisfazível → final ruim (DERROTA); inválida → SINTAXE INVÁLIDA, sem penalidade. |
+| RF5 Placar, vidas, telas de início e fim | [src/jogo.c#L65-L70](src/jogo.c#L65-L70)<br>[src/menu.c#L156-L187](src/menu.c#L156-L187)<br>[src/tela_fim.c#L88-L124](src/tela_fim.c#L88-L124) | `[REQ:RF5]` | Placar = fold dos eventos; vidas = integridade do vidro (fold das rachaduras), recalculados a cada quadro; tela de início com o título, o gancho, as opções INICIAR, RANKING e SAIR, o convite do 1º lugar ("você pode ser o próximo") e o aviso de nome provisório, intro e tela de fim só com o principal: resultado, placar e lugar no ranking, mais a avaliação do jogo em estrelas. |
+| RF6 Condição de vitória/derrota | [src/compositor.c#L63-L77](src/compositor.c#L63-L77)<br>[src/tela_fim.c#L88-L124](src/tela_fim.c#L88-L124) | `[REQ:RF6]` | A frase transmitida vai para `regras_avalia_transmissao`: contradição → final bom (VITÓRIA); satisfazível → final ruim (DERROTA); inválida → SINTAXE INVÁLIDA, sem penalidade. |
 
 ### Map, filter e fold nas coleções
 
@@ -308,6 +310,7 @@ Cada laço leva o comentário `// padrão MAP`, `// padrão FILTER` ou `// padr�
 | `regras_chave_visivel` | [src/regras.c#L363-L366](src/regras.c#L363-L366)<br>[tests/test_regras.c#L441-L453](tests/test_regras.c#L441-L453) | `[REQ:PURA-regras_chave_visivel]` | A chave só aparece no chaveiro na S2, até o jogador pegá-la. |
 | `regras_porta_passo` · `regras_porta_solida` | [src/regras_porta.c#L11-L15](src/regras_porta.c#L11-L15)<br>[src/regras_porta.c#L17-L20](src/regras_porta.c#L17-L20)<br>[tests/test_regras.c#L455-L470](tests/test_regras.c#L455-L470) | `[REQ:PURA-regras_porta_passo]` `[REQ:PURA-regras_porta_solida]` | A folha da porta da sala anda para aberta ou fechada no tempo de cada movimento, sem passar dos limites; abaixo de 35% de abertura ela já fecha o vão (entra na colisão). |
 | `regras_retorno_pose` · `_faixa` · `_luz` | [src/regras_porta.c#L39-L54](src/regras_porta.c#L39-L54)<br>[src/regras_porta.c#L56-L60](src/regras_porta.c#L56-L60)<br>[src/regras_porta.c#L62-L66](src/regras_porta.c#L62-L66)<br>[tests/test_regras.c#L472-L500](tests/test_regras.c#L472-L500) | `[REQ:PURA-regras_retorno_pose]` `[REQ:PURA-regras_retorno_faixa]` `[REQ:PURA-regras_retorno_luz]` | A volta à sala como função do tempo: onde o jogador está e para onde olha (vira para a porta pelo lado mais curto, para enquanto puxa a folha, entra na sala virando para a cela), as faixas de cinema entrando e saindo e a luz da saída passando para a da rodada. |
+| `regras_cena_etapa` · `_pose` · `_fora` · `_branco` · `_acende` · `_nave_altura` | [src/regras_cena.c#L15-L25](src/regras_cena.c#L15-L25)<br>[src/regras_cena.c#L32-L42](src/regras_cena.c#L32-L42)<br>[src/regras_cena.c#L44-L54](src/regras_cena.c#L44-L54)<br>[src/regras_cena.c#L56-L63](src/regras_cena.c#L56-L63)<br>[src/regras_cena.c#L74-L82](src/regras_cena.c#L74-L82)<br>[src/regras_cena.c#L84-L92](src/regras_cena.c#L84-L92)<br>[tests/test_regras.c#L1002-L1048](tests/test_regras.c#L1002-L1048) | `[REQ:PURA-regras_cena_etapa]` `[REQ:PURA-regras_cena_pose]` `[REQ:PURA-regras_cena_fora]` `[REQ:PURA-regras_cena_branco]` `[REQ:PURA-regras_cena_acende]` `[REQ:PURA-regras_cena_nave]` | A cena do final bom como função do tempo: em que parte ela está, a caminhada do console até o fim do corredor (parado enquanto a porta abre), a volta lá fora na altura dos olhos (sai pela porta da base, gira 360° e olha para o céu), o branco da lanterna, as luminárias acendendo uma a uma e a luz da nave subindo. |
 | `regras_avaliar_circuito` | [src/regras.c#L407-L418](src/regras.c#L407-L418)<br>[tests/test_logica.c#L121-L138](tests/test_logica.c#L121-L138) | `[REQ:PURA-regras_avaliar_circuito]` | Avalia porta a porta (cada LED) com a semântica de `logica_aplica`; o Painel 2 tem exatamente duas soluções. |
 | `regras_circuito_bloqueio` | [src/regras.c#L430-L447](src/regras.c#L430-L447)<br>[tests/test_logica.c#L157-L171](tests/test_logica.c#L157-L171) | `[REQ:PURA-regras_circuito_bloqueio]` | Da SAÍDA para trás, de porta apagada em porta apagada, acha a entrada que trava a corrente: o painel aponta esse ponto, uma pergunta por vez. |
 | `regras_bonus_movimentos` | [src/regras.c#L449-L455](src/regras.c#L449-L455)<br>[tests/test_regras.c#L416-L423](tests/test_regras.c#L416-L423) | `[REQ:PURA-regras_bonus_movimentos]` | Painel resolvido com poucos movimentos vale bônus (metade com alguns a mais; nada para quem chuta). |
@@ -335,10 +338,10 @@ Cada laço leva o comentário `// padrão MAP`, `// padrão FILTER` ou `// padr�
 | Requisito | Onde | Âncora | Como foi cumprido |
 | :---- | :---- | :---- | :---- |
 | RNF1 Legibilidade | [.clang-format#L1-L12](.clang-format#L1-L12) | `[REQ:RNF1]` | Nomes em português, claros e consistentes (`atualiza_…`, `desenha_…`, `colidiu_…`); funções de até ~40 linhas (a única exceção, em `audio_sintese.c`, está comentada); o código segue o `.clang-format` (`clang-format --dry-run` sem avisos). |
-| RNF2 Modularização | [src/estado.h#L400-L476](src/estado.h#L400-L476) | `[REQ:RNF2]` | Uma struct por objeto, uma função por responsabilidade, um módulo por sistema; o maior arquivo tem menos de 500 linhas. |
-| RNF3 Separação update/render | [src/main.c#L510-L523](src/main.c#L510-L523) | `[REQ:RNF3]` | Todo módulo tem `xxx_atualiza(Estado *e, float dt)` e `xxx_desenha(const Estado *e)`; o `const` garante que desenhar não muda nada; nenhum `Draw*` em `*_atualiza` (auditado com grep). |
-| RNF4 Robustez | [src/colecoes.c#L9-L14](src/colecoes.c#L9-L14)<br>[src/main.c#L614-L623](src/main.c#L614-L623)<br>[src/nivel.c#L50-L54](src/nivel.c#L50-L54)<br>[src/ui.c#L33-L60](src/ui.c#L33-L60)<br>[src/criatura.c#L29-L48](src/criatura.c#L29-L48) | `[REQ:RNF4]` | Vetor cheio descarta com `TraceLog`, sem travar; listas vazias (sem ruídos, sem eventos) testadas; `dt` limitado; fora do mapa conta como parede; sem fonte, som ou modelo, entra o placeholder. |
-| RNF5 Documentação | [README.md#L254-L254](README.md#L254-L254) | `[REQ:RNF5]` | Este README, `docs/ARQUITETURA.md`, `docs/DECISOES.md` (as escolhas e por quê), `docs/PROGRESSO.md` e `CLAUDE.md`. |
+| RNF2 Modularização | [src/estado.h#L411-L487](src/estado.h#L411-L487) | `[REQ:RNF2]` | Uma struct por objeto, uma função por responsabilidade, um módulo por sistema; o maior arquivo tem menos de 500 linhas. |
+| RNF3 Separação update/render | [src/main.c#L511-L524](src/main.c#L511-L524) | `[REQ:RNF3]` | Todo módulo tem `xxx_atualiza(Estado *e, float dt)` e `xxx_desenha(const Estado *e)`; o `const` garante que desenhar não muda nada; nenhum `Draw*` em `*_atualiza` (auditado com grep). |
+| RNF4 Robustez | [src/colecoes.c#L9-L14](src/colecoes.c#L9-L14)<br>[src/main.c#L615-L624](src/main.c#L615-L624)<br>[src/nivel.c#L51-L55](src/nivel.c#L51-L55)<br>[src/ui.c#L33-L60](src/ui.c#L33-L60)<br>[src/criatura.c#L29-L48](src/criatura.c#L29-L48) | `[REQ:RNF4]` | Vetor cheio descarta com `TraceLog`, sem travar; listas vazias (sem ruídos, sem eventos) testadas; `dt` limitado; fora do mapa conta como parede; sem fonte, som ou modelo, entra o placeholder. |
+| RNF5 Documentação | [README.md#L256-L256](README.md#L256-L256) | `[REQ:RNF5]` | Este README, `docs/ARQUITETURA.md`, `docs/DECISOES.md` (as escolhas e por quê), `docs/PROGRESSO.md` e `CLAUDE.md`. |
 | RNF6 Versionamento + Makefile | [Makefile#L1-L2](Makefile#L1-L2) | `[REQ:RNF6]` | `Makefile` como build principal (com `test`, `smoke`, `readme-check`); um commit por marco na v0 (M0 a M9) e, daqui em diante, branch por card e PR (ver Metodologia). |
 
 ### Critérios de avaliação
@@ -357,7 +360,7 @@ Cada laço leva o comentário `// padrão MAP`, `// padrão FILTER` ou `// padr�
 **O game loop (RF1):** `dt` limitado e o quadro entrada → atualiza → desenha.
 
 ```c
-// src/main.c#L614-L624
+// src/main.c#L615-L625
 static void quadro(Estado *e) {
     // [REQ:RF1] [REQ:RNF4] dt de GetFrameTime() limitado a DT_MAXIMO; no smoke, passo fixo (velocidade
     // acelerada)
@@ -388,7 +391,7 @@ static void tenta_capturar(Estado *e) {
 **O placar (RF5):** dois folds recalculados a cada quadro.
 
 ```c
-// src/jogo.c#L64-L69
+// src/jogo.c#L65-L70
 // [REQ:RF5] placar = fold dos eventos; vidas = integridade do vidro (fold das rachaduras).
 // Recalculados a cada quadro, para o HUD e o terminal mostrarem o erro na hora.
 static void atualiza_folds(Estado *e) {
@@ -475,7 +478,7 @@ static void testa_vidro(void) {
 **Desenhar só lê o estado (RNF3):**
 
 ```c
-// src/main.c#L510-L523
+// src/main.c#L511-L524
 // [REQ:RNF3] desenhar recebe const Estado *: não muda nada; o loop é entrada → atualiza → desenha
 static void desenha(const Estado *e) {
     clique_limpa();   // as telas registram de novo, ao se desenhar, onde estão as opções clicáveis

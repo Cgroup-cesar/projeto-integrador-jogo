@@ -70,6 +70,7 @@ typedef enum {
     TXT_MIRA_PORTA_ABRIR, // a porta da sala nas saídas (porta_sala.c)
     TXT_MIRA_PORTA_FECHAR,
     TXT_MIRA_CORPO,
+    TXT_CENA_FITA_EXERCITO, // a gravação lá fora, na cena do final bom
     TXT_ARMARIO_SAIR,
     TXT_OBJETIVO_SALA,
     TXT_OBJETIVO_S1,
@@ -111,6 +112,7 @@ typedef enum {
     TXT_PAINEL_CHAVE,
     TXT_FALANTE_VARELA,
     TXT_FALANTE_JOGADOR,
+    TXT_FALANTE_VARELA_PRESENTE,
     TXT_PAINEL1_TITULO,
     TXT_PAINEL2_TITULO,
     TXT_PAINEL_RESOLVIDO,
