@@ -70,6 +70,7 @@ typedef enum {
     TXT_MIRA_PORTA_ABRIR, // a porta da sala nas saídas (porta_sala.c)
     TXT_MIRA_PORTA_FECHAR,
     TXT_MIRA_CORPO,
+    TXT_CENA_FITA_EXERCITO, // a gravação lá fora, na cena do final bom
     TXT_ARMARIO_SAIR,
     TXT_OBJETIVO_SALA,
     TXT_OBJETIVO_S1,
@@ -111,10 +112,10 @@ typedef enum {
     TXT_PAINEL_CHAVE,
     TXT_FALANTE_VARELA,
     TXT_FALANTE_JOGADOR,
+    TXT_FALANTE_VARELA_PRESENTE,
     TXT_PAINEL1_TITULO,
     TXT_PAINEL2_TITULO,
     TXT_PAINEL_RESOLVIDO,
-    TXT_PAINEL_ALVO,
     TXT_PAINEL_SAIDA,
     TXT_PAINEL_CHAVE_LIGADA,
     TXT_PAINEL_CHAVE_DESLIGADA,
@@ -154,8 +155,6 @@ typedef enum {
     TXT_TECLA_SAIR,
     TXT_TECLA_FECHAR,
     TXT_TECLA_CHAVES,
-    TXT_TECLA_ENCAIXE,
-    TXT_TECLA_PORTA,
     TXT_TECLA_MOVER,
     TXT_TECLA_USAR_FICHA,
     TXT_TECLA_ANDAR,
@@ -171,7 +170,7 @@ typedef enum {
     TXT_COLA_E,
     TXT_COLA_OU,
     TXT_COLA_SE,
-    TXT_COLA_XOU, // as duas portas que só existem no painel 2
+    TXT_COLA_XOU, // OU-EXCLUSIVO e NÃO-E: o motor de lógica tem, nenhum painel usa hoje
     TXT_COLA_NE,
     TXT_COLA_COMPARE,
     TXT_COLA_SUA_FRASE,
@@ -182,8 +181,7 @@ typedef enum {
     TXT_TABELA_RESPOSTA,
     TXT_TABELA_VERDADE,
     TXT_TABELA_FALSO,
-    TXT_PAINEL_OBJETIVO1,
-    TXT_PAINEL_OBJETIVO2,
+    TXT_PAINEL_OBJETIVO,
     TXT_MENU_RANKING, // ranking e avaliação
     TXT_MENU_GANCHO,
     TXT_MENU_DATA_FITA,
@@ -223,7 +221,6 @@ typedef enum {
     TXT_PAINEL_DICA_E,
     TXT_PAINEL_DICA_OU,
     TXT_PAINEL_DICA_NAO,
-    TXT_PAINEL2_DICA,
     TXT_VHS_ROTULO,
     TXT_VHS_DESLIGADO,
     TXT_VHS_ORIGINAL,

@@ -108,7 +108,8 @@ void regras_anim_pes(AnimCriatura *a, const EntradaAnim *in, float dt, float w_p
     a->fase += andou / a->passada_m;
     if (floorf(a->fase * 2.0f) != floorf(antes * 2.0f)) { // um passo novo: comprimento sorteado
         a->passo_n++;
-        float base = Lerp(ANIM_PASSADA_M, ANIM_PASSADA_CORRE_M, a->w_persegue);
+        float base =
+            Lerp(ANIM_PASSADA_M, ANIM_PASSADA_CORRE_M, a->w_persegue) * esqueleto_modelo()->postura.passo;
         a->passada_m = base * (1.0f + ANIM_PASSO_VARIA * (2.0f * regras_anim_sorteio(a->passo_n, 5) - 1.0f));
     }
     for (int l = 0; l < 2; l++) { // padrão MAP: cada pé, no ar ou plantado

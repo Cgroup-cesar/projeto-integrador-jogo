@@ -2,6 +2,7 @@
 // A frase é analisada pelo motor de lógica: inválida → SINTAXE INVÁLIDA (sem penalidade);
 // contradição (nunca pode ser verdadeira) → FIM BOM; qualquer frase satisfazível → FIM RUIM.
 #include "compositor.h"
+#include "cena_final.h"
 #include "terminal.h"
 #include "criatura.h"
 #include "susto.h"
@@ -228,6 +229,7 @@ void compositor_piloto(const Estado *e, Entrada *in, bool final_bom) {
 // ================================================================== os dois finais
 void compositor_inicia_fim(Estado *e) {
     memset(&e->fim, 0, sizeof(e->fim));
+    if (e->fase == FASE_FIM_BOM) cena_final_inicia(e);
     // Os glifos do vidro se desfazem em fragmentos (nos dois finais).
     const Nivel *n = &e->nivel;
     for (int i = 0; i < 70; i++) {
@@ -261,6 +263,7 @@ static void atualiza_fim_bom(Estado *e, float antes, float t) {
     if (antes < 2.6f && t >= 2.6f) e->cri.congelado_t = 1.0f;
     if (antes < 2.8f && t >= 2.8f) audio_silencia(e);
     if (antes < 4.8f && t >= 4.8f) ui_fala(e, FALAS_FIM_BOM);
+    cena_final_atualiza(e, antes, t); // a saída pelo corredor e a fita lá fora
 }
 
 // O texto do final e o "por quê" já estão na tela (passou o momento deles e o susto acabou).
@@ -291,11 +294,11 @@ void compositor_atualiza_fim(Estado *e, float dt) {
 // Efeitos por cima da cena (dentro do render target): a tela vai ao preto no fim de cada cinemática.
 void compositor_desenha_fim(const Estado *e) {
     float t = e->fim.tempo;
-    float preto =
-        e->fase == FASE_FIM_RUIM ? (t > 8.2f ? 1.0f : 0.0f) : fminf(1.0f, fmaxf(0.0f, (t - 13.0f) / 1.0f));
+    float preto = e->fase == FASE_FIM_RUIM && t > 8.2f ? 1.0f : 0.0f;
     if (e->fase == FASE_FIM_BOM && t > 2.8f && t < 4.8f)
         preto = fmaxf(preto, 0.55f); // o silêncio escurece a sala
     if (preto > 0.0f) DrawRectangle(0, 0, e->rec.alvo_largura, e->rec.alvo_altura, Fade(BLACK, preto));
+    cena_final_desenha(e); // o final bom: as faixas, a fita, o branco da lanterna e o preto no fim
 }
 
 // O texto do final e, logo abaixo, por que ele aconteceu: a frase transmitida e o que ela tem de especial.

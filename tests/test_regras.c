@@ -109,11 +109,54 @@ static void testa_esqueleto(void) {
     CHECK(Vector3DotProduct(coxa, canela) < 0.9999f); // ...e nem assim trava a perna esticada
 }
 
+// [REQ:PURA-modelos_criatura] testa as tabelas de cada modelo: pais antes dos filhos, ossos com
+// comprimento, o lado esquerdo em +x, joelho e cotovelo com plano de dobra (o IK precisa) e a escolha pelo
+// nome; e o IK do modelo reto (papelão) alcança e dobra o joelho para a frente
+static void testa_modelos_criatura(void) {
+    for (int id = 0; id < CRIATURAS_TOTAL; id++) { // padrão MAP: cada modelo
+        esqueleto_usa(id);
+        CHECK(esqueleto_modelo_por_nome(esqueleto_modelo()->nome) == id);
+        CHECK(esqueleto_modelo()->altura_nominal > 1.0f && esqueleto_modelo()->postura.passo > 0.0f);
+        for (int i = 0; i < OSSOS_TOTAL; i++) // padrão MAP: cada osso
+            CHECK(esqueleto_osso(i)->pai < i && (i == OSSO_MANDIBULA || esqueleto_comprimento(i) > 0.02f));
+        for (int l = 0; l < 2; l++) { // padrão MAP: os dois lados
+            CHECK(LADO_SINAL(l) * esqueleto_osso(OSSO_OMBRO(l) + 1)->cabeca.x > 0.0f);
+            int membros[2] = {OSSO_COXA(l), OSSO_OMBRO(l) + 1};
+            for (int k = 0; k < 2; k++) { // padrão MAP: perna e braço
+                const OssoRepouso *a = esqueleto_osso(membros[k]), *b = esqueleto_osso(membros[k] + 1);
+                Vector3 d1 = Vector3Normalize(Vector3Subtract(a->cauda, a->cabeca));
+                Vector3 d2 = Vector3Normalize(Vector3Subtract(b->cauda, b->cabeca));
+                CHECK(Vector3Length(Vector3CrossProduct(d1, d2)) > sinf(3.0f * DEG2RAD)); // dobra > 3°
+            }
+        }
+        testa_esqueleto();
+    }
+    CHECK(esqueleto_modelo_por_nome("nenhum") == -1);
+    // [REQ:PURA-esqueleto_marca_pontos] os olhos do papelão: meios-discos com a reta em cima
+    esqueleto_usa(CRIATURA_PAPELAO);
+    for (int i = 0; i < esqueleto_modelo()->n_marcas; i++) { // padrão MAP: cada olho
+        const MarcaRosto *m = &esqueleto_modelo()->marcas[i];
+        Vector3 p[MARCA_PONTOS];
+        esqueleto_marca_pontos(m, p);
+        CHECK(Vector3Distance(p[0], m->centro) < 1e-6f);
+        for (int k = 1; k < MARCA_PONTOS; k++) {                              // padrão MAP: a borda
+            CHECK(fabsf(Vector3Distance(p[k], m->centro) - m->raio) < 1e-5f); // no círculo...
+            CHECK(p[k].y <= m->centro.y + 0.3f * m->raio);                    // ...na metade de baixo
+        }
+        CHECK(p[MARCA_PONTOS / 2 + 1].y < m->centro.y - 0.9f * m->raio); // o fundo do arco, embaixo
+    }
+    esqueleto_usa(CRIATURA_PAPELAO);
+    CHECK(esqueleto_peso_mandibula(esqueleto_osso(OSSO_MANDIBULA)->cauda) == 0.0f); // sem boca
+    esqueleto_usa(-1); // fora do intervalo: fica o atual
+    CHECK(esqueleto_modelo() == &MODELOS_CRIATURA[CRIATURA_PAPELAO]);
+    esqueleto_usa(CRIATURA_PRECURSOR);
+}
+
 static EntradaAnim entrada_anim(Vector3 pos) {
     EntradaAnim in = {0};
     in.pos = pos;
-    in.escala = CRIATURA_ALTURA_M / 1.993f;
-    in.base_y = -0.997f;
+    in.escala = CRIATURA_ALTURA_M / esqueleto_modelo()->altura_nominal;
+    in.base_y = esqueleto_modelo()->base_nominal;
     in.bueiro_t = -1.0f;
     return in;
 }
@@ -999,6 +1042,54 @@ static void testa_som_espacial(void) {
     CHECK(perto(regras_som_espacial(eu, 0.0f, eu, a, false).volume, 1.0f)); // em cima: cheio, sem divisão
 }
 
+// [REQ:PURA-regras_cena_pose] testa a cena do final bom: as etapas em ordem, a caminhada (parado enquanto a
+// porta abre, chega ao fim do corredor), a órbita olhando para a base, o branco, as luminárias e a nave
+static void testa_cena_final(void) {
+    float vira = CENA_COMECA_S, porta = vira + CENA_VIRA_S, anda = porta + CENA_PORTA_S;
+    float branco = anda + CENA_ANDA_S, fora = CENA_FORA_INICIO_S, preto = fora + CENA_FORA_S;
+    CHECK(regras_cena_etapa(0.0f) == CENA_ANTES);
+    CHECK(regras_cena_etapa(vira) == CENA_VIRA);
+    CHECK(regras_cena_etapa(porta) == CENA_PORTA);
+    CHECK(regras_cena_etapa(anda) == CENA_ANDA);
+    CHECK(regras_cena_etapa(branco) == CENA_BRANCO);
+    CHECK(regras_cena_etapa(fora) == CENA_FORA);
+    CHECK(regras_cena_etapa(preto) == CENA_PRETO);
+    CHECK(regras_cena_etapa(FIM_BOM_TEXTO_S) == CENA_FIM);
+    PoseJogador de = {{9.0f, 0.0f, 9.6f}, PI, -0.3f};
+    PoseJogador diante = {{13.65f, 0.0f, 11.0f}, PI * 0.5f, 0.0f};
+    PoseJogador fim = {{CENA_ANDA_ATE_X, 0.0f, 11.0f}, PI * 0.5f, 0.02f};
+    PoseJogador p = regras_cena_pose(1.0f, de, diante, fim); // antes da cena: no console
+    CHECK(perto(p.pos.x, de.pos.x) && perto(p.yaw, de.yaw));
+    p = regras_cena_pose(porta + CENA_PORTA_S * 0.5f, de, diante, fim); // parado enquanto a folha abre
+    CHECK(perto(p.pos.x, diante.pos.x) && perto(cosf(p.yaw), cosf(diante.yaw)));
+    p = regras_cena_pose(anda + CENA_ANDA_S * 0.5f, de, diante, fim); // no meio do corredor
+    CHECK(p.pos.x > diante.pos.x + 1.0f && p.pos.x < fim.pos.x - 1.0f);
+    p = regras_cena_pose(branco + 5.0f, de, diante, fim);
+    CHECK(perto(p.pos.x, fim.pos.x));
+    PoseJogador porta_base = {{500.0f, 0.0f, 505.0f}, PI, 0.0f};
+    Vector3 meio = {500.0f, 0.0f, 501.0f};
+    PoseJogador o = regras_cena_fora(0.0f, porta_base, meio); // na porta, olhando para o pátio
+    CHECK(perto(o.pos.z, porta_base.pos.z) && fabsf(o.yaw - PI) < 0.05f);
+    o = regras_cena_fora(CENA_SAI_S, porta_base, meio); // chegou ao pátio, ainda sem girar
+    CHECK(perto(o.pos.z, meio.z) && fabsf(o.yaw - PI) < 0.05f && o.pitch < 0.15f);
+    o = regras_cena_fora((CENA_SAI_S + CENA_FORA_S - CENA_OLHA_CEU_S) * 0.5f, porta_base, meio);
+    CHECK(o.yaw > PI + 1.0f); // girando
+    o = regras_cena_fora(CENA_FORA_S, porta_base, meio); // a volta inteira, olhando para o céu
+    CHECK(fabsf(o.yaw - (PI + 2.0f * PI)) < 0.05f && o.pitch > 0.3f);
+    CHECK(perto(regras_cena_branco(anda), 0.0f));
+    CHECK(perto(regras_cena_branco(fora - 0.001f), 1.0f) || regras_cena_branco(fora - 0.001f) > 0.99f);
+    CHECK(perto(regras_cena_branco(fora + 1.0f), 0.0f));
+    CHECK(perto(regras_cena_preto(fora + 1.0f), 0.0f) && perto(regras_cena_preto(FIM_BOM_TEXTO_S), 1.0f));
+    CHECK(perto(regras_cena_faixa(1.0f), 0.0f) && perto(regras_cena_faixa(anda), 1.0f));
+    CHECK(perto(regras_cena_faixa(fora + 0.1f), 0.0f)); // a fita não tem faixas
+    CHECK(perto(regras_cena_acende(vira, 3.0f), 0.0f));        // a porta ainda nem abriu
+    CHECK(perto(regras_cena_acende(branco, 3.0f), 1.0f));      // perto da porta: acesa há tempo
+    CHECK(regras_cena_acende(porta, 30.0f) == 0.0f);           // longe: ainda apagada
+    CHECK(perto(regras_cena_acende(branco + 9.0f, 30.0f), 1.0f));
+    CHECK(regras_cena_nave_altura(NAVE_SOBE_S + 4.0f) > regras_cena_nave_altura(NAVE_SOBE_S) + 30.0f);
+    CHECK(perto(regras_cena_nave_brilho(0.0f), 1.0f) && perto(regras_cena_nave_brilho(CENA_FORA_S), 0.0f));
+}
+
 int main(void) {
     SetTraceLogLevel(LOG_ERROR); // o aviso de vetor cheio é esperado aqui
     testa_movimento();
@@ -1007,6 +1098,7 @@ int main(void) {
     testa_ruido_percebido();
     testa_estados_criatura();
     testa_esqueleto();
+    testa_modelos_criatura();
     testa_anim_passos();
     testa_anim_parado_e_transicoes();
     testa_anim_bueiro();
@@ -1030,6 +1122,7 @@ int main(void) {
     testa_chave_visivel();
     testa_porta_sala();
     testa_retorno();
+    testa_cena_final();
     testa_monta_texto();
     testa_nome_edita();
     testa_falha_texto();

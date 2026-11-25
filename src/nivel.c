@@ -11,6 +11,7 @@
 #include "lampada_sala.h"
 #include "chave.h"
 #include "corpo.h"
+#include "cena_final.h"
 #include "texturas.h"
 #include "cenario.h"
 #include "posfx.h"
@@ -346,7 +347,7 @@ static int luzes_sala(const Estado *e, Vector3 *pos, Vector3 *cor, Vector4 *cone
     bool luz_b = menu ? false : e->rod.luz_b;
     float cela = (menu ? 0.9f : 2.2f) * HOLOFOTE_GANHO * (e->apagao_t > 0.0f ? 0.0f : 1.0f);
     float sala = brilho_sala(e) * (menu ? 0.7f : 1.5f);
-    Vector3 peito = Vector3Add(e->nivel.cela_precursor, (Vector3){0.0f, 1.5f, 0.0f});
+    Vector3 peito = Vector3Add(e->nivel.cela_precursor, (Vector3){0.0f, esqueleto_modelo()->peito_m, 0.0f});
     pos[0] = lampada_sala_bulbo();
     cor[0] = e->alarme_t > 0.0f ? cor_luz(COR_ALARME, 0.6f + 0.5f * sinf(e->tempo_total * 6.0f))
                                 : cor_luz(COR_LAMPADA, sala);
@@ -426,6 +427,7 @@ int nivel_luzes(const Estado *e, Vector3 *posicoes, Vector3 *cores, Vector4 *con
         cones[i] = (Vector4){0.0f, -1.0f, 0.0f, -2.0f};
         ids[i] = -1;
     }
+    if (cena_final_dentro(e)) return cena_final_luzes(e, posicoes, cores, cones, ids); // o final bom
     if (regras_fase_eh_saida(e->fase)) return luzes_saida(e, posicoes, cores, ids);
     return luzes_sala(e, posicoes, cores, cones);
 }

@@ -523,6 +523,7 @@ static void desenha_legenda(const Estado *e) {
     bool falso = l->falante == FALANTE_VARELA_FALSO; // o mesmo rótulo do Varela: ele está imitando
     const char *quem = (l->falante == FALANTE_VARELA || falso) ? dialogo_texto(TXT_FALANTE_VARELA)
                        : l->falante == FALANTE_JOGADOR         ? dialogo_texto(TXT_FALANTE_JOGADOR)
+                       : l->falante == FALANTE_VARELA_PRESENTE ? dialogo_texto(TXT_FALANTE_VARELA_PRESENTE)
                                                                : "";
     // [REQ:NOME-USO] {NOME}, {PROF} e {x|y} trocados pelo que o jogador escolheu
     char nome_falante[96], fala[512], com_defeito[96];

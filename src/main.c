@@ -31,6 +31,7 @@
 #include "quadro.h"
 #include "lampada_sala.h"
 #include "corpo.h"
+#include "cena_final.h"
 #include "dialogo.h"
 #include "ranking.h"
 #include "respiracao.h"
@@ -550,6 +551,7 @@ static void le_argumentos(Estado *e, int argc, char **argv) {
     for (int i = 1; i < argc; i++) {
         if (bancada_le_argumento(argc, argv, &i)) continue; // --olhar, --lanterna, --energia, --medir
         if (qualidade_le_argumento(argc, argv, &i)) continue; // --qualidade, --sem
+        if (criatura_le_argumento(argc, argv, &i)) continue;  // --criatura precursor|papelao
         if (strcmp(argv[i], "--smoke") == 0) e->modo_smoke = true;
         if (strcmp(argv[i], "--feira") == 0) e->modo_feira = true;
         if (strcmp(argv[i], "--mudo") == 0) mudo = true;
@@ -662,12 +664,14 @@ static void carrega_recursos(void) {
     quadro_carrega(&estado.rec);
     lampada_sala_carrega(&estado.rec);
     corpo_carrega(&estado.rec);
+    cena_final_carrega(&estado.rec);
     if (mudo || estado.modo_smoke) SetMasterVolume(0.0f); // o smoke roda calado
 }
 
 static void descarrega_recursos(void) {
     lampada_sala_descarrega(&estado.rec);
     corpo_descarrega(&estado.rec);
+    cena_final_descarrega(&estado.rec);
     quadro_descarrega(&estado.rec);
     cameras_descarrega(&estado.rec);
     porta_bunker_descarrega(&estado.rec);

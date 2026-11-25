@@ -67,7 +67,7 @@ typedef struct {
     int loc_luz_pos, loc_luz_cor, loc_luz_ambiente, loc_luz_nevoa, loc_luz_camera, loc_luz_modelo;
     int loc_luz_molhado, loc_luz_usa_mapas, loc_luz_rugosidade, loc_luz_metalico;
     int loc_luz_reflexo, loc_luz_agua, loc_luz_tela, loc_luz_lanterna, loc_luz_direto, loc_luz_id;
-    int loc_luz_triplanar, loc_luz_vidro;
+    int loc_luz_triplanar, loc_luz_vidro, loc_luz_recorte;
     int loc_luz_cone, loc_luz_contraluz, loc_luz_queda;
     int loc_luz_cela_min, loc_luz_cela_max, loc_luz_cela_densidade, loc_luz_cela_cor, loc_luz_cela_espalha;
     int loc_luz_cela_lanterna;
@@ -110,6 +110,15 @@ typedef struct {
     bool tem_cameras;
     Model modelo_quadro; // opcional: assets/modelos/quadro.glb (o quadro de investigação)
     bool tem_quadro;
+    Model modelo_base; // opcional: assets/modelos/base.glb (a base lá fora, na cena do final bom)
+    bool tem_base;
+    // A mata em volta da base (assets/modelos/arvores.glb, opcional): o modelo é uma cena inteira; ao carregar,
+    // guardamos duas árvores (casca e folhas) e alguns tufos de capim, que são repetidos em volta da base.
+    Model modelo_mata;
+    bool tem_mata;
+    int mata_casca[2], mata_folha[2], n_arvores; // as malhas de cada árvore
+    Vector3 mata_pe[2];                         // o pé do tronco de cada uma (no modelo)
+    int mata_capim[8], n_capim;
     Model modelo_corpo; // opcional: assets/modelos/corpo.glb (o corpo do americano)
     bool tem_corpo;
 
@@ -262,9 +271,8 @@ typedef struct {
 
 // ------------------------------------------------------------------ painéis de circuito (saídas)
 typedef struct {
-    int numero; // 1 ou 2
+    int numero; // 1 ou 2 (os dois têm as chaves A, B e C; muda o circuito)
     bool chaves[3];
-    int escolha[2]; // painel 2: TipoPorta escolhida em cada encaixe
     int cursor;
     bool resolvido;
     float resolvido_t;
@@ -315,7 +323,8 @@ typedef struct {
 
 // ------------------------------------------------------------------ intro, legendas e fim
 // FALANTE_VARELA_FALSO: o Precursor imitando o Varela no rádio (mesmo rótulo, voz grave e legenda falhando).
-typedef enum { FALANTE_VARELA, FALANTE_VARELA_FALSO, FALANTE_JOGADOR, FALANTE_SISTEMA } Falante;
+// FALANTE_VARELA_PRESENTE: o Varela em pessoa, sem o rádio (o fim do corredor, na cena do final bom).
+typedef enum { FALANTE_VARELA, FALANTE_VARELA_FALSO, FALANTE_JOGADOR, FALANTE_SISTEMA, FALANTE_VARELA_PRESENTE } Falante;
 
 typedef struct {
     const char *texto;
@@ -369,6 +378,7 @@ typedef struct {
     int posicao;      // no ranking (0 = 1º lugar; −1 = não coube)
     int notas[AVALIACAO_PERGUNTAS]; // estrelas que a pessoa deu ao jogo (0 = não respondeu)
     int nota_cursor;
+    PoseJogador cena_de, cena_porta, cena_fim; // a caminhada do final bom (regras_cena_pose)
 } Fim;
 
 typedef struct {

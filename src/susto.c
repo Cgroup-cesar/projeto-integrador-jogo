@@ -8,8 +8,11 @@
 
 // ================================================================== a boca (mandíbula)
 // O rosto do susto é desenhado sem o rig (pose de repouso, ver rig.c): aqui a mandíbula gira na CPU. A
-// dobradiça é a mesma do osso da mandíbula (esqueleto.c), e o peso de cada vértice também.
-static const float DOBRADICA_Y = 0.80f, DOBRADICA_Z = 0.03f;
+// dobradiça é a cabeça do osso da mandíbula do modelo escolhido (modelos_criatura.c), e o peso de cada
+// vértice também (num modelo sem boca, nenhum vértice entra e o susto fica de boca parada).
+static Vector3 dobradica(void) {
+    return esqueleto_osso(OSSO_MANDIBULA)->cabeca;
+}
 
 static void libera_boca(BocaModelo *b) {
     free(b->indice);
@@ -53,12 +56,12 @@ void susto_descarrega_boca(Recursos *rec) {
 static void gira_mandibula(Recursos *rec, float graus) {
     BocaModelo *b = &rec->boca;
     Mesh *m = &rec->modelo_precursor.meshes[0];
-    Vector3 *v = (Vector3 *)m->vertices;
+    Vector3 *v = (Vector3 *)m->vertices, d = dobradica();
     for (int k = 0; k < b->n; k++) { // padrão MAP: posição original → posição girada
         float a = graus * DEG2RAD * b->peso[k];
-        float y = b->original[k].y - DOBRADICA_Y, z = b->original[k].z - DOBRADICA_Z;
-        v[b->indice[k]].y = DOBRADICA_Y + y * cosf(a) - z * sinf(a);
-        v[b->indice[k]].z = DOBRADICA_Z + y * sinf(a) + z * cosf(a);
+        float y = b->original[k].y - d.y, z = b->original[k].z - d.z;
+        v[b->indice[k]].y = d.y + y * cosf(a) - z * sinf(a);
+        v[b->indice[k]].z = d.z + y * sinf(a) + z * cosf(a);
     }
     int n = b->ultimo - b->primeiro + 1;
     UpdateMeshBuffer(*m, 0, &v[b->primeiro], n * (int)sizeof(Vector3), b->primeiro * (int)sizeof(Vector3));
@@ -162,16 +165,37 @@ static void acende_luzes(const Estado *e, Vector3 olho, float t) {
     posfx_olho(e, olho);
 }
 
-// O modelo na altura do jogo, deslocado para o rosto (JUMPSCARE_ROSTO_*) cair na origem.
+// Onde fica o rosto do modelo escolhido (fração da caixa, em modelos_criatura.c) e a escala do jogo.
+static Vector3 rosto_do_modelo(const Model *m, float *escala) {
+    BoundingBox b = GetModelBoundingBox(*m);
+    Vector3 tam = Vector3Subtract(b.max, b.min), f = esqueleto_modelo()->rosto;
+    *escala = CRIATURA_ALTURA_M / fmaxf(0.01f, tam.y);
+    return (Vector3){b.min.x + tam.x * f.x, b.min.y + tam.y * f.y, b.min.z + tam.z * f.z};
+}
+
+// O modelo na altura do jogo, deslocado para o rosto cair na origem.
 static void desenha_modelo_no_rosto(const Estado *e) {
     const Model *m = &e->rec.modelo_precursor;
-    BoundingBox b = GetModelBoundingBox(*m);
-    Vector3 tam = Vector3Subtract(b.max, b.min);
-    float escala = CRIATURA_ALTURA_M / fmaxf(0.01f, tam.y);
-    Vector3 rosto = {b.min.x + tam.x * JUMPSCARE_ROSTO_X, b.min.y + tam.y * JUMPSCARE_ROSTO_Y,
-                     b.min.z + tam.z * JUMPSCARE_ROSTO_Z};
+    float escala;
+    Vector3 rosto = rosto_do_modelo(m, &escala);
     DrawModelEx(*m, Vector3Scale(rosto, -escala), (Vector3){0, 1, 0}, 0.0f, (Vector3){escala, escala, escala},
                 COR_PELE);
+}
+
+// Os olhos do rosto liso (meios-discos, modelos_criatura.c), sem o fio de contraluz do crânio.
+static void desenha_marcas_no_rosto(const Estado *e) {
+    const ModeloCriatura *mc = esqueleto_modelo();
+    float escala;
+    Vector3 rosto = rosto_do_modelo(&e->rec.modelo_precursor, &escala), p[MARCA_PONTOS];
+    for (int i = 0; i < mc->n_marcas; i++) { // padrão MAP: cada olho, na pose de repouso
+        esqueleto_marca_pontos(&mc->marcas[i], p);
+        for (int k = 0; k < MARCA_PONTOS; k++) // padrão MAP: cada ponto do meio-disco
+            p[k] = Vector3Scale(Vector3Subtract(p[k], rosto), escala);
+        for (int k = 1; k + 1 < MARCA_PONTOS; k++) { // laço de desenho: o leque, nos dois sentidos
+            DrawTriangle3D(p[0], p[k], p[k + 1], COR_MARCA_ROSTO);
+            DrawTriangle3D(p[0], p[k + 1], p[k], COR_MARCA_ROSTO);
+        }
+    }
 }
 
 // O rosto num render target só dele, transparente e com a profundidade própria: depois ele é colado por
@@ -187,6 +211,7 @@ void susto_prepara(const Estado *e) {
     posfx_contraluz(e, WHITE, 0.2f); // recorta o crânio com um fio de luz branca
     desenha_modelo_no_rosto(e);
     posfx_contraluz(e, WHITE, 0.0f);
+    desenha_marcas_no_rosto(e);
     posfx_termina_luz(e);
     EndMode3D();
     EndTextureMode();
